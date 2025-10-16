@@ -1,0 +1,8 @@
+/node_modules/
+/jest.config.json
+/tsconfig.json
+/tsconfig.build.json
+/vite.config.ts
+/.git/
+/.github/
+.idea

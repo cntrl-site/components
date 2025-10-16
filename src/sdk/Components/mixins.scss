@@ -1,0 +1,10 @@
+@use 'sass:math';
+
+@mixin size($property, $value) {
+  $vw: math.div($value, 1440) * 100;
+
+  #{$property}: calc(
+    var(--is-editor, 0) * (#{$vw}vw / var(--cntrl-reverse-layout-deviation, 1)) +
+    (1 - var(--is-editor, 0)) * #{$vw}vw
+  );
+}

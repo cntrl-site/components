@@ -1,0 +1,9 @@
+.link {
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.2s ease;
+  &:hover {
+    color: var(--link-hover-color);
+  }
+}

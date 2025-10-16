@@ -1,0 +1,312 @@
+@use '../mixins.scss' as *;
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.slider {
+  width: 100%;
+  height: 100%;
+}
+
+.sliderItems {
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sliderItem {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  position: relative;
+}
+
+.sliderImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.arrow {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  top: 50%;
+  @include size(left, -20);
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  @include size(width, 30);
+  @include size(height, 30);
+  &.arrowVertical {
+    left: 50%;
+    @include size(top, -20);
+    transform: translate(-50%, -50%);
+  }
+}
+
+.nextArrow {
+  left: unset;
+  @include size(right, -20);
+  transform: translate(50%, -50%);
+  &.arrowVertical {
+    left: 50%;
+    right: unset;
+    top: unset;
+    @include size(bottom, -20);
+    transform: translate(-50%, 50%);
+  }
+}
+
+.arrowInner {
+  all: unset;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  &:hover {
+    .arrowIcon path {
+      fill: var(--arrow-hover-color) !important;
+    }
+  }
+}
+
+.arrowImg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+  
+.arrowIcon {
+  width: 100%;
+  height: 100%;
+  & path {
+    transition: fill 0.15s ease-in-out;
+  }
+}
+
+.mirror {
+  transform: translate(-50%, -50%) scaleX(-1) !important;
+}
+
+.arrowVertical {
+  &.mirror {
+    transform: translate(-50%, -50%) scaleY(-1) !important;
+  }
+}
+
+.pagination {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+}
+
+.paginationInner {
+  display: flex;
+  @include size(gap, 16);
+  @include size(padding-top, 10);
+  @include size(padding-bottom, 10);
+  @include size(padding-left, 18);
+  @include size(padding-right, 18);
+  @include size(border-radius, 34);
+}
+
+.paginationVertical {
+  flex-direction: column;
+}
+
+.paginationItem {
+  all: unset;
+  flex-shrink: 0;
+  position: relative;
+  @include size(width, 16);
+  @include size(height, 16);
+  cursor: pointer;
+  &:hover .dot {
+    background-color: var(--pagination-hover-color) !important;
+  }
+}
+
+.dot {
+  border-radius: 50%;
+  scale: 0.5;
+  transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+  @include size(width, 16);
+  @include size(height, 16);
+}
+
+.activeDot {
+  transform: scale(2);
+}
+
+.paginationInsideBottom {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.paginationInsideTop {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 0;
+}
+
+.paginationOutsideBottom {
+  left: 50%;
+  transform: translateX(-50%);
+  @include size(bottom, -35);
+}
+
+.paginationOutsideTop {
+  left: 50%;
+  transform: translateX(-50%);
+  @include size(top, -35);
+}
+
+.paginationInsideLeft {
+  top: 50%;
+  transform: translateY(-50%);
+  @include size(left, -35);
+}
+
+.paginationInsideRight {
+  top: 50%;
+  transform: translateY(-50%);
+  @include size(right, -35);
+}
+
+.paginationOutsideLeft {
+  top: 50%;
+  transform: translateY(-50%);
+  @include size(left, -79);
+}
+
+.paginationOutsideRight {
+  top: 50%;
+  transform: translateY(-50%);
+  @include size(right, -79);
+}
+
+.imgWrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.wrapperInner {
+  width: 100%;
+  height: 100%;
+}
+
+.captionBlock {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.captionTextWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.captionText {
+  pointer-events: none;
+  max-width: 100%;
+  transition-property: opacity;
+  transition-timing-function: ease-in-out;
+  position: absolute;
+  display: inline-block;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  opacity: 0;
+  &.active {
+    opacity: 1;
+  }
+}
+
+.withPointerEvents {
+  pointer-events: auto;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.topLeftAlignment {
+  top: 0;
+  left: 0;
+}
+
+.topCenterAlignment {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.topRightAlignment {
+  top: 0;
+  right: 0;
+}
+
+.middleLeftAlignment {
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+}
+
+.middleCenterAlignment {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  left: 50%;
+}
+
+.middleRightAlignment {
+  top: 50%;
+  transform: translateY(-50%);
+  right: 0;
+}
+
+.bottomLeftAlignment {
+  bottom: 0;
+  left: 0;
+}
+
+.bottomCenterAlignment {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bottomRightAlignment {
+  bottom: 0;
+  right: 0;
+}
+
+.clickOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.contain {
+  object-fit: contain;
+}
+
+.cover {
+  object-fit: cover;
+}
