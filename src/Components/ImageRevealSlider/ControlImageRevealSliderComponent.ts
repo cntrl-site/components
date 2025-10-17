@@ -1,4 +1,3 @@
-import { Component } from '../../types/component/Component';
 import { ImageRevealSlider } from './ImageRevealSlider';
 
 export const ControlImageRevealSliderComponent = {
