@@ -1,0 +1,58 @@
+@use '../mixins.scss' as *;
+
+.backdropStyle {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+};
+
+.contentStyle {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  overflow: auto;
+  background: transparent;
+};
+.stageStyle {
+  position: relative;
+  width: 90vw;
+  height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+};
+.imageStyle {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+  background-color: transparent;
+};
+.controlBase {
+  @include size(width, 48);
+  @include size(height, 48);
+  @include size(font-size, 42);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  user-select: none;
+  cursor: pointer;
+};
+
+.counterStyle {
+  @include size(bottom, 12);
+  @include size(right, 16);
+  @include size(font-size, 14);
+  position: absolute;
+  color: #fff;
+  opacity: 0.85;
+};
