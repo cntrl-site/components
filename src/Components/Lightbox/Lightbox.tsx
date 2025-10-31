@@ -65,10 +65,26 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       onClose();
     }
   };
-  const onImageClick = (e: React.MouseEvent<HTMLImageElement>, dir: '+1' | '-1') => {
+  const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (settings.triggers.type === 'click' && settings.triggers.switch === 'image') {
-      console.log('onImageClick', dir);
       e.stopPropagation();
+      lightboxRef.current?.go('+1');
+    }
+    if (settings.triggers.type === 'click' && settings.triggers.switch === '50/50') {
+      e.stopPropagation();
+      
+      const img = e.currentTarget;
+      const rect = img.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const imgWidth = rect.width;
+      const imgHeight = rect.height;
+      let dir: '+1' | '-1';
+      if (settings.slider.direction === 'horiz') {
+        dir = clickX < imgWidth / 2 ? '-1' : '+1';
+      } else {
+        dir = clickY < imgHeight / 2 ? '-1' : '+1';
+      }
       lightboxRef.current?.go(dir);
     }
   };
@@ -165,7 +181,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                     [styles.cover]: item.image.objectFit === 'cover'
                   })}
                   src={item.image.url} alt={item.image.name ?? ''}
-                  onClick={(e) => onImageClick(e, '+1')}
+                  onClick={onImageClick}
                 />
               </div>
           </SplideSlide>

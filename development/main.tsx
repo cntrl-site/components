@@ -19,7 +19,7 @@ const settings = {
   },
   "slider": {
     "type": "slide",
-    "direction": "vert"
+    "direction": "horiz"
   },
   "thumbnail": {
     "isActive": true,
