@@ -27,7 +27,6 @@ const alignmentClassName: Record<Alignment, string> = {
 };
 
 export function ControlSlider({ settings, content, styles: sliderStyles, isEditor }: SliderProps) {
-  // @ts-ignore
   const [sliderRef, setSliderRef] = useState<Splide | null>(null);
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.caption;
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
