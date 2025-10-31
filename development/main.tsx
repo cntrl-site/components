@@ -9,13 +9,13 @@ const settings = {
   "appear": {
     "type": "slide",
     "duration": "2000ms",
-    "direction": "left",
+    "direction": "right",
     "repeat": "close"
   },
   "triggers": {
-    "type": "drag",
+    "type": "click",
     "switch": "image",
-    "duration": "500ms"
+    "duration": "2000ms"
   },
   "slider": {
     "type": "fade",

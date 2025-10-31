@@ -59,6 +59,20 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     }
   };
 
+  const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!closeOnBackdropClick) return;
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+  const onImageClick = (e: React.MouseEvent<HTMLImageElement>, dir: '+1' | '-1') => {
+    if (settings.triggers.type === 'click' && settings.triggers.switch === 'image') {
+      console.log('onImageClick', dir);
+      e.stopPropagation();
+      lightboxRef.current?.go(dir);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -90,16 +104,39 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
 
   if (!isOpen) return null;
 
+  const appearDurationMs = settings.appear?.duration ? parseInt(settings.appear.duration) : 300;
+  const appearClass = (() => {
+    if (settings.appear?.type === 'fade') return styles.fadeIn;
+    if (settings.appear?.type === 'slide') {
+      switch (settings.appear.direction) {
+        case 'left':
+          return styles.slideInLeft;
+        case 'right':
+          return styles.slideInRight;
+        case 'top':
+          return styles.slideInTop;
+        case 'bottom':
+          return styles.slideInBottom;
+        default:
+          return styles.slideInRight;
+      }
+    }
+    return styles.fadeIn;
+  })();
+
   return createPortal(
     <div 
-      className={styles.backdropStyle} 
-      style={{ backgroundColor: settings.area.color, backdropFilter: `blur(${settings.area.blur}px)` }}
+      className={cn(styles.backdropStyle, styles.fadeIn)} 
+      style={{ backgroundColor: settings.area.color, backdropFilter: `blur(${settings.area.blur}px)`, animationDuration: `${appearDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
       onClick={handleBackdropClick} 
       >
       <div
-        className={styles.contentStyle}
+        className={cn(styles.contentStyle, appearClass)}
         style={{
           padding: `${settings.layout.padding.top}px ${settings.layout.padding.right}px ${settings.layout.padding.bottom}px ${settings.layout.padding.left}px`,
+          animationDuration: `${appearDurationMs}ms`,
+          animationTimingFunction: 'ease',
+          animationFillMode: 'both'
         }}
       >
         <Splide
@@ -121,13 +158,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         >
           {content.map((item, index) => (
             <SplideSlide key={index}>
-              <div className={styles.imgWrapper}>
+              <div className={styles.imgWrapper} onClick={handleImageWrapperClick}>
                 <img
                   className={cn(styles.imageStyle, {
                     [styles.contain]: item.image.objectFit === 'contain',
                     [styles.cover]: item.image.objectFit === 'cover'
                   })}
                   src={item.image.url} alt={item.image.name ?? ''}
+                  onClick={(e) => onImageClick(e, '+1')}
                 />
               </div>
           </SplideSlide>
