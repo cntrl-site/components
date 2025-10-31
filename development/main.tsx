@@ -14,12 +14,12 @@ const settings = {
   },
   "triggers": {
     "type": "click",
-    "switch": "image",
+    "switch": "50/50",
     "duration": "2000ms"
   },
   "slider": {
-    "type": "fade",
-    "direction": "horiz"
+    "type": "slide",
+    "direction": "vert"
   },
   "thumbnail": {
     "isActive": true,

@@ -145,15 +145,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           options={{
             arrows: false,
             speed: settings.triggers.duration ? parseInt(settings.triggers.duration) : 500,
-            direction: settings.slider.direction === 'horiz' ? 'ltr' : 'ttb',
+            direction: settings.slider.direction === 'horiz' || settings.slider.type === 'fade' ? 'ltr' : 'ttb',
             pagination: false,
             drag: settings.triggers.type === 'drag',
             perPage: 1,
             width: '100%',
             height: '100%',
-            type: settings.slider.type === 'fade' ? 'fade' : 'slide',
+            type: settings.slider.type === 'fade' ? 'fade' : 'loop',
             padding: 0,
-            rewind: true
+            rewind: false
           }}
         >
           {content.map((item, index) => (
