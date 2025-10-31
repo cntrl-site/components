@@ -1,6 +1,11 @@
-import React, { FC, useEffect } from 'react';
+import React, { FC, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import styles from './Lightbox.module.scss';
+import styles from './LightBox.module.scss';
+import { scalingValue } from '../utils/scalingValue';
+import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import cn from 'classnames';
+import '@splidejs/react-splide/css';
+import { Splide, SplideSlide } from '@splidejs/react-splide';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -35,7 +40,7 @@ export const LightboxGallery: React.FC<LightboxGalleryProps> = ({
       <img
         src={coverUrl}
         alt='Cover'
-        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
         onClick={() => setOpen(true)}
       />
       <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} />
@@ -45,8 +50,9 @@ export const LightboxGallery: React.FC<LightboxGalleryProps> = ({
 
 const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId }) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const lightboxRef = useRef<Splide | null>(null);
 
-  const handleBackdropClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
       onClose();
@@ -77,44 +83,141 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   useEffect(() => {
     if (isOpen) setCurrentIndex(0);
   }, [isOpen]);
+  
+  const handleArrowClick = (dir: '+1' | '-1') => {
+    lightboxRef.current?.go(dir);
+  };
 
   if (!isOpen) return null;
 
   return createPortal(
     <div 
-    className={styles.backdropStyle} 
-    style={{ backgroundColor: settings.area.color, backdropFilter: `blur(${settings.area.blur}px)` }}
-    onClick={handleBackdropClick} 
-    >
-      <div className={styles.contentStyle}>
-        <div className={styles.stageStyle}>
-          {content[currentIndex] && (
-            <img
-              src={content[currentIndex].image.url}
-              alt={content[currentIndex].image.name ?? ''}
-              className={styles.imageStyle}
-              onClick={() => setCurrentIndex((currentIndex + 1) % Math.max(content.length, 1))}
-            />
-          )}
-          {content.length > 1 && (
+      className={styles.backdropStyle} 
+      style={{ backgroundColor: settings.area.color, backdropFilter: `blur(${settings.area.blur}px)` }}
+      onClick={handleBackdropClick} 
+      >
+      <div
+        className={styles.contentStyle}
+        style={{
+          padding: `${settings.layout.padding.top}px ${settings.layout.padding.right}px ${settings.layout.padding.bottom}px ${settings.layout.padding.left}px`,
+        }}
+      >
+        <Splide
+          onMove={(splide) => { setCurrentIndex(splide.index); }}
+          ref={lightboxRef}
+          options={{
+            arrows: false,
+            speed: settings.triggers.duration ? parseInt(settings.triggers.duration) : 500,
+            direction: settings.slider.direction === 'horiz' ? 'ltr' : 'ttb',
+            pagination: false,
+            drag: settings.triggers.type === 'drag',
+            perPage: 1,
+            width: '100%',
+            height: '100%',
+            type: settings.slider.type === 'fade' ? 'fade' : 'slide',
+            padding: 0,
+            rewind: true
+          }}
+        >
+          {content.map((item, index) => (
+            <SplideSlide key={index}>
+              <div className={styles.imgWrapper}>
+                <img
+                  className={cn(styles.imageStyle, {
+                    [styles.contain]: item.image.objectFit === 'contain',
+                    [styles.cover]: item.image.objectFit === 'cover'
+                  })}
+                  src={item.image.url} alt={item.image.name ?? ''}
+                />
+              </div>
+          </SplideSlide>
+          ))}
+        </Splide>
+          {settings.controls.isActive && (
             <>
-              <div
-                className={styles.controlBase}
-                style={{ left: 12 }}
-                onClick={(e) => { e.stopPropagation(); setCurrentIndex((currentIndex - 1 + content.length) % content.length); }}
-                aria-label='Previous'>
-                ‹
+              <div 
+                className={cn(styles.arrow, {[styles.arrowVertical]: settings.slider.direction === 'vert' })}
+                style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
+              >
+                <button
+                   className={styles.arrowInner}
+                   style={{
+                     transform: `translate(${scalingValue(settings.controls.offset.x)}, ${scalingValue(settings.controls.offset.y * (settings.slider.direction === 'horiz' ? 1 : -1))}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                   }}
+                  onClick={(e) => { handleArrowClick('-1'); }}
+                  >
+                    {settings.controls.arrowsImgUrl && (
+                      <SvgImage
+                        url={settings.controls.arrowsImgUrl}
+                        fill={settings.controls.color}
+                        hoverFill={settings.controls.hover}
+                        className={cn(styles.arrowImg, styles.mirror)}
+                      />
+                    )}
+                  </button>
               </div>
               <div
-                className={styles.controlBase}
-                style={{ right: 12 }}
-                onClick={(e) => { e.stopPropagation(); setCurrentIndex((currentIndex + 1) % content.length); }}
-                aria-label='Next'>
-                ›
+                className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: settings.slider.direction === 'vert'})}
+                style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
+              >              
+                <button
+                  className={styles.arrowInner}
+                  style={{
+                    transform: `translate(${scalingValue(settings.controls.offset.x * (settings.slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(settings.controls.offset.y)}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                  }}
+                  onClick={(e) => { handleArrowClick('+1');}}
+                  aria-label='Next'
+                >
+                  {settings.controls.arrowsImgUrl && (
+                    <SvgImage
+                      url={settings.controls.arrowsImgUrl}
+                      fill={settings.controls.color}
+                      hoverFill={settings.controls.hover}
+                      className={styles.arrowImg}
+                    />
+                  )}
+                </button>
               </div>
             </>
           )}
-        </div>
+        {/* </div> */}
+        {settings.thumbnail.isActive && (
+          <div
+            className={cn(styles.thumbsContainer)}
+            style={{
+              gap: `${settings.thumbnail.grid.gap}px`,
+              height: `${settings.thumbnail.grid.height}px`,
+            }}
+          >
+            {content.map((item, index) => {
+              const isActive = index === currentIndex;
+              return (
+                <button
+                  key={`${item.image.url}-${index}`}
+                  className={styles.thumbItem}
+                  style={{
+                    transform: `scale(${isActive ? settings.thumbnail.activeScale : 1})`,
+                    height: '100%',
+                    opacity: isActive ? settings.thumbnail.activeOpacity : settings.thumbnail.opacity,
+                    ['--thumb-hover' as string]: settings.thumbnail.activeOpacity,
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex(index);
+                    lightboxRef.current?.go(index);
+                  }}
+                >
+                  <img
+                    src={item.image.url}
+                    alt={item.image.name ?? ''}
+                    className={styles.thumbImage}
+                    style={{ objectFit: settings.thumbnail.fit === 'cover' ? 'cover' : 'contain' }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>,
     document.getElementById(portalId)!
@@ -170,15 +273,19 @@ type LightboxSettings = {
   cover: {
     url: string;
   },
-  transition: {
-    type: 'slide' | 'fade in';
+  appear: {
+    type: 'slide' | 'fade';
     duration: string;
     direction: 'top' | 'bottom' | 'left' | 'right';
     repeat: 'close' | 'loop';
   };
   triggers: Triggers;
-  direction: 'horiz' | 'vert';
+  slider: {
+    type: 'slide' | 'fade' | 'scale';
+    direction: 'horiz' | 'vert';
+  };
   thumbnail: {
+    isActive: boolean;
     position: Alignment;
     fit: 'cover' | 'fit';
     align: 'top' | 'center' | 'bottom';

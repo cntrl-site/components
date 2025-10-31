@@ -6,9 +6,9 @@ const settings = {
   "cover": {
     "url": "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png"
   },
-  "transition": {
+  "appear": {
     "type": "slide",
-    "duration": "500ms",
+    "duration": "2000ms",
     "direction": "left",
     "repeat": "close"
   },
@@ -17,8 +17,12 @@ const settings = {
     "switch": "image",
     "duration": "500ms"
   },
-  "direction": "horiz",
+  "slider": {
+    "type": "fade",
+    "direction": "horiz"
+  },
   "thumbnail": {
+    "isActive": true,
     "position": "bottom-center",
     "fit": "cover",
     "align": "center",
@@ -28,18 +32,18 @@ const settings = {
       "gap": 8
     },
     "offset": { "x": 0, "y": 0 },
-    "opacity": 1,
+    "opacity": 0.5,
     "activeScale": 1,
     "activeOpacity": 1
   },
   "layout": {
     "position": "middle-center",
     "offset": { "x": 0, "y": 0 },
-    "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+    "padding": { "top": 200, "right": 0, "bottom": 200, "left": 0 }
   },
   "controls": {
     "isActive": true,
-    "arrowsImgUrl": null,
+    "arrowsImgUrl": "https://cdn.cntrl.site/projects/01GJ2SPDSH73MC92WW7ZA2CWBY/articles-assets/01K8JFX7BWTRKEBAEC5GN0V47B.png",
     "offset": { "x": 0, "y": 0 },
     "scale": 100,
     "color": "#000000",
@@ -47,7 +51,7 @@ const settings = {
   },
   "area": {
     "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
-    "color": "rgba(0,0,0,0.5)",
+    "color": "rgba(0,0,0,0.8)",
     "blur": 5,
     "closeIconUrl": null,
     "closeIconAlign": "top-right",
@@ -90,7 +94,7 @@ const styles = {
 const content = [
   {
     "image": {
-      "objectFit": "cover",
+      "objectFit": "contain",
       "url": "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png",
       "name": "Slider-1.png"
     },
@@ -107,7 +111,7 @@ const content = [
   },
   {
     "image": {
-      "objectFit": "cover",
+      "objectFit": "contain",
       "url": "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMTZA3RYMXKF0M095D6JD.png",
       "name": "Slider-2.png"
     },
@@ -124,7 +128,7 @@ const content = [
   },
   {
     "image": {
-      "objectFit": "cover",
+      "objectFit": "contain",
       "url": "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMVSCMPVJBG2WF5KJZYHZ.png",
       "name": "Slider-3.png"
     },

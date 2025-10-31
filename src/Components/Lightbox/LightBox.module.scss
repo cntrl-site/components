@@ -11,42 +11,135 @@
 
 .contentStyle {
   position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-  width: auto;
-  height: auto;
+  width: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  height: 100vh;
   overflow: auto;
   background: transparent;
+  box-sizing: border-box;
 };
+
 .stageStyle {
   position: relative;
-  width: 90vw;
-  height: 90vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 };
+
 .imageStyle {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  display: block;
   cursor: pointer;
   background-color: transparent;
 };
-.controlBase {
-  @include size(width, 48);
-  @include size(height, 48);
-  @include size(font-size, 42);
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+
+.sliderItem {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  user-select: none;
+  width: 100%;
+  height: 100%;
+}
+
+.imgWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.contain {
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+:global(.splide),
+:global(.splide__track)
+{
+  height: 100%;
+}
+
+.arrow {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  border: none;
+  background-color: transparent;
+  top: 50%;
+  @include size(left, 20);
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  @include size(width, 30);
+  @include size(height, 30);
+  &.arrowVertical {
+    left: 50%;
+    @include size(top, 20);
+    transform: translate(-50%, -50%);
+  }
 };
+
+.nextArrow {
+  left: unset;
+  @include size(right, 20);
+  transform: translate(50%, -50%);
+  &.arrowVertical {
+    left: 50%;
+    right: unset;
+    top: unset;
+    @include size(bottom, 20);
+    transform: translate(-50%, 50%);
+  }
+}
+
+.arrowInner {
+  all: unset;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  &:hover {
+    .arrowIcon path {
+      fill: var(--arrow-hover-color) !important;
+    }
+  }
+}
+.arrowImg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.mirror {
+  transform: translate(-50%, -50%) scaleX(-1) !important;
+}
+
+.arrowVertical {
+  &.mirror {
+    transform: translate(-50%, -50%) scaleY(-1) !important;
+  }
+}
 
 .counterStyle {
   @include size(bottom, 12);
@@ -56,3 +149,71 @@
   color: #fff;
   opacity: 0.85;
 };
+
+.thumbsContainerVertical {
+  flex-direction: column;
+}
+
+.thumbsContainer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: auto;
+  @include size(bottom, 12);
+}
+
+.thumbItem {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease, opacity 0.1s ease, box-shadow 0.1s ease;
+  &:hover {
+    opacity: var(--thumb-hover) !important;
+  }
+}
+
+.thumbImage {
+  display: block;
+  height: 100%;
+  @include size(width, 80);
+}
+
+
+@keyframes lbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fadeIn {
+  animation-name: lbFadeIn;
+}
+
+@keyframes lbSlideInLeft {
+  from { transform: translateX(100%);  }
+  to { transform: translateX(0); }
+}
+@keyframes lbSlideInRight {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes lbSlideInTop {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes lbSlideInBottom {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+.slideInLeft { animation-name: lbSlideInLeft; }
+.slideInRight { animation-name: lbSlideInRight; }
+.slideInTop { animation-name: lbSlideInTop; }
+.slideInBottom { animation-name: lbSlideInBottom; }
