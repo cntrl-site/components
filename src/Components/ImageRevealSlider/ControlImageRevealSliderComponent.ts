@@ -196,6 +196,7 @@ export const ControlImageRevealSliderComponent = {
               type: 'object',
               display: {
                 type: 'media-input',
+                label: 'Image',
                 isObjectFitEditable: false,
                 minWidth: 48,
                 defaultWidth: 108,
@@ -219,6 +220,7 @@ export const ControlImageRevealSliderComponent = {
               type: 'string',
               display: {
                 type: 'text-input',
+                label: 'URL',
                 placeholder: 'Enter link...',
                 minWidth: 100,
                 defaultWidth: 300,
