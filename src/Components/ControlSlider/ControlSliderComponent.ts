@@ -343,7 +343,7 @@ export const ControlSliderComponent = {
               display: {
                 type: 'media-input',
                 label: 'Image',
-                minWidth: 48,
+                minWidth: 58,
                 defaultWidth: 108,
                 maxWidth: 108
               },
@@ -368,7 +368,7 @@ export const ControlSliderComponent = {
                 placeholder: 'Add Caption...',
                 minWidth: 100,
                 defaultWidth: 300,
-                maxWidth: 500
+                maxWidth: 550
               }
             },
           },
