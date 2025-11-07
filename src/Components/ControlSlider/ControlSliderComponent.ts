@@ -366,7 +366,7 @@ export const ControlSliderComponent = {
                 type: 'rich-text',
                 label: 'Description',
                 placeholder: 'Add Caption...',
-                minWidth: 100,
+                minWidth: 300,
                 maxWidth: 550
               }
             },

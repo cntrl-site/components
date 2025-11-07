@@ -222,7 +222,7 @@ export const ControlImageRevealSliderComponent = {
                 type: 'text-input',
                 label: 'URL',
                 placeholder: 'Enter link...',
-                minWidth: 100,
+                minWidth: 300,
                 maxWidth: 550
               }
             }
