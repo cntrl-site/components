@@ -334,6 +334,7 @@ export const ControlSliderComponent = {
         type: 'array',
         settings: {
           addItemFromFileExplorer: true,
+          defaultWidth: 500
         },
         items: {
           type: 'object',
@@ -344,7 +345,6 @@ export const ControlSliderComponent = {
                 type: 'media-input',
                 label: 'Image',
                 minWidth: 58,
-                defaultWidth: 108,
                 maxWidth: 108
               },
               properties: {
@@ -366,8 +366,7 @@ export const ControlSliderComponent = {
                 type: 'rich-text',
                 label: 'Description',
                 placeholder: 'Add Caption...',
-                minWidth: 100,
-                defaultWidth: 300,
+                minWidth: 300,
                 maxWidth: 550
               }
             },
