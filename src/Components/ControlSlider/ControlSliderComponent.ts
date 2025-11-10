@@ -133,7 +133,7 @@ export const ControlSliderComponent = {
                 },
               },
               color: {
-                name: 'color',
+                title: 'color',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -141,7 +141,7 @@ export const ControlSliderComponent = {
                 }
               },
               hover: {
-                name: 'hover',
+                title: 'hover',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -186,7 +186,7 @@ export const ControlSliderComponent = {
               },
               scale: {
                 type: 'number',
-                name: 'scale',
+                title: 'scale',
                 min: 10,
                 max: 400,
                 display: {
@@ -205,7 +205,7 @@ export const ControlSliderComponent = {
                 }
               },
               hover: {
-                name: 'hover',
+                title: 'hover',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
