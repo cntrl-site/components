@@ -7,7 +7,7 @@ const settings = {
     "url": "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png"
   },
   "appear": {
-    "type": "slide",
+    "type": "slide in",
     "duration": "2000ms",
     "direction": "right",
     "repeat": "close"
@@ -33,8 +33,10 @@ const settings = {
     },
     "offset": { "x": 0, "y": 0 },
     "opacity": 0.5,
-    "activeScale": 1,
-    "activeOpacity": 1
+    "activeState": {
+      "scale": 1,
+      "opacity": 1
+    }
   },
   "layout": {
     "position": "middle-center",
@@ -149,8 +151,8 @@ const content = [
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <div id="portal-target"></div>
-    <div style={{ width: '400px', height: '500px' }}>
+    {/* <div style={{ width: '400px', height: '500px' }}>
       <LightboxGallery settings={settings} content={content} styles={styles} portalId="portal-target" />
-    </div>
+    </div> */}
   </React.StrictMode>
 );

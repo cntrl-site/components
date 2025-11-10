@@ -25,19 +25,12 @@ type LightboxGalleryProps = {
   portalId: string;
 };
 
-export const LightboxGallery: React.FC<LightboxGalleryProps> = ({
-  settings,
-  content,
-  styles,
-  portalId
-}) => {
+export function LightboxGallery({ settings, content, styles, portalId }: LightboxGalleryProps) {
   const [open, setOpen] = React.useState(false);
   const { url: coverUrl } = settings.cover;
 
-  if (!coverUrl) return null;
-
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       <img
         src={coverUrl}
         alt='Cover'
@@ -119,12 +112,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     lightboxRef.current?.go(dir);
   };
 
-  if (!isOpen) return null;
-
   const appearDurationMs = settings.appear?.duration ? parseInt(settings.appear.duration) : 300;
   const appearClass = (() => {
-    if (settings.appear?.type === 'fade') return styles.fadeIn;
-    if (settings.appear?.type === 'slide') {
+    if (settings.appear?.type === 'fade in') return styles.fadeIn;
+    if (settings.appear?.type === 'slide in') {
       switch (settings.appear.direction) {
         case 'left':
           return styles.slideInLeft;
@@ -140,6 +131,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     }
     return styles.fadeIn;
   })();
+
+  if (!isOpen) return null;
 
   return createPortal(
     <div 
@@ -262,10 +255,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   key={`${item.image.url}-${index}`}
                   className={styles.thumbItem}
                   style={{
-                    transform: `scale(${isActive ? settings.thumbnail.activeScale : 1})`,
+                    transform: `scale(${isActive ? settings.thumbnail.activeState.scale : 1})`,
                     height: '100%',
-                    opacity: isActive ? settings.thumbnail.activeOpacity : settings.thumbnail.opacity,
-                    ['--thumb-hover' as string]: settings.thumbnail.activeOpacity,
+                    opacity: isActive ? settings.thumbnail.activeState.opacity : settings.thumbnail.opacity,
+                    ['--thumb-hover' as string]: settings.thumbnail.activeState.opacity,
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -341,7 +334,7 @@ type LightboxSettings = {
     url: string;
   },
   appear: {
-    type: 'slide' | 'fade';
+    type: 'slide in' | 'fade in' | 'mix';
     duration: string;
     direction: 'top' | 'bottom' | 'left' | 'right';
     repeat: 'close' | 'loop';
@@ -363,8 +356,10 @@ type LightboxSettings = {
     };
     offset: Offset;
     opacity: number;
-    activeScale: number;
-    activeOpacity: number;
+    activeState: {
+      scale: number;
+      opacity: number;
+    }
   }
   layout: {
     position: Alignment;

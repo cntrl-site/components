@@ -1,7 +1,8 @@
 import { title } from 'process';
 import { LightboxGallery } from './Lightbox';
+import { Component } from '../../types/Component';
 
-export const LightboxComponent = {
+export const LightboxComponent: Component = {
   element: LightboxGallery,
   id: 'lightbox',
   name: 'Lightbox',
@@ -45,7 +46,7 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Slide In', 'Fade In', 'Mix']
+                enum: ['slide in', 'fade in', 'mix']
               },
               duration: {
                 type: 'string',
@@ -70,7 +71,7 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Close', 'Loop']
+                enum: ['close', 'loop']
               }
             }
           },
@@ -85,14 +86,14 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Click', 'Drag', 'Scroll']
+                enum: ['click', 'drag', 'scroll']
               },
               switch: {
                 type: 'string',
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Image', '50/50']
+                enum: ['image', '50/50']
               },
               duration: {
                 type: 'string',
@@ -115,7 +116,7 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Slide', 'Fade', 'Scale']
+                enum: ['slide', 'fade', 'scale']
               },
               direction: {
                 type: 'string',
@@ -123,7 +124,7 @@ export const LightboxComponent = {
                   visible: false,
                   type: 'ratio-group'
                 },
-                enum: ['Horiz', 'Vert']
+                enum: ['horiz', 'vert']
               }
             }
           },
@@ -151,7 +152,7 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Cover', 'Fit']
+                enum: ['cover', 'fit']
               },
               align: {
                 type: 'string',
@@ -159,7 +160,7 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Top', 'Center', 'Bottom']
+                enum: ['top', 'center', 'bottom']
               },
               triggers: {
                 type: 'string',
@@ -167,7 +168,7 @@ export const LightboxComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['Click', 'Hover']
+                enum: ['click', 'hover']
               },
               grid: {
                 type: 'object',
@@ -181,7 +182,6 @@ export const LightboxComponent = {
                     label: 'H',
                     display: {
                       type: 'numeric-input',
-                      visible: false
                     },
                   },
                   gap: {
@@ -189,8 +189,7 @@ export const LightboxComponent = {
                     label: 'Gap',
                     display: {
                       type: 'numeric-input',
-                      visible: false
-                },
+                    },
                   }
                 }
               },
@@ -462,26 +461,26 @@ export const LightboxComponent = {
             url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png'
           },
           appear: {
-            type: 'Slide In',
+            type: 'slide in',
             duration: '1000ms',
             direction: 'right',
-            repeat: 'Close'
+            repeat: 'close'
           },
           triggers: {
-            type: 'Click',
-            switch: 'Image',
+            type: 'click',
+            switch: 'image',
             duration: '2000ms'
           },
           slider: {
-            type: 'Fade',
-            direction: 'Horiz'
+            type: 'fade',
+            direction: 'horiz'
           },
           thumbnail: {
             isActive: true,
             position: 'bottom-center',
-            fit: 'Cover',
-            align: 'Center',
-            triggers: 'Click',
+            fit: 'cover',
+            align: 'center',
+            triggers: 'click',
             grid: {
               height: 60,
               gap: 8
@@ -524,7 +523,7 @@ export const LightboxComponent = {
           {
             if: {
               name: 'appear.type',
-              value: 'Slide In'
+              value: 'slide in'
             },
             then: {
               value: true,
