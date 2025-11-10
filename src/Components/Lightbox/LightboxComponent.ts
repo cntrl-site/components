@@ -536,6 +536,10 @@ export const LightboxComponent = {
       content: {
         layoutBased: false,
         type: 'array',
+        settings: {
+          addItemFromFileExplorer: true,
+          defaultWidth: 500
+        },
         items: {
           type: 'object',
           properties: {
@@ -543,6 +547,9 @@ export const LightboxComponent = {
               type: 'object',
               display: {
                 type: 'media-input',
+                label: 'Image',
+                minWidth: 58,
+                maxWidth: 108
               },
               properties: {
                 url: {
@@ -561,16 +568,19 @@ export const LightboxComponent = {
             imageCaption: {
               display: {
                 type: 'rich-text',
+                label: 'Description',
                 placeholder: 'Add Caption...',
+                minWidth: 300,
+                maxWidth: 550
               }
-            }
+            },
           },
           required: ['image']
         },
         default: [
           {
             image: {
-              objectFit: 'contain',
+              objectFit: 'cover',
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png',
               name: 'Slider-1.png'
             },
@@ -583,7 +593,7 @@ export const LightboxComponent = {
           },
           {
             image: {
-              objectFit: 'contain',
+              objectFit: 'cover',
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMTZA3RYMXKF0M095D6JD.png',
               name: 'Slider-2.png'
             },
@@ -596,7 +606,7 @@ export const LightboxComponent = {
           },
           {
             image: {
-              objectFit: 'contain',
+              objectFit: 'cover',
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMVSCMPVJBG2WF5KJZYHZ.png',
               name: 'Slider-3.png'
             },

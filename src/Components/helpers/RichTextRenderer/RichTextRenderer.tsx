@@ -31,6 +31,7 @@ export const RichTextRenderer: FC<Props> = ({ content }) => {
 
 function getLeafCss(leaf: any): CSSProperties {
   return {
+    ...(leaf.fontFamily && { fontFamily: leaf.fontFamily }),
     ...(leaf.fontWeight && { fontWeight: leaf.fontWeight }),
     ...(leaf.fontStyle && { fontStyle: leaf.fontStyle }),
     ...(leaf.textDecoration && { textDecoration: leaf.textDecoration }),

@@ -332,6 +332,10 @@ export const ControlSliderComponent = {
       content: {
         layoutBased: false,
         type: 'array',
+        settings: {
+          addItemFromFileExplorer: true,
+          defaultWidth: 500
+        },
         items: {
           type: 'object',
           properties: {
@@ -339,6 +343,9 @@ export const ControlSliderComponent = {
               type: 'object',
               display: {
                 type: 'media-input',
+                label: 'Image',
+                minWidth: 58,
+                maxWidth: 108
               },
               properties: {
                 url: {
@@ -357,19 +364,10 @@ export const ControlSliderComponent = {
             imageCaption: {
               display: {
                 type: 'rich-text',
+                label: 'Description',
                 placeholder: 'Add Caption...',
-              }
-            },
-            link: {
-              type: 'object',
-              display: {
-                type: 'text-input',
-                placeholder: 'Add Caption...',
-              },
-              properties: {
-                text: {
-                  type: 'string'
-                },
+                minWidth: 300,
+                maxWidth: 550
               }
             },
           },
