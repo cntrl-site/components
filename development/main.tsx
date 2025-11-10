@@ -58,9 +58,10 @@ const settings = {
     "closeIconOffset": { "x": 12, "y": 12 }
   },
   "caption": {
+    "isActive": true,
     "alignment": "middle-center",
-    "color": "#000000",
-    "offset": { "x": 0, "y": 0 },
+    "color": "#FAC000",
+    "offset": { "x": 100, "y": 100 },
     "hover": "#cccccc"
   }
 };
@@ -103,7 +104,7 @@ const content = [
         "type": "paragraph",
         "children": [
           {
-            "text": ""
+            "text": "old brick 1"
           }
         ]
       }
@@ -120,7 +121,7 @@ const content = [
         "type": "paragraph",
         "children": [
           {
-            "text": ""
+            "text": "new york city 2"
           }
         ]
       }
@@ -137,7 +138,7 @@ const content = [
         "type": "paragraph",
         "children": [
           {
-            "text": ""
+            "text": "broadway 3"
           }
         ]
       }

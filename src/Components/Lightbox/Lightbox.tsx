@@ -6,6 +6,7 @@ import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import cn from 'classnames';
 import '@splidejs/react-splide/css';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
+import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -187,54 +188,65 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           </SplideSlide>
           ))}
         </Splide>
-          {settings.controls.isActive && (
-            <>
-              <div 
-                className={cn(styles.arrow, {[styles.arrowVertical]: settings.slider.direction === 'vert' })}
-                style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
-              >
-                <button
-                   className={styles.arrowInner}
-                   style={{
-                     transform: `translate(${scalingValue(settings.controls.offset.x)}, ${scalingValue(settings.controls.offset.y * (settings.slider.direction === 'horiz' ? 1 : -1))}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
-                   }}
-                  onClick={(e) => { handleArrowClick('-1'); }}
-                  >
-                    {settings.controls.arrowsImgUrl && (
-                      <SvgImage
-                        url={settings.controls.arrowsImgUrl}
-                        fill={settings.controls.color}
-                        hoverFill={settings.controls.hover}
-                        className={cn(styles.arrowImg, styles.mirror)}
-                      />
-                    )}
-                  </button>
-              </div>
-              <div
-                className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: settings.slider.direction === 'vert'})}
-                style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
-              >              
-                <button
+        {settings.controls.isActive && (
+          <>
+            <div 
+              className={cn(styles.arrow, {[styles.arrowVertical]: settings.slider.direction === 'vert' })}
+              style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
+            >
+              <button
                   className={styles.arrowInner}
                   style={{
-                    transform: `translate(${scalingValue(settings.controls.offset.x * (settings.slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(settings.controls.offset.y)}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                    transform: `translate(${scalingValue(settings.controls.offset.x)}, ${scalingValue(settings.controls.offset.y * (settings.slider.direction === 'horiz' ? 1 : -1))}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                   }}
-                  onClick={(e) => { handleArrowClick('+1');}}
-                  aria-label='Next'
+                onClick={(e) => { handleArrowClick('-1'); }}
                 >
                   {settings.controls.arrowsImgUrl && (
                     <SvgImage
                       url={settings.controls.arrowsImgUrl}
                       fill={settings.controls.color}
                       hoverFill={settings.controls.hover}
-                      className={styles.arrowImg}
+                      className={cn(styles.arrowImg, styles.mirror)}
                     />
                   )}
                 </button>
-              </div>
-            </>
-          )}
-        {/* </div> */}
+            </div>
+            <div
+              className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: settings.slider.direction === 'vert'})}
+              style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
+            >              
+              <button
+                className={styles.arrowInner}
+                style={{
+                  transform: `translate(${scalingValue(settings.controls.offset.x * (settings.slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(settings.controls.offset.y)}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                }}
+                onClick={(e) => { handleArrowClick('+1');}}
+                aria-label='Next'
+              >
+                {settings.controls.arrowsImgUrl && (
+                  <SvgImage
+                    url={settings.controls.arrowsImgUrl}
+                    fill={settings.controls.color}
+                    hoverFill={settings.controls.hover}
+                    className={styles.arrowImg}
+                  />
+                )}
+              </button>
+            </div>
+          </>
+        )}
+        {/* Close button */}
+        {settings.area.closeIconUrl && (
+          <button className={styles.closeButton} style={{ top: settings.area.closeIconOffset.y, left: settings.area.closeIconOffset.x }} onClick={onClose}>
+            <SvgImage url={settings.area.closeIconUrl} fill={settings.area.color} />
+          </button>
+        )}
+        {/* Caption */}
+        {settings.caption.isActive && (
+          <div className={styles.caption} style={{ top: settings.caption.offset.y, left: settings.caption.offset.x, color: settings.caption.color }}>
+            <RichTextRenderer content={content[currentIndex].imageCaption} />
+          </div>
+        )}
         {settings.thumbnail.isActive && (
           <div
             className={cn(styles.thumbsContainer)}
@@ -304,6 +316,7 @@ type LightboxControls = {
 type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
 type Caption = {
+  isActive: boolean;
   alignment: Alignment;
   color: string;
   offset: Offset;
