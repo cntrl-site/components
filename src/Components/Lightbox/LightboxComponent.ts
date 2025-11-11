@@ -23,7 +23,7 @@ export const LightboxComponent: Component = {
         properties: {
           cover: {
             title: 'COVER',
-            icon: 'image',
+            icon: 'cover',
             tooltip: 'Cover Image',
             type: 'object',
             properties: {
@@ -130,7 +130,7 @@ export const LightboxComponent: Component = {
           },
           thumbnail: {
             title: 'THUMB',
-            icon: 'pagination',
+            icon: 'thumbnail',
             tooltip: 'Thumbnail',
             type: 'object',
             properties: {
@@ -361,7 +361,7 @@ export const LightboxComponent: Component = {
           },
           area: {
             title: 'AREA',
-            icon: 'background',
+            icon: 'area',
             tooltip: 'Area',
             type: 'object',
             properties: {
@@ -437,14 +437,6 @@ export const LightboxComponent: Component = {
                   }
                 }
               },
-              color: {
-                title: 'Color',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                }
-              },
               hover: {
                 title: 'Hover',
                 type: 'string',
@@ -515,7 +507,6 @@ export const LightboxComponent: Component = {
           caption: {
             alignment: 'middle-center',
             offset: { x: 0, y: 0 },
-            color: '#000000',
             hover: '#cccccc'
           }
         },

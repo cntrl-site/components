@@ -236,7 +236,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         )}
         {/* Caption */}
         {settings.caption.isActive && (
-          <div className={styles.caption} style={{ top: settings.caption.offset.y, left: settings.caption.offset.x, color: settings.caption.color }}>
+          <div className={styles.caption} style={{ top: settings.caption.offset.y, left: settings.caption.offset.x }}>
             <RichTextRenderer content={content[currentIndex].imageCaption} />
           </div>
         )}
@@ -311,7 +311,6 @@ type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'midd
 type Caption = {
   isActive: boolean;
   alignment: Alignment;
-  color: string;
   offset: Offset;
   hover: string;
 };
