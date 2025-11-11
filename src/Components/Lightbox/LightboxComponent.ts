@@ -166,7 +166,8 @@ export const LightboxComponent: Component = {
                 type: 'string',
                 title: 'Triggers',
                 display: {
-                  type: 'ratio-group'
+                  type: 'ratio-group',
+                  direction: 'horizontal',
                 },
                 enum: ['click', 'hover']
               },
