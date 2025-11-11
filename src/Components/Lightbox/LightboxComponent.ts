@@ -169,7 +169,7 @@ export const LightboxComponent: Component = {
                   type: 'ratio-group',
                   direction: 'horizontal',
                 },
-                enum: ['click', 'hover']
+                enum: ['clk', 'hov']
               },
               grid: {
                 type: 'object',
