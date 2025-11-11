@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef } from 'react';
+import React, { FC, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './LightBox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
@@ -26,15 +26,30 @@ type LightboxGalleryProps = {
 };
 
 export function LightboxGallery({ settings, content, styles, portalId }: LightboxGalleryProps) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
+  const [coverDimensions, setCoverDimensions] = useState<Dimensions | undefined>(undefined);
   const { url: coverUrl } = settings.cover;
+  useEffect(() => {
+    if (!wrapperRef) return;
+    const observer = new ResizeObserver((entries) => {
+      if (!wrapperRef) return;
+      const [wrapper] = entries;
+      setCoverDimensions({
+        width: Math.round(wrapper.contentRect.width),
+        height: Math.round(wrapper.contentRect.height)
+      });
+    });
+    observer.observe(wrapperRef);
+    return () => observer.unobserve(wrapperRef);
+  }, [wrapperRef]);
 
   return (
-    <div>
+    <div ref={setWrapperRef}>
       <img
         src={coverUrl}
         alt='Cover'
-        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+        style={{ width: coverDimensions?.width ? coverDimensions.width : '100%', height: coverDimensions?.height ? coverDimensions.height : '100%', cursor: 'pointer' }}
         onClick={() => setOpen(true)}
       />
       <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} />
@@ -378,4 +393,9 @@ type LightboxSettings = {
 };
 
 type LightboxStyles = {
+}
+
+type Dimensions = {
+  width: number;
+  height: number;
 }

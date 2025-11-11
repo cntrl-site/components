@@ -158,7 +158,7 @@ export const LightboxComponent: Component = {
                 type: 'string',
                 title: 'Align',
                 display: {
-                  type: 'ratio-group'
+                  type: 'align-grid'
                 },
                 enum: ['top', 'center', 'bottom']
               },
