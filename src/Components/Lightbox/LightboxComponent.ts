@@ -50,7 +50,7 @@ export const LightboxComponent: Component = {
               },
               duration: {
                 type: 'string',
-                label: 'hourglass-icon',
+                label: 'T',
                 display: {
                   type: 'step-selector',
                 },
@@ -97,7 +97,7 @@ export const LightboxComponent: Component = {
               },
               duration: {
                 type: 'string',
-                label: 'hourglass-icon',
+                label: 'T',
                 display: {
                   type: 'step-selector',
                 },
@@ -510,7 +510,7 @@ export const LightboxComponent: Component = {
             blur: 0,
             closeIconUrl: null,
             closeIconAlign: 'top-right',
-            closeIconOffset: { x: 12, y: 12 }
+            closeIconOffset: { x: 0, y: 0 }
           },
           caption: {
             alignment: 'middle-center',
@@ -544,9 +544,9 @@ export const LightboxComponent: Component = {
           properties: {
             image: {
               type: 'object',
+              label: 'Image',
               display: {
                 type: 'media-input',
-                label: 'Image',
                 minWidth: 58,
                 maxWidth: 108
               },
@@ -565,10 +565,10 @@ export const LightboxComponent: Component = {
               required: ['url', 'name']
             },
             imageCaption: {
+              label: 'Description',
+              placeholder: 'Add Caption...',
               display: {
                 type: 'rich-text',
-                label: 'Description',
-                placeholder: 'Add Caption...',
                 minWidth: 300,
                 maxWidth: 550
               }
