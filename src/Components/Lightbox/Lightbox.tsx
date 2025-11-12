@@ -131,7 +131,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     }
     return styles.fadeIn;
   })();
-
+  
   if (!isOpen) return null;
 
   return createPortal(

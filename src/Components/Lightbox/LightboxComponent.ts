@@ -121,7 +121,6 @@ export const LightboxComponent: Component = {
               direction: {
                 type: 'string',
                 display: {
-                  visible: false,
                   type: 'ratio-group'
                 },
                 enum: ['horiz', 'vert']
@@ -158,9 +157,10 @@ export const LightboxComponent: Component = {
                 type: 'string',
                 title: 'Align',
                 display: {
-                  type: 'align-vertical'
+                  type: 'alig-group',
+                  direction: 'horizontal',
                 },
-                enum: ['top', 'center', 'bottom']
+                enum: ['start', 'center', 'end']
               },
               triggers: {
                 type: 'string',
@@ -176,7 +176,7 @@ export const LightboxComponent: Component = {
                 title: 'Grid',
                 display: {
                   type: 'group'
-                },
+                },  
                 properties: {
                   height: {
                     type: 'number',
@@ -520,6 +520,36 @@ export const LightboxComponent: Component = {
             then: {
               value: true,
               name: 'properties.appear.properties.direction.display.visible',
+            }
+          },
+          {
+            if: {
+              name: 'slider.direction',
+              value: 'vert'
+            },
+            then: {
+              name: 'properties.thumbnail.properties.position.display.direction',
+              value: 'vertical'
+            }
+          },
+          {
+            if: {
+              name: 'triggers.type',
+              value: 'drag'
+            },
+            then: {
+              name: 'properties.triggers.properties.switch.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'triggers.type',
+              value: 'drag'
+            },
+            then: {
+              name: 'properties.triggers.properties.duration.display.visible',
+              value: false
             }
           }
         ]

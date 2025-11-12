@@ -8,9 +8,9 @@ const settings = {
   },
   "appear": {
     "type": "slide in",
-    "duration": "2000ms",
+    "duration": "500ms",
     "direction": "right",
-    "repeat": "close"
+    "repeat": "loop"
   },
   "triggers": {
     "type": "click",
@@ -18,8 +18,8 @@ const settings = {
     "duration": "2000ms"
   },
   "slider": {
-    "type": "slide",
-    "direction": "horiz"
+    "type": "scale",
+    "direction": "vert"
   },
   "thumbnail": {
     "isActive": true,
@@ -41,7 +41,7 @@ const settings = {
   "layout": {
     "position": "middle-center",
     "offset": { "x": 0, "y": 0 },
-    "padding": { "top": 200, "right": 0, "bottom": 200, "left": 0 }
+    "padding": { "top": 20, "right": 0, "bottom": 20, "left": 0 }
   },
   "controls": {
     "isActive": true,
@@ -151,8 +151,8 @@ const content = [
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <div id="portal-target"></div>
-    {/* <div style={{ width: '400px', height: '500px' }}>
+    <div style={{ width: '400px', height: '500px' }}>
       <LightboxGallery settings={settings} content={content} styles={styles} portalId="portal-target" />
-    </div> */}
+    </div>
   </React.StrictMode>
 );
