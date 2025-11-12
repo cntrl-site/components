@@ -19,6 +19,9 @@ export const ControlImageRevealSliderComponent = {
         layoutBased: true,
         type: 'object',
         properties: {
+          display: {
+            type: 'settings-block',
+          },
           imageSize: {
             title: 'IMG SIZE',
             icon: 'size',

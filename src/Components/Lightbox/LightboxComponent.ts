@@ -21,220 +21,208 @@ export const LightboxComponent: Component = {
         layoutBased: true,
         type: 'object',
         properties: {
-          cover: {
-            title: 'COVER',
-            icon: 'cover',
-            tooltip: 'Cover Image',
+          thumbnailBlock: {
+            display: {
+              type: 'settings-block',
+              triggerEvent: 'close'
+            },
             type: 'object',
             properties: {
-              url: {
-                type: 'string',
-                display: {
-                  type: 'settings-image-input',
-                }
-              }
-            }
-          },
-          appear: {
-            title: 'APPEAR',
-            icon: 'transition',
-            tooltip: 'Appearance',
-            type: 'object',
-            properties: {
-              type: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['slide in', 'fade in', 'mix']
-              },
-              duration: {
-                type: 'string',
-                label: 'T',
-                display: {
-                  type: 'step-selector',
-                },
-                enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
-              },
-              direction: {
-                type: 'string',
-                title: 'FROM',
-                display: {
-                  visible: false,
-                  type: 'direction-control'
-                },
-                enum: ['top', 'right', 'bottom', 'left']
-              },
-              repeat: {
-                type: 'string',
-                title: 'Repeat',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['close', 'loop']
-              }
-            }
-          },
-          triggers: {
-            title: 'TRIGGERS',
-            icon: 'target',
-            tooltip: 'Triggers',
-            type: 'object',
-            properties: {
-              type: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['click', 'drag', 'scroll']
-              },
-              switch: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['image', '50/50']
-              },
-              duration: {
-                type: 'string',
-                label: 'T',
-                display: {
-                  type: 'step-selector',
-                },
-                enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
-              }
-            }
-          },
-          slider: {
-            title: 'SLIDER',
-            icon: 'horizontal-resize',
-            tooltip: 'Slider',
-            type: 'object',
-            properties: {
-              type: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['slide', 'fade', 'scale']
-              },
-              direction: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['horiz', 'vert']
-              }
-            }
-          },
-          thumbnail: {
-            title: 'THUMB',
-            icon: 'thumbnail',
-            tooltip: 'Thumbnail',
-            type: 'object',
-            properties: {
-              isActive: {
-                type: 'boolean',
-                display: {
-                  type: 'setting-toggle',
+              cover: {
+                title: 'COVER',
+                icon: 'cover',
+                tooltip: 'Cover Image',
+                type: 'object',
+                properties: {
+                  url: {
+                    type: 'string',
+                    display: {
+                      type: 'settings-image-input',
+                    }
+                  }
                 }
               },
-              position: {
-                display: {
-                  type: 'align-grid',
-                },
-                type: 'string',
-                enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
-              },
-              fit: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['cover', 'fit']
-              },
-              align: {
-                type: 'string',
-                title: 'Align',
-                display: {
-                  type: 'alig-group',
-                  direction: 'horizontal',
-                },
-                enum: ['start', 'center', 'end']
+            }
+          },
+          lightboxBlock: {
+            display: {
+              type: 'settings-block',
+              triggerEvent: 'open'
+            },
+            type: 'object',
+            properties: {
+              appear: {
+                title: 'APPEAR',
+                icon: 'transition',
+                tooltip: 'Appearance',
+                type: 'object',
+                properties: {
+                  type: {
+                    type: 'string',
+                    display: {
+                      type: 'ratio-group'
+                    },
+                    enum: ['slide in', 'fade in', 'mix']
+                  },
+                  duration: {
+                    type: 'string',
+                    label: 'T',
+                    display: {
+                      type: 'step-selector',
+                    },
+                    enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
+                  },
+                  direction: {
+                    type: 'string',
+                    title: 'FROM',
+                    display: {
+                      visible: false,
+                      type: 'direction-control'
+                    },
+                    enum: ['top','left', 'right', 'bottom']
+                  },
+                  repeat: {
+                    type: 'string',
+                    title: 'Repeat',
+                    display: {
+                      type: 'ratio-group'
+                    },
+                    enum: ['close', 'loop']
+                  }
+                }
               },
               triggers: {
-                type: 'string',
-                title: 'Triggers',
-                display: {
-                  type: 'ratio-group',
-                  direction: 'horizontal',
-                },
-                enum: ['clk', 'hov']
-              },
-              grid: {
+                title: 'TRIGGERS',
+                icon: 'target',
+                tooltip: 'Triggers',
                 type: 'object',
-                title: 'Grid',
-                display: {
-                  type: 'group'
-                },  
                 properties: {
-                  height: {
-                    type: 'number',
-                    label: 'H',
+                  type: {
+                    type: 'string',
                     display: {
-                      type: 'numeric-input',
+                      type: 'ratio-group'
                     },
+                    enum: ['click', 'drag', 'scroll']
                   },
-                  gap: {
-                    type: 'number',
-                    label: 'Gap',
+                  switch: {
+                    type: 'string',
                     display: {
-                      type: 'numeric-input',
+                      type: 'ratio-group'
                     },
+                    enum: ['image', '50/50']
+                  },
+                  duration: {
+                    type: 'string',
+                    label: 'T',
+                    display: {
+                      type: 'step-selector',
+                    },
+                    enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
                   }
                 }
               },
-              offset: {
+              slider: {
+                title: 'SLIDER',
+                icon: 'horizontal-resize',
+                tooltip: 'Slider',
                 type: 'object',
-                display: {
-                  type: 'offset-controls',
-                },
                 properties: {
-                  x: {
-                    type: 'number',
+                  type: {
+                    type: 'string',
+                    display: {
+                      type: 'ratio-group'
+                    },
+                    enum: ['slide', 'fade', 'scale']
                   },
-                  y: {
-                    type: 'number',
+                  direction: {
+                    type: 'string',
+                    display: {
+                      type: 'ratio-group'
+                    },
+                    enum: ['horiz', 'vert']
                   }
                 }
               },
-              opacity: {
-                type: 'number',
-                title: 'Opacity',
-                label: 'icon:opacity',
-                min: 0,
-                max: 100,
-                step: 1,
-                display: {
-                  type: 'numeric-input',
-                },
-              },
-              activeState: {
+              thumbnail: {
+                title: 'THUMB',
+                icon: 'thumbnail',
+                tooltip: 'Thumbnail',
                 type: 'object',
-                title: 'ACTIVE',
-                display: {
-                  type: 'group'
-                },
                 properties: {
-                  scale: {
-                    type: 'number',
-                    title: 'Scale',
-                    min: 1,
-                    max: 2,
-                    step: 0.1,
+                  isActive: {
+                    type: 'boolean',
                     display: {
-                      type: 'range-control',
+                      type: 'setting-toggle',
+                    }
+                  },
+                  position: {
+                    display: {
+                      type: 'align-grid',
                     },
+                    type: 'string',
+                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
+                  },
+                  fit: {
+                    type: 'string',
+                    display: {
+                      type: 'ratio-group'
+                    },
+                    enum: ['cover', 'fit']
+                  },
+                  align: {
+                    type: 'string',
+                    title: 'Align',
+                    display: {
+                      type: 'align-group',
+                      direction: 'horizontal',
+                    },
+                    enum: ['start', 'center', 'end']
+                  },
+                  triggers: {
+                    type: 'string',
+                    title: 'Triggers',
+                    display: {
+                      type: 'ratio-group',
+                      direction: 'horizontal',
+                    },
+                    enum: ['clk', 'hov']
+                  },
+                  grid: {
+                    type: 'object',
+                    title: 'Grid',
+                    display: {
+                      type: 'group'
+                    },  
+                    properties: {
+                      height: {
+                        type: 'number',
+                        label: 'H',
+                        display: {
+                          type: 'numeric-input',
+                        },
+                      },
+                      gap: {
+                        type: 'number',
+                        label: 'Gap',
+                        display: {
+                          type: 'numeric-input',
+                        },
+                      }
+                    }
+                  },
+                  offset: {
+                    type: 'object',
+                    display: {
+                      type: 'offset-controls',
+                    },
+                    properties: {
+                      x: {
+                        type: 'number',
+                      },
+                      y: {
+                        type: 'number',
+                      }
+                    }
                   },
                   opacity: {
                     type: 'number',
@@ -246,269 +234,303 @@ export const LightboxComponent: Component = {
                     display: {
                       type: 'numeric-input',
                     },
+                  },
+                  activeState: {
+                    type: 'object',
+                    title: 'ACTIVE',
+                    display: {
+                      type: 'group'
+                    },
+                    properties: {
+                      scale: {
+                        type: 'number',
+                        title: 'Scale',
+                        min: 1,
+                        max: 2,
+                        step: 0.1,
+                        display: {
+                          type: 'range-control',
+                        },
+                      },
+                      opacity: {
+                        type: 'number',
+                        title: 'Opacity',
+                        label: 'icon:opacity',
+                        min: 0,
+                        max: 100,
+                        step: 1,
+                        display: {
+                          type: 'numeric-input',
+                        },
+                      }
+                    }
+                  }
+                }
+              },
+              layout: {
+                title: 'LAYOUT',
+                icon: 'layout',
+                tooltip: 'Layout',
+                type: 'object',
+                properties: {
+                  position: {
+                    display: {
+                      type: 'align-grid',
+                    },
+                    type: 'string',
+                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
+                  },
+                  offset: {
+                    type: 'object',
+                    display: {
+                      type: 'offset-controls',
+                    },
+                    properties: {
+                      x: {
+                        type: 'number',
+                      },
+                      y: {
+                        type: 'number',
+                      }
+                    }
+                  },
+                  padding: {
+                    type: 'object',
+                    title: 'Padding',
+                    display: {
+                      type: 'padding-controls',
+                    },
+                    properties: {
+                      top: {
+                        type: 'number',
+                      },
+                      left: {
+                        type: 'number',
+                      },
+                      right: {
+                        type: 'number',
+                      },
+                      bottom: {
+                        type: 'number',
+                      },
+                    }
+                  }
+                }
+              },
+              controls: {
+                title: 'CONTROLS',
+                icon: 'controls',
+                tooltip: 'Controls',
+                type: 'object',
+                properties: {
+                  isActive: {
+                    type: 'boolean',
+                    display: {
+                      type: 'setting-toggle',
+                    }
+                  },
+                  arrowsImgUrl: {
+                    type: ['string', 'null'],
+                    display: {
+                      type: 'settings-image-input',
+                    },
+                  },
+                  offset: {
+                    type: 'object',
+                    display: {
+                      type: 'offset-controls',
+                    },
+                    properties: {
+                      x: {
+                        type: 'number',
+                      },
+                      y: {
+                        type: 'number',
+                      }
+                    }
+                  },
+                  scale: {
+                    type: 'number',
+                    title: 'Scale',
+                    min: 0,
+                    max: 1,
+                    display: {
+                      type: 'range-control',
+                    },
+                  },
+                  color: {
+                    title: 'Color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  hover: {
+                    title: 'Hover',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    },
+                  }
+                },
+              },
+              area: {
+                title: 'AREA',
+                icon: 'area',
+                tooltip: 'Area',
+                type: 'object',
+                properties: {
+                  color: {
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  blur: {
+                    type: 'number',
+                    label: 'icon:blur',
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  closeIconUrl: {
+                    type: ['string', 'null'],
+                    title: 'CLOSE ICON',
+                    display: {
+                      type: 'settings-image-input',
+                    },
+                  },
+                  closeIconAlign: {
+                    display: {
+                      type: 'align-grid',
+                      direction: 'horizontal',
+                    },
+                    type: 'string',
+                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
+                  },
+                  closeIconOffset: {
+                    type: 'object',
+                    display: {
+                      type: 'offset-controls',
+                    },
+                    properties: {
+                      x: {
+                        type: 'number',
+                      },
+                      y: {
+                        type: 'number',
+                      }
+                    }
+                  }
+                }
+              },
+              caption: {
+                title: 'DESC',
+                icon: 'text-icon',
+                tooltip: 'Description',
+                type: 'object',
+                properties: {
+                  alignment: {
+                    type: 'string',
+                    display: {
+                      type: 'align-grid'
+                    },
+                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
+                  },
+                  offset: {
+                    type: 'object',
+                    display: {
+                      type: 'offset-controls',
+                    },
+                    properties: {
+                      x: {
+                        type: 'number',
+                      },
+                      y: {
+                        type: 'number',
+                      }
+                    }
+                  },
+                  hover: {
+                    title: 'Hover',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
                   }
                 }
               }
             }
           },
-          layout: {
-            title: 'LAYOUT',
-            icon: 'layout',
-            tooltip: 'Layout',
-            type: 'object',
-            properties: {
-              position: {
-                display: {
-                  type: 'align-grid',
-                },
-                type: 'string',
-                enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
-              },
-              offset: {
-                type: 'object',
-                display: {
-                  type: 'offset-controls',
-                },
-                properties: {
-                  x: {
-                    type: 'number',
-                  },
-                  y: {
-                    type: 'number',
-                  }
-                }
-              },
-              padding: {
-                type: 'object',
-                title: 'Padding',
-                display: {
-                  type: 'padding-controls',
-                },
-                properties: {
-                  top: {
-                    type: 'number',
-                  },
-                  right: {
-                    type: 'number',
-                  },
-                  bottom: {
-                    type: 'number',
-                  },
-                  left: {
-                    type: 'number',
-                  }
-                }
-              }
-            }
-          },
-          controls: {
-            title: 'CONTROLS',
-            icon: 'controls',
-            tooltip: 'Controls',
-            type: 'object',
-            properties: {
-              isActive: {
-                type: 'boolean',
-                display: {
-                  type: 'setting-toggle',
-                }
-              },
-              arrowsImgUrl: {
-                type: ['string', 'null'],
-                display: {
-                  type: 'settings-image-input',
-                },
-              },
-              offset: {
-                type: 'object',
-                display: {
-                  type: 'offset-controls',
-                },
-                properties: {
-                  x: {
-                    type: 'number',
-                  },
-                  y: {
-                    type: 'number',
-                  }
-                }
-              },
-              scale: {
-                type: 'number',
-                title: 'Scale',
-                min: 0,
-                max: 1,
-                display: {
-                  type: 'range-control',
-                },
-              },
-              color: {
-                title: 'Color',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                }
-              },
-              hover: {
-                title: 'Hover',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                },
-              }
-            },
-          },
-          area: {
-            title: 'AREA',
-            icon: 'area',
-            tooltip: 'Area',
-            type: 'object',
-            properties: {
-              color: {
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                }
-              },
-              blur: {
-                type: 'number',
-                label: 'icon:blur',
-                display: {
-                  type: 'numeric-input',
-                },
-              },
-              closeIconUrl: {
-                type: ['string', 'null'],
-                title: 'CLOSE ICON',
-                display: {
-                  type: 'settings-image-input',
-                },
-              },
-              closeIconAlign: {
-                display: {
-                  type: 'align-grid',
-                  direction: 'horizontal',
-                },
-                type: 'string',
-                enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
-              },
-              closeIconOffset: {
-                type: 'object',
-                display: {
-                  type: 'offset-controls',
-                },
-                properties: {
-                  x: {
-                    type: 'number',
-                  },
-                  y: {
-                    type: 'number',
-                  }
-                }
-              }
-            }
-          },
-          caption: {
-            title: 'DESC',
-            icon: 'text-icon',
-            tooltip: 'Description',
-            type: 'object',
-            properties: {
-              alignment: {
-                type: 'string',
-                display: {
-                  type: 'align-grid'
-                },
-                enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
-              },
-              offset: {
-                type: 'object',
-                display: {
-                  type: 'offset-controls',
-                },
-                properties: {
-                  x: {
-                    type: 'number',
-                  },
-                  y: {
-                    type: 'number',
-                  }
-                }
-              },
-              hover: {
-                title: 'Hover',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                }
-              }
-            }
-          }
         },
         default: {
-          cover: {
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png'
-          },
-          appear: {
-            type: 'slide in',
-            duration: '1000ms',
-            direction: 'right',
-            repeat: 'close'
-          },
-          triggers: {
-            type: 'click',
-            switch: 'image',
-            duration: '2000ms'
-          },
-          slider: {
-            type: 'fade',
-            direction: 'horiz'
-          },
-          thumbnail: {
-            isActive: true,
-            position: 'bottom-center',
-            fit: 'cover',
-            align: 'center',
-            triggers: 'click',
-            grid: {
-              height: 60,
-              gap: 8
+          thumbnailBlock: {
+            cover: {
+              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png'
             },
-            offset: { x: 0, y: 0 },
-            opacity: 100,
-            activeState: {
+          },
+          lightboxBlock: {
+            appear: {
+              type: 'slide in',
+              duration: '1000ms',
+              direction: 'right',
+              repeat: 'close'
+            },
+            triggers: {
+              type: 'click',
+              switch: 'image',
+              duration: '2000ms'
+            },
+            slider: {
+              type: 'fade',
+              direction: 'horiz'
+            },
+            thumbnail: {
+              isActive: true,
+              position: 'bottom-center',
+              fit: 'cover',
+              align: 'center',
+              triggers: 'click',
+              grid: {
+                height: 60,
+                gap: 8
+              },
+              offset: { x: 0, y: 0 },
+              opacity: 100,
+              activeState: {
+                scale: 1,
+                opacity: 100
+              }
+            },
+            layout: {
+              position: 'middle-center',
+              offset: { x: 0, y: 0 },
+              padding: { top: 0, right: 0, bottom: 0, left: 0 }
+            },
+            controls: {
+              isActive: true,
+              arrowsImgUrl: null,
+              offset: { x: 0, y: 0 },
               scale: 1,
-              opacity: 100
+              color: '#000000',
+              hover: '#cccccc'
+            },
+            area: {
+              color: 'rgba(0,0,0,0.9)',
+              blur: 0,
+              closeIconUrl: null,
+              closeIconAlign: 'top-right',
+              closeIconOffset: { x: 0, y: 0 }
+            },
+            caption: {
+              alignment: 'middle-center',
+              offset: { x: 0, y: 0 },
+              hover: '#cccccc'
             }
-          },
-          layout: {
-            position: 'middle-center',
-            offset: { x: 0, y: 0 },
-            padding: { top: 0, right: 0, bottom: 0, left: 0 }
-          },
-          controls: {
-            isActive: true,
-            arrowsImgUrl: null,
-            offset: { x: 0, y: 0 },
-            scale: 1,
-            color: '#000000',
-            hover: '#cccccc'
-          },
-          area: {
-            color: 'rgba(0,0,0,0.9)',
-            blur: 0,
-            closeIconUrl: null,
-            closeIconAlign: 'top-right',
-            closeIconOffset: { x: 0, y: 0 }
-          },
-          caption: {
-            alignment: 'middle-center',
-            offset: { x: 0, y: 0 },
-            hover: '#cccccc'
           }
         },
         displayRules: [
@@ -519,7 +541,7 @@ export const LightboxComponent: Component = {
             },
             then: {
               value: true,
-              name: 'properties.appear.properties.direction.display.visible',
+              name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
             }
           },
           {
@@ -528,7 +550,7 @@ export const LightboxComponent: Component = {
               value: 'vert'
             },
             then: {
-              name: 'properties.thumbnail.properties.position.display.direction',
+              name: 'properties.lightboxBlock.properties.thumbnail.properties.position.display.direction',
               value: 'vertical'
             }
           },
@@ -538,7 +560,7 @@ export const LightboxComponent: Component = {
               value: 'drag'
             },
             then: {
-              name: 'properties.triggers.properties.switch.display.visible',
+              name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
               value: false
             }
           },
@@ -548,7 +570,7 @@ export const LightboxComponent: Component = {
               value: 'drag'
             },
             then: {
-              name: 'properties.triggers.properties.duration.display.visible',
+              name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
               value: false
             }
           }

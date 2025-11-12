@@ -23,11 +23,21 @@ type LightboxGalleryProps = {
   content: LightboxImage[];
   styles: LightboxStyles;
   portalId: string;
+  activeEvent: 'close' | 'open';
 };
 
-export function LightboxGallery({ settings, content, styles, portalId }: LightboxGalleryProps) {
+export function LightboxGallery({ settings, content, styles, portalId, activeEvent }: LightboxGalleryProps) {
   const [open, setOpen] = React.useState(false);
-  const { url: coverUrl } = settings.cover;
+  const { url: coverUrl } = settings.thumbnailBlock.cover;
+
+  useEffect(() => {
+    if (activeEvent === 'close') {
+      setOpen(false);
+    }
+    if (activeEvent === 'open') {
+      setOpen(true);
+    }
+  }, [activeEvent]);
 
   return (
     <div>
@@ -45,7 +55,7 @@ export function LightboxGallery({ settings, content, styles, portalId }: Lightbo
 const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId }) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const lightboxRef = useRef<Splide | null>(null);
-
+  const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
@@ -60,11 +70,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     }
   };
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    if (settings.triggers.type === 'click' && settings.triggers.switch === 'image') {
+    if (triggers.type === 'click' && triggers.switch === 'image') {
       e.stopPropagation();
       lightboxRef.current?.go('+1');
     }
-    if (settings.triggers.type === 'click' && settings.triggers.switch === '50/50') {
+    if (triggers.type === 'click' && triggers.switch === '50/50') {
       e.stopPropagation();
       
       const img = e.currentTarget;
@@ -74,7 +84,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       const imgWidth = rect.width;
       const imgHeight = rect.height;
       let dir: '+1' | '-1';
-      if (settings.slider.direction === 'horiz') {
+      if (slider.direction === 'horiz') {
         dir = clickX < imgWidth / 2 ? '-1' : '+1';
       } else {
         dir = clickY < imgHeight / 2 ? '-1' : '+1';
@@ -112,11 +122,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     lightboxRef.current?.go(dir);
   };
 
-  const appearDurationMs = settings.appear?.duration ? parseInt(settings.appear.duration) : 300;
+  const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
   const appearClass = (() => {
-    if (settings.appear?.type === 'fade in') return styles.fadeIn;
-    if (settings.appear?.type === 'slide in') {
-      switch (settings.appear.direction) {
+    if (appear.type === 'fade in') return styles.fadeIn;
+    if (appear.type === 'slide in') {
+      switch (appear.direction) {
         case 'left':
           return styles.slideInLeft;
         case 'right':
@@ -137,13 +147,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   return createPortal(
     <div 
       className={cn(styles.backdropStyle, styles.fadeIn)} 
-      style={{ backgroundColor: settings.area.color, backdropFilter: `blur(${settings.area.blur}px)`, animationDuration: `${appearDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
+      style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${appearDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
       onClick={handleBackdropClick} 
       >
       <div
         className={cn(styles.contentStyle, appearClass)}
         style={{
-          padding: `${settings.layout.padding.top}px ${settings.layout.padding.right}px ${settings.layout.padding.bottom}px ${settings.layout.padding.left}px`,
+          padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`,
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both'
@@ -154,17 +164,20 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           ref={lightboxRef}
           options={{
             arrows: false,
-            speed: settings.triggers.duration ? parseInt(settings.triggers.duration) : 500,
-            direction: settings.slider.direction === 'horiz' || settings.slider.type === 'fade' ? 'ltr' : 'ttb',
+            speed: triggers.duration ? parseInt(triggers.duration) : 500,
+            direction: slider.direction === 'horiz' || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb',
             pagination: false,
-            drag: settings.triggers.type === 'drag',
+            drag: triggers.type === 'drag',
             perPage: 1,
             width: '100%',
             height: '100%',
-            type: settings.slider.type === 'fade' ? 'fade' : 'loop',
+            type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
             padding: 0,
             rewind: false
           }}
+          style={{
+            '--splide-speed': triggers.duration || '500ms'
+          } as React.CSSProperties}
         >
           {content.map((item, index) => (
             <SplideSlide key={index}>
@@ -172,7 +185,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                 <img
                   className={cn(styles.imageStyle, {
                     [styles.contain]: item.image.objectFit === 'contain',
-                    [styles.cover]: item.image.objectFit === 'cover'
+                    [styles.cover]: item.image.objectFit === 'cover',
+                    [styles.scaleSlide]: slider.type === 'scale'
                   })}
                   src={item.image.url} alt={item.image.name ?? ''}
                   onClick={onImageClick}
@@ -181,46 +195,46 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           </SplideSlide>
           ))}
         </Splide>
-        {settings.controls.isActive && (
+        {controls.isActive && (
           <>
             <div 
-              className={cn(styles.arrow, {[styles.arrowVertical]: settings.slider.direction === 'vert' })}
-              style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
+              className={cn(styles.arrow, {[styles.arrowVertical]: slider.direction === 'vert' })}
+              style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
             >
               <button
                   className={styles.arrowInner}
                   style={{
-                    transform: `translate(${scalingValue(settings.controls.offset.x)}, ${scalingValue(settings.controls.offset.y * (settings.slider.direction === 'horiz' ? 1 : -1))}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                    transform: `translate(${scalingValue(controls.offset.x)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1))}) scale(${controls.scale / 100}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                   }}
                 onClick={(e) => { handleArrowClick('-1'); }}
                 >
-                  {settings.controls.arrowsImgUrl && (
+                  {controls.arrowsImgUrl && (
                     <SvgImage
-                      url={settings.controls.arrowsImgUrl}
-                      fill={settings.controls.color}
-                      hoverFill={settings.controls.hover}
+                      url={controls.arrowsImgUrl}
+                      fill={controls.color}
+                      hoverFill={controls.hover}
                       className={cn(styles.arrowImg, styles.mirror)}
                     />
                   )}
                 </button>
             </div>
             <div
-              className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: settings.slider.direction === 'vert'})}
-              style={{color: settings.controls.color,['--arrow-hover-color' as string]: settings.controls.hover}}
+              className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: slider.direction === 'vert'})}
+              style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
             >              
               <button
                 className={styles.arrowInner}
                 style={{
-                  transform: `translate(${scalingValue(settings.controls.offset.x * (settings.slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(settings.controls.offset.y)}) scale(${settings.controls.scale / 100}) rotate(${settings.slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                  transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(controls.offset.y)}) scale(${controls.scale / 100}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                 }}
                 onClick={(e) => { handleArrowClick('+1');}}
                 aria-label='Next'
               >
-                {settings.controls.arrowsImgUrl && (
+                {controls.arrowsImgUrl && (
                   <SvgImage
-                    url={settings.controls.arrowsImgUrl}
-                    fill={settings.controls.color}
-                    hoverFill={settings.controls.hover}
+                    url={controls.arrowsImgUrl}
+                    fill={controls.color}
+                    hoverFill={controls.hover}
                     className={styles.arrowImg}
                   />
                 )}
@@ -229,23 +243,23 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           </>
         )}
         {/* Close button */}
-        {settings.area.closeIconUrl && (
-          <button className={styles.closeButton} style={{ top: settings.area.closeIconOffset.y, left: settings.area.closeIconOffset.x }} onClick={onClose}>
-            <SvgImage url={settings.area.closeIconUrl} fill={settings.area.color} />
+        {area.closeIconUrl && (
+          <button className={styles.closeButton} style={{ top: area.closeIconOffset.y, left: area.closeIconOffset.x }} onClick={onClose}>
+            <SvgImage url={area.closeIconUrl} fill={area.color} />
           </button>
         )}
         {/* Caption */}
-        {settings.caption.isActive && (
-          <div className={styles.caption} style={{ top: settings.caption.offset.y, left: settings.caption.offset.x }}>
+        {caption.isActive && (
+          <div className={styles.caption} style={{ top: caption.offset.y, left: caption.offset.x }}>
             <RichTextRenderer content={content[currentIndex].imageCaption} />
           </div>
         )}
-        {settings.thumbnail.isActive && (
+        {thumbnail.isActive && (
           <div
             className={cn(styles.thumbsContainer)}
             style={{
-              gap: `${settings.thumbnail.grid.gap}px`,
-              height: `${settings.thumbnail.grid.height}px`,
+              gap: `${thumbnail.grid.gap}px`,
+              height: `${thumbnail.grid.height}px`,
             }}
           >
             {content.map((item, index) => {
@@ -255,10 +269,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   key={`${item.image.url}-${index}`}
                   className={styles.thumbItem}
                   style={{
-                    transform: `scale(${isActive ? settings.thumbnail.activeState.scale : 1})`,
+                    transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
                     height: '100%',
-                    opacity: isActive ? settings.thumbnail.activeState.opacity : settings.thumbnail.opacity,
-                    ['--thumb-hover' as string]: settings.thumbnail.activeState.opacity,
+                    opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
+                    ['--thumb-hover' as string]: thumbnail.activeState.opacity,
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -270,7 +284,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                     src={item.image.url}
                     alt={item.image.name ?? ''}
                     className={styles.thumbImage}
-                    style={{ objectFit: settings.thumbnail.fit === 'cover' ? 'cover' : 'contain' }}
+                    style={{ objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain' }}
                   />
                 </button>
               );
@@ -329,52 +343,56 @@ type Triggers = {
 };
 
 type LightboxSettings = {
-  cover: {
-    url: string;
-  },
-  appear: {
-    type: 'slide in' | 'fade in' | 'mix';
-    duration: string;
-    direction: 'top' | 'bottom' | 'left' | 'right';
-    repeat: 'close' | 'loop';
-  };
-  triggers: Triggers;
-  slider: {
-    type: 'slide' | 'fade' | 'scale';
-    direction: 'horiz' | 'vert';
-  };
-  thumbnail: {
-    isActive: boolean;
-    position: Alignment;
-    fit: 'cover' | 'fit';
-    align: 'top' | 'center' | 'bottom';
-    triggers: 'click' | 'hover';
-    grid: {
-      height: number;
-      gap: number;
-    };
-    offset: Offset;
-    opacity: number;
-    activeState: {
-      scale: number;
-      opacity: number;
+  thumbnailBlock: {
+    cover: {
+      url: string;
     }
-  }
-  layout: {
-    position: Alignment;
-    offset: Offset;
-    padding: Padding;
-  }
-  controls: LightboxControls;
-  area: {
-    padding: Padding;
-    color: string;
-    blur: number;
-    closeIconUrl: string | null;
-    closeIconAlign: Alignment;
-    closeIconOffset: Offset;
   },
-  caption: Caption;
+  lightboxBlock: {
+    appear: {
+      type: 'slide in' | 'fade in' | 'mix';
+      duration: string;
+      direction: 'top' | 'bottom' | 'left' | 'right';
+      repeat: 'close' | 'loop';
+    };
+    triggers: Triggers;
+    slider: {
+      type: 'slide' | 'fade' | 'scale';
+      direction: 'horiz' | 'vert';
+    };
+    thumbnail: {
+      isActive: boolean;
+      position: Alignment;
+      fit: 'cover' | 'fit';
+      align: 'top' | 'center' | 'bottom';
+      triggers: 'click' | 'hover';
+      grid: {
+        height: number;
+        gap: number;
+      };
+      offset: Offset;
+      opacity: number;
+      activeState: {
+        scale: number;
+        opacity: number;
+      }
+    }
+    layout: {
+      position: Alignment;
+      offset: Offset;
+      padding: Padding;
+    }
+    controls: LightboxControls;
+    area: {
+      padding: Padding;
+      color: string;
+      blur: number;
+      closeIconUrl: string | null;
+      closeIconAlign: Alignment;
+      closeIconOffset: Offset;
+    },
+    caption: Caption;
+  }
 };
 
 type LightboxStyles = {

@@ -224,3 +224,23 @@
 .slideInRight { animation-name: lbSlideInRight; }
 .slideInTop { animation-name: lbSlideInTop; }
 .slideInBottom { animation-name: lbSlideInBottom; }
+
+// Scale animations for scale slider type
+// When Splide uses fade transition, we add scale transforms
+:global(.splide--fade) {
+  .scaleSlide {
+    opacity: 0 !important;
+    transform: scale(0.8) !important;
+    transition: opacity var(--splide-speed, 500ms) ease, transform var(--splide-speed, 500ms) ease !important;
+  }
+  
+  :global(.splide__slide.is-active) .scaleSlide {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+  }
+  
+  :global(.splide__slide:not(.is-active)) .scaleSlide {
+    opacity: 0 !important;
+    transform: scale(1.2) !important;
+  }
+}
