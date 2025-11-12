@@ -63,7 +63,7 @@ export const LightboxComponent: Component = {
                   visible: false,
                   type: 'direction-control'
                 },
-                enum: ['top', 'bottom', 'left', 'right']
+                enum: ['top', 'right', 'bottom', 'left']
               },
               repeat: {
                 type: 'string',
