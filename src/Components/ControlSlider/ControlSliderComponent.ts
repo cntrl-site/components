@@ -18,10 +18,10 @@ export const ControlSliderComponent = {
       settings: {
         layoutBased: true,
         type: 'object',
+        display: {
+          type: 'settings-block',
+        },
         properties: {
-          display: {
-            type: 'settings-block',
-          },
           triggers: {
             title: 'triggers',
             icon: 'target',
