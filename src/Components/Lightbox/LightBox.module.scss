@@ -164,15 +164,39 @@
 
 .thumbsContainer {
   position: absolute;
-  left: 0;
-  right: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  // padding: 0 12px;
-  bottom: 0;
   pointer-events: auto;
-  // @include size(bottom, 12);
+}
+
+// Align classes for horizontal layout (default)
+.thumbsAlignStart {
+  align-items: flex-start;
+}
+
+.thumbsAlignCenter {
+  align-items: center;
+}
+
+.thumbsAlignEnd {
+  align-items: flex-end;
+}
+
+// Align classes for vertical layout
+.thumbsContainerVertical.thumbsAlignStart {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.thumbsContainerVertical.thumbsAlignCenter {
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbsContainerVertical.thumbsAlignEnd {
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .thumbItem {
@@ -182,8 +206,7 @@
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.15);
-  transition: transform 0.1s ease, opacity 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.1s ease, opacity 0.1s ease;
   &:hover {
     opacity: var(--thumb-hover) !important;
   }

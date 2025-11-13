@@ -141,6 +141,51 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     }
     return styles.fadeIn;
   })();
+
+  const getThumbnailPositionStyles = (position: Alignment, offset: Offset) => {
+    const styles: React.CSSProperties = {};
+    
+    // Parse position string (e.g., 'top-left', 'middle-center', 'bottom-right')
+    const [vertical, horizontal] = position.split('-');
+    
+    // Handle vertical positioning
+    if (vertical === 'top') {
+      styles.top = `${offset.y}px`;
+      styles.bottom = 'auto';
+    } else if (vertical === 'middle') {
+      styles.top = '50%';
+      styles.bottom = 'auto';
+    } else if (vertical === 'bottom') {
+      styles.top = 'auto';
+      styles.bottom = `${offset.y}px`;
+    }
+    
+    // Handle horizontal positioning
+    if (horizontal === 'left') {
+      styles.left = `${offset.x}px`;
+      styles.right = 'auto';
+    } else if (horizontal === 'center') {
+      styles.left = '50%';
+      styles.right = 'auto';
+    } else if (horizontal === 'right') {
+      styles.left = 'auto';
+      styles.right = `${offset.x}px`;
+    }
+    
+    // Apply transform for centering
+    if (vertical === 'middle' && horizontal === 'center') {
+      // Center-center: translate both axes
+      styles.transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
+    } else if (vertical === 'middle') {
+      // Middle-left or middle-right: translate Y only
+      styles.transform = `translateY(calc(-50% + ${offset.y}px))`;
+    } else if (horizontal === 'center') {
+      // Top-center or bottom-center: translate X only
+      styles.transform = `translateX(calc(-50% + ${offset.x}px))`;
+    }
+    
+    return styles;
+  };
   
   if (!isOpen) return null;
 
@@ -257,10 +302,20 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         )}
         {thumbnail.isActive && (
           <div
-            className={cn(styles.thumbsContainer, {[styles.thumbsContainerVertical]: slider.direction === 'vert'})}
+            className={cn(
+              styles.thumbsContainer, 
+              {
+                [styles.thumbsContainerVertical]: slider.direction === 'vert',
+                [styles.thumbsAlignStart]: thumbnail.align === 'start',
+                [styles.thumbsAlignCenter]: thumbnail.align === 'center',
+                [styles.thumbsAlignEnd]: thumbnail.align === 'end',
+              }
+            )}
             style={{
               gap: `${thumbnail.grid.gap}px`,
-              height: `${thumbnail.grid.height}px`,
+              ...(slider.direction === 'horiz' ? { height: `${thumbnail.grid.height}px` } : {}),
+              ...(slider.direction === 'vert' ? { width: `${thumbnail.grid.width}px` } : {}),
+              ...getThumbnailPositionStyles(thumbnail.position, thumbnail.offset),
             }}
           >
             {content.map((item, index) => {
@@ -271,7 +326,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   className={styles.thumbItem}
                   style={{
                     transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
-                    height: '100%',
+                    ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
+                    ...(slider.direction === 'vert' ? { width: '100%' } : {}),
                     opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
                     ['--thumb-hover' as string]: thumbnail.activeState.opacity,
                   }}
@@ -285,7 +341,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                     src={item.image.url}
                     alt={item.image.name ?? ''}
                     className={styles.thumbImage}
-                    style={{ objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain' }}
+                    style={{
+                      objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
+                      ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
+                      ...(slider.direction === 'vert' ? { width: '100%' } : {}),
+                    }}
                   />
                 </button>
               );
@@ -365,10 +425,11 @@ type LightboxSettings = {
       isActive: boolean;
       position: Alignment;
       fit: 'cover' | 'fit';
-      align: 'top' | 'center' | 'bottom';
+      align: 'start' | 'center' | 'end';
       triggers: 'click' | 'hover';
       grid: {
         height: number;
+        width: number;
         gap: number;
       };
       offset: Offset;

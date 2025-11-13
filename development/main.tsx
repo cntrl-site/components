@@ -26,12 +26,13 @@ const settings = {
     },
     "thumbnail": {
       "isActive": true,
-      "position": "bottom-center",
-      "fit": "cover",
-      "align": "center",
+      "position": "middle-start",
+      "fit": "fit",
+      "align": "end",
       "triggers": "click",
       "grid": {
         "height": 60,
+        "width": 60,
         "gap": 8
       },
       "offset": { "x": 0, "y": 0 },

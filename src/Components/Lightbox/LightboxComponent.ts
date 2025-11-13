@@ -201,6 +201,14 @@ export const LightboxComponent: Component = {
                           type: 'numeric-input',
                         },
                       },
+                      width: {
+                        type: 'number',
+                        label: 'W',
+                        display: {
+                          type: 'numeric-input',
+                          visible: false,
+                        },
+                      },
                       gap: {
                         type: 'number',
                         label: 'Gap',
@@ -571,6 +579,26 @@ export const LightboxComponent: Component = {
             },
             then: {
               name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'slider.direction',
+              value: 'vert'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.width.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'slider.direction',
+              value: 'vert'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.height.display.visible',
               value: false
             }
           }
