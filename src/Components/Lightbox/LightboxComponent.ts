@@ -102,7 +102,7 @@ export const LightboxComponent: Component = {
                     display: {
                       type: 'ratio-group'
                     },
-                    enum: ['click', 'drag', 'scroll']
+                    enum: ['click', 'drag']
                   },
                   switch: {
                     type: 'string',
@@ -245,9 +245,9 @@ export const LightboxComponent: Component = {
                       scale: {
                         type: 'number',
                         title: 'Scale',
-                        min: 1,
-                        max: 2,
-                        step: 0.1,
+                        min: 0,
+                        max: 100,
+                        step: 1,
                         display: {
                           type: 'range-control',
                         },
@@ -353,7 +353,7 @@ export const LightboxComponent: Component = {
                     type: 'number',
                     title: 'Scale',
                     min: 0,
-                    max: 1,
+                    max: 100,
                     display: {
                       type: 'range-control',
                     },
@@ -494,7 +494,7 @@ export const LightboxComponent: Component = {
               position: 'bottom-center',
               fit: 'cover',
               align: 'center',
-              triggers: 'click',
+              triggers: 'clk',
               grid: {
                 height: 60,
                 gap: 8
@@ -502,7 +502,7 @@ export const LightboxComponent: Component = {
               offset: { x: 0, y: 0 },
               opacity: 100,
               activeState: {
-                scale: 1,
+                scale: 100,
                 opacity: 100
               }
             },
@@ -515,7 +515,7 @@ export const LightboxComponent: Component = {
               isActive: true,
               arrowsImgUrl: null,
               offset: { x: 0, y: 0 },
-              scale: 1,
+              scale: 100,
               color: '#000000',
               hover: '#cccccc'
             },

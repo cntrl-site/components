@@ -28,7 +28,7 @@ type LightboxGalleryProps = {
 
 export function LightboxGallery({ settings, content, styles, portalId, activeEvent }: LightboxGalleryProps) {
   const [open, setOpen] = React.useState(false);
-  const { url: coverUrl } = settings.thumbnailBlock.cover;
+  const { url } = settings.thumbnailBlock.cover;
 
   useEffect(() => {
     if (activeEvent === 'close') {
@@ -42,9 +42,9 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
   return (
     <div>
       <img
-        src={coverUrl}
+        src={url}
         alt='Cover'
-        style={{ width: '100%', height: '100%', cursor: 'pointer' }}
+        style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
         onClick={() => setOpen(true)}
       />
       <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} />
@@ -156,8 +156,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`,
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
-          animationFillMode: 'both'
-        }}
+          animationFillMode: 'both',
+          '--splide-speed': triggers.duration || '500ms'
+        } as React.CSSProperties}
       >
         <Splide
           onMove={(splide) => { setCurrentIndex(splide.index); }}
@@ -173,7 +174,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             height: '100%',
             type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
             padding: 0,
-            rewind: false
+            rewind: (slider.type === 'scale' || slider.type === 'fade') && appear.repeat !== 'close'
           }}
           style={{
             '--splide-speed': triggers.duration || '500ms'
@@ -256,7 +257,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         )}
         {thumbnail.isActive && (
           <div
-            className={cn(styles.thumbsContainer)}
+            className={cn(styles.thumbsContainer, {[styles.thumbsContainerVertical]: slider.direction === 'vert'})}
             style={{
               gap: `${thumbnail.grid.gap}px`,
               height: `${thumbnail.grid.height}px`,
@@ -337,7 +338,7 @@ type Padding = {
 };
 
 type Triggers = {
-  type: 'click' | 'drag' | 'scroll';
+  type: 'click' | 'drag';
   switch: 'image' | '50/50';
   duration: string;
 };
