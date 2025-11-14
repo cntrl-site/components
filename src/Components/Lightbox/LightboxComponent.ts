@@ -253,9 +253,9 @@ export const LightboxComponent: Component = {
                       scale: {
                         type: 'number',
                         title: 'Scale',
-                        min: 0,
-                        max: 100,
-                        step: 1,
+                        min: 0.5,
+                        max: 5,
+                        step: 0.1,
                         display: {
                           type: 'range-control',
                         },
@@ -360,8 +360,9 @@ export const LightboxComponent: Component = {
                   scale: {
                     type: 'number',
                     title: 'Scale',
-                    min: 0,
-                    max: 100,
+                    min: 0.5,
+                    max: 5,
+                    step: 0.1,
                     display: {
                       type: 'range-control',
                     },
@@ -418,6 +419,16 @@ export const LightboxComponent: Component = {
                     },
                     type: 'string',
                     enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
+                  },
+                  closeIconScale: {
+                    type: 'number',
+                    title: 'Scale',
+                    min: 0.5,
+                    max: 5,
+                    step: 0.1,
+                    display: {
+                      type: 'range-control',
+                    },
                   },
                   closeIconOffset: {
                     type: 'object',
@@ -516,7 +527,7 @@ export const LightboxComponent: Component = {
               offset: { x: 0, y: 0 },
               opacity: 100,
               activeState: {
-                scale: 100,
+                scale: 1,
                 opacity: 100
               }
             },
@@ -538,7 +549,8 @@ export const LightboxComponent: Component = {
               blur: 0,
               closeIconUrl: null,
               closeIconAlign: 'top-right',
-              closeIconOffset: { x: 0, y: 0 }
+              closeIconOffset: { x: 0, y: 0 },
+              closeIconScale: 1
             },
             caption: {
               isActive: true,

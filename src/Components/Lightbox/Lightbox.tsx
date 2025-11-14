@@ -207,7 +207,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
               <button
                   className={styles.arrowInner}
                   style={{
-                    transform: `translate(${scalingValue(controls.offset.x)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1))}) scale(${controls.scale / 100}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                    transform: `translate(${scalingValue(controls.offset.x)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1))}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                   }}
                 onClick={(e) => { handleArrowClick('-1'); }}
                 >
@@ -228,7 +228,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
               <button
                 className={styles.arrowInner}
                 style={{
-                  transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(controls.offset.y)}) scale(${controls.scale / 100}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                  transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(controls.offset.y)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                 }}
                 onClick={(e) => { handleArrowClick('+1');}}
                 aria-label='Next'
@@ -246,11 +246,26 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           </>
         )}
         {/* Close button */}
-        {area.closeIconUrl && (
-          <button className={styles.closeButton} style={getPositionStyles(area.closeIconAlign, area.closeIconOffset)} onClick={onClose}>
-            <SvgImage url={area.closeIconUrl} fill={area.color} />
-          </button>
-        )}
+        {area.closeIconUrl && (() => {
+          const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset);
+          const scaleTransform = `scale(${area.closeIconScale})`;
+          const combinedTransform = positionStyles.transform
+            ? `${positionStyles.transform} ${scaleTransform}`
+            : scaleTransform;
+          
+          return (
+            <button
+              className={styles.closeButton}
+              style={{
+                ...positionStyles,
+                transform: combinedTransform
+              }}
+              onClick={onClose}
+            >
+              <SvgImage url={area.closeIconUrl} />
+            </button>
+          );
+        })()}
         {/* Caption */}
         {caption.isActive && (
           <div className={styles.caption} style={{ top: caption.offset.y, left: caption.offset.x }}>
@@ -282,7 +297,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   key={`${item.image.url}-${index}`}
                   className={styles.thumbItem}
                   style={{
-                    transform: `scale(${isActive ? thumbnail.activeState.scale / 100 : 1})`,
+                    transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
                     ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
                     ...(slider.direction === 'vert' ? { width: '100%' } : {}),
                     opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
@@ -402,6 +417,7 @@ type LightboxSettings = {
       closeIconUrl: string | null;
       closeIconAlign: Alignment;
       closeIconOffset: Offset;
+      closeIconScale: number;
     },
     caption: Caption;
   }

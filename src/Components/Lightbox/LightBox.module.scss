@@ -219,7 +219,11 @@
 }
 
 .closeButton {
+  all: unset;
+  cursor: pointer;
   position: absolute;
+  @include size(width, 30);
+  @include size(height, 30);
 }
 
 
