@@ -2,6 +2,7 @@ import React, { FC, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './LightBox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
+import { getPositionStyles, type Alignment, type Offset } from '../utils/getPositionStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import cn from 'classnames';
 import '@splidejs/react-splide/css';
@@ -142,50 +143,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     return styles.fadeIn;
   })();
 
-  const getThumbnailPositionStyles = (position: Alignment, offset: Offset) => {
-    const styles: React.CSSProperties = {};
-    
-    // Parse position string (e.g., 'top-left', 'middle-center', 'bottom-right')
-    const [vertical, horizontal] = position.split('-');
-    
-    // Handle vertical positioning
-    if (vertical === 'top') {
-      styles.top = `${offset.y}px`;
-      styles.bottom = 'auto';
-    } else if (vertical === 'middle') {
-      styles.top = '50%';
-      styles.bottom = 'auto';
-    } else if (vertical === 'bottom') {
-      styles.top = 'auto';
-      styles.bottom = `${offset.y}px`;
-    }
-    
-    // Handle horizontal positioning
-    if (horizontal === 'left') {
-      styles.left = `${offset.x}px`;
-      styles.right = 'auto';
-    } else if (horizontal === 'center') {
-      styles.left = '50%';
-      styles.right = 'auto';
-    } else if (horizontal === 'right') {
-      styles.left = 'auto';
-      styles.right = `${offset.x}px`;
-    }
-    
-    // Apply transform for centering
-    if (vertical === 'middle' && horizontal === 'center') {
-      // Center-center: translate both axes
-      styles.transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
-    } else if (vertical === 'middle') {
-      // Middle-left or middle-right: translate Y only
-      styles.transform = `translateY(calc(-50% + ${offset.y}px))`;
-    } else if (horizontal === 'center') {
-      // Top-center or bottom-center: translate X only
-      styles.transform = `translateX(calc(-50% + ${offset.x}px))`;
-    }
-    
-    return styles;
-  };
   
   if (!isOpen) return null;
 
@@ -290,7 +247,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         )}
         {/* Close button */}
         {area.closeIconUrl && (
-          <button className={styles.closeButton} style={{ top: area.closeIconOffset.y, left: area.closeIconOffset.x }} onClick={onClose}>
+          <button className={styles.closeButton} style={getPositionStyles(area.closeIconAlign, area.closeIconOffset)} onClick={onClose}>
             <SvgImage url={area.closeIconUrl} fill={area.color} />
           </button>
         )}
@@ -315,7 +272,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
               gap: `${thumbnail.grid.gap}px`,
               ...(slider.direction === 'horiz' ? { height: `${thumbnail.grid.height}px` } : {}),
               ...(slider.direction === 'vert' ? { width: `${thumbnail.grid.width}px` } : {}),
-              ...getThumbnailPositionStyles(thumbnail.position, thumbnail.offset),
+              ...getPositionStyles(thumbnail.position, thumbnail.offset),
             }}
           >
             {content.map((item, index) => {
@@ -367,11 +324,6 @@ type LightboxImage = {
   imageCaption: any[];
 };
 
-type Offset = {
-  x: number;
-  y: number;
-}
-
 type LightboxControls = {
   arrowsImgUrl: string | null;
   isActive: boolean;
@@ -380,8 +332,6 @@ type LightboxControls = {
   offset: Offset;
   scale: number;
 };
-
-type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
 type Caption = {
   isActive: boolean;

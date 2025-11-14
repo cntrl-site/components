@@ -76,6 +76,7 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     title: 'FROM',
                     display: {
+                      visible: true,
                       type: 'direction-control'
                     },
                     enum: ['top','left', 'right', 'bottom']
@@ -440,6 +441,12 @@ export const LightboxComponent: Component = {
                 tooltip: 'Description',
                 type: 'object',
                 properties: {
+                  isActive: {
+                    type: 'boolean',
+                    display: {
+                      type: 'setting-toggle',
+                    }
+                  },
                   alignment: {
                     type: 'string',
                     display: {
@@ -522,7 +529,7 @@ export const LightboxComponent: Component = {
               isActive: true,
               arrowsImgUrl: null,
               offset: { x: 0, y: 0 },
-              scale: 100,
+              scale: 1,
               color: '#000000',
               hover: '#cccccc'
             },
@@ -534,6 +541,7 @@ export const LightboxComponent: Component = {
               closeIconOffset: { x: 0, y: 0 }
             },
             caption: {
+              isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },
               hover: '#cccccc'

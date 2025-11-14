@@ -218,6 +218,10 @@
   @include size(width, 80);
 }
 
+.closeButton {
+  position: absolute;
+}
+
 
 @keyframes lbFadeIn {
   from { opacity: 0; }
