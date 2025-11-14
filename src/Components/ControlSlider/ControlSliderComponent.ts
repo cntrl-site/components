@@ -53,7 +53,6 @@ export const ControlSliderComponent = {
             }
           },
           direction: {
-            title: 'direction',
             icon: 'horizontal-resize',
             tooltip: 'Direction',
             type: 'string',

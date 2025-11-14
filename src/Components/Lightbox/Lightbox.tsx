@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import styles from './LightBox.module.scss';
+import styles from './Lightbox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
 import { getPositionStyles, type Alignment, type Offset } from '../utils/getPositionStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
