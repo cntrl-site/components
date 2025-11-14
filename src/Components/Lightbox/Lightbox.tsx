@@ -276,6 +276,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             );
           })}
         </Splide>
+        {/* Controls */}
         {controls.isActive && (
           <>
             <div 
@@ -356,6 +357,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             <RichTextRenderer content={content[currentIndex].imageCaption} />
           </div>
         )}
+        {/* Thumbnails */}
         {thumbnail.isActive && (
           <div
             className={cn(

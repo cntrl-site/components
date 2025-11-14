@@ -76,7 +76,8 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     title: 'FROM',
                     display: {
-                      type: 'direction-control'
+                      type: 'direction-control',
+                      visible: false,
                     },
                     enum: ['top','left', 'right', 'bottom']
                   },
@@ -106,7 +107,8 @@ export const LightboxComponent: Component = {
                   switch: {
                     type: 'string',
                     display: {
-                      type: 'ratio-group'
+                      type: 'ratio-group',
+                      visible: false,
                     },
                     enum: ['image', '50/50']
                   },
@@ -115,6 +117,7 @@ export const LightboxComponent: Component = {
                     label: 'T',
                     display: {
                       type: 'step-selector',
+                      visible: false,
                     },
                     enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
                   }
@@ -198,6 +201,7 @@ export const LightboxComponent: Component = {
                         label: 'H',
                         display: {
                           type: 'numeric-input',
+                          visible: false,
                         },
                       },
                       width: {
@@ -521,6 +525,7 @@ export const LightboxComponent: Component = {
               triggers: 'clk',
               grid: {
                 height: 60,
+                width: 60,
                 gap: 8
               },
               offset: { x: 0, y: 0 },
@@ -582,21 +587,21 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'triggers.type',
-              value: 'drag'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
               name: 'slider.direction',
               value: 'vert'
             },
             then: {
               name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.width.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'slider.direction',
+              value: 'horiz'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.height.display.visible',
               value: true
             }
           },
@@ -612,32 +617,52 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
+              name: 'slider.direction',
+              value: 'horiz'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.width.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
               name: 'appear.type',
-              value: 'fade in'
+              value: 'mix'
             },
             then: {
               name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
-              value: false
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'appear.type',
+              value: 'slide in'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
+              value: true
             }
           },
           {
             if: {
               name: 'triggers.type',
-              value: 'drag'
+              value: 'click'
             },
             then: {
               name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
-              value: false
+              value: true
             }
           },
           {
             if: {
               name: 'triggers.type',
-              value: 'drag'
+              value: 'click'
             },
             then: {
               name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
-              value: false
+              value: true
             }
           }
         ]
