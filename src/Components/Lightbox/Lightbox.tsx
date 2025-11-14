@@ -217,6 +217,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         <Splide
           onMove={(splide) => { setCurrentIndex(splide.index); }}
           ref={lightboxRef}
+          className={styles.lightboxSplide}
           options={{
             arrows: false,
             speed: triggers.duration ? parseInt(triggers.duration) : 500,
@@ -232,25 +233,38 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           }}
           style={{'--splide-speed': triggers.duration || '500ms'} as React.CSSProperties}
         >
-          {content.map((item, index) => (
-            <SplideSlide key={index}>
-              <div 
-                className={styles.imgWrapper} 
-                onClick={handleImageWrapperClick}
-              >
-                <img
-                  className={cn(styles.imageStyle, {
-                    [styles.contain]: item.image.objectFit === 'contain',
-                    [styles.cover]: item.image.objectFit === 'cover',
-                    [styles.scaleSlide]: slider.type === 'scale'
-                  })}
-                  src={item.image.url} alt={item.image.name ?? ''}
-                  onClick={onImageClick}
-                  style={getPositionStyles(layout.position, layout.offset)}
-                />
-              </div>
-          </SplideSlide>
-          ))}
+          {content.map((item, index) => {
+            const positionStyles = getPositionStyles(layout.position, layout.offset);
+            const imageStyle: React.CSSProperties = slider.type === 'scale' 
+              ? (() => {
+                  const { transform, ...restStyles } = positionStyles;
+                  return {
+                    ...restStyles,
+                    '--position-transform': (transform as string) || 'none'
+                  } as React.CSSProperties;
+                })()
+              : positionStyles;
+
+            return (
+              <SplideSlide key={index}>
+                <div 
+                  className={styles.imgWrapper} 
+                  onClick={handleImageWrapperClick}
+                >
+                  <img
+                    className={cn(styles.imageStyle, {
+                      [styles.contain]: item.image.objectFit === 'contain',
+                      [styles.cover]: item.image.objectFit === 'cover',
+                      [styles.scaleSlide]: slider.type === 'scale'
+                    })}
+                    src={item.image.url} alt={item.image.name ?? ''}
+                    onClick={onImageClick}
+                    style={imageStyle}
+                  />
+                </div>
+            </SplideSlide>
+            );
+          })}
         </Splide>
         {controls.isActive && (
           <>
