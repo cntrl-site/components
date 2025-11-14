@@ -567,8 +567,8 @@ export const LightboxComponent: Component = {
               value: 'slide in'
             },
             then: {
-              value: true,
               name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
+              value: true
             }
           },
           {
@@ -634,11 +634,11 @@ export const LightboxComponent: Component = {
           {
             if: {
               name: 'appear.type',
-              value: 'slide in'
+              value: 'fade in'
             },
             then: {
               name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
-              value: true
+              value: false
             }
           },
           {
@@ -659,6 +659,26 @@ export const LightboxComponent: Component = {
             then: {
               name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
               value: true
+            }
+          },
+          {
+            if: {
+              name: 'triggers.type',
+              value: 'drag'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'triggers.type',
+              value: 'drag'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
+              value: false
             }
           }
         ]
