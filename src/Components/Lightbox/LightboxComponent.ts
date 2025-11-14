@@ -76,7 +76,6 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     title: 'FROM',
                     display: {
-                      visible: false,
                       type: 'direction-control'
                     },
                     enum: ['top','left', 'right', 'bottom']
@@ -599,6 +598,16 @@ export const LightboxComponent: Component = {
             },
             then: {
               name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.height.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'appear.type',
+              value: 'fade in'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
               value: false
             }
           }

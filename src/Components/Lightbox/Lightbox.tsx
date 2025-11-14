@@ -40,7 +40,7 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
   }, [activeEvent]);
 
   return (
-    <div>
+    <>
       <img
         src={url}
         alt='Cover'
@@ -48,7 +48,7 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
         onClick={() => setOpen(true)}
       />
       <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} />
-    </div>
+    </>
   );
 };
 
@@ -325,7 +325,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   key={`${item.image.url}-${index}`}
                   className={styles.thumbItem}
                   style={{
-                    transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
+                    transform: `scale(${isActive ? thumbnail.activeState.scale / 100 : 1})`,
                     ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
                     ...(slider.direction === 'vert' ? { width: '100%' } : {}),
                     opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
