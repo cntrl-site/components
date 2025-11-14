@@ -156,8 +156,8 @@ const content = [
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <div id="portal-target"></div>
-    <div style={{ width: '400px', height: '500px' }}>
+    {/* <div style={{ width: '400px', height: '500px' }}>
       <LightboxGallery settings={settings} content={content} styles={styles} portalId="portal-target" activeEvent="open" />
-    </div>
+    </div> */}
   </React.StrictMode>
 );
