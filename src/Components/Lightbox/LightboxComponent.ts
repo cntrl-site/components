@@ -77,7 +77,6 @@ export const LightboxComponent: Component = {
                     title: 'FROM',
                     display: {
                       type: 'direction-control',
-                      visible: false,
                     },
                     enum: ['top','left', 'right', 'bottom']
                   },
@@ -108,7 +107,6 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     display: {
                       type: 'ratio-group',
-                      visible: false,
                     },
                     enum: ['image', '50/50']
                   },
@@ -117,7 +115,6 @@ export const LightboxComponent: Component = {
                     label: 'T',
                     display: {
                       type: 'step-selector',
-                      visible: false,
                     },
                     enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
                   }
@@ -201,7 +198,6 @@ export const LightboxComponent: Component = {
                         label: 'H',
                         display: {
                           type: 'numeric-input',
-                          visible: false,
                         },
                       },
                       width: {
