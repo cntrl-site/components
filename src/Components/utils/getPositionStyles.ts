@@ -10,7 +10,7 @@ export type Offset = {
 export const getPositionStyles = (position: Alignment, offset: Offset): CSSProperties => {
   const styles: CSSProperties = {};
   const [vertical, horizontal] = position.split('-');
-  
+
   if (vertical === 'top') {
     styles.top = `${offset.y}px`;
     styles.bottom = 'auto';
@@ -36,9 +36,9 @@ export const getPositionStyles = (position: Alignment, offset: Offset): CSSPrope
   if (vertical === 'middle' && horizontal === 'center') {
     styles.transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
   } else if (vertical === 'middle') {
-    styles.transform = `translateY(calc(-50% + ${offset.y}px))`;
+    styles.transform = `translate(${offset.x}px, calc(-50% + ${offset.y}px))`;
   } else if (horizontal === 'center') {
-    styles.transform = `translateX(calc(-50% + ${offset.x}px))`;
+    styles.transform = `translate(calc(-50% + ${offset.x}px), ${offset.y}px)`;
   }
   
   return styles;

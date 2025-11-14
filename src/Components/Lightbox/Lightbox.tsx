@@ -193,6 +193,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   })}
                   src={item.image.url} alt={item.image.name ?? ''}
                   onClick={onImageClick}
+                  style={getPositionStyles(layout.position, layout.offset)}
                 />
               </div>
           </SplideSlide>
@@ -268,7 +269,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         })()}
         {/* Caption */}
         {caption.isActive && (
-          <div className={styles.caption} style={{ top: caption.offset.y, left: caption.offset.x }}>
+          <div 
+            className={styles.caption} 
+            style={{
+              ...getPositionStyles(caption.alignment, caption.offset),
+              ['--link-hover-color' as string]: caption.hover
+            }}
+          >
             <RichTextRenderer content={content[currentIndex].imageCaption} />
           </div>
         )}

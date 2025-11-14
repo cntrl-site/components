@@ -107,6 +107,7 @@ export const LightboxComponent: Component = {
                   switch: {
                     type: 'string',
                     display: {
+                      visible: true,
                       type: 'ratio-group'
                     },
                     enum: ['image', '50/50']
@@ -115,6 +116,7 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     label: 'T',
                     display: {
+                      visible: true,
                       type: 'step-selector',
                     },
                     enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
@@ -630,6 +632,26 @@ export const LightboxComponent: Component = {
               name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
               value: false
             }
+          },
+          {
+            if: {
+              name: 'triggers.type',
+              value: 'drag'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'triggers.type',
+              value: 'drag'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
+              value: false
+            }
           }
         ]
       },
@@ -680,7 +702,7 @@ export const LightboxComponent: Component = {
         default: [
           {
             image: {
-              objectFit: 'cover',
+              objectFit: 'contain',
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png',
               name: 'Slider-1.png'
             },
@@ -693,7 +715,7 @@ export const LightboxComponent: Component = {
           },
           {
             image: {
-              objectFit: 'cover',
+              objectFit: 'contain',
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMTZA3RYMXKF0M095D6JD.png',
               name: 'Slider-2.png'
             },
@@ -706,7 +728,7 @@ export const LightboxComponent: Component = {
           },
           {
             image: {
-              objectFit: 'cover',
+              objectFit: 'contain',
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMVSCMPVJBG2WF5KJZYHZ.png',
               name: 'Slider-3.png'
             },
