@@ -76,7 +76,6 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     title: 'FROM',
                     display: {
-                      visible: true,
                       type: 'direction-control'
                     },
                     enum: ['top','left', 'right', 'bottom']
@@ -107,7 +106,6 @@ export const LightboxComponent: Component = {
                   switch: {
                     type: 'string',
                     display: {
-                      visible: true,
                       type: 'ratio-group'
                     },
                     enum: ['image', '50/50']
@@ -116,7 +114,6 @@ export const LightboxComponent: Component = {
                     type: 'string',
                     label: 'T',
                     display: {
-                      visible: true,
                       type: 'step-selector',
                     },
                     enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
@@ -590,16 +587,6 @@ export const LightboxComponent: Component = {
             },
             then: {
               name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'triggers.type',
-              value: 'drag'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
               value: false
             }
           },

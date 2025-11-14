@@ -56,6 +56,7 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
 const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId }) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const lightboxRef = useRef<Splide | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
@@ -118,6 +119,57 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   useEffect(() => {
     if (isOpen) setCurrentIndex(0);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (resizeObserverRef.current) {
+      resizeObserverRef.current.disconnect();
+      resizeObserverRef.current = null;
+    }
+    const timeoutId = setTimeout(() => {
+      const activeSlide = document.querySelector('.splide__slide.is-active');
+      if (!activeSlide) return;
+
+      const img = activeSlide.querySelector('img') as HTMLImageElement;
+      const container = activeSlide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
+      
+      if (!img || !container) return;
+
+      const updateImageSize = () => {
+        if (!img.naturalWidth || !img.naturalHeight) return;
+
+        const imageAspectRatio = img.naturalWidth / img.naturalHeight;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        const containerAspectRatio = containerWidth / containerHeight;
+
+        if (imageAspectRatio > containerAspectRatio) {
+          img.style.width = '100%';
+        } else {
+          img.style.height = '100%';
+        }
+      };
+
+      if (img.complete) {
+        updateImageSize();
+      } else {
+        img.onload = updateImageSize;
+      }
+      resizeObserverRef.current = new ResizeObserver(() => {
+        updateImageSize();
+      });
+      resizeObserverRef.current.observe(container);
+      resizeObserverRef.current.observe(img);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+    };
+  }, [isOpen, currentIndex, content]);
   
   const handleArrowClick = (dir: '+1' | '-1') => {
     lightboxRef.current?.go(dir);
@@ -178,13 +230,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             padding: 0,
             rewind: (slider.type === 'scale' || slider.type === 'fade') && appear.repeat !== 'close'
           }}
-          style={{
-            '--splide-speed': triggers.duration || '500ms'
-          } as React.CSSProperties}
+          style={{'--splide-speed': triggers.duration || '500ms'} as React.CSSProperties}
         >
           {content.map((item, index) => (
             <SplideSlide key={index}>
-              <div className={styles.imgWrapper} onClick={handleImageWrapperClick}>
+              <div 
+                className={styles.imgWrapper} 
+                onClick={handleImageWrapperClick}
+              >
                 <img
                   className={cn(styles.imageStyle, {
                     [styles.contain]: item.image.objectFit === 'contain',
