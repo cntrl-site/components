@@ -563,7 +563,7 @@ export const LightboxComponent: Component = {
         displayRules: [
           {
             if: {
-              name: 'appear.type',
+              name: 'lightboxBlock.appear.type',
               value: 'slide in'
             },
             then: {
@@ -573,7 +573,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'slider.direction',
+              name: 'lightboxBlock.slider.direction',
               value: 'vert'
             },
             then: {
@@ -583,7 +583,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'slider.direction',
+              name: 'lightboxBlock.slider.direction',
               value: 'vert'
             },
             then: {
@@ -593,7 +593,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'slider.direction',
+              name: 'lightboxBlock.slider.direction',
               value: 'horiz'
             },
             then: {
@@ -603,7 +603,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'slider.direction',
+              name: 'lightboxBlock.slider.direction',
               value: 'vert'
             },
             then: {
@@ -613,7 +613,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'slider.direction',
+              name: 'lightboxBlock.slider.direction',
               value: 'horiz'
             },
             then: {
@@ -623,7 +623,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'appear.type',
+              name: 'lightboxBlock.appear.type',
               value: 'mix'
             },
             then: {
@@ -633,7 +633,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'appear.type',
+              name: 'lightboxBlock.appear.type',
               value: 'fade in'
             },
             then: {
@@ -643,7 +643,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'triggers.type',
+              name: 'lightboxBlock.triggers.type',
               value: 'click'
             },
             then: {
@@ -653,7 +653,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'triggers.type',
+              name: 'lightboxBlock.triggers.type',
               value: 'click'
             },
             then: {
@@ -663,7 +663,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'triggers.type',
+              name: 'lightboxBlock.triggers.type',
               value: 'drag'
             },
             then: {
@@ -673,7 +673,7 @@ export const LightboxComponent: Component = {
           },
           {
             if: {
-              name: 'triggers.type',
+              name: 'lightboxBlock.triggers.type',
               value: 'drag'
             },
             then: {
