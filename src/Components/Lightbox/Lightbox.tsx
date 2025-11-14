@@ -181,6 +181,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     if (appear.type === 'slide in') {
       return '';
     }
+    if (appear.type === 'mix') return styles.fadeIn;
     return styles.fadeIn;
   })();
 
@@ -219,6 +220,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both',
+          ...(appear.type === 'mix' && { animationDelay: '0.5s' }),
           '--splide-speed': triggers.duration || '500ms'
         } as React.CSSProperties}
       >
