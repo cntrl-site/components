@@ -179,6 +179,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   const appearClass = (() => {
     if (appear.type === 'fade in') return styles.fadeIn;
     if (appear.type === 'slide in') {
+      return '';
+    }
+    return styles.fadeIn;
+  })();
+
+  const backdropAppearClass = (() => {
+    if (appear.type === 'fade in') return styles.fadeIn;
+    if (appear.type === 'slide in' || appear.type === 'mix') {
       switch (appear.direction) {
         case 'left':
           return styles.slideInLeft;
@@ -200,7 +208,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
 
   return createPortal(
     <div 
-      className={cn(styles.backdropStyle, styles.fadeIn)} 
+      className={cn(styles.backdropStyle, backdropAppearClass)} 
       style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${appearDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
       onClick={handleBackdropClick} 
       >
