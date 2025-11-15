@@ -8,7 +8,7 @@ export const LightboxComponent: Component = {
   name: 'Lightbox',
   preview: {
     type: 'video' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7EQ4ME6CP4KX7TJ4HPAXFEW.mp4',
+    url: 'https://cdn.cntrl.site/projects/01GJ2SPDSH73MC92WW7ZA2CWBY/articles-assets/01KA24CHYZXJBZ0Q714B05A7VD.mp4',
   },
   defaultSize: {
     width: 400,
