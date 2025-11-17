@@ -134,13 +134,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const preventScroll = (e: TouchEvent) => e.preventDefault();
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+  
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.removeEventListener("touchmove", preventScroll);
+    };
   }, [isOpen]);
 
   useEffect(() => {
