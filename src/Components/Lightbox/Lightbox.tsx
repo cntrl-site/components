@@ -68,10 +68,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   };
 
   const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!closeOnBackdropClick) return;
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    // if (!closeOnBackdropClick) return;
+    // console.log(e.target, e.currentTarget);
+    // if (e.target === e.currentTarget) {
+    //   onClose();
+    // }
   };
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
@@ -248,232 +249,232 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     return styles.fadeIn;
   })();
 
-  
   if (!isOpen) return null;
 
   return createPortal(
     <>
-    <div
-      className={cn(styles.background, backdropAppearClass)} 
-      style={{
-        ...(isEditor && { [styles.editor]: isEditor }),
-        backgroundColor: area.color,
-        backdropFilter: `blur(${area.blur}px)`,
-        animationDuration: `${backdropDurationMs}ms`,
-        animationTimingFunction: 'ease',
-        animationFillMode: 'both' as unknown as undefined
-      }}
-    />
-    <div 
-      className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
-      onClick={handleBackdropClick}
-      onTouchEnd={handleBackdropClick}
-      >
       <div
-        className={cn(styles.contentStyle, appearClass)}
-        onClick={handleContentClick}
+        className={cn(styles.background, backdropAppearClass)} 
         style={{
-          animationDuration: `${appearDurationMs}ms`,
+          ...(isEditor && { display: 'none' }),
+          backgroundColor: area.color,
+          backdropFilter: `blur(${area.blur}px)`,
+          animationDuration: `${backdropDurationMs}ms`,
           animationTimingFunction: 'ease',
-          animationFillMode: 'both',
-          ...(appear.type === 'mix' && { animationDelay: `${backdropDurationMs}ms` }),
-          '--splide-speed': triggers.duration || '500ms'
-        } as React.CSSProperties}
-      >
-        <Splide
-          onMove={(splide) => { setCurrentIndex(splide.index); }}
-          ref={lightboxRef}
-          className={styles.lightboxSplide}
-          options={{
-            arrows: false,
-            speed: triggers.duration ? parseInt(triggers.duration) : 500,
-            direction: slider.direction === 'horiz' || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb',
-            pagination: false,
-            drag: triggers.type === 'drag',
-            perPage: 1,
-            width: '100%',
-            height: '100%',
-            type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
-            padding: 0,
-            rewind: (slider.type === 'scale' || slider.type === 'fade') && appear.repeat !== 'close'
-          }}
-          style={{'--splide-speed': triggers.duration || '500ms'} as React.CSSProperties}
+          animationFillMode: 'both' as unknown as undefined
+        }}
+      />
+      <div 
+        className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
+        // style={{...(isEditor && { backgroundColor: area.color })}}
+        onClick={handleBackdropClick}
+        onTouchEnd={handleBackdropClick}
         >
-          {content.map((item, index) => {
-            const positionStyles = getPositionStyles(layout.position, layout.offset);
-            const imageStyle: React.CSSProperties = slider.type === 'scale' 
-              ? (() => {
-                  const { transform, ...restStyles } = positionStyles;
-                  return {
-                    ...restStyles,
-                    '--position-transform': (transform as string) || 'none'
-                  } as React.CSSProperties;
-                })()
-              : positionStyles;
+        <div
+          className={cn(styles.contentStyle, appearClass)}
+          onClick={handleContentClick}
+          style={{
+            animationDuration: `${appearDurationMs}ms`,
+            animationTimingFunction: 'ease',
+            animationFillMode: 'both',
+            ...(appear.type === 'mix' && { animationDelay: `${backdropDurationMs}ms` }),
+            '--splide-speed': triggers.duration || '500ms'
+          } as React.CSSProperties}
+        >
+          <Splide
+            onMove={(splide) => { setCurrentIndex(splide.index); }}
+            ref={lightboxRef}
+            className={styles.lightboxSplide}
+            options={{
+              arrows: false,
+              speed: triggers.duration ? parseInt(triggers.duration) : 500,
+              direction: slider.direction === 'horiz' || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb',
+              pagination: false,
+              drag: triggers.type === 'drag',
+              perPage: 1,
+              width: '100%',
+              height: '100%',
+              type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
+              padding: 0,
+              rewind: (slider.type === 'scale' || slider.type === 'fade') && appear.repeat !== 'close'
+            }}
+            style={{'--splide-speed': triggers.duration || '500ms'} as React.CSSProperties}
+          >
+            {content.map((item, index) => {
+              const positionStyles = getPositionStyles(layout.position, layout.offset);
+              const imageStyle: React.CSSProperties = slider.type === 'scale' 
+                ? (() => {
+                    const { transform, ...restStyles } = positionStyles;
+                    return {
+                      ...restStyles,
+                      '--position-transform': (transform as string) || 'none'
+                    } as React.CSSProperties;
+                  })()
+                : positionStyles;
 
-            return (
-              <SplideSlide key={index}>
-                <div 
-                  className={styles.imgWrapper} 
-                  onClick={handleImageWrapperClick}
-                  style={{
-                    padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`
-                  }}
-                >
-                  <img
-                    className={cn(styles.imageStyle, {
-                      [styles.contain]: item.image.objectFit === 'contain',
-                      [styles.cover]: item.image.objectFit === 'cover',
-                      [styles.scaleSlide]: slider.type === 'scale'
-                    })}
-                    src={item.image.url}
-                    alt={item.image.name ?? ''}
-                    onClick={onImageClick}
-                    style={imageStyle}
-                  />
-                </div>
-            </SplideSlide>
-            );
-          })}
-        </Splide>
-        {/* Controls */}
-        {controls.isActive && (
-          <>
-            <div 
-              className={cn(styles.arrow, {[styles.arrowVertical]: slider.direction === 'vert' })}
-              style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
-            >
-              <button
+              return (
+                <SplideSlide key={index}>
+                  <div 
+                    className={styles.imgWrapper} 
+                    onClick={handleImageWrapperClick}
+                    style={{
+                      padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`
+                    }}
+                  >
+                    <img
+                      className={cn(styles.imageStyle, {
+                        [styles.contain]: item.image.objectFit === 'contain',
+                        [styles.cover]: item.image.objectFit === 'cover',
+                        [styles.scaleSlide]: slider.type === 'scale'
+                      })}
+                      src={item.image.url}
+                      alt={item.image.name ?? ''}
+                      onClick={onImageClick}
+                      style={imageStyle}
+                    />
+                  </div>
+              </SplideSlide>
+              );
+            })}
+          </Splide>
+          {/* Controls */}
+          {controls.isActive && (
+            <>
+              <div 
+                className={cn(styles.arrow, {[styles.arrowVertical]: slider.direction === 'vert' })}
+                style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
+              >
+                <button
+                    className={styles.arrowInner}
+                    style={{
+                      transform: `translate(${scalingValue(controls.offset.x)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1))}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                    }}
+                  onClick={(e) => { handleArrowClick('-1'); }}
+                  >
+                    {controls.arrowsImgUrl && (
+                      <SvgImage
+                        url={controls.arrowsImgUrl}
+                        fill={controls.color}
+                        hoverFill={controls.hover}
+                        className={cn(styles.arrowImg, styles.mirror)}
+                      />
+                    )}
+                  </button>
+              </div>
+              <div
+                className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: slider.direction === 'vert'})}
+                style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
+              >              
+                <button
                   className={styles.arrowInner}
                   style={{
-                    transform: `translate(${scalingValue(controls.offset.x)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1))}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                    transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(controls.offset.y)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                   }}
-                onClick={(e) => { handleArrowClick('-1'); }}
+                  onClick={(e) => { handleArrowClick('+1');}}
+                  aria-label='Next'
                 >
                   {controls.arrowsImgUrl && (
                     <SvgImage
                       url={controls.arrowsImgUrl}
                       fill={controls.color}
                       hoverFill={controls.hover}
-                      className={cn(styles.arrowImg, styles.mirror)}
+                      className={styles.arrowImg}
                     />
                   )}
                 </button>
-            </div>
-            <div
-              className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: slider.direction === 'vert'})}
-              style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
-            >              
+              </div>
+            </>
+          )}
+          {/* Close button */}
+          {area.closeIconUrl && (() => {
+            const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset);
+            const scaleTransform = `scale(${area.closeIconScale})`;
+            const combinedTransform = positionStyles.transform
+              ? `${positionStyles.transform} ${scaleTransform}`
+              : scaleTransform;
+            
+            return (
               <button
-                className={styles.arrowInner}
+                className={styles.closeButton}
                 style={{
-                  transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(controls.offset.y)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                  ...positionStyles,
+                  transform: combinedTransform
                 }}
-                onClick={(e) => { handleArrowClick('+1');}}
-                aria-label='Next'
+                onClick={onClose}
               >
-                {controls.arrowsImgUrl && (
-                  <SvgImage
-                    url={controls.arrowsImgUrl}
-                    fill={controls.color}
-                    hoverFill={controls.hover}
-                    className={styles.arrowImg}
-                  />
-                )}
+                <SvgImage url={area.closeIconUrl} />
               </button>
-            </div>
-          </>
-        )}
-        {/* Close button */}
-        {area.closeIconUrl && (() => {
-          const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset);
-          const scaleTransform = `scale(${area.closeIconScale})`;
-          const combinedTransform = positionStyles.transform
-            ? `${positionStyles.transform} ${scaleTransform}`
-            : scaleTransform;
-          
-          return (
-            <button
-              className={styles.closeButton}
+            );
+          })()}
+          {/* Caption */}
+          {caption.isActive && (
+            <div 
+              className={styles.caption} 
               style={{
-                ...positionStyles,
-                transform: combinedTransform
+                ...getPositionStyles(caption.alignment, caption.offset),
+                ['--link-hover-color' as string]: caption.hover
               }}
-              onClick={onClose}
             >
-              <SvgImage url={area.closeIconUrl} />
-            </button>
-          );
-        })()}
-        {/* Caption */}
-        {caption.isActive && (
-          <div 
-            className={styles.caption} 
-            style={{
-              ...getPositionStyles(caption.alignment, caption.offset),
-              ['--link-hover-color' as string]: caption.hover
-            }}
-          >
-            <RichTextRenderer content={content[currentIndex].imageCaption} />
-          </div>
-        )}
-        {/* Thumbnails */}
-        {thumbnail.isActive && (
-          <div
-            className={cn(
-              styles.thumbsContainer, 
-              {
-                [styles.thumbsContainerVertical]: slider.direction === 'vert',
-                [styles.thumbsAlignStart]: thumbnail.align === 'start',
-                [styles.thumbsAlignCenter]: thumbnail.align === 'center',
-                [styles.thumbsAlignEnd]: thumbnail.align === 'end',
-              }
-            )}
-            style={{
-              gap: `${thumbnail.grid.gap}px`,
-              ...(slider.direction === 'horiz' ? { height: `${thumbnail.grid.height}px` } : {}),
-              ...(slider.direction === 'vert' ? { width: `${thumbnail.grid.width}px` } : {}),
-              ...getPositionStyles(thumbnail.position, thumbnail.offset),
-            }}
-          >
-            {content.map((item, index) => {
-              const isActive = index === currentIndex;
-              return (
-                <button
-                  key={`${item.image.url}-${index}`}
-                  className={styles.thumbItem}
-                  style={{
-                    transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
-                    ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
-                    ...(slider.direction === 'vert' ? { width: '100%' } : {}),
-                    opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
-                    ['--thumb-hover' as string]: thumbnail.activeState.opacity,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentIndex(index);
-                    lightboxRef.current?.go(index);
-                  }}
-                >
-                  <img
-                    src={item.image.url}
-                    alt={item.image.name ?? ''}
-                    className={styles.thumbImage}
+              <RichTextRenderer content={content[currentIndex].imageCaption} />
+            </div>
+          )}
+          {/* Thumbnails */}
+          {thumbnail.isActive && (
+            <div
+              className={cn(
+                styles.thumbsContainer, 
+                {
+                  [styles.thumbsContainerVertical]: slider.direction === 'vert',
+                  [styles.thumbsAlignStart]: thumbnail.align === 'start',
+                  [styles.thumbsAlignCenter]: thumbnail.align === 'center',
+                  [styles.thumbsAlignEnd]: thumbnail.align === 'end',
+                }
+              )}
+              style={{
+                gap: `${thumbnail.grid.gap}px`,
+                ...(slider.direction === 'horiz' ? { height: `${thumbnail.grid.height}px` } : {}),
+                ...(slider.direction === 'vert' ? { width: `${thumbnail.grid.width}px` } : {}),
+                ...getPositionStyles(thumbnail.position, thumbnail.offset),
+              }}
+            >
+              {content.map((item, index) => {
+                const isActive = index === currentIndex;
+                return (
+                  <button
+                    key={`${item.image.url}-${index}`}
+                    className={styles.thumbItem}
                     style={{
-                      objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
-                      ...(thumbnail.fit === 'fit' && slider.direction === 'horiz' ? { width: 'fit-content' } : {}),
-                      ...(thumbnail.fit === 'fit' && slider.direction === 'vert' ? { height: 'fit-content'} : {}),
+                      transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
                       ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
                       ...(slider.direction === 'vert' ? { width: '100%' } : {}),
+                      opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
+                      ['--thumb-hover' as string]: thumbnail.activeState.opacity,
                     }}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentIndex(index);
+                      lightboxRef.current?.go(index);
+                    }}
+                  >
+                    <img
+                      src={item.image.url}
+                      alt={item.image.name ?? ''}
+                      className={styles.thumbImage}
+                      style={{
+                        objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
+                        ...(thumbnail.fit === 'fit' && slider.direction === 'horiz' ? { width: 'fit-content' } : {}),
+                        ...(thumbnail.fit === 'fit' && slider.direction === 'vert' ? { height: 'fit-content'} : {}),
+                        ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
+                        ...(slider.direction === 'vert' ? { width: '100%' } : {}),
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>,
     document.getElementById(portalId)!
   );

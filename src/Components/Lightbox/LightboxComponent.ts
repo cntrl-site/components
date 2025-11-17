@@ -501,9 +501,9 @@ export const LightboxComponent: Component = {
           lightboxBlock: {
             appear: {
               type: 'slide in',
-              duration: '1000ms',
+              duration: '500ms',
               direction: 'right',
-              repeat: 'close'
+              repeat: 'loop'
             },
             triggers: {
               type: 'click',
