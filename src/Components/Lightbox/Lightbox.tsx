@@ -137,12 +137,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.style.backgroundColor = area.color;
     const preventScroll = (e: TouchEvent) => e.preventDefault();
     document.addEventListener("touchmove", preventScroll, { passive: false });
   
     return () => {
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("touchmove", preventScroll);
+      document.body.style.backgroundColor = '';
     };
   }, [isOpen]);
 
@@ -261,7 +263,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         className={cn(styles.contentStyle, appearClass)}
         onClick={handleContentClick}
         style={{
-          padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`,
+          // padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`,
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both',
