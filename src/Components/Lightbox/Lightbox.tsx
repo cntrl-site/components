@@ -265,7 +265,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       }}
     />
     <div 
-      className={cn(styles.backdropStyle)} 
+      className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
       onClick={handleBackdropClick}
       onTouchEnd={handleBackdropClick}
       >
