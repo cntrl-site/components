@@ -442,6 +442,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                     className={styles.thumbImage}
                     style={{
                       objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
+                      ...(thumbnail.fit === 'fit' && slider.direction === 'horiz' ? { width: 'fit-content' } : {}),
+                      ...(thumbnail.fit === 'fit' && slider.direction === 'vert' ? { height: 'fit-content'} : {}),
                       ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
                       ...(slider.direction === 'vert' ? { width: '100%' } : {}),
                     }}

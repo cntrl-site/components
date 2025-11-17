@@ -2,12 +2,17 @@
 
 .backdropStyle {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  height: 100dvh;
-  overflow-y: auto;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  min-height: 100dvh; // for iOS
+  height: 100dvh; // for iOS
+  height: -webkit-fill-available; // for iOS
+  overflow-y: auto; // for iOS
+  padding-top: env(safe-area-inset-top); // for iOS
+  padding-bottom: env(safe-area-inset-bottom); // for iOS
   align-items: center;
   justify-content: center;
   z-index: 9999;
