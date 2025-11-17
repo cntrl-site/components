@@ -73,6 +73,17 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       onClose();
     }
   };
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!closeOnBackdropClick) return;
+    const target = e.target as HTMLElement;
+    // Check if clicking on an img element or inside a button
+    const isImg = target.tagName === 'IMG' || target.closest('img');
+    const isButton = target.tagName === 'BUTTON' || target.closest('button');
+    // Close if not clicking on an img element or button
+    if (!isImg && !isButton) {
+      onClose();
+    }
+  };
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (triggers.type === 'click' && triggers.switch === 'image') {
       e.stopPropagation();
@@ -120,6 +131,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
 
   useEffect(() => {
     if (isOpen) setCurrentIndex(0);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -230,6 +251,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       >
       <div
         className={cn(styles.contentStyle, appearClass)}
+        onClick={handleContentClick}
         style={{
           padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`,
           animationDuration: `${appearDurationMs}ms`,

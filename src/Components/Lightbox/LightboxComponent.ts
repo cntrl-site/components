@@ -198,6 +198,7 @@ export const LightboxComponent: Component = {
                         label: 'H',
                         display: {
                           type: 'numeric-input',
+                          visible: true,
                         },
                       },
                       width: {
@@ -577,7 +578,7 @@ export const LightboxComponent: Component = {
               value: 'vert'
             },
             then: {
-              name: 'properties.lightboxBlock.properties.thumbnail.properties.position.display.direction',
+              name: 'properties.lightboxBlock.properties.thumbnail.properties.align.display.direction',
               value: 'vertical'
             }
           },
