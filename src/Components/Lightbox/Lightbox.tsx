@@ -60,6 +60,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   const lightboxRef = useRef<Splide | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
@@ -160,7 +161,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     const timeoutId = setTimeout(() => {
       const activeSlide = document.querySelector('.splide__slide.is-active');
       if (!activeSlide) return;
-
       const img = activeSlide.querySelector('img') as HTMLImageElement;
       const container = activeSlide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
       
@@ -173,7 +173,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         const containerAspectRatio = containerWidth / containerHeight;
-
         if (imageAspectRatio > containerAspectRatio) {
           img.style.width = '100%';
         } else {
@@ -265,7 +264,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       />
       <div 
         className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
-        style={{...(isEditor && { backgroundColor: area.color })}}
+        style={{...(isEditor && { backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, })}}
         onClick={handleBackdropClick}
         onTouchEnd={handleBackdropClick}
         >
@@ -316,9 +315,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   <div 
                     className={styles.imgWrapper} 
                     onClick={handleImageWrapperClick}
-                    style={{
-                      padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`
-                    }}
+                    style={{ padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`}}
                   >
                     <img
                       className={cn(styles.imageStyle, {
@@ -463,8 +460,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                         objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
                         ...(thumbnail.fit === 'fit' && slider.direction === 'horiz' ? { width: 'fit-content' } : {}),
                         ...(thumbnail.fit === 'fit' && slider.direction === 'vert' ? { height: 'fit-content'} : {}),
-                        ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
-                        ...(slider.direction === 'vert' ? { width: '100%' } : {}),
+                        ...(slider.direction === 'horiz' ? { height: '100%', width: 'auto' } : {}),
+                        ...(slider.direction === 'vert' ? { width: '100%', height: 'auto' } : {}),
                       }}
                     />
                   </button>
