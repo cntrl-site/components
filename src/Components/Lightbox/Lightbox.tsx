@@ -67,6 +67,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     }
   };
 
+  const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!closeOnBackdropClick) return;
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     const target = e.target as HTMLElement;
@@ -75,43 +81,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
       onClose();
       return;
     }
+    const isImg = target.tagName === 'IMG' || target.closest('img');
     const isButton = target.tagName === 'BUTTON' || target.closest('button');
-    if (isButton) {
-      return;
+    if (!isImg && !isButton) {
+      onClose();
     }
-    
-    const img = target.tagName === 'IMG' ? target as HTMLImageElement : target.closest('img') as HTMLImageElement;
-    if (img) {
-      const getCoordinates = (): { x: number; y: number } | null => {
-        if ('clientX' in e && 'clientY' in e) {
-          return { x: e.clientX, y: e.clientY };
-        }
-        if ('touches' in e && e.touches.length > 0) {
-          return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        }
-        if ('changedTouches' in e && e.changedTouches.length > 0) {
-          return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-        }
-        return null;
-      };
-      
-      const coords = getCoordinates();
-      if (!coords) {
-        return;
-      }
-      
-      const rect = img.getBoundingClientRect();
-      const isClickInsideImage = coords.x >= rect.left && 
-                                 coords.x <= rect.right && 
-                                 coords.y >= rect.top && 
-                                 coords.y <= rect.bottom;
-      
-      if (!isClickInsideImage) {
-        onClose();
-      }
-      return;
-    }
-    onClose();
   };
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (triggers.type === 'click' && triggers.switch === 'image') {
@@ -341,6 +315,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                 <SplideSlide key={index}>
                   <div 
                     className={styles.imgWrapper} 
+                    onClick={handleImageWrapperClick}
                     style={{
                       padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`
                     }}
