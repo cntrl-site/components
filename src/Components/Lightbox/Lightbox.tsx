@@ -15,6 +15,7 @@ type LightboxProps = {
   content: LightboxImage[];
   settings: LightboxSettings;
   portalId: string;
+  isEditor?: boolean;
   closeOnBackdropClick?: boolean;
   closeOnEsc?: boolean;
 };
@@ -25,9 +26,10 @@ type LightboxGalleryProps = {
   styles: LightboxStyles;
   portalId: string;
   activeEvent: 'close' | 'open';
+  isEditor?: boolean;
 };
 
-export function LightboxGallery({ settings, content, styles, portalId, activeEvent }: LightboxGalleryProps) {
+export function LightboxGallery({ settings, content, styles, portalId, activeEvent, isEditor=true }: LightboxGalleryProps) {
   const [open, setOpen] = React.useState(false);
   const { url } = settings.thumbnailBlock.cover;
 
@@ -48,12 +50,12 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
         style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
         onClick={() => setOpen(true)}
       />
-      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} />
+      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} isEditor={isEditor} />
     </>
   );
 };
 
-const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId }) => {
+const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId, isEditor }) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const lightboxRef = useRef<Splide | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -176,18 +178,31 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   };
 
   const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
+  const backdropDurationMs = (appear.type === 'fade in' || appear.type === 'mix') 
+    ? Math.floor(appearDurationMs * 0.7) 
+    : appearDurationMs;
   const appearClass = (() => {
     if (appear.type === 'fade in') return styles.fadeIn;
-    if (appear.type === 'slide in') {
-      return '';
+    if (appear.type === 'slide in' || appear.type === 'mix') {
+      switch (appear.direction) {
+        case 'left':
+          return styles.slideInLeft;
+        case 'right':
+          return styles.slideInRight;
+        case 'top':
+          return styles.slideInTop;
+        case 'bottom':
+          return styles.slideInBottom;
+        default:
+          return styles.slideInRight;
+      }
     }
-    if (appear.type === 'mix') return styles.fadeIn;
     return styles.fadeIn;
   })();
 
   const backdropAppearClass = (() => {
-    if (appear.type === 'fade in') return styles.fadeIn;
-    if (appear.type === 'slide in' || appear.type === 'mix') {
+    if (appear.type === 'fade in' || appear.type === 'mix') return styles.fadeIn;
+    if (appear.type === 'slide in') {
       switch (appear.direction) {
         case 'left':
           return styles.slideInLeft;
@@ -209,8 +224,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
 
   return createPortal(
     <div 
-      className={cn(styles.backdropStyle, backdropAppearClass)} 
-      style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${appearDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
+      className={cn(styles.backdropStyle, backdropAppearClass, { [styles.editor]: isEditor })} 
+      style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${backdropDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
       onClick={handleBackdropClick} 
       >
       <div
@@ -220,7 +235,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both',
-          ...(appear.type === 'mix' && { animationDelay: '0.5s' }),
+          ...(appear.type === 'mix' && { animationDelay: `${backdropDurationMs}ms` }),
           '--splide-speed': triggers.duration || '500ms'
         } as React.CSSProperties}
       >
@@ -260,6 +275,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                 <div 
                   className={styles.imgWrapper} 
                   onClick={handleImageWrapperClick}
+                  style={{
+                    padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`
+                  }}
                 >
                   <img
                     className={cn(styles.imageStyle, {
@@ -267,7 +285,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                       [styles.cover]: item.image.objectFit === 'cover',
                       [styles.scaleSlide]: slider.type === 'scale'
                     })}
-                    src={item.image.url} alt={item.image.name ?? ''}
+                    src={item.image.url}
+                    alt={item.image.name ?? ''}
                     onClick={onImageClick}
                     style={imageStyle}
                   />
