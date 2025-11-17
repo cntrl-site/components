@@ -255,10 +255,17 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     <>
     <div
       className={cn(styles.background, backdropAppearClass)} 
-      style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${backdropDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
+      style={{
+        ...(isEditor && { [styles.editor]: isEditor }),
+        backgroundColor: area.color,
+        backdropFilter: `blur(${area.blur}px)`,
+        animationDuration: `${backdropDurationMs}ms`,
+        animationTimingFunction: 'ease',
+        animationFillMode: 'both' as unknown as undefined
+      }}
     />
     <div 
-      className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
+      className={cn(styles.backdropStyle)} 
       onClick={handleBackdropClick}
       onTouchEnd={handleBackdropClick}
       >
