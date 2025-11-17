@@ -60,26 +60,29 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   const lightboxRef = useRef<Splide | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
-  const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
-  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     const target = e.target as HTMLElement;
-    // Check if clicking on an img element or inside a button
+    const currentTarget = e.currentTarget as HTMLElement;
+    if (target === currentTarget) {
+      onClose();
+      return;
+    }
     const isImg = target.tagName === 'IMG' || target.closest('img');
     const isButton = target.tagName === 'BUTTON' || target.closest('button');
-    // Close if not clicking on an img element or button
     if (!isImg && !isButton) {
       onClose();
     }
@@ -256,14 +259,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
     />
     <div 
       className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
-      // style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${backdropDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
-      onClick={handleBackdropClick} 
+      onClick={handleBackdropClick}
+      onTouchEnd={handleBackdropClick}
       >
       <div
         className={cn(styles.contentStyle, appearClass)}
         onClick={handleContentClick}
         style={{
-          // padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`,
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both',
