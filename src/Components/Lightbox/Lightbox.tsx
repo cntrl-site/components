@@ -247,9 +247,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
   if (!isOpen) return null;
 
   return createPortal(
-    <div 
-      className={cn(styles.backdropStyle, backdropAppearClass, { [styles.editor]: isEditor })} 
+    <>
+    <div
+      className={cn(styles.background, backdropAppearClass)} 
       style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${backdropDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
+    />
+    <div 
+      className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
+      // style={{ backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, animationDuration: `${backdropDurationMs}ms`, animationTimingFunction: 'ease', animationFillMode: 'both' as unknown as undefined }}
       onClick={handleBackdropClick} 
       >
       <div
@@ -457,7 +462,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           </div>
         )}
       </div>
-    </div>,
+    </div>
+    </>,
     document.getElementById(portalId)!
   );
 };
