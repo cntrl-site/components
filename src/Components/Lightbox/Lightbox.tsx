@@ -29,7 +29,7 @@ type LightboxGalleryProps = {
   isEditor?: boolean;
 };
 
-export function LightboxGallery({ settings, content, styles, portalId, activeEvent, isEditor=true }: LightboxGalleryProps) {
+export function LightboxGallery({ settings, content, styles, portalId, activeEvent, isEditor }: LightboxGalleryProps) {
   const [open, setOpen] = React.useState(false);
   const { url } = settings.thumbnailBlock.cover;
 

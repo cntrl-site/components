@@ -10,6 +10,9 @@
 };
 
 .editor {
+  width: var(--cntrl-article-width)!important;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .contentStyle {
