@@ -37,6 +37,7 @@ export const LightboxComponent: Component = {
                   url: {
                     type: 'string',
                     display: {
+                      mode: 'cover',
                       type: 'settings-image-input',
                     }
                   }
