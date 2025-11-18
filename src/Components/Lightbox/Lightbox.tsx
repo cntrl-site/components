@@ -173,14 +173,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         const containerAspectRatio = containerWidth / containerHeight;
-        console.log(imageAspectRatio, containerAspectRatio);
         if (imageAspectRatio > containerAspectRatio) {
           img.style.width = '100%';
           img.style.height = '';
         } else {
           img.style.height = '100%';
           img.style.width = '';
-          console.log('Setting height to 100%, clearing width');
         }
       };
 

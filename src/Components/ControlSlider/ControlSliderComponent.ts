@@ -122,6 +122,7 @@ export const ControlSliderComponent = {
                   x: {
                     type: 'number',
                     label: 'X',
+                    scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
                       visible: true,
@@ -130,6 +131,7 @@ export const ControlSliderComponent = {
                   y: {
                     type: 'number',
                     label: 'Y',
+                    scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
                       visible: true,
@@ -194,6 +196,7 @@ export const ControlSliderComponent = {
                   x: {
                     type: 'number',
                     label: 'X',
+                    scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
                       visible: true,
@@ -202,6 +205,7 @@ export const ControlSliderComponent = {
                   y: {
                     type: 'number',
                     label: 'Y',
+                    scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
                       visible: true,
@@ -266,6 +270,7 @@ export const ControlSliderComponent = {
                   x: {
                     type: 'number',
                     label: 'X',
+                    scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
                       visible: true,
@@ -274,6 +279,7 @@ export const ControlSliderComponent = {
                   y: {
                     type: 'number',
                     label: 'Y',
+                    scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
                       visible: true,

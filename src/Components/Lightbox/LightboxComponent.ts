@@ -229,6 +229,7 @@ export const LightboxComponent: Component = {
                       x: {
                         type: 'number',
                         label: 'X',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -237,6 +238,7 @@ export const LightboxComponent: Component = {
                       y: {
                         type: 'number',
                         label: 'Y',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -265,7 +267,7 @@ export const LightboxComponent: Component = {
                       scale: {
                         type: 'number',
                         title: 'Scale',
-                        min: 0.5,
+                        min: 1,
                         max: 5,
                         step: 0.1,
                         display: {
@@ -310,6 +312,7 @@ export const LightboxComponent: Component = {
                       x: {
                         type: 'number',
                         label: 'X',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -318,6 +321,7 @@ export const LightboxComponent: Component = {
                       y: {
                         type: 'number',
                         label: 'Y',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -376,6 +380,7 @@ export const LightboxComponent: Component = {
                       x: {
                         type: 'number',
                         label: 'X',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -384,6 +389,7 @@ export const LightboxComponent: Component = {
                       y: {
                         type: 'number',
                         label: 'Y',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -474,6 +480,7 @@ export const LightboxComponent: Component = {
                       x: {
                         type: 'number',
                         label: 'X',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -482,6 +489,7 @@ export const LightboxComponent: Component = {
                       y: {
                         type: 'number',
                         label: 'Y',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -520,6 +528,7 @@ export const LightboxComponent: Component = {
                       x: {
                         type: 'number',
                         label: 'X',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -528,6 +537,7 @@ export const LightboxComponent: Component = {
                       y: {
                         type: 'number',
                         label: 'Y',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
