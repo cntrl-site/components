@@ -114,16 +114,27 @@ export const ControlSliderComponent = {
               },
               offset: {
                 type: 'object',
+                title: 'Offset',
                 display: {
-                  type: 'offset-controls',
+                  type: 'group',
                 },
                 properties: {
                   x: {
                     type: 'number',
+                    label: 'X',
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
                   },
                   y: {
                     type: 'number',
-                  }
+                    label: 'Y',
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
+                  },
                 }
               },
               scale: {
@@ -175,16 +186,27 @@ export const ControlSliderComponent = {
               },
               offset: {
                 type: 'object',
+                title: 'Offset',
                 display: {
-                  type: 'offset-controls',
+                  type: 'group',
                 },
                 properties: {
                   x: {
                     type: 'number',
+                    label: 'X',
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
                   },
                   y: {
                     type: 'number',
-                  }
+                    label: 'Y',
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
+                  },
                 }
               },
               scale: {
@@ -238,15 +260,25 @@ export const ControlSliderComponent = {
               offset: {
                 type: 'object',
                 display: {
-                  type: 'offset-controls',
+                  type: 'group',
                 },
                 properties: {
                   x: {
                     type: 'number',
+                    label: 'X',
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
                   },
                   y: {
                     type: 'number',
-                  }
+                    label: 'Y',
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
+                  },
                 }
               },
               hover: {

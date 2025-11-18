@@ -1,4 +1,5 @@
 import { CSSProperties } from 'react';
+import { scalingValue } from './scalingValue';
 
 export type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
@@ -7,7 +8,7 @@ export type Offset = {
   y: number;
 };
 
-export const getPositionStyles = (position: Alignment, offset: Offset): CSSProperties => {
+export const getPositionStyles = (position: Alignment, offset: Offset, isEditor?: boolean): CSSProperties => {
   const styles: CSSProperties = {};
   const [vertical, horizontal] = position.split('-');
 
@@ -35,14 +36,14 @@ export const getPositionStyles = (position: Alignment, offset: Offset): CSSPrope
 
   // Apply offset only in transform
   if (vertical === 'middle' && horizontal === 'center') {
-    styles.transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
+    styles.transform = `translate(calc(-50% + ${scalingValue(offset.x, isEditor)}), calc(-50% + ${scalingValue(offset.y, isEditor)}))`;
   } else if (vertical === 'middle') {
-    styles.transform = `translate(${offset.x}px, calc(-50% + ${offset.y}px))`;
+    styles.transform = `translate(${scalingValue(offset.x, isEditor)}, calc(-50% + ${scalingValue(offset.y, isEditor)}))`;
   } else if (horizontal === 'center') {
-    styles.transform = `translate(calc(-50% + ${offset.x}px), ${offset.y}px)`;
+    styles.transform = `translate(calc(-50% + ${scalingValue(offset.x, isEditor)}), ${scalingValue(offset.y, isEditor)})`;
   } else {
     // For corner positions (top-left, top-right, bottom-left, bottom-right)
-    styles.transform = `translate(${offset.x}px, ${offset.y}px)`;
+    styles.transform = `translate(${scalingValue(offset.x, isEditor)}, ${scalingValue(offset.y, isEditor)})`;
   }
   
   return styles;

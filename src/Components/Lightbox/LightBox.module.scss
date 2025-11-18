@@ -72,6 +72,9 @@
 .caption {
   position: absolute;
   display: flex;
+  &:hover {
+    color: var(--link-hover-color) !important;
+  }
 }
 
 .lightboxSplide:global(.splide),

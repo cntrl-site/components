@@ -109,14 +109,6 @@ export const LightboxComponent: Component = {
                       type: 'ratio-group',
                     },
                     enum: ['image', '50/50']
-                  },
-                  duration: {
-                    type: 'string',
-                    label: 'T',
-                    display: {
-                      type: 'step-selector',
-                    },
-                    enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
                   }
                 }
               },
@@ -139,6 +131,14 @@ export const LightboxComponent: Component = {
                       type: 'ratio-group'
                     },
                     enum: ['horiz', 'vert']
+                  },
+                  duration: {
+                    type: 'string',
+                    label: 'T',
+                    display: {
+                      type: 'step-selector',
+                    },
+                    enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
                   }
                 }
               },
@@ -220,16 +220,27 @@ export const LightboxComponent: Component = {
                   },
                   offset: {
                     type: 'object',
+                    title: 'Offset',
                     display: {
-                      type: 'offset-controls',
+                      type: 'group',
                     },
                     properties: {
                       x: {
                         type: 'number',
+                        label: 'X',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
                       },
                       y: {
                         type: 'number',
-                      }
+                        label: 'Y',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
                     }
                   },
                   opacity: {
@@ -290,16 +301,27 @@ export const LightboxComponent: Component = {
                   },
                   offset: {
                     type: 'object',
+                    title: 'Offset',
                     display: {
-                      type: 'offset-controls',
+                      type: 'group',
                     },
                     properties: {
                       x: {
                         type: 'number',
+                        label: 'X',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
                       },
                       y: {
                         type: 'number',
-                      }
+                        label: 'Y',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
                     }
                   },
                   padding: {
@@ -344,17 +366,28 @@ export const LightboxComponent: Component = {
                     },
                   },
                   offset: {
+                    title: 'Offset',
                     type: 'object',
                     display: {
-                      type: 'offset-controls',
+                      type: 'group',
                     },
                     properties: {
                       x: {
                         type: 'number',
+                        label: 'X',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
                       },
                       y: {
                         type: 'number',
-                      }
+                        label: 'Y',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
                     }
                   },
                   scale: {
@@ -432,16 +465,27 @@ export const LightboxComponent: Component = {
                   },
                   closeIconOffset: {
                     type: 'object',
+                    title: 'Offset',
                     display: {
-                      type: 'offset-controls',
+                      type: 'group',
                     },
                     properties: {
                       x: {
                         type: 'number',
+                        label: 'X',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
                       },
                       y: {
                         type: 'number',
-                      }
+                        label: 'Y',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
                     }
                   }
                 }
@@ -466,17 +510,28 @@ export const LightboxComponent: Component = {
                     enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
                   },
                   offset: {
+                    title: 'Offset',
                     type: 'object',
                     display: {
-                      type: 'offset-controls',
+                      type: 'group',
                     },
                     properties: {
                       x: {
                         type: 'number',
+                        label: 'X',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
                       },
                       y: {
                         type: 'number',
-                      }
+                        label: 'Y',
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
                     }
                   },
                   hover: {
@@ -508,11 +563,11 @@ export const LightboxComponent: Component = {
             triggers: {
               type: 'click',
               switch: 'image',
-              duration: '2000ms'
             },
             slider: {
               type: 'fade',
-              direction: 'horiz'
+              direction: 'horiz',
+              duration: '1000ms'
             },
             thumbnail: {
               isActive: true,
@@ -648,7 +703,7 @@ export const LightboxComponent: Component = {
               value: 'click'
             },
             then: {
-              name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
+              name: 'properties.lightboxBlock.properties.slider.properties.duration.display.visible',
               value: true
             }
           },
@@ -658,7 +713,7 @@ export const LightboxComponent: Component = {
               value: 'click'
             },
             then: {
-              name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
+              name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
               value: true
             }
           },
@@ -668,7 +723,7 @@ export const LightboxComponent: Component = {
               value: 'drag'
             },
             then: {
-              name: 'properties.lightboxBlock.properties.triggers.properties.duration.display.visible',
+              name: 'properties.lightboxBlock.properties.slider.properties.duration.display.visible',
               value: false
             }
           },
@@ -678,7 +733,7 @@ export const LightboxComponent: Component = {
               value: 'drag'
             },
             then: {
-              name: 'properties.lightboxBlock.properties.triggers.properties.switch.display.visible',
+              name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
               value: false
             }
           }

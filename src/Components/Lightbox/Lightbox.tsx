@@ -173,10 +173,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         const containerAspectRatio = containerWidth / containerHeight;
+        console.log(imageAspectRatio, containerAspectRatio);
         if (imageAspectRatio > containerAspectRatio) {
           img.style.width = '100%';
+          img.style.height = '';
         } else {
           img.style.height = '100%';
+          img.style.width = '';
+          console.log('Setting height to 100%, clearing width');
         }
       };
 
@@ -275,8 +279,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             animationDuration: `${appearDurationMs}ms`,
             animationTimingFunction: 'ease',
             animationFillMode: 'both',
-            ...(appear.type === 'mix' && { animationDelay: `${backdropDurationMs}ms` }),
-            '--splide-speed': triggers.duration || '500ms'
+            ...(appear.type === 'mix' && { animationDelay: `${backdropDurationMs/2}ms` }),
+            '--splide-speed': slider.duration || '500ms'
           } as React.CSSProperties}
         >
           <Splide
@@ -285,7 +289,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             className={styles.lightboxSplide}
             options={{
               arrows: false,
-              speed: triggers.duration ? parseInt(triggers.duration) : 500,
+              speed: slider.duration ? parseInt(slider.duration) : 500,
               direction: slider.direction === 'horiz' || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb',
               pagination: false,
               drag: triggers.type === 'drag',
@@ -296,10 +300,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
               padding: 0,
               rewind: (slider.type === 'scale' || slider.type === 'fade') && appear.repeat !== 'close'
             }}
-            style={{'--splide-speed': triggers.duration || '500ms'} as React.CSSProperties}
+            style={{'--splide-speed': slider.duration || '500ms'} as React.CSSProperties}
           >
             {content.map((item, index) => {
-              const positionStyles = getPositionStyles(layout.position, layout.offset);
+              const positionStyles = getPositionStyles(layout.position, layout.offset, isEditor);
               const imageStyle: React.CSSProperties = slider.type === 'scale' 
                 ? (() => {
                     const { transform, ...restStyles } = positionStyles;
@@ -315,7 +319,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                   <div 
                     className={styles.imgWrapper} 
                     onClick={handleImageWrapperClick}
-                    style={{ padding: `${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`}}
+                    style={{ padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
                   >
                     <img
                       className={cn(styles.imageStyle, {
@@ -343,7 +347,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                 <button
                     className={styles.arrowInner}
                     style={{
-                      transform: `translate(${scalingValue(controls.offset.x)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1))}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                      transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                     }}
                   onClick={(e) => { handleArrowClick('-1'); }}
                   >
@@ -364,7 +368,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                 <button
                   className={styles.arrowInner}
                   style={{
-                    transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1))}, ${scalingValue(controls.offset.y)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
+                    transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
                   }}
                   onClick={(e) => { handleArrowClick('+1');}}
                   aria-label='Next'
@@ -383,7 +387,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
           )}
           {/* Close button */}
           {area.closeIconUrl && (() => {
-            const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset);
+            const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset, isEditor);
             const scaleTransform = `scale(${area.closeIconScale})`;
             const combinedTransform = positionStyles.transform
               ? `${positionStyles.transform} ${scaleTransform}`
@@ -407,9 +411,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             <div 
               className={styles.caption} 
               style={{
-                ...getPositionStyles(caption.alignment, caption.offset),
+                ...getPositionStyles(caption.alignment, caption.offset, isEditor),
                 ['--link-hover-color' as string]: caption.hover
               }}
+              onClick={(e) => e.stopPropagation()}
             >
               <RichTextRenderer content={content[currentIndex].imageCaption} />
             </div>
@@ -428,9 +433,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
               )}
               style={{
                 gap: `${thumbnail.grid.gap}px`,
-                ...(slider.direction === 'horiz' ? { height: `${thumbnail.grid.height}px` } : {}),
-                ...(slider.direction === 'vert' ? { width: `${thumbnail.grid.width}px` } : {}),
-                ...getPositionStyles(thumbnail.position, thumbnail.offset),
+                ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor),
               }}
             >
               {content.map((item, index) => {
@@ -440,11 +443,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                     key={`${item.image.url}-${index}`}
                     className={styles.thumbItem}
                     style={{
-                      transform: `scale(${isActive ? thumbnail.activeState.scale : 1})`,
-                      ...(slider.direction === 'horiz' ? { height: '100%' } : {}),
-                      ...(slider.direction === 'vert' ? { width: '100%' } : {}),
-                      opacity: isActive ? thumbnail.activeState.opacity : thumbnail.opacity,
-                      ['--thumb-hover' as string]: thumbnail.activeState.opacity,
+                      ...(slider.direction === 'horiz' ? { height: isActive ? `${thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.height}px` } : {}),
+                      ...(slider.direction === 'vert' ? { width: isActive ? `${thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.width}px` } : {}), 
+                      ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: isActive ? `${thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.width}px` } : {}),
+                      ...(thumbnail.fit === 'cover' && slider.direction === 'vert' ? { height: isActive ? `${thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.height}px` } : {}),
+                      transition: isActive ? 'all 0.2s ease' : 'none',
+                      opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
+                      ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100,
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -460,8 +465,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
                         objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
                         ...(thumbnail.fit === 'fit' && slider.direction === 'horiz' ? { width: 'fit-content' } : {}),
                         ...(thumbnail.fit === 'fit' && slider.direction === 'vert' ? { height: 'fit-content'} : {}),
-                        ...(slider.direction === 'horiz' ? { height: '100%', width: 'auto' } : {}),
-                        ...(slider.direction === 'vert' ? { width: '100%', height: 'auto' } : {}),
+                        ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: '100%', height: '100%' } : {}),
                       }}
                     />
                   </button>
@@ -511,7 +515,6 @@ type Padding = {
 type Triggers = {
   type: 'click' | 'drag';
   switch: 'image' | '50/50';
-  duration: string;
 };
 
 type LightboxSettings = {
@@ -531,6 +534,7 @@ type LightboxSettings = {
     slider: {
       type: 'slide' | 'fade' | 'scale';
       direction: 'horiz' | 'vert';
+      duration: string;
     };
     thumbnail: {
       isActive: boolean;
