@@ -8,6 +8,7 @@ import cn from 'classnames';
 import '@splidejs/react-splide/css';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
+import { getDisplayedImageRect } from '../utils/getImageRect';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -61,8 +62,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [splideKey, setSplideKey] = React.useState(0);
   const lightboxRef = useRef<Splide | null>(null);
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -93,6 +94,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     }
   };
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
+    if (!rect) return;
+    const inside = e.clientX >= rect.x && e.clientX <= rect.x + rect.width && e.clientY >= rect.y && e.clientY <= rect.y + rect.height;
+    if (!inside) {
+      onClose();
+      return;
+    }
     if (triggers.type === 'click' && triggers.switch === 'image') {
       e.stopPropagation();
       lightboxRef.current?.go('+1');
@@ -162,89 +170,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       document.body.style.backgroundColor = '';
     };
   }, [isOpen]);
-
-  const updateImageSizeForSlide = React.useCallback((slide: Element) => {
-    const img = slide.querySelector('img') as HTMLImageElement;
-    const container = slide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
-    
-    if (!img || !container) return;
-
-    const updateImageSize = () => {
-      if (!img.naturalWidth || !img.naturalHeight) return;
-
-      const imageAspectRatio = img.naturalWidth / img.naturalHeight;
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-      const containerAspectRatio = containerWidth / containerHeight;
-      if (imageAspectRatio > containerAspectRatio) {
-        img.style.width = '100%';
-        img.style.height = '';
-      } else {
-        img.style.height = '100%';
-        img.style.width = '';
-      }
-    };
-
-    if (img.complete && img.naturalWidth && img.naturalHeight) {
-      updateImageSize();
-    } else {
-      img.onload = updateImageSize;
-    }
-  }, [styles.imgWrapper]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    if (resizeObserverRef.current) {
-      resizeObserverRef.current.disconnect();
-      resizeObserverRef.current = null;
-    }
-    
-    const timeoutId = setTimeout(() => {
-      const allSlides = document.querySelectorAll('.splide__slide');
-      if (allSlides.length === 0) return;
-      allSlides.forEach((slide) => {
-        updateImageSizeForSlide(slide);
-      });
-
-      resizeObserverRef.current = new ResizeObserver(() => {
-        const activeSlide = document.querySelector('.splide__slide.is-active');
-        if (activeSlide) {
-          updateImageSizeForSlide(activeSlide);
-        }
-      });
-      
-      const activeSlide = document.querySelector('.splide__slide.is-active');
-      if (activeSlide) {
-        const container = activeSlide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
-        if (container) {
-          resizeObserverRef.current.observe(container);
-        }
-      }
-    }, 0);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-        resizeObserverRef.current = null;
-      }
-    };
-  }, [isOpen, content, updateImageSizeForSlide]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const timeoutId = setTimeout(() => {
-      const activeSlide = document.querySelector('.splide__slide.is-active');
-      if (activeSlide) {
-        updateImageSizeForSlide(activeSlide);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [isOpen, currentIndex, updateImageSizeForSlide]);
   
   const handleArrowClick = (dir: '+1' | '-1') => {
     lightboxRef.current?.go(dir);
@@ -312,6 +237,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         style={{...(isEditor && { backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, })}}
         onClick={handleBackdropClick}
         onTouchEnd={handleBackdropClick}
+        onTouchStart={handleBackdropClick}  
         >
         <div
           className={cn(styles.contentStyle, appearClass)}
@@ -364,6 +290,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                     style={{ padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
                   >
                     <img
+                      ref={imageRef}
                       className={cn(styles.imageStyle, {
                         [styles.contain]: item.image.objectFit === 'contain',
                         [styles.cover]: item.image.objectFit === 'cover',
@@ -523,11 +450,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                     <img
                       src={item.image.url}
                       alt={item.image.name ?? ''}
-                      className={styles.thumbImage}
                       style={{
                         objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
-                        ...(thumbnail.fit === 'fit' && slider.direction === 'horiz' ? { width: 'fit-content' } : {}),
-                        ...(thumbnail.fit === 'fit' && slider.direction === 'vert' ? { height: 'fit-content'} : {}),
+                        ...(thumbnail.fit === 'fit' ? { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } : {}),
                         ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: '100%', height: '100%' } : {}),
                       }}
                     />
