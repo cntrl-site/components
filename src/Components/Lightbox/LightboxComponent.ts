@@ -11,8 +11,8 @@ export const LightboxComponent: Component = {
     url: 'https://cdn.cntrl.site/projects/01GJ2SPDSH73MC92WW7ZA2CWBY/articles-assets/01KA24CHYZXJBZ0Q714B05A7VD.mp4',
   },
   defaultSize: {
-    width: 400,
-    height: 400
+    width: 440,
+    height: 550
   },
   schema: {
     type: 'object',

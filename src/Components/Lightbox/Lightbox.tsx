@@ -59,8 +59,10 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
 const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightboxStyles, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId, isEditor }) => {
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [splideKey, setSplideKey] = React.useState(0);
   const lightboxRef = useRef<Splide | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const prevSliderTypeRef = useRef<string | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -140,6 +142,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   }, [isOpen]);
 
   useEffect(() => {
+    if (prevSliderTypeRef.current !== null && prevSliderTypeRef.current !== slider.type) {
+      setSplideKey(prev => prev + 1);
+    }
+    prevSliderTypeRef.current = slider.type;
+  }, [slider.type]);
+
+  useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -154,46 +163,63 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     };
   }, [isOpen]);
 
+  const updateImageSizeForSlide = React.useCallback((slide: Element) => {
+    const img = slide.querySelector('img') as HTMLImageElement;
+    const container = slide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
+    
+    if (!img || !container) return;
+
+    const updateImageSize = () => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+
+      const imageAspectRatio = img.naturalWidth / img.naturalHeight;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const containerAspectRatio = containerWidth / containerHeight;
+      if (imageAspectRatio > containerAspectRatio) {
+        img.style.width = '100%';
+        img.style.height = '';
+      } else {
+        img.style.height = '100%';
+        img.style.width = '';
+      }
+    };
+
+    if (img.complete && img.naturalWidth && img.naturalHeight) {
+      updateImageSize();
+    } else {
+      img.onload = updateImageSize;
+    }
+  }, [styles.imgWrapper]);
+
   useEffect(() => {
     if (!isOpen) return;
     if (resizeObserverRef.current) {
       resizeObserverRef.current.disconnect();
       resizeObserverRef.current = null;
     }
+    
     const timeoutId = setTimeout(() => {
-      const activeSlide = document.querySelector('.splide__slide.is-active');
-      if (!activeSlide) return;
-      const img = activeSlide.querySelector('img') as HTMLImageElement;
-      const container = activeSlide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
-      
-      if (!img || !container) return;
-
-      const updateImageSize = () => {
-        if (!img.naturalWidth || !img.naturalHeight) return;
-
-        const imageAspectRatio = img.naturalWidth / img.naturalHeight;
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-        const containerAspectRatio = containerWidth / containerHeight;
-        if (imageAspectRatio > containerAspectRatio) {
-          img.style.width = '100%';
-          // img.style.height = '';
-        } else {
-          img.style.height = '100%';
-          // img.style.width = '';
-        }
-      };
-
-      if (img.complete) {
-        updateImageSize();
-      } else {
-        img.onload = updateImageSize;
-      }
-      resizeObserverRef.current = new ResizeObserver(() => {
-        updateImageSize();
+      const allSlides = document.querySelectorAll('.splide__slide');
+      if (allSlides.length === 0) return;
+      allSlides.forEach((slide) => {
+        updateImageSizeForSlide(slide);
       });
-      resizeObserverRef.current.observe(container);
-      resizeObserverRef.current.observe(img);
+
+      resizeObserverRef.current = new ResizeObserver(() => {
+        const activeSlide = document.querySelector('.splide__slide.is-active');
+        if (activeSlide) {
+          updateImageSizeForSlide(activeSlide);
+        }
+      });
+      
+      const activeSlide = document.querySelector('.splide__slide.is-active');
+      if (activeSlide) {
+        const container = activeSlide.querySelector(`.${styles.imgWrapper}`) as HTMLDivElement;
+        if (container) {
+          resizeObserverRef.current.observe(container);
+        }
+      }
     }, 0);
 
     return () => {
@@ -203,7 +229,22 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         resizeObserverRef.current = null;
       }
     };
-  }, [isOpen, currentIndex, content]);
+  }, [isOpen, content, updateImageSizeForSlide]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const timeoutId = setTimeout(() => {
+      const activeSlide = document.querySelector('.splide__slide.is-active');
+      if (activeSlide) {
+        updateImageSizeForSlide(activeSlide);
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [isOpen, currentIndex, updateImageSizeForSlide]);
   
   const handleArrowClick = (dir: '+1' | '-1') => {
     lightboxRef.current?.go(dir);
@@ -284,6 +325,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
           } as React.CSSProperties}
         >
           <Splide
+            key={splideKey}
             onMove={(splide) => { setCurrentIndex(splide.index); }}
             ref={lightboxRef}
             className={styles.lightboxSplide}
