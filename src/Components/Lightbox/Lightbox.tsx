@@ -14,6 +14,7 @@ type LightboxProps = {
   onClose: () => void;
   content: LightboxImage[];
   settings: LightboxSettings;
+  styles: LightboxStyles;
   portalId: string;
   isEditor?: boolean;
   closeOnBackdropClick?: boolean;
@@ -50,12 +51,13 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
         style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
         onClick={() => setOpen(true)}
       />
-      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} portalId={portalId} isEditor={isEditor} />
+      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} styles={styles} portalId={portalId} isEditor={isEditor} />
     </>
   );
 };
 
-const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId, isEditor }) => {
+const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightboxStyles, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId, isEditor }) => {
+  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const lightboxRef = useRef<Splide | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -175,10 +177,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
         const containerAspectRatio = containerWidth / containerHeight;
         if (imageAspectRatio > containerAspectRatio) {
           img.style.width = '100%';
-          img.style.height = '';
+          // img.style.height = '';
         } else {
           img.style.height = '100%';
-          img.style.width = '';
+          // img.style.width = '';
         }
       };
 
@@ -336,7 +338,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
             })}
           </Splide>
           {/* Controls */}
-          {controls.isActive && (
+          {controls.isActive && controls.arrowsImgUrl && (
             <>
               <div 
                 className={cn(styles.arrow, {[styles.arrowVertical]: slider.direction === 'vert' })}
@@ -410,11 +412,32 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, settings,closeO
               className={styles.caption} 
               style={{
                 ...getPositionStyles(caption.alignment, caption.offset, isEditor),
-                ['--link-hover-color' as string]: caption.hover
+                fontFamily: fontSettings.fontFamily,
+                fontWeight: fontSettings.fontWeight,
+                fontStyle: fontSettings.fontStyle,
+                width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
+                letterSpacing: scalingValue(letterSpacing, isEditor),
+                wordSpacing: scalingValue(wordSpacing, isEditor),
+                textAlign,
+                fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                textTransform: textAppearance.textTransform ?? 'none',
+                textDecoration: textAppearance.textDecoration ?? 'none',
+                fontVariant: textAppearance.fontVariant ?? 'normal',
+                color,
+                transitionDuration: slider.duration ? `${Math.round(parseInt(slider.duration) / 2)}ms` : '500ms',
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <RichTextRenderer content={content[currentIndex].imageCaption} />
+              <div
+                data-styles="caption"
+                className={styles.captionTextInner}
+                style={{
+                  position: 'relative',
+                }}
+              >
+                <RichTextRenderer content={content[currentIndex].imageCaption} />
+              </div>
             </div>
           )}
           {/* Thumbnails */}
@@ -572,4 +595,30 @@ type LightboxSettings = {
 };
 
 type LightboxStyles = {
+  caption: CaptionStyles;
 }
+
+type CaptionStyles = {
+  fontSettings: {
+    fontFamily: string;
+    fontWeight: number;
+    fontStyle: string;
+  },
+  widthSettings: {
+    width: number;
+    sizing: 'auto' | 'manual';
+  };
+  letterSpacing: number;
+  textAlign: 'left' | 'center' | 'right';
+  wordSpacing: number;
+  fontSizeLineHeight: {
+    fontSize: number;
+    lineHeight: number;
+  };
+  textAppearance: {
+    textTransform: 'none' | 'uppercase' | 'lowercase';
+    textDecoration: 'none' | 'underline';
+    fontVariant: 'normal' | 'small-caps';
+  };
+  color: string;
+};

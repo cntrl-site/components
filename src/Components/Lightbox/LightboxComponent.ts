@@ -708,46 +708,26 @@ export const LightboxComponent: Component = {
               value: false
             }
           },
-          {
-            if: {
-              name: 'lightboxBlock.triggers.type',
-              value: 'click'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.slider.properties.duration.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.triggers.type',
-              value: 'click'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.triggers.type',
-              value: 'drag'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.slider.properties.duration.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.triggers.type',
-              value: 'drag'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
-              value: false
-            }
-          }
+          // {
+          //   if: {
+          //     name: 'lightboxBlock.triggers.type',
+          //     value: 'click'
+          //   },
+          //   then: {
+          //     name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
+          //     value: true
+          //   }
+          // },
+          // {
+          //   if: {
+          //     name: 'lightboxBlock.triggers.type',
+          //     value: 'drag'
+          //   },
+          //   then: {
+          //     name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
+          //     value: false
+          //   }
+          // }
         ]
       },
       content: {
