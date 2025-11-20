@@ -159,14 +159,19 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    document.body.style.backgroundColor = area.color;
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isMobile && !isEditor) {
+      document.body.style.backgroundColor = area.color;
+    }
     const preventScroll = (e: TouchEvent) => e.preventDefault();
     document.addEventListener("touchmove", preventScroll, { passive: false });
   
     return () => {
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("touchmove", preventScroll);
-      document.body.style.backgroundColor = '';
+      if (isMobile && !isEditor) {
+        document.body.style.backgroundColor = '';
+      }
     };
   }, [isOpen]);
   
@@ -260,8 +265,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         }}
       />
       <div 
-        className={cn(styles.backdropStyle, { [styles.editor]: isEditor })} 
-        style={{...(isEditor && { backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, })}}
+        className={cn(styles.backdropStyle, { [styles.editor]: isEditor, [backdropAppearClass]: isEditor })} 
+        style={{...(isEditor && {
+          backgroundColor: area.color,
+          backdropFilter: `blur(${area.blur}px)`,
+          animationDuration: `${backdropDurationMs}ms`,
+          animationTimingFunction: 'ease',
+          animationFillMode: 'both' as unknown as undefined
+        })}}
         onClick={handleBackdropClick}
         onTouchEnd={handleBackdropClick}
         onTouchStart={handleBackdropClick}

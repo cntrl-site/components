@@ -1,4 +1,3 @@
-import { title } from 'process';
 import { LightboxGallery } from './Lightbox';
 import { Component } from '../../types/Component';
 
@@ -37,8 +36,7 @@ export const LightboxComponent: Component = {
                   url: {
                     type: 'string',
                     display: {
-                      mode: 'cover',
-                      type: 'settings-image-input',
+                      type: 'cover-image-input',
                     }
                   }
                 }
