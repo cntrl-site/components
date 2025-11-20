@@ -422,7 +422,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                 }
               )}
               style={{
-                gap: `${thumbnail.grid.gap}px`,
+                gap: `${scalingValue(thumbnail.grid.gap, isEditor)}`,
                 ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor),
               }}
             >
@@ -433,10 +433,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                     key={`${item.image.url}-${index}`}
                     className={styles.thumbItem}
                     style={{
-                      ...(slider.direction === 'horiz' ? { height: isActive ? `${thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.height}px` } : {}),
-                      ...(slider.direction === 'vert' ? { width: isActive ? `${thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.width}px` } : {}), 
-                      ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: isActive ? `${thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.width}px` } : {}),
-                      ...(thumbnail.fit === 'cover' && slider.direction === 'vert' ? { height: isActive ? `${thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1)}px` : `${thumbnail.grid.height}px` } : {}),
+                      ...(slider.direction === 'horiz' ? { height: isActive ? `${scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.height, isEditor)}` } : {}),
+                      ...(slider.direction === 'vert' ? { width: isActive ? `${scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.width, isEditor)}` } : {}), 
+                      ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: isActive ? `${scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.width, isEditor)}` } : {}),
+                      ...(thumbnail.fit === 'cover' && slider.direction === 'vert' ? { height: isActive ? `${scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.height, isEditor)}` } : {}),
                       transition: isActive ? 'all 0.2s ease' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100,
