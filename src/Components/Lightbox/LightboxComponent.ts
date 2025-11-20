@@ -587,12 +587,12 @@ export const LightboxComponent: Component = {
               align: 'center',
               triggers: 'clk',
               grid: {
-                height: 60,
-                width: 60,
-                gap: 8
+                height: 0.03,
+                width: 0.03,
+                gap: 0.008
               },
               offset: { x: 0, y: 0 },
-              opacity: 100,
+              opacity: 80,
               activeState: {
                 scale: 1,
                 opacity: 100

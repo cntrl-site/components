@@ -87,20 +87,19 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       onClose();
       return;
     }
+    // Check if click is on image, button, or other interactive elements
     const isImg = target.tagName === 'IMG' || target.closest('img');
     const isButton = target.tagName === 'BUTTON' || target.closest('button');
-    if (!isImg && !isButton) {
+    const isSplide = target.closest('.splide') || target.closest('[class*="splide"]');
+    const isCaption = target.closest(`.${styles.caption}`);
+    const isThumbnail = target.closest(`.${styles.thumbsContainer}`);
+    // Only close if click is outside all interactive elements
+    if (!isImg && !isButton && !isSplide && !isCaption && !isThumbnail) {
       onClose();
     }
   };
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
-    if (!rect) return;
-    const inside = e.clientX >= rect.x && e.clientX <= rect.x + rect.width && e.clientY >= rect.y && e.clientY <= rect.y + rect.height;
-    if (!inside) {
-      onClose();
-      return;
-    }
+
     if (triggers.type === 'click' && triggers.switch === 'image') {
       e.stopPropagation();
       lightboxRef.current?.go('+1');
@@ -217,6 +216,34 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     return styles.fadeIn;
   })();
 
+  useEffect(() => {
+    if (!isOpen || !closeOnBackdropClick) return;
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0 && e.changedTouches.length > 0) {
+        // Recalculate rect on each touch to handle image changes and scrolling
+        const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
+        if (!rect) return;
+        
+        const touch = e.changedTouches[0];
+        const inside = touch.clientX >= rect.x && touch.clientX <= rect.x + rect.width && touch.clientY >= rect.y && touch.clientY <= rect.y + rect.height;
+        if (!inside) {
+          onClose();
+        }
+      }
+    };
+
+    // Use a small delay to ensure image is rendered before adding listener
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("touchend", handleTouchEnd, { passive: true });
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [isOpen, closeOnBackdropClick, onClose, currentIndex]);
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -237,7 +264,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         style={{...(isEditor && { backgroundColor: area.color, backdropFilter: `blur(${area.blur}px)`, })}}
         onClick={handleBackdropClick}
         onTouchEnd={handleBackdropClick}
-        onTouchStart={handleBackdropClick}  
+        onTouchStart={handleBackdropClick}
         >
         <div
           className={cn(styles.contentStyle, appearClass)}
