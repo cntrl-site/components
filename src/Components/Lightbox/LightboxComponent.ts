@@ -197,6 +197,7 @@ export const LightboxComponent: Component = {
                       height: {
                         type: 'number',
                         label: 'H',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
@@ -205,6 +206,7 @@ export const LightboxComponent: Component = {
                       width: {
                         type: 'number',
                         label: 'W',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: false,
@@ -213,6 +215,7 @@ export const LightboxComponent: Component = {
                       gap: {
                         type: 'number',
                         label: 'Gap',
+                        scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                         },
