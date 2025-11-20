@@ -64,6 +64,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const isClosingRef = useRef<boolean>(false);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -87,13 +88,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       onClose();
       return;
     }
-    // Check if click is on image, button, or other interactive elements
     const isImg = target.tagName === 'IMG' || target.closest('img');
     const isButton = target.tagName === 'BUTTON' || target.closest('button');
     const isSplide = target.closest('.splide') || target.closest('[class*="splide"]');
     const isCaption = target.closest(`.${styles.caption}`);
     const isThumbnail = target.closest(`.${styles.thumbsContainer}`);
-    // Only close if click is outside all interactive elements
     if (!isImg && !isButton && !isSplide && !isCaption && !isThumbnail) {
       onClose();
     }
@@ -145,7 +144,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   }, [isOpen, closeOnEsc, onClose, content.length]);
 
   useEffect(() => {
-    if (isOpen) setCurrentIndex(0);
+    if (isOpen) {
+      setCurrentIndex(0);
+      isClosingRef.current = false;
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -225,20 +227,22 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     if (!isOpen || !closeOnBackdropClick) return;
     
     const handleTouchEnd = (e: TouchEvent) => {
+      if (isClosingRef.current) {
+        e.stopPropagation();
+        return;
+      }
       if (e.touches.length === 0 && e.changedTouches.length > 0) {
-        // Recalculate rect on each touch to handle image changes and scrolling
         const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
         if (!rect) return;
-        
         const touch = e.changedTouches[0];
         const inside = touch.clientX >= rect.x && touch.clientX <= rect.x + rect.width && touch.clientY >= rect.y && touch.clientY <= rect.y + rect.height;
         if (!inside) {
+          e.stopPropagation();
+          isClosingRef.current = true;
           onClose();
         }
       }
     };
-
-    // Use a small delay to ensure image is rendered before adding listener
     const timeoutId = setTimeout(() => {
       document.addEventListener("touchend", handleTouchEnd, { passive: true });
     }, 100);
