@@ -255,6 +255,37 @@
 .slideInTop { animation-name: lbSlideInTop; }
 .slideInBottom { animation-name: lbSlideInBottom; }
 
+@keyframes lbFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.fadeOut {
+  animation-name: lbFadeOut !important;
+}
+
+@keyframes lbSlideOutLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+@keyframes lbSlideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes lbSlideOutTop {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+@keyframes lbSlideOutBottom {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.slideOutLeft { animation-name: lbSlideOutLeft !important; }
+.slideOutRight { animation-name: lbSlideOutRight !important; }
+.slideOutTop { animation-name: lbSlideOutTop !important; }
+.slideOutBottom { animation-name: lbSlideOutBottom !important; }
+
 
 .lightboxSplide:global(.splide--fade) {
   .scaleSlide {

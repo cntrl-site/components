@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef } from 'react';
+import React, { FC, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Lightbox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
@@ -61,23 +61,54 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [splideKey, setSplideKey] = React.useState(0);
+  const [isClosing, setIsClosing] = React.useState(false);
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const isClosingRef = useRef<boolean>(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
+  const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    isClosingRef.current = true;
+    
+    const handleAnimationEnd = (e: AnimationEvent) => {
+      if (e.target === contentRef.current && e.animationName) {
+        if (contentRef.current && animationEndHandlerRef.current) {
+          contentRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
+        }
+        animationEndHandlerRef.current = null;
+        onClose();
+        setIsClosing(false);
+      }
+    };
+    
+    if (contentRef.current) {
+      animationEndHandlerRef.current = handleAnimationEnd;
+      contentRef.current.addEventListener('animationend', handleAnimationEnd);
+    } else {
+      // Fallback to setTimeout if ref is not available
+      setTimeout(() => {
+        onClose();
+        setIsClosing(false);
+      }, appearDurationMs);
+    }
+  }, [onClose, appearDurationMs]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
   const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -85,7 +116,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     const target = e.target as HTMLElement;
     const currentTarget = e.currentTarget as HTMLElement;
     if (target === currentTarget) {
-      onClose();
+      handleClose();
       return;
     }
     const isImg = target.tagName === 'IMG' || target.closest('img');
@@ -94,18 +125,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     const isCaption = target.closest(`.${styles.caption}`);
     const isThumbnail = target.closest(`.${styles.thumbsContainer}`);
     if (!isImg && !isButton && !isSplide && !isCaption && !isThumbnail) {
-      onClose();
+      handleClose();
     }
   };
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-
+    e.stopPropagation();
     if (triggers.type === 'click' && triggers.switch === 'image') {
-      e.stopPropagation();
       lightboxRef.current?.go('+1');
     }
-    if (triggers.type === 'click' && triggers.switch === '50/50') {
-      e.stopPropagation();
-      
+    if (triggers.type === 'click' && triggers.switch === '50/50') {      
       const img = e.currentTarget;
       const rect = img.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
@@ -126,7 +154,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     if (!isOpen || !closeOnEsc) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        handleClose();
         return;
       }
       if (event.key === 'ArrowRight') {
@@ -141,13 +169,22 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [isOpen, closeOnEsc, onClose, content.length]);
+  }, [isOpen, closeOnEsc, handleClose, content.length]);
 
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(0);
       isClosingRef.current = false;
+      setIsClosing(false);
     }
+    
+    return () => {
+      // Cleanup animationend listener on unmount
+      if (contentRef.current && animationEndHandlerRef.current) {
+        contentRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
+        animationEndHandlerRef.current = null;
+      }
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -181,7 +218,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     lightboxRef.current?.go(dir);
   };
 
-  const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
   const backdropDurationMs = (appear.type === 'fade in' || appear.type === 'mix') 
     ? Math.floor(appearDurationMs * 0.7) 
     : appearDurationMs;
@@ -223,9 +259,46 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     return styles.fadeIn;
   })();
 
+  const backdropDisappearClass = (() => {
+    if (appear.type === 'fade in' || appear.type === 'mix') return styles.fadeOut;
+    if (appear.type === 'slide in') {
+      switch (appear.direction) {
+        case 'left':
+          return styles.slideOutLeft;
+        case 'right':
+          return styles.slideOutRight;
+        case 'top':
+          return styles.slideOutTop;
+        case 'bottom':
+          return styles.slideOutBottom;
+        default:
+          return styles.slideOutRight;
+      }
+    }
+    return styles.fadeOut;
+  })();
+
+  const disappearClass = (() => {
+    if (appear.type === 'fade in') return styles.fadeOut;
+    if (appear.type === 'slide in' || appear.type === 'mix') {
+      switch (appear.direction) {
+        case 'left':
+          return styles.slideOutLeft;
+        case 'right':
+          return styles.slideOutRight;
+        case 'top':
+          return styles.slideOutTop;
+        case 'bottom':
+          return styles.slideOutBottom;
+        default:
+          return styles.slideOutRight;
+      }
+    }
+    return styles.fadeOut;
+  })();
+
   useEffect(() => {
     if (!isOpen || !closeOnBackdropClick) return;
-    
     const handleTouchEnd = (e: TouchEvent) => {
       if (isClosingRef.current) {
         e.stopPropagation();
@@ -235,45 +308,54 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
         if (!rect) return;
         const touch = e.changedTouches[0];
-        const inside = touch.clientX >= rect.x && touch.clientX <= rect.x + rect.width && touch.clientY >= rect.y && touch.clientY <= rect.y + rect.height;
+        const inside =
+          touch.clientX >= rect.x &&
+          touch.clientX <= rect.x + rect.width &&
+          touch.clientY >= rect.y &&
+          touch.clientY <= rect.y + rect.height;
+  
         if (!inside) {
           e.stopPropagation();
           isClosingRef.current = true;
-          onClose();
+          const blockNextClick = (clickEvent: MouseEvent) => {
+            clickEvent.stopPropagation();
+            clickEvent.preventDefault();
+            document.removeEventListener("click", blockNextClick, true);
+          };
+          document.addEventListener("click", blockNextClick, true);
+          handleClose();
         }
       }
     };
-    const timeoutId = setTimeout(() => {
-      document.addEventListener("touchend", handleTouchEnd, { passive: true });
-    }, 100);
-
+  
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
+  
     return () => {
-      clearTimeout(timeoutId);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isOpen, closeOnBackdropClick, onClose, currentIndex]);
-
-  if (!isOpen) return null;
+  }, [isOpen, closeOnBackdropClick, handleClose, currentIndex]);
+  
+  if (!isOpen && !isClosing) return null;
 
   return createPortal(
     <>
       <div
-        className={cn(styles.background, backdropAppearClass)} 
+        className={cn(styles.background, isClosing ? backdropDisappearClass : backdropAppearClass)} 
         style={{
           ...(isEditor && { display: 'none' }),
           backgroundColor: area.color,
           backdropFilter: `blur(${area.blur}px)`,
-          animationDuration: `${backdropDurationMs}ms`,
+          animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both' as unknown as undefined
         }}
       />
       <div 
-        className={cn(styles.backdropStyle, { [styles.editor]: isEditor, [backdropAppearClass]: isEditor })} 
+        className={cn(styles.backdropStyle, { [styles.editor]: isEditor, [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor })} 
         style={{...(isEditor && {
           backgroundColor: area.color,
           backdropFilter: `blur(${area.blur}px)`,
-          animationDuration: `${backdropDurationMs}ms`,
+          animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
           animationFillMode: 'both' as unknown as undefined
         })}}
@@ -282,13 +364,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         onTouchStart={handleBackdropClick}
         >
         <div
-          className={cn(styles.contentStyle, appearClass)}
+          ref={contentRef}
+          className={cn(styles.contentStyle, isClosing ? disappearClass : appearClass)}
           onClick={handleContentClick}
           style={{
             animationDuration: `${appearDurationMs}ms`,
             animationTimingFunction: 'ease',
             animationFillMode: 'both',
-            ...(appear.type === 'mix' && { animationDelay: `${backdropDurationMs/2}ms` }),
+            ...(appear.type === 'mix' && !isClosing && { animationDelay: `${backdropDurationMs/2}ms` }),
+            ...(appear.type === 'mix' && isClosing && { animationDelay: '0ms' }),
             '--splide-speed': slider.duration || '500ms'
           } as React.CSSProperties}
         >
@@ -411,7 +495,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                   ...positionStyles,
                   transform: combinedTransform
                 }}
-                onClick={onClose}
+                onClick={handleClose}
               >
                 <SvgImage url={area.closeIconUrl} />
               </button>
