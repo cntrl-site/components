@@ -572,7 +572,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                       lightboxRef.current?.go(index);
                     }}
                     onMouseEnter={() => {
-                      if (thumbnail.triggers === 'hover') {
+                      if (thumbnail.triggers === 'hov') {
                         lightboxRef.current?.go(index);
                       }
                     }}
@@ -659,7 +659,7 @@ type LightboxSettings = {
       position: Alignment;
       fit: 'cover' | 'fit';
       align: 'start' | 'center' | 'end';
-      triggers: 'click' | 'hover';
+      triggers: 'clk' | 'hov';
       grid: {
         height: number;
         width: number;

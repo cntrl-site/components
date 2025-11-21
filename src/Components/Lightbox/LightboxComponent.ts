@@ -568,24 +568,24 @@ export const LightboxComponent: Component = {
           },
           lightboxBlock: {
             appear: {
-              type: 'slide in',
-              duration: '500ms',
+              type: 'fade in',
+              duration: '1000ms',
               direction: 'right',
             },
             triggers: {
               type: 'click',
-              switch: 'image',
+              switch: '50/50',
               repeat: 'loop'
             },
             slider: {
-              type: 'fade',
+              type: 'slide',
               direction: 'horiz',
               duration: '1000ms'
             },
             thumbnail: {
               isActive: true,
               position: 'bottom-center',
-              fit: 'cover',
+              fit: 'fit',
               align: 'center',
               triggers: 'clk',
               grid: {
@@ -614,7 +614,7 @@ export const LightboxComponent: Component = {
               hover: '#cccccc'
             },
             area: {
-              color: 'rgba(0,0,0,0.9)',
+              color: 'rgba(64,67,71,0.4)',
               blur: 0,
               closeIconUrl: null,
               closeIconAlign: 'top-right',
