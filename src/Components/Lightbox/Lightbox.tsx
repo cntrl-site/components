@@ -89,12 +89,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     if (contentRef.current) {
       animationEndHandlerRef.current = handleAnimationEnd;
       contentRef.current.addEventListener('animationend', handleAnimationEnd);
-    } else {
-      // Fallback to setTimeout if ref is not available
-      setTimeout(() => {
-        onClose();
-        setIsClosing(false);
-      }, appearDurationMs);
     }
   }, [onClose, appearDurationMs]);
 
@@ -131,7 +125,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
     if (triggers.type === 'click' && triggers.switch === 'image') {
-      lightboxRef.current?.go('+1');
+      // If on last image and repeat is 'close', close the lightbox
+      if (triggers.repeat === 'close' && currentIndex === content.length - 1) {
+        handleClose();
+      } else {
+        lightboxRef.current?.go('+1');
+      }
     }
     if (triggers.type === 'click' && triggers.switch === '50/50') {      
       const img = e.currentTarget;
@@ -392,7 +391,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
               height: '100%',
               type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
               padding: 0,
-              rewind: (slider.type === 'scale' || slider.type === 'fade') && appear.repeat !== 'close'
+              rewind: (slider.type === 'scale' || slider.type === 'fade') && triggers.repeat === 'loop'
             }}
             style={{'--splide-speed': slider.duration || '500ms'} as React.CSSProperties}
           >
@@ -572,6 +571,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                       setCurrentIndex(index);
                       lightboxRef.current?.go(index);
                     }}
+                    onMouseEnter={() => {
+                      if (thumbnail.triggers === 'hover') {
+                        lightboxRef.current?.go(index);
+                      }
+                    }}
                   >
                     <img
                       src={item.image.url}
@@ -629,6 +633,7 @@ type Padding = {
 type Triggers = {
   type: 'click' | 'drag';
   switch: 'image' | '50/50';
+  repeat: 'close' | 'loop';
 };
 
 type LightboxSettings = {
@@ -642,7 +647,6 @@ type LightboxSettings = {
       type: 'slide in' | 'fade in' | 'mix';
       duration: string;
       direction: 'top' | 'bottom' | 'left' | 'right';
-      repeat: 'close' | 'loop';
     };
     triggers: Triggers;
     slider: {

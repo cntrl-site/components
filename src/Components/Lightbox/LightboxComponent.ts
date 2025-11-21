@@ -7,7 +7,7 @@ export const LightboxComponent: Component = {
   name: 'Lightbox',
   preview: {
     type: 'video' as const,
-    url: 'https://cdn.cntrl.site/projects/01GJ2SPDSH73MC92WW7ZA2CWBY/articles-assets/01KA24CHYZXJBZ0Q714B05A7VD.mp4',
+    url: 'https://cdn.cntrl.site/component-assets/lightbox.mp4',
   },
   defaultSize: {
     width: 440,
@@ -79,14 +79,6 @@ export const LightboxComponent: Component = {
                     },
                     enum: ['top','left', 'right', 'bottom']
                   },
-                  repeat: {
-                    type: 'string',
-                    title: 'Repeat',
-                    display: {
-                      type: 'ratio-group'
-                    },
-                    enum: ['close', 'loop']
-                  }
                 }
               },
               triggers: {
@@ -108,6 +100,15 @@ export const LightboxComponent: Component = {
                       type: 'ratio-group',
                     },
                     enum: ['image', '50/50']
+                  },
+                  repeat: {
+                    type: 'string',
+                    title: 'Repeat',
+                    display: {
+                      visible: false,
+                      type: 'ratio-group'
+                    },
+                    enum: ['close', 'loop']
                   }
                 }
               },
@@ -562,7 +563,7 @@ export const LightboxComponent: Component = {
         default: {
           thumbnailBlock: {
             cover: {
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png'
+              url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
             },
           },
           lightboxBlock: {
@@ -570,11 +571,11 @@ export const LightboxComponent: Component = {
               type: 'slide in',
               duration: '500ms',
               direction: 'right',
-              repeat: 'loop'
             },
             triggers: {
               type: 'click',
               switch: 'image',
+              repeat: 'loop'
             },
             slider: {
               type: 'fade',
@@ -709,26 +710,16 @@ export const LightboxComponent: Component = {
               value: false
             }
           },
-          // {
-          //   if: {
-          //     name: 'lightboxBlock.triggers.type',
-          //     value: 'click'
-          //   },
-          //   then: {
-          //     name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
-          //     value: true
-          //   }
-          // },
-          // {
-          //   if: {
-          //     name: 'lightboxBlock.triggers.type',
-          //     value: 'drag'
-          //   },
-          //   then: {
-          //     name: 'properties.lightboxBlock.properties.slider.properties.switch.display.visible',
-          //     value: false
-          //   }
-          // }
+          {
+            if: [
+              { name: 'lightboxBlock.triggers.type', value: 'click' },
+              { name: 'lightboxBlock.triggers.switch', value: 'image' },
+            ],
+            then: {
+              name: 'properties.lightboxBlock.properties.triggers.properties.repeat.display.visible',
+              value: true
+            }
+          },
         ]
       },
       content: {
@@ -779,7 +770,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png',
+              url: 'https://cdn.cntrl.site/component-assets/2.jpg',
               name: 'Slider-1.png'
             },
             imageCaption: [
@@ -792,7 +783,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMTZA3RYMXKF0M095D6JD.png',
+              url: 'https://cdn.cntrl.site/component-assets/3.jpg',
               name: 'Slider-2.png'
             },
             imageCaption: [
@@ -805,7 +796,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMVSCMPVJBG2WF5KJZYHZ.png',
+              url: 'https://cdn.cntrl.site/component-assets/4.jpg',
               name: 'Slider-3.png'
             },
             imageCaption: [
