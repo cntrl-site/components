@@ -116,14 +116,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   };
 
   const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-  
-    const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
-    if (!rect) {
-      if (e.target === e.currentTarget) {
-        handleClose();
-      }
-      return;
-    }
+    const currentImage = content[currentIndex];
+    const isCover = currentImage?.image.objectFit === 'cover';
     
     let clientX: number;
     let clientY: number;
@@ -138,11 +132,30 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       return;
     }
     
-    const inside =
-      clientX >= rect.x &&
-      clientX <= rect.x + rect.width &&
-      clientY >= rect.y &&
-      clientY <= rect.y + rect.height;
+    // For cover images, use image bounds directly (image fills container)
+    // For contain images, use getDisplayedImageRect to get actual visible area
+    let inside: boolean;
+    if (isCover && imageRef.current) {
+      const imgRect = imageRef.current.getBoundingClientRect();
+      inside =
+        clientX >= imgRect.left &&
+        clientX <= imgRect.right &&
+        clientY >= imgRect.top &&
+        clientY <= imgRect.bottom;
+    } else {
+      const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
+      if (!rect) {
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+        return;
+      }
+      inside =
+        clientX >= rect.x &&
+        clientX <= rect.x + rect.width &&
+        clientY >= rect.y &&
+        clientY <= rect.y + rect.height;
+    }
     
     if (inside) {
       if (triggers.type === 'click' && triggers.switch === 'image') {
@@ -191,7 +204,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
     if (triggers.type === 'click' && triggers.switch === 'image') {
-      // If on last image and repeat is 'close', close the lightbox
       if (triggers.repeat === 'close' && currentIndex === content.length - 1) {
         handleClose();
       } else {
@@ -387,15 +399,28 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         return;
       }
       if (e.touches.length === 0 && e.changedTouches.length > 0) {
-        const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
-        console.log('rect', rect);
-        if (!rect) return;
+        const currentImage = content[currentIndex];
+        const isCover = currentImage?.image.objectFit === 'cover';
         const touch = e.changedTouches[0];
-        const inside =
-          touch.clientX >= rect.x &&
-          touch.clientX <= rect.x + rect.width &&
-          touch.clientY >= rect.y &&
-          touch.clientY <= rect.y + rect.height;
+        
+        let inside: boolean;
+        if (isCover && imageRef.current) {
+          const imgRect = imageRef.current.getBoundingClientRect();
+          inside =
+            touch.clientX >= imgRect.left &&
+            touch.clientX <= imgRect.right &&
+            touch.clientY >= imgRect.top &&
+            touch.clientY <= imgRect.bottom;
+        } else {
+          const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
+          if (!rect) return;
+          inside =
+            touch.clientX >= rect.x &&
+            touch.clientX <= rect.x + rect.width &&
+            touch.clientY >= rect.y &&
+            touch.clientY <= rect.y + rect.height;
+        }
+        
         if (!inside) {
           e.stopPropagation();
           isClosingRef.current = true;
@@ -415,7 +440,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     return () => {
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isOpen, handleClose, currentIndex]);
+  }, [isOpen, handleClose, currentIndex, content]);
   
   if (!isOpen && !isClosing) return null;
 
@@ -504,6 +529,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                         [styles.cover]: item.image.objectFit === 'cover',
                         [styles.scaleSlide]: slider.type === 'scale'
                       })}
+                      onClick={item.image.objectFit !== 'contain' ? onImageClick : undefined}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
                       style={{
