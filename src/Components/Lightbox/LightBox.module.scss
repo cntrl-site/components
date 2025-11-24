@@ -73,9 +73,6 @@
   z-index: 9999;
   position: absolute;
   display: flex;
-  &:hover {
-    color: var(--link-hover-color) !important;
-  }
 }
 
 .captionBlock {

@@ -597,8 +597,8 @@ export const LightboxComponent: Component = {
               align: 'center',
               triggers: 'clk',
               grid: {
-                height: 0.04,
-                width: 0.04,
+                height: 0.03,
+                width: 0.03,
                 gap: 0.008
               },
               offset: { x: 0, y: 0 },

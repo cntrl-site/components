@@ -18,8 +18,7 @@ type LightboxProps = {
   styles: LightboxStyles;
   portalId: string;
   isEditor?: boolean;
-  closeOnBackdropClick?: boolean;
-  closeOnEsc?: boolean;
+  activeEvent?: 'close' | 'open';
 };
 
 type LightboxGalleryProps = {
@@ -52,12 +51,12 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
         style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
         onClick={() => setOpen(true)}
       />
-      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} styles={styles} portalId={portalId} isEditor={isEditor} />
+      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} styles={styles} portalId={portalId} isEditor={isEditor} activeEvent={activeEvent} />
     </>
   );
 };
 
-const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightboxStyles, settings,closeOnBackdropClick = true, closeOnEsc = true, portalId, isEditor }) => {
+const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightboxStyles, settings, portalId, isEditor }) => {
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [splideKey, setSplideKey] = React.useState(0);
@@ -71,6 +70,17 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
+
+  useEffect(() => {
+    window.addEventListener('ArticleEditor.Layout:change', () => {
+      lightboxRef.current?.splide?.refresh();
+    });
+    return () => {
+      window.removeEventListener('ArticleEditor.Layout:change', () => {
+        lightboxRef.current?.splide?.refresh();
+      });
+    };
+  }, []);
 
   const handleClose = useCallback(() => {
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -100,14 +110,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   }, [onClose, appearDurationMs, area.color, isEditor]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!closeOnBackdropClick) return;
     if (e.target === e.currentTarget) {
       handleClose();
     }
   };
 
   const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!closeOnBackdropClick) return;
   
     const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
     if (!rect) {
@@ -165,7 +173,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     }
   };
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!closeOnBackdropClick) return;
     const target = e.target as HTMLElement;
     const currentTarget = e.currentTarget as HTMLElement;
     if (target === currentTarget) {
@@ -209,7 +216,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   };
 
   useEffect(() => {
-    if (!isOpen || !closeOnEsc) return;
+    if (!isOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         handleClose();
@@ -227,7 +234,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [isOpen, closeOnEsc, handleClose, content.length]);
+  }, [isOpen, handleClose, content.length]);
 
   useEffect(() => {
     if (isOpen) {
@@ -373,7 +380,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   })();
 
   useEffect(() => {
-    if (!isOpen || !closeOnBackdropClick) return;
+    if (!isOpen) return;
     const handleTouchEnd = (e: TouchEvent) => {
       if (isClosingRef.current) {
         e.stopPropagation();
@@ -408,7 +415,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     return () => {
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isOpen, closeOnBackdropClick, handleClose, currentIndex]);
+  }, [isOpen, handleClose, currentIndex]);
   
   if (!isOpen && !isClosing) return null;
 
@@ -608,8 +615,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                 data-styles="caption"
                 className={styles.captionTextInner}
                 style={{
+                  '--link-hover-color': caption.hover,
                   position: 'relative',
-                }}
+                } as React.CSSProperties}
               >
                 <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
