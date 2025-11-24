@@ -62,18 +62,23 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [splideKey, setSplideKey] = React.useState(0);
   const [isClosing, setIsClosing] = React.useState(false);
-  const [imageDimensions, setImageDimensions] = React.useState<{ width?: number; height?: number }>({});
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const imgWrapperRef = useRef<HTMLDivElement | null>(null);
   const isClosingRef = useRef<boolean>(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
+  const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
 
   const handleClose = useCallback(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    const colorAlpha = getColorAlpha(area.color);
+    if (isMobile && !isEditor && colorAlpha > 0.9) {
+      document.body.style.backgroundColor = '';
+    }
+    
     setIsClosing(true);
     isClosingRef.current = true;
     
@@ -92,7 +97,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       animationEndHandlerRef.current = handleAnimationEnd;
       contentRef.current.addEventListener('animationend', handleAnimationEnd);
     }
-  }, [onClose, appearDurationMs]);
+  }, [onClose, appearDurationMs, area.color, isEditor]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
@@ -103,7 +108,59 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
 
   const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (!closeOnBackdropClick) return;
-    if (e.target === e.currentTarget) {
+  
+    const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
+    if (!rect) {
+      if (e.target === e.currentTarget) {
+        handleClose();
+      }
+      return;
+    }
+    
+    let clientX: number;
+    let clientY: number;
+    
+    if ('changedTouches' in e && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else if ('clientX' in e) {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else {
+      return;
+    }
+    
+    const inside =
+      clientX >= rect.x &&
+      clientX <= rect.x + rect.width &&
+      clientY >= rect.y &&
+      clientY <= rect.y + rect.height;
+    
+    if (inside) {
+      if (triggers.type === 'click' && triggers.switch === 'image') {
+        if (triggers.repeat === 'close' && currentIndex === content.length - 1) {
+          handleClose();
+        } else {
+          lightboxRef.current?.go('+1');
+        }
+      } else if (triggers.type === 'click' && triggers.switch === '50/50') {
+        const img = imageRef.current;
+        if (img) {
+          const imgRect = img.getBoundingClientRect();
+          const clickX = clientX - imgRect.left;
+          const clickY = clientY - imgRect.top;
+          const imgWidth = imgRect.width;
+          const imgHeight = imgRect.height;
+          let dir: '+1' | '-1';
+          if (slider.direction === 'horiz') {
+            dir = clickX < imgWidth / 2 ? '-1' : '+1';
+          } else {
+            dir = clickY < imgHeight / 2 ? '-1' : '+1';
+          }
+          lightboxRef.current?.go(dir);
+        }
+      }
+    } else {
       handleClose();
     }
   };
@@ -180,7 +237,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     }
     
     return () => {
-      // Cleanup animationend listener on unmount
       if (contentRef.current && animationEndHandlerRef.current) {
         contentRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
         animationEndHandlerRef.current = null;
@@ -195,92 +251,43 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     prevSliderTypeRef.current = slider.type;
   }, [slider.type]);
 
-  // Calculate and set image dimensions for object-fit: contain
-  useEffect(() => {
-    if (!imageRef.current || !imgWrapperRef.current || !isOpen) {
-      setImageDimensions({});
-      return;
-    }
-
-    const img = imageRef.current;
-    const wrapper = imgWrapperRef.current;
-    const currentItem = content[currentIndex];
-    
-    // Only calculate for contain
-    if (currentItem?.image.objectFit !== 'contain') {
-      setImageDimensions({});
-      return;
-    }
-
-    const calculateDimensions = () => {
-      if (!img.naturalWidth || !img.naturalHeight) return;
-      
-      const wrapperRect = wrapper.getBoundingClientRect();
-      const wrapperStyle = window.getComputedStyle(wrapper);
-      const paddingTop = parseFloat(wrapperStyle.paddingTop) || 0;
-      const paddingRight = parseFloat(wrapperStyle.paddingRight) || 0;
-      const paddingBottom = parseFloat(wrapperStyle.paddingBottom) || 0;
-      const paddingLeft = parseFloat(wrapperStyle.paddingLeft) || 0;
-      
-      const contentWidth = wrapperRect.width - paddingLeft - paddingRight;
-      const contentHeight = wrapperRect.height - paddingTop - paddingBottom;
-      
-      const containerRatio = contentWidth / contentHeight;
-      const imgRatio = img.naturalWidth / img.naturalHeight;
-      
-      let width: number;
-      let height: number;
-      
-      if (imgRatio > containerRatio) {
-        // Image is wider → width fits, height is reduced
-        width = contentWidth;
-        height = contentWidth / imgRatio;
-      } else {
-        // Image is taller → height fits, width is reduced
-        height = contentHeight;
-        width = contentHeight * imgRatio;
-      }
-      
-      setImageDimensions({ width, height });
-    };
-
-    if (img.complete && img.naturalWidth > 0) {
-      calculateDimensions();
-    } else {
-      img.onload = calculateDimensions;
-    }
-
-    // Recalculate on resize
-    const handleResize = () => calculateDimensions();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (img.onload) {
-        img.onload = null;
-      }
-    };
-  }, [isOpen, currentIndex, content]);
 
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    if (isMobile && !isEditor) {
-      document.body.style.backgroundColor = area.color;
+    const colorAlpha = getColorAlpha(area.color);
+    
+    const handleAppearAnimationEnd = (e: AnimationEvent) => {
+      if (e.target === contentRef.current && !isClosingRef.current && e.animationName) {
+        if (isMobile && !isEditor && colorAlpha > 0.9) {
+          document.body.style.backgroundColor = area.color;
+        }
+        if (contentRef.current && appearAnimationEndHandlerRef.current) {
+          contentRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
+        }
+        appearAnimationEndHandlerRef.current = null;
+      }
+    };
+    
+    if (contentRef.current && isMobile && !isEditor && colorAlpha > 0.9) {
+      appearAnimationEndHandlerRef.current = handleAppearAnimationEnd;
+      contentRef.current.addEventListener('animationend', handleAppearAnimationEnd);
     }
+    
     const preventScroll = (e: TouchEvent) => e.preventDefault();
     document.addEventListener("touchmove", preventScroll, { passive: false });
   
     return () => {
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("touchmove", preventScroll);
-      if (isMobile && !isEditor) {
-        document.body.style.backgroundColor = '';
+      if (contentRef.current && appearAnimationEndHandlerRef.current) {
+        contentRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
+        appearAnimationEndHandlerRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, [isOpen, area.color, isEditor]);
   
   const handleArrowClick = (dir: '+1' | '-1') => {
     lightboxRef.current?.go(dir);
@@ -382,7 +389,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
           touch.clientX <= rect.x + rect.width &&
           touch.clientY >= rect.y &&
           touch.clientY <= rect.y + rect.height;
-        console.log('inside', rect.width, rect.height);
         if (!inside) {
           e.stopPropagation();
           isClosingRef.current = true;
@@ -442,7 +448,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
             animationFillMode: 'both',
             ...(appear.type === 'mix' && !isClosing && { animationDelay: `${backdropDurationMs/2}ms` }),
             ...(appear.type === 'mix' && isClosing && { animationDelay: '0ms' }),
-            '--splide-speed': slider.duration || '500ms'
+  
           } as React.CSSProperties}
         >
           <Splide
@@ -480,7 +486,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
               return (
                 <SplideSlide key={index}>
                   <div 
-                    ref={index === currentIndex ? imgWrapperRef : null}
                     className={styles.imgWrapper} 
                     onClick={handleImageWrapperClick}
                     style={{ padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
@@ -494,14 +499,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                       })}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
-                      onClick={onImageClick}
+                      onClick={item.image.objectFit !== 'contain' ? onImageClick : undefined}
                       style={{
                         ...imageStyle,
-                        ...(item.image.objectFit === 'contain' && imageDimensions.width && imageDimensions.height ? {
-                          width: `${imageDimensions.width}px`,
-                          height: `${imageDimensions.height}px`,
-                          maxWidth: 'none',
-                          maxHeight: 'none'
+                        ...(item.image.objectFit === 'contain' ? {
+                          pointerEvents: 'none'
                         } : {})
                       }}
                     />
@@ -797,4 +799,26 @@ type CaptionStyles = {
     fontVariant: 'normal' | 'small-caps';
   };
   color: string;
+};
+
+const getColorAlpha = (color: string): number => {
+  const rgbaMatch = color.match(/rgba?\(([^)]+)\)/);
+  if (rgbaMatch) {
+    const values = rgbaMatch[1].split(',').map(v => parseFloat(v.trim()));
+    if (values.length === 4) {
+      return values[3];
+    }
+    return 1;
+  }
+  
+  const hexMatch = color.match(/^#([0-9a-fA-F]{8})$/);
+  if (hexMatch) {
+    const alphaHex = hexMatch[1].substring(6, 8);
+    return parseInt(alphaHex, 16) / 255;
+  }
+  if (color.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)) {
+    return 1;
+  }
+  
+  return 1;
 };

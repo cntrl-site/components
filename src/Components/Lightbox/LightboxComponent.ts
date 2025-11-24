@@ -339,15 +339,23 @@ export const LightboxComponent: Component = {
                     },
                     properties: {
                       top: {
+                        min: 0,
+                        step: 1,
                         type: 'number',
                       },
                       left: {
+                        min: 0,
+                        step: 1,
                         type: 'number',
                       },
                       right: {
+                        min: 0,
+                        step: 1,
                         type: 'number',
                       },
                       bottom: {
+                        min: 0,
+                        step: 1,
                         type: 'number',
                       },
                     }
@@ -603,7 +611,7 @@ export const LightboxComponent: Component = {
             layout: {
               position: 'middle-center',
               offset: { x: 0, y: 0 },
-              padding: { top: 0, right: 0, bottom: 0, left: 0 }
+              padding: { top: 0.04, right: 0, bottom: 0.04, left: 0 }
             },
             controls: {
               isActive: true,
