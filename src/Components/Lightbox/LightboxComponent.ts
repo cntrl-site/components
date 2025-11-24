@@ -589,8 +589,8 @@ export const LightboxComponent: Component = {
               align: 'center',
               triggers: 'clk',
               grid: {
-                height: 0.03,
-                width: 0.03,
+                height: 0.04,
+                width: 0.04,
                 gap: 0.008
               },
               offset: { x: 0, y: 0 },
@@ -614,7 +614,7 @@ export const LightboxComponent: Component = {
               hover: '#cccccc'
             },
             area: {
-              color: 'rgba(64,67,71,0.4)',
+              color: 'rgba(64,67,71,0.9)',
               blur: 0,
               closeIconUrl: null,
               closeIconAlign: 'top-right',

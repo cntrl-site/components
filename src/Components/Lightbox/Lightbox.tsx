@@ -62,9 +62,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [splideKey, setSplideKey] = React.useState(0);
   const [isClosing, setIsClosing] = React.useState(false);
+  const [imageDimensions, setImageDimensions] = React.useState<{ width?: number; height?: number }>({});
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const imgWrapperRef = useRef<HTMLDivElement | null>(null);
   const isClosingRef = useRef<boolean>(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
@@ -193,6 +195,73 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     prevSliderTypeRef.current = slider.type;
   }, [slider.type]);
 
+  // Calculate and set image dimensions for object-fit: contain
+  useEffect(() => {
+    if (!imageRef.current || !imgWrapperRef.current || !isOpen) {
+      setImageDimensions({});
+      return;
+    }
+
+    const img = imageRef.current;
+    const wrapper = imgWrapperRef.current;
+    const currentItem = content[currentIndex];
+    
+    // Only calculate for contain
+    if (currentItem?.image.objectFit !== 'contain') {
+      setImageDimensions({});
+      return;
+    }
+
+    const calculateDimensions = () => {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const wrapperStyle = window.getComputedStyle(wrapper);
+      const paddingTop = parseFloat(wrapperStyle.paddingTop) || 0;
+      const paddingRight = parseFloat(wrapperStyle.paddingRight) || 0;
+      const paddingBottom = parseFloat(wrapperStyle.paddingBottom) || 0;
+      const paddingLeft = parseFloat(wrapperStyle.paddingLeft) || 0;
+      
+      const contentWidth = wrapperRect.width - paddingLeft - paddingRight;
+      const contentHeight = wrapperRect.height - paddingTop - paddingBottom;
+      
+      const containerRatio = contentWidth / contentHeight;
+      const imgRatio = img.naturalWidth / img.naturalHeight;
+      
+      let width: number;
+      let height: number;
+      
+      if (imgRatio > containerRatio) {
+        // Image is wider → width fits, height is reduced
+        width = contentWidth;
+        height = contentWidth / imgRatio;
+      } else {
+        // Image is taller → height fits, width is reduced
+        height = contentHeight;
+        width = contentHeight * imgRatio;
+      }
+      
+      setImageDimensions({ width, height });
+    };
+
+    if (img.complete && img.naturalWidth > 0) {
+      calculateDimensions();
+    } else {
+      img.onload = calculateDimensions;
+    }
+
+    // Recalculate on resize
+    const handleResize = () => calculateDimensions();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (img.onload) {
+        img.onload = null;
+      }
+    };
+  }, [isOpen, currentIndex, content]);
+
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
@@ -305,6 +374,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       }
       if (e.touches.length === 0 && e.changedTouches.length > 0) {
         const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
+        console.log('rect', rect);
         if (!rect) return;
         const touch = e.changedTouches[0];
         const inside =
@@ -312,7 +382,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
           touch.clientX <= rect.x + rect.width &&
           touch.clientY >= rect.y &&
           touch.clientY <= rect.y + rect.height;
-  
+        console.log('inside', rect.width, rect.height);
         if (!inside) {
           e.stopPropagation();
           isClosingRef.current = true;
@@ -410,12 +480,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
               return (
                 <SplideSlide key={index}>
                   <div 
+                    ref={index === currentIndex ? imgWrapperRef : null}
                     className={styles.imgWrapper} 
                     onClick={handleImageWrapperClick}
                     style={{ padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
                   >
                     <img
-                      ref={imageRef}
+                      ref={index === currentIndex ? imageRef : null}
                       className={cn(styles.imageStyle, {
                         [styles.contain]: item.image.objectFit === 'contain',
                         [styles.cover]: item.image.objectFit === 'cover',
@@ -424,7 +495,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                       src={item.image.url}
                       alt={item.image.name ?? ''}
                       onClick={onImageClick}
-                      style={imageStyle}
+                      style={{
+                        ...imageStyle,
+                        ...(item.image.objectFit === 'contain' && imageDimensions.width && imageDimensions.height ? {
+                          width: `${imageDimensions.width}px`,
+                          height: `${imageDimensions.height}px`,
+                          maxWidth: 'none',
+                          maxHeight: 'none'
+                        } : {})
+                      }}
                     />
                   </div>
               </SplideSlide>
