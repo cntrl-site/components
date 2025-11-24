@@ -506,7 +506,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                       })}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
-                      onClick={item.image.objectFit !== 'contain' ? onImageClick : undefined}
                       style={{
                         ...imageStyle,
                         ...(item.image.objectFit === 'contain' ? {
