@@ -23,13 +23,13 @@ type LightboxProps = {
 type LightboxGalleryProps = {
   settings: LightboxSettings;
   content: LightboxImage[];
-  lightboxStyles: LightboxStyles;
+  styles: LightboxStyles;
   portalId: string;
   activeEvent: 'close' | 'open';
   isEditor?: boolean;
 };
 
-export const LightboxGallery = ({ settings, content, lightboxStyles, portalId, activeEvent, isEditor }: LightboxGalleryProps) => {
+export const LightboxGallery = ({ settings, content, styles, portalId, activeEvent, isEditor }: LightboxGalleryProps) => {
   const [open, setOpen] = React.useState(false);
   const { url } = settings.thumbnailBlock.cover;
 
@@ -47,7 +47,12 @@ export const LightboxGallery = ({ settings, content, lightboxStyles, portalId, a
       <img
         src={url}
         alt='Cover'
-        className={styles.mainImage}
+        style={{
+          width: '100%',
+          height: '100%',
+          cursor: 'pointer',
+          objectFit: 'cover',
+        }}
         onClick={() => setOpen(true)}
       />
       <Lightbox
@@ -55,7 +60,7 @@ export const LightboxGallery = ({ settings, content, lightboxStyles, portalId, a
         onClose={() => setOpen(false)}
         content={content}
         settings={settings}
-        lightboxStyles={lightboxStyles}
+        lightboxStyles={styles}
         portalId={portalId}
         isEditor={isEditor}
       />
