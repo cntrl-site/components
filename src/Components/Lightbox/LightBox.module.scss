@@ -1,5 +1,12 @@
 @use '../mixins.scss' as *;
 
+.mainImage {
+  width: '100%';
+  height: '100%';
+  cursor: 'pointer';
+  object-fit: 'cover';
+}
+
 .background {
   position: absolute;
   z-index: 9997;
@@ -73,36 +80,6 @@
   z-index: 9999;
   position: absolute;
   display: flex;
-}
-
-.captionBlock {
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  z-index: 1;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-.captionTextWrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.captionText {
-  pointer-events: none;
-  max-width: 100%;
-  transition-property: opacity;
-  transition-timing-function: ease-in-out;
-  position: absolute;
-  display: inline-block;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  opacity: 0;
-  &.active {
-    opacity: 1;
-  }
 }
 
 .lightboxSplide:global(.splide),

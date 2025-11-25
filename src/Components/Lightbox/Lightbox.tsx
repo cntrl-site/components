@@ -15,22 +15,21 @@ type LightboxProps = {
   onClose: () => void;
   content: LightboxImage[];
   settings: LightboxSettings;
-  styles: LightboxStyles;
+  lightboxStyles: LightboxStyles;
   portalId: string;
   isEditor?: boolean;
-  activeEvent?: 'close' | 'open';
 };
 
 type LightboxGalleryProps = {
   settings: LightboxSettings;
   content: LightboxImage[];
-  styles: LightboxStyles;
+  lightboxStyles: LightboxStyles;
   portalId: string;
   activeEvent: 'close' | 'open';
   isEditor?: boolean;
 };
 
-export function LightboxGallery({ settings, content, styles, portalId, activeEvent, isEditor }: LightboxGalleryProps) {
+export function LightboxGallery({ settings, content, lightboxStyles, portalId, activeEvent, isEditor }: LightboxGalleryProps) {
   const [open, setOpen] = React.useState(false);
   const { url } = settings.thumbnailBlock.cover;
 
@@ -48,16 +47,23 @@ export function LightboxGallery({ settings, content, styles, portalId, activeEve
       <img
         src={url}
         alt='Cover'
-        style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
+        className={styles.mainImage}
         onClick={() => setOpen(true)}
       />
-      <Lightbox isOpen={open} onClose={() => setOpen(false)} content={content} settings={settings} styles={styles} portalId={portalId} isEditor={isEditor} activeEvent={activeEvent} />
+      <Lightbox
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        content={content}
+        settings={settings}
+        lightboxStyles={lightboxStyles}
+        portalId={portalId}
+        isEditor={isEditor}
+      />
     </>
   );
 };
 
-const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightboxStyles, settings, portalId, isEditor }) => {
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
+const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles, settings, portalId, isEditor }) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [splideKey, setSplideKey] = React.useState(0);
   const [isClosing, setIsClosing] = React.useState(false);
@@ -69,6 +75,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
+  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
 
   useEffect(() => {
@@ -88,10 +95,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     if (isMobile && !isEditor && colorAlpha > 0.9) {
       document.body.style.backgroundColor = '';
     }
-    
     setIsClosing(true);
-    isClosingRef.current = true;
-    
+    isClosingRef.current = true; 
     const handleAnimationEnd = (e: AnimationEvent) => {
       if (e.target === contentRef.current && e.animationName) {
         if (contentRef.current && animationEndHandlerRef.current) {
@@ -102,7 +107,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         setIsClosing(false);
       }
     };
-    
     if (contentRef.current) {
       animationEndHandlerRef.current = handleAnimationEnd;
       contentRef.current.addEventListener('animationend', handleAnimationEnd);
@@ -131,9 +135,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
     } else {
       return;
     }
-    
-    // For cover images, use image bounds directly (image fills container)
-    // For contain images, use getDisplayedImageRect to get actual visible area
     let inside: boolean;
     if (isCover && imageRef.current) {
       const imgRect = imageRef.current.getBoundingClientRect();
@@ -185,6 +186,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       handleClose();
     }
   };
+
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     const currentTarget = e.currentTarget as HTMLElement;
@@ -201,6 +203,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       handleClose();
     }
   };
+
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
     if (triggers.type === 'click' && triggers.switch === 'image') {
@@ -254,7 +257,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       isClosingRef.current = false;
       setIsClosing(false);
     }
-    
     return () => {
       if (contentRef.current && animationEndHandlerRef.current) {
         contentRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
@@ -294,7 +296,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
       appearAnimationEndHandlerRef.current = handleAppearAnimationEnd;
       contentRef.current.addEventListener('animationend', handleAppearAnimationEnd);
     }
-    
     const preventScroll = (e: TouchEvent) => e.preventDefault();
     document.addEventListener("touchmove", preventScroll, { passive: false });
   
@@ -434,7 +435,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         }
       }
     };
-  
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
   
     return () => {
@@ -458,7 +458,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
         }}
       />
       <div 
-        className={cn(styles.backdropStyle, { [styles.editor]: isEditor, [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor })} 
+        className={cn(styles.backdropStyle, {
+          [styles.editor]: isEditor,
+          [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor 
+        })} 
         style={{...(isEditor && {
           backgroundColor: area.color,
           backdropFilter: `blur(${area.blur}px)`,
@@ -552,10 +555,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                 style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
               >
                 <button
-                    className={styles.arrowInner}
-                    style={{
-                      transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
-                    }}
+                  className={styles.arrowInner}
+                  style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
                   onClick={(e) => { handleArrowClick('-1'); }}
                   >
                     {controls.arrowsImgUrl && (
@@ -574,9 +575,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
               >              
                 <button
                   className={styles.arrowInner}
-                  style={{
-                    transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`,
-                  }}
+                  style={{ transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
                   onClick={(e) => { handleArrowClick('+1');}}
                   aria-label='Next'
                 >
@@ -603,10 +602,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
             return (
               <button
                 className={styles.closeButton}
-                style={{
-                  ...positionStyles,
-                  transform: combinedTransform
-                }}
+                style={{ ...positionStyles, transform: combinedTransform }}
                 onClick={handleClose}
               >
                 <SvgImage url={area.closeIconUrl} />
@@ -632,7 +628,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                 textDecoration: textAppearance.textDecoration ?? 'none',
                 fontVariant: textAppearance.fontVariant ?? 'normal',
                 color,
-                transitionDuration: slider.duration ? `${Math.round(parseInt(slider.duration) / 2)}ms` : '500ms',
+                transitionDuration: `${Math.round(parseInt(slider.duration) / 2)}ms`,
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -651,8 +647,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
           {/* Thumbnails */}
           {thumbnail.isActive && (
             <div
-              className={cn(
-                styles.thumbsContainer, 
+              className={cn(styles.thumbsContainer, 
                 {
                   [styles.thumbsContainerVertical]: slider.direction === 'vert',
                   [styles.thumbsAlignStart]: thumbnail.align === 'start',
@@ -660,10 +655,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                   [styles.thumbsAlignEnd]: thumbnail.align === 'end',
                 }
               )}
-              style={{
-                gap: `${scalingValue(thumbnail.grid.gap, isEditor)}`,
-                ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor),
-              }}
+              style={{ gap: scalingValue(thumbnail.grid.gap, isEditor), ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor)}}
             >
               {content.map((item, index) => {
                 const isActive = index === currentIndex;
@@ -672,13 +664,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, styles: lightbo
                     key={`${item.image.url}-${index}`}
                     className={styles.thumbItem}
                     style={{
-                      ...(slider.direction === 'horiz' ? { height: isActive ? `${scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.height, isEditor)}` } : {}),
-                      ...(slider.direction === 'vert' ? { width: isActive ? `${scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.width, isEditor)}` } : {}), 
-                      ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: isActive ? `${scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.width, isEditor)}` } : {}),
-                      ...(thumbnail.fit === 'cover' && slider.direction === 'vert' ? { height: isActive ? `${scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor)}` : `${scalingValue(thumbnail.grid.height, isEditor)}` } : {}),
+                      ...(slider.direction === 'horiz' ? { height: isActive ? scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.height, isEditor) } : {}),
+                      ...(slider.direction === 'vert' ? { width: isActive ? scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.width, isEditor) } : {}),
+                      ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: isActive ? scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.width, isEditor) } : {}),
+                      ...(thumbnail.fit === 'cover' && slider.direction === 'vert' ? { height: isActive ? scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.height, isEditor) } : {}),
                       transition: isActive ? 'all 0.2s ease' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
-                      ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100,
+                      ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
