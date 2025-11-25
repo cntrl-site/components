@@ -33,7 +33,7 @@ export const ControlImageRevealSliderComponent = {
                 display: {
                   type: 'ratio-group'
                 },
-                enum: ['as is', 'custom', 'random']
+                enum: ['as Is', 'custom', 'random']
               },
               imageWidth: {
                 type: 'number',
