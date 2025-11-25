@@ -29,7 +29,7 @@ type LightboxGalleryProps = {
   isEditor?: boolean;
 };
 
-export function LightboxGallery({ settings, content, lightboxStyles, portalId, activeEvent, isEditor }: LightboxGalleryProps) {
+export const LightboxGallery = ({ settings, content, lightboxStyles, portalId, activeEvent, isEditor }: LightboxGalleryProps) => {
   const [open, setOpen] = React.useState(false);
   const { url } = settings.thumbnailBlock.cover;
 
@@ -79,13 +79,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
 
   useEffect(() => {
-    window.addEventListener('ArticleEditor.Layout:change', () => {
+    const handleLayoutChange = () => {
       lightboxRef.current?.splide?.refresh();
-    });
+    };
+    window.addEventListener('ArticleEditor.Layout:change', handleLayoutChange);
     return () => {
-      window.removeEventListener('ArticleEditor.Layout:change', () => {
-        lightboxRef.current?.splide?.refresh();
-      });
+      window.removeEventListener('ArticleEditor.Layout:change', handleLayoutChange);
     };
   }, []);
 
@@ -454,8 +453,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           backdropFilter: `blur(${area.blur}px)`,
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
-          animationFillMode: 'both' as unknown as undefined
-        }}
+          animationFillMode: 'both'
+        } as React.CSSProperties}
       />
       <div 
         className={cn(styles.backdropStyle, {
@@ -467,8 +466,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           backdropFilter: `blur(${area.blur}px)`,
           animationDuration: `${appearDurationMs}ms`,
           animationTimingFunction: 'ease',
-          animationFillMode: 'both' as unknown as undefined
-        })}}
+          animationFillMode: 'both'
+        })} as React.CSSProperties}
         onClick={handleBackdropClick}
         onTouchEnd={handleBackdropClick}
         onTouchStart={handleBackdropClick}
@@ -558,6 +557,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   className={styles.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
                   onClick={(e) => { handleArrowClick('-1'); }}
+                  aria-label='Previous'
                   >
                     {controls.arrowsImgUrl && (
                       <SvgImage
@@ -604,6 +604,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 className={styles.closeButton}
                 style={{ ...positionStyles, transform: combinedTransform }}
                 onClick={handleClose}
+                aria-label='Close lightbox'
               >
                 <SvgImage url={area.closeIconUrl} />
               </button>
