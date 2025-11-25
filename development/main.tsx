@@ -3,6 +3,6 @@ import ReactDOM from 'react-dom/client';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <div>Hello World!</div>
+    <div>Insert Component Here</div>
   </React.StrictMode>
 );
