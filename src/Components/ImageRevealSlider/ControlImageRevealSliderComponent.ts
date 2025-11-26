@@ -18,15 +18,17 @@ export const ControlImageRevealSliderComponent = {
       settings: {
         layoutBased: true,
         type: 'object',
+        display: {
+          type: 'settings-block',
+        },
         properties: {
           imageSize: {
-            name: 'IMG SIZE',
+            title: 'IMG SIZE',
             icon: 'size',
             tooltip: 'IMG SIZE',
             type: 'object',
             properties: {
               sizeType: {
-                name: 'sizeType',
                 type: 'string',
                 display: {
                   type: 'ratio-group'
@@ -59,13 +61,12 @@ export const ControlImageRevealSliderComponent = {
             }
           },
           cursor: {
-            name: 'cursor',
+            title: 'cursor',
             icon: 'cursor',
             tooltip: 'cursor',
             type: 'object',
             properties: {
               cursorType: {
-                name: 'cursorType',
                 type: 'string',
                 display: {
                   type: 'ratio-group'
@@ -74,24 +75,24 @@ export const ControlImageRevealSliderComponent = {
               },
               defaultCursor: {
                 type: ['string', 'null'],
+                title: 'Default',
                 display: {
                   type: 'settings-image-input',
-                  title: 'Default',
                   visible: false
                 },
               },
               hoverCursor: {
                 type: ['string', 'null'],
+                title: 'Hover',
                 display: {
                   type: 'settings-image-input',
-                  title: 'Hover',
                   visible: false
                 },
               },
             }
           },
           position: {
-            name: 'position',
+            title: 'position',
             icon: 'transition',
             tooltip: 'Position',
             type: 'object',
