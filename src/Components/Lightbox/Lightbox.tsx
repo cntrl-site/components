@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useRef, useCallback, useState } from 'react';
+import React, { FC, useEffect, useRef, useCallback, useState, MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Lightbox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
@@ -78,7 +78,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
-  const appearDurationMs = parseInt(appear.duration);
 
   useEffect(() => {
     const handleLayoutChange = () => {
@@ -114,7 +113,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
   }, [onClose, area.color, isEditor]);
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+  const handleBackdropClick = (e: MouseEvent) => {
     if (e.target === e.currentTarget) {
       handleClose();
     }
@@ -144,7 +143,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
   };
 
-  const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+  const handleImageWrapperClick = (e: MouseEvent | TouchEvent) => {
     const currentImage = content[currentIndex];
     const isCover = currentImage?.image.objectFit === 'cover';
     let clientX: number;
@@ -162,26 +161,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     let inside: boolean;
     if (isCover && imageRef.current) {
       const imgRect = imageRef.current.getBoundingClientRect();
-      inside =
-        clientX >= imgRect.left &&
-        clientX <= imgRect.right &&
-        clientY >= imgRect.top &&
-        clientY <= imgRect.bottom;
+      inside = clientX >= imgRect.left && clientX <= imgRect.right && clientY >= imgRect.top && clientY <= imgRect.bottom;
     } else {
       const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
-      if (!rect) {
-        if (e.target === e.currentTarget) {
-          handleClose();
-        }
+      if (!rect ) {
+        if (e.target === e.currentTarget) handleClose();
         return;
       }
-      inside =
-        clientX >= rect.x &&
-        clientX <= rect.x + rect.width &&
-        clientY >= rect.y &&
-        clientY <= rect.y + rect.height;
+      inside = clientX >= rect.x && clientX <= rect.x + rect.width && clientY >= rect.y && clientY <= rect.y + rect.height;
     }
-    
     if (inside) {
       handleTriggerClick(imageRef.current, clientX, clientY);
     } else {
@@ -189,7 +177,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
   };
 
-  const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+  const onImageClick = (e: MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
     handleTriggerClick(e.currentTarget, e.clientX, e.clientY);
   };
@@ -242,9 +230,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const colorAlpha = getColorAlpha(area.color);
+    document.body.style.overflow = "hidden";
     
     const handleAppearAnimationEnd = (e: AnimationEvent) => {
       if (e.target === animationTargetRef.current && !isClosingRef.current && e.animationName) {
@@ -271,11 +259,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         appearAnimationEndHandlerRef.current = null;
       }
     };
-  }, [isOpen, area.color, isEditor]);
-  
-  const handleArrowClick = (dir: '+1' | '-1') => {
-    lightboxRef.current?.go(dir);
-  };
+  }, [isOpen, isEditor]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -291,24 +275,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         let inside: boolean;
         if (isCover && imageRef.current) {
           const imgRect = imageRef.current.getBoundingClientRect();
-          inside =
-            touch.clientX >= imgRect.left &&
-            touch.clientX <= imgRect.right &&
-            touch.clientY >= imgRect.top &&
-            touch.clientY <= imgRect.bottom;
+          inside = touch.clientX >= imgRect.left && touch.clientX <= imgRect.right && touch.clientY >= imgRect.top && touch.clientY <= imgRect.bottom;
         } else {
           const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
           if (!rect) return;
-          inside =
-            touch.clientX >= rect.x &&
-            touch.clientX <= rect.x + rect.width &&
-            touch.clientY >= rect.y &&
-            touch.clientY <= rect.y + rect.height;
+          inside = touch.clientX >= rect.x && touch.clientX <= rect.x + rect.width && touch.clientY >= rect.y && touch.clientY <= rect.y + rect.height;
         }
         if (!inside) {
           e.stopPropagation();
           isClosingRef.current = true;
-          const blockNextClick = (clickEvent: MouseEvent) => {
+          const blockNextClick = (clickEvent: PointerEvent) => {
             clickEvent.stopPropagation();
             clickEvent.preventDefault();
             document.removeEventListener("click", blockNextClick, true);
@@ -327,7 +303,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const backdropStyles = {
     backgroundColor: area.color,
     backdropFilter: `blur(${area.blur}px)`,
-    animationDuration: `${appearDurationMs}ms`,
+    animationDuration: `${parseInt(appear.duration)}ms`,
     animationTimingFunction: 'ease',
     animationFillMode: 'both'
   };
@@ -347,15 +323,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           [styles.editor]: isEditor,
           [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor 
         })} 
-        style={isEditor ? backdropStyles : undefined}
+        style={isEditor ? backdropStyles : { display: 'none' }}
         onClick={handleBackdropClick}
-        onTouchEnd={handleBackdropClick}
-        onTouchStart={handleBackdropClick}
-        >
+      />
         <div
-          className={cn(styles.contentStyle, !isClosing ? appearClass : disappearClass)}
+          className={cn(styles.contentStyle, !isClosing ? appearClass : disappearClass, { [styles.editor]: isEditor })}
           style={{
-            animationDuration: `${appearDurationMs}ms`,
+            animationDuration: `${parseInt(appear.duration)}ms`,
             animationTimingFunction: 'ease',
             animationFillMode: 'both'
           }}
@@ -421,7 +395,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               );
             })}
           </Splide>
-          {/* Controls */}
           {controls.isActive && controls.arrowsImgUrl && (
             <>
               <div 
@@ -431,7 +404,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 <button
                   className={styles.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
-                  onClick={() => handleArrowClick('-1')}
+                  onClick={() => lightboxRef.current?.go('-1')}
                   aria-label='Previous'
                   >
                     {controls.arrowsImgUrl && (
@@ -451,7 +424,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 <button
                   className={styles.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
-                  onClick={() => handleArrowClick('+1')}
+                  onClick={() => lightboxRef.current?.go('+1')}
                   aria-label='Next'
                 >
                   {controls.arrowsImgUrl && (
@@ -466,7 +439,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               </div>
             </>
           )}
-          {/* Close button */}
           {area.closeIconUrl && (() => {
             const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset, isEditor);
             const scaleTransform = `scale(${area.closeIconScale})`;
@@ -484,7 +456,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               </button>
             );
           })()}
-          {/* Caption */}
           {caption.isActive && (
             <div 
               className={styles.caption} 
@@ -519,7 +490,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               </div>
             </div>
           )}
-          {/* Thumbnails */}
           {thumbnail.isActive && (
             <div
               className={cn(styles.thumbsContainer, 
@@ -573,7 +543,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             </div>
           )}
         </div>
-      </div>
     </>,
     document.getElementById(portalId)!
   );

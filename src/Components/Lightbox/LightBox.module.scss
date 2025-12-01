@@ -21,17 +21,18 @@
 }
 
 .editor {
-  width: var(--cntrl-article-width)!important;
+  width: var(--cntrl-article-width);
   margin-left: auto;
   margin-right: auto;
 }
 
 .contentStyle {
-  position: relative;
-  width: 100%;
-  max-width: 100vw;
-  max-height: 100vh;
-  height: 100vh;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: auto;
   background: transparent;
   box-sizing: border-box;
