@@ -1,15 +1,15 @@
-import React, { FC, useEffect, useRef, useCallback } from 'react';
+import React, { FC, useEffect, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Lightbox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
 import { getPositionStyles, type Alignment, type Offset } from '../utils/getPositionStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import cn from 'classnames';
-import '@splidejs/react-splide/css';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { getDisplayedImageRect } from '../utils/getImageRect';
 import { getColorAlpha } from '../utils/getColorAlpha';
+import { getAnimationClasses } from './getAnimationClasses';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -48,12 +48,7 @@ export const LightboxGallery = ({ settings, content, styles, portalId, activeEve
       <img
         src={url}
         alt='Cover'
-        style={{
-          width: '100%',
-          height: '100%',
-          cursor: 'pointer',
-          objectFit: 'cover',
-        }}
+        style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
         onClick={() => setOpen(true)}
       />
       <Lightbox
@@ -70,19 +65,20 @@ export const LightboxGallery = ({ settings, content, styles, portalId, activeEve
 };
 
 const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles, settings, portalId, isEditor }) => {
-  const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [splideKey, setSplideKey] = React.useState(0);
-  const [isClosing, setIsClosing] = React.useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [splideKey, setSplideKey] = useState(0);
+  const [isClosing, setIsClosing] = useState(false);
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const isClosingRef = useRef<boolean>(false);
-  const contentRef = useRef<HTMLDivElement | null>(null);
+  const animationTargetRef = useRef<HTMLDivElement | null>(null);
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
-  const appearDurationMs = appear.duration ? parseInt(appear.duration) : 300;
+  const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
+  const appearDurationMs = parseInt(appear.duration);
 
   useEffect(() => {
     const handleLayoutChange = () => {
@@ -103,31 +99,54 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     setIsClosing(true);
     isClosingRef.current = true; 
     const handleAnimationEnd = (e: AnimationEvent) => {
-      if (e.target === contentRef.current && e.animationName) {
-        if (contentRef.current && animationEndHandlerRef.current) {
-          contentRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
+      if (e.target === animationTargetRef.current && e.animationName) {
+        if (animationTargetRef.current && animationEndHandlerRef.current) {
+          animationTargetRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
         }
         animationEndHandlerRef.current = null;
         onClose();
         setIsClosing(false);
       }
     };
-    if (contentRef.current) {
+    if (animationTargetRef.current) {
       animationEndHandlerRef.current = handleAnimationEnd;
-      contentRef.current.addEventListener('animationend', handleAnimationEnd);
+      animationTargetRef.current.addEventListener('animationend', handleAnimationEnd);
     }
-  }, [onClose, appearDurationMs, area.color, isEditor]);
+  }, [onClose, area.color, isEditor]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       handleClose();
     }
   };
+  
+  const handleTriggerClick = (img: HTMLImageElement | null, clientX: number, clientY: number) => {
+    if (!img) return;
+    if (triggers.type === 'click' && triggers.switch === 'image') {
+      if (triggers.repeat === 'close' && currentIndex === content.length - 1) {
+        handleClose();
+      } else {
+        lightboxRef.current?.go('+1');
+      }
+    } else if (triggers.type === 'click' && triggers.switch === '50/50') {
+      const rect = img.getBoundingClientRect();
+      const clickX = clientX - rect.left;
+      const clickY = clientY - rect.top;
+      const imgWidth = rect.width;
+      const imgHeight = rect.height;
+      let dir: '+1' | '-1';
+      if (slider.direction === 'horiz') {
+        dir = clickX < imgWidth / 2 ? '-1' : '+1';
+      } else {
+        dir = clickY < imgHeight / 2 ? '-1' : '+1';
+      }
+      lightboxRef.current?.go(dir);
+    }
+  };
 
   const handleImageWrapperClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     const currentImage = content[currentIndex];
     const isCover = currentImage?.image.objectFit === 'cover';
-    
     let clientX: number;
     let clientY: number;
     
@@ -164,75 +183,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
     
     if (inside) {
-      if (triggers.type === 'click' && triggers.switch === 'image') {
-        if (triggers.repeat === 'close' && currentIndex === content.length - 1) {
-          handleClose();
-        } else {
-          lightboxRef.current?.go('+1');
-        }
-      } else if (triggers.type === 'click' && triggers.switch === '50/50') {
-        const img = imageRef.current;
-        if (img) {
-          const imgRect = img.getBoundingClientRect();
-          const clickX = clientX - imgRect.left;
-          const clickY = clientY - imgRect.top;
-          const imgWidth = imgRect.width;
-          const imgHeight = imgRect.height;
-          let dir: '+1' | '-1';
-          if (slider.direction === 'horiz') {
-            dir = clickX < imgWidth / 2 ? '-1' : '+1';
-          } else {
-            dir = clickY < imgHeight / 2 ? '-1' : '+1';
-          }
-          lightboxRef.current?.go(dir);
-        }
-      }
+      handleTriggerClick(imageRef.current, clientX, clientY);
     } else {
-      handleClose();
-    }
-  };
-
-  const handleContentClick = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    const currentTarget = e.currentTarget as HTMLElement;
-    if (target === currentTarget) {
-      handleClose();
-      return;
-    }
-    const isImg = target.tagName === 'IMG' || target.closest('img');
-    const isButton = target.tagName === 'BUTTON' || target.closest('button');
-    const isSplide = target.closest('.splide') || target.closest('[class*="splide"]');
-    const isCaption = target.closest(`.${styles.caption}`);
-    const isThumbnail = target.closest(`.${styles.thumbsContainer}`);
-    if (!isImg && !isButton && !isSplide && !isCaption && !isThumbnail) {
       handleClose();
     }
   };
 
   const onImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
-    if (triggers.type === 'click' && triggers.switch === 'image') {
-      if (triggers.repeat === 'close' && currentIndex === content.length - 1) {
-        handleClose();
-      } else {
-        lightboxRef.current?.go('+1');
-      }
-    }
-    if (triggers.type === 'click' && triggers.switch === '50/50') {      
-      const img = e.currentTarget;
-      const rect = img.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-      const imgWidth = rect.width;
-      const imgHeight = rect.height;
-      let dir: '+1' | '-1';
-      if (slider.direction === 'horiz') {
-        dir = clickX < imgWidth / 2 ? '-1' : '+1';
-      } else {
-        dir = clickY < imgHeight / 2 ? '-1' : '+1';
-      }
-      lightboxRef.current?.go(dir);
-    }
+    handleTriggerClick(e.currentTarget, e.clientX, e.clientY);
   };
 
   useEffect(() => {
@@ -244,10 +203,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       }
       if (event.key === 'ArrowRight') {
         setCurrentIndex((prev) => (prev + 1) % Math.max(content.length, 1));
+        lightboxRef.current?.go('+1');
         return;
       }
       if (event.key === 'ArrowLeft') {
         setCurrentIndex((prev) => (prev - 1 + Math.max(content.length, 1)) % Math.max(content.length, 1));
+        lightboxRef.current?.go('-1');
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -263,8 +224,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       setIsClosing(false);
     }
     return () => {
-      if (contentRef.current && animationEndHandlerRef.current) {
-        contentRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
+      if (animationTargetRef.current && animationEndHandlerRef.current) {
+        animationTargetRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
         animationEndHandlerRef.current = null;
       }
     };
@@ -286,29 +247,27 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     const colorAlpha = getColorAlpha(area.color);
     
     const handleAppearAnimationEnd = (e: AnimationEvent) => {
-      if (e.target === contentRef.current && !isClosingRef.current && e.animationName) {
+      if (e.target === animationTargetRef.current && !isClosingRef.current && e.animationName) {
         if (isMobile && !isEditor && colorAlpha > 0.9) {
           document.body.style.backgroundColor = area.color;
         }
-        if (contentRef.current && appearAnimationEndHandlerRef.current) {
-          contentRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
+        if (animationTargetRef.current && appearAnimationEndHandlerRef.current) {
+          animationTargetRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
         }
         appearAnimationEndHandlerRef.current = null;
       }
     };
-    
-    if (contentRef.current && isMobile && !isEditor && colorAlpha > 0.9) {
+    if (animationTargetRef.current && isMobile && !isEditor && colorAlpha > 0.9) {
       appearAnimationEndHandlerRef.current = handleAppearAnimationEnd;
-      contentRef.current.addEventListener('animationend', handleAppearAnimationEnd);
+      animationTargetRef.current.addEventListener('animationend', handleAppearAnimationEnd);
     }
     const preventScroll = (e: TouchEvent) => e.preventDefault();
     document.addEventListener("touchmove", preventScroll, { passive: false });
-  
     return () => {
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("touchmove", preventScroll);
-      if (contentRef.current && appearAnimationEndHandlerRef.current) {
-        contentRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
+      if (animationTargetRef.current && appearAnimationEndHandlerRef.current) {
+        animationTargetRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
         appearAnimationEndHandlerRef.current = null;
       }
     };
@@ -317,85 +276,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const handleArrowClick = (dir: '+1' | '-1') => {
     lightboxRef.current?.go(dir);
   };
-
-  const backdropDurationMs = (appear.type === 'fade in' || appear.type === 'mix') 
-    ? Math.floor(appearDurationMs * 0.7) 
-    : appearDurationMs;
-  const appearClass = (() => {
-    if (appear.type === 'fade in') return styles.fadeIn;
-    if (appear.type === 'slide in' || appear.type === 'mix') {
-      switch (appear.direction) {
-        case 'left':
-          return styles.slideInLeft;
-        case 'right':
-          return styles.slideInRight;
-        case 'top':
-          return styles.slideInTop;
-        case 'bottom':
-          return styles.slideInBottom;
-        default:
-          return styles.slideInRight;
-      }
-    }
-    return styles.fadeIn;
-  })();
-
-  const backdropAppearClass = (() => {
-    if (appear.type === 'fade in' || appear.type === 'mix') return styles.fadeIn;
-    if (appear.type === 'slide in') {
-      switch (appear.direction) {
-        case 'left':
-          return styles.slideInLeft;
-        case 'right':
-          return styles.slideInRight;
-        case 'top':
-          return styles.slideInTop;
-        case 'bottom':
-          return styles.slideInBottom;
-        default:
-          return styles.slideInRight;
-      }
-    }
-    return styles.fadeIn;
-  })();
-
-  const backdropDisappearClass = (() => {
-    if (appear.type === 'fade in' || appear.type === 'mix') return styles.fadeOut;
-    if (appear.type === 'slide in') {
-      switch (appear.direction) {
-        case 'left':
-          return styles.slideOutLeft;
-        case 'right':
-          return styles.slideOutRight;
-        case 'top':
-          return styles.slideOutTop;
-        case 'bottom':
-          return styles.slideOutBottom;
-        default:
-          return styles.slideOutRight;
-      }
-    }
-    return styles.fadeOut;
-  })();
-
-  const disappearClass = (() => {
-    if (appear.type === 'fade in') return styles.fadeOut;
-    if (appear.type === 'slide in' || appear.type === 'mix') {
-      switch (appear.direction) {
-        case 'left':
-          return styles.slideOutLeft;
-        case 'right':
-          return styles.slideOutRight;
-        case 'top':
-          return styles.slideOutTop;
-        case 'bottom':
-          return styles.slideOutBottom;
-        default:
-          return styles.slideOutRight;
-      }
-    }
-    return styles.fadeOut;
-  })();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -408,7 +288,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         const currentImage = content[currentIndex];
         const isCover = currentImage?.image.objectFit === 'cover';
         const touch = e.changedTouches[0];
-        
         let inside: boolean;
         if (isCover && imageRef.current) {
           const imgRect = imageRef.current.getBoundingClientRect();
@@ -426,7 +305,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             touch.clientY >= rect.y &&
             touch.clientY <= rect.y + rect.height;
         }
-        
         if (!inside) {
           e.stopPropagation();
           isClosingRef.current = true;
@@ -441,59 +319,50 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       }
     };
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
-  
     return () => {
       document.removeEventListener("touchend", handleTouchEnd);
     };
   }, [isOpen, handleClose, currentIndex, content]);
+
+  const backdropStyles = {
+    backgroundColor: area.color,
+    backdropFilter: `blur(${area.blur}px)`,
+    animationDuration: `${appearDurationMs}ms`,
+    animationTimingFunction: 'ease',
+    animationFillMode: 'both'
+  };
   
   if (!isOpen && !isClosing) return null;
 
   return createPortal(
     <>
       <div
+        ref={!isEditor ? animationTargetRef : null}
         className={cn(styles.background, isClosing ? backdropDisappearClass : backdropAppearClass)} 
-        style={{
-          ...(isEditor && { display: 'none' }),
-          backgroundColor: area.color,
-          backdropFilter: `blur(${area.blur}px)`,
-          animationDuration: `${appearDurationMs}ms`,
-          animationTimingFunction: 'ease',
-          animationFillMode: 'both'
-        } as React.CSSProperties}
+        style={isEditor ? { display: 'none' } : backdropStyles}
       />
       <div 
+        ref={isEditor ? animationTargetRef : null}
         className={cn(styles.backdropStyle, {
           [styles.editor]: isEditor,
           [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor 
         })} 
-        style={{...(isEditor && {
-          backgroundColor: area.color,
-          backdropFilter: `blur(${area.blur}px)`,
-          animationDuration: `${appearDurationMs}ms`,
-          animationTimingFunction: 'ease',
-          animationFillMode: 'both'
-        })} as React.CSSProperties}
+        style={isEditor ? backdropStyles : undefined}
         onClick={handleBackdropClick}
         onTouchEnd={handleBackdropClick}
         onTouchStart={handleBackdropClick}
         >
         <div
-          ref={contentRef}
-          className={cn(styles.contentStyle, isClosing ? disappearClass : appearClass)}
-          onClick={handleContentClick}
+          className={cn(styles.contentStyle, !isClosing ? appearClass : disappearClass)}
           style={{
             animationDuration: `${appearDurationMs}ms`,
             animationTimingFunction: 'ease',
-            animationFillMode: 'both',
-            ...(appear.type === 'mix' && !isClosing && { animationDelay: `${backdropDurationMs/2}ms` }),
-            ...(appear.type === 'mix' && isClosing && { animationDelay: '0ms' }),
-  
-          } as React.CSSProperties}
+            animationFillMode: 'both'
+          }}
         >
           <Splide
             key={splideKey}
-            onMove={(splide) => { setCurrentIndex(splide.index); }}
+            onMove={(splide) => setCurrentIndex(splide.index)}
             ref={lightboxRef}
             className={styles.lightboxSplide}
             options={{
@@ -509,17 +378,17 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               padding: 0,
               rewind: (slider.type === 'scale' || slider.type === 'fade') && triggers.repeat === 'loop'
             }}
-            style={{'--splide-speed': slider.duration || '500ms'} as React.CSSProperties}
+            style={{'--splide-speed': slider.duration} as React.CSSProperties}
           >
             {content.map((item, index) => {
               const positionStyles = getPositionStyles(layout.position, layout.offset, isEditor);
-              const imageStyle: React.CSSProperties = slider.type === 'scale' 
+              const imageStyle = slider.type === 'scale' 
                 ? (() => {
                     const { transform, ...restStyles } = positionStyles;
                     return {
                       ...restStyles,
                       '--position-transform': (transform as string) || 'none'
-                    } as React.CSSProperties;
+                    };
                   })()
                 : positionStyles;
 
@@ -528,7 +397,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   <div 
                     className={styles.imgWrapper} 
                     onClick={handleImageWrapperClick}
-                    style={{ padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
+                    style={{padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
                   >
                     <img
                       ref={index === currentIndex ? imageRef : null}
@@ -562,7 +431,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 <button
                   className={styles.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
-                  onClick={(e) => { handleArrowClick('-1'); }}
+                  onClick={() => handleArrowClick('-1')}
                   aria-label='Previous'
                   >
                     {controls.arrowsImgUrl && (
@@ -582,7 +451,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 <button
                   className={styles.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
-                  onClick={(e) => { handleArrowClick('+1');}}
+                  onClick={() => handleArrowClick('+1')}
                   aria-label='Next'
                 >
                   {controls.arrowsImgUrl && (
@@ -604,7 +473,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             const combinedTransform = positionStyles.transform
               ? `${positionStyles.transform} ${scaleTransform}`
               : scaleTransform;
-            
             return (
               <button
                 className={styles.closeButton}
