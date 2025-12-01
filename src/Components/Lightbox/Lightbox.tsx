@@ -81,7 +81,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
 
   useEffect(() => {
     const handleLayoutChange = () => {
-      lightboxRef.current?.splide?.refresh();
+      setTimeout(() => {
+        lightboxRef.current?.splide?.refresh();
+      }, 16);
     };
     window.addEventListener('ArticleEditor.Layout:change', handleLayoutChange);
     return () => {
@@ -506,7 +508,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 const isActive = index === currentIndex;
                 return (
                   <button
-                    key={`${item.image.url}-${index}`}
+                    key={`${item.image.name}-${index}`}
                     className={styles.thumbItem}
                     style={{
                       ...(slider.direction === 'horiz' ? { height: isActive ? scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.height, isEditor) } : {}),
