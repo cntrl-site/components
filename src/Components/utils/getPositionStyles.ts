@@ -34,7 +34,6 @@ export const getPositionStyles = (position: Alignment, offset: Offset, isEditor?
     styles.right = '0';
   }
 
-  // Apply offset only in transform
   if (vertical === 'middle' && horizontal === 'center') {
     styles.transform = `translate(calc(-50% + ${scalingValue(offset.x, isEditor)}), calc(-50% + ${scalingValue(offset.y, isEditor)}))`;
   } else if (vertical === 'middle') {
@@ -42,10 +41,8 @@ export const getPositionStyles = (position: Alignment, offset: Offset, isEditor?
   } else if (horizontal === 'center') {
     styles.transform = `translate(calc(-50% + ${scalingValue(offset.x, isEditor)}), ${scalingValue(offset.y, isEditor)})`;
   } else {
-    // For corner positions (top-left, top-right, bottom-left, bottom-right)
     styles.transform = `translate(${scalingValue(offset.x, isEditor)}, ${scalingValue(offset.y, isEditor)})`;
   }
   
   return styles;
 };
-
