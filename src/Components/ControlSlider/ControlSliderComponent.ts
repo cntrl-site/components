@@ -288,7 +288,7 @@ export const ControlSliderComponent = {
                 }
               },
               hover: {
-                title: 'hover',
+                title: 'Link Hover',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',

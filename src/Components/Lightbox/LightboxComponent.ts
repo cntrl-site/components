@@ -556,7 +556,7 @@ export const LightboxComponent: Component = {
                     }
                   },
                   hover: {
-                    title: 'Hover',
+                    title: 'Link Hover',
                     type: 'string',
                     display: {
                       type: 'settings-color-picker',
