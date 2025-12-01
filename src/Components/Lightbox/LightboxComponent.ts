@@ -193,22 +193,13 @@ export const LightboxComponent: Component = {
                       type: 'group'
                     },  
                     properties: {
-                      height: {
+                      size: {
                         type: 'number',
                         label: 'H',
                         scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
                           visible: true,
-                        },
-                      },
-                      width: {
-                        type: 'number',
-                        label: 'W',
-                        scalingEnabled: true,
-                        display: {
-                          type: 'numeric-input',
-                          visible: false,
                         },
                       },
                       gap: {
@@ -576,33 +567,32 @@ export const LightboxComponent: Component = {
           },
           lightboxBlock: {
             appear: {
-              type: 'fade in',
+              type: 'slide in',
               duration: '1000ms',
-              direction: 'right',
+              direction: 'bottom',
             },
             triggers: {
               type: 'click',
-              switch: '50/50',
+              switch: 'image',
               repeat: 'loop'
             },
             slider: {
               type: 'slide',
-              direction: 'horiz',
-              duration: '1000ms'
+              direction: 'vert',
+              duration: '1050ms'
             },
             thumbnail: {
               isActive: true,
-              position: 'bottom-center',
+              position: 'middle-left',
               fit: 'fit',
-              align: 'center',
-              triggers: 'clk',
+              align: 'start',
+              triggers: 'hov',
               grid: {
-                height: 0.03,
-                width: 0.03,
+                size: 0.03,
                 gap: 0.008
               },
-              offset: { x: 0, y: 0 },
-              opacity: 80,
+              offset: { x: 0.01, y: 0 },
+              opacity: 50,
               activeState: {
                 scale: 1,
                 opacity: 100
@@ -611,7 +601,7 @@ export const LightboxComponent: Component = {
             layout: {
               position: 'middle-center',
               offset: { x: 0, y: 0 },
-              padding: { top: 0.04, right: 0, bottom: 0.04, left: 0 }
+              padding: { top: 0.06, right: 0, bottom: 0.06, left: 0 }
             },
             controls: {
               isActive: true,
@@ -622,7 +612,7 @@ export const LightboxComponent: Component = {
               hover: '#cccccc'
             },
             area: {
-              color: 'rgba(64,67,71,0.9)',
+              color: 'rgba(28,31,34,0.9)',
               blur: 0,
               closeIconUrl: null,
               closeIconAlign: 'top-right',
@@ -656,46 +646,6 @@ export const LightboxComponent: Component = {
             then: {
               name: 'properties.lightboxBlock.properties.thumbnail.properties.align.display.direction',
               value: 'vertical'
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.slider.direction',
-              value: 'vert'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.width.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.slider.direction',
-              value: 'horiz'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.height.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.slider.direction',
-              value: 'vert'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.height.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.slider.direction',
-              value: 'horiz'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.thumbnail.properties.grid.properties.width.display.visible',
-              value: false
             }
           },
           {

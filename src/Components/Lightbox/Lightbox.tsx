@@ -494,15 +494,17 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           )}
           {thumbnail.isActive && (
             <div
-              className={cn(styles.thumbsContainer, 
-                {
-                  [styles.thumbsContainerVertical]: slider.direction === 'vert',
-                  [styles.thumbsAlignStart]: thumbnail.align === 'start',
-                  [styles.thumbsAlignCenter]: thumbnail.align === 'center',
-                  [styles.thumbsAlignEnd]: thumbnail.align === 'end',
-                }
-              )}
-              style={{ gap: scalingValue(thumbnail.grid.gap, isEditor), ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor)}}
+              className={cn(styles.thumbsContainer, {
+                [styles.thumbsContainerVertical]: slider.direction === 'vert',
+                [styles.thumbsAlignStart]: thumbnail.align === 'start',
+                [styles.thumbsAlignCenter]: thumbnail.align === 'center',
+                [styles.thumbsAlignEnd]: thumbnail.align === 'end',
+              })}
+              style={{ 
+                position: isEditor ? 'absolute' : 'fixed',
+                gap: scalingValue(thumbnail.grid.gap, isEditor),
+                ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor)
+              }}
             >
               {content.map((item, index) => {
                 const isActive = index === currentIndex;
@@ -511,10 +513,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                     key={`${item.image.name}-${index}`}
                     className={styles.thumbItem}
                     style={{
-                      ...(slider.direction === 'horiz' ? { height: isActive ? scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.height, isEditor) } : {}),
-                      ...(slider.direction === 'vert' ? { width: isActive ? scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.width, isEditor) } : {}),
-                      ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: isActive ? scalingValue(thumbnail.grid.width * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.width, isEditor) } : {}),
-                      ...(thumbnail.fit === 'cover' && slider.direction === 'vert' ? { height: isActive ? scalingValue(thumbnail.grid.height * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.height, isEditor) } : {}),
+                      ...(slider.direction === 'horiz' ? { height: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor) } : {}),
+                      ...(slider.direction === 'vert' ? { width: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor) } : {}),
+                      ...(thumbnail.fit === 'cover' ? {
+                        width: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor),
+                        height: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor)
+                      } : {}),
                       transition: isActive ? 'all 0.2s ease' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
@@ -613,8 +617,7 @@ type LightboxSettings = {
       align: 'start' | 'center' | 'end';
       triggers: 'clk' | 'hov';
       grid: {
-        height: number;
-        width: number;
+        size: number;
         gap: number;
       };
       offset: Offset;
