@@ -68,6 +68,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const [currentIndex, setCurrentIndex] = useState(0);
   const [splideKey, setSplideKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+  const [animationFinished, setAnimationFinished] = useState(false);
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -114,12 +115,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       animationTargetRef.current.addEventListener('animationend', handleAnimationEnd);
     }
   }, [onClose, area.color, isEditor]);
-
-  const handleBackdropClick = (e: MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
   
   const handleTriggerClick = (img: HTMLImageElement | null, clientX: number, clientY: number) => {
     if (!img) return;
@@ -212,12 +207,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       setCurrentIndex(0);
       isClosingRef.current = false;
       setIsClosing(false);
+      setAnimationFinished(false);
     }
     return () => {
       if (animationTargetRef.current && animationEndHandlerRef.current) {
         animationTargetRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
         animationEndHandlerRef.current = null;
       }
+      setAnimationFinished(false);
     };
   }, [isOpen]);
 
@@ -235,19 +232,21 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const colorAlpha = getColorAlpha(area.color);
     document.body.style.overflow = "hidden";
+    setAnimationFinished(false);
     
     const handleAppearAnimationEnd = (e: AnimationEvent) => {
       if (e.target === animationTargetRef.current && !isClosingRef.current && e.animationName) {
         if (isMobile && !isEditor && colorAlpha > 0.9) {
           document.body.style.backgroundColor = area.color;
         }
+        setAnimationFinished(true);
         if (animationTargetRef.current && appearAnimationEndHandlerRef.current) {
           animationTargetRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
         }
         appearAnimationEndHandlerRef.current = null;
       }
     };
-    if (animationTargetRef.current && isMobile && !isEditor && colorAlpha > 0.9) {
+    if (animationTargetRef.current) {
       appearAnimationEndHandlerRef.current = handleAppearAnimationEnd;
       animationTargetRef.current.addEventListener('animationend', handleAppearAnimationEnd);
     }
@@ -260,8 +259,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         animationTargetRef.current.removeEventListener('animationend', appearAnimationEndHandlerRef.current);
         appearAnimationEndHandlerRef.current = null;
       }
+      setAnimationFinished(false);
     };
-  }, [isOpen, isEditor]);
+  }, [isOpen, isEditor, area.color]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -317,20 +317,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       <div
         ref={!isEditor ? animationTargetRef : null}
         className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass)} 
-        style={isEditor ? { display: 'none' } : backdropStyles}
-      />
-      <div 
-        ref={isEditor ? animationTargetRef : null}
-        className={cn(classes.backdropStyle, {
-          [classes.editor]: isEditor,
-          [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor 
-        })} 
-        style={isEditor ? backdropStyles : { display: 'none' }}
-        onClick={handleBackdropClick}
+        style={{
+          ...(isEditor ? { display: 'none' } : backdropStyles),
+          ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {})
+        }}
       />
         <div
+          ref={isEditor ? animationTargetRef : null}
           className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor })}
           style={{
+            ...(isEditor ? backdropStyles : {}),
             animationDuration: `${parseInt(appear.duration)}ms`,
             animationTimingFunction: 'ease',
             animationFillMode: 'both'
