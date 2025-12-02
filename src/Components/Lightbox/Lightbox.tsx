@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useRef, useCallback, useState, MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import styles from './Lightbox.module.scss';
+import classes from './Lightbox.module.scss';
 import { scalingValue } from '../utils/scalingValue';
 import { getPositionStyles, type Alignment, type Offset } from '../utils/getPositionStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
@@ -48,7 +48,7 @@ export const LightboxGallery = ({ settings, content, styles, portalId, activeEve
       <img
         src={url}
         alt='Cover'
-        style={{ width: '100%', height: '100%', cursor: 'pointer', objectFit: 'cover' }}
+        className={classes.heroImage}
         onClick={() => setOpen(true)}
       />
       <Lightbox
@@ -316,20 +316,20 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     <>
       <div
         ref={!isEditor ? animationTargetRef : null}
-        className={cn(styles.background, isClosing ? backdropDisappearClass : backdropAppearClass)} 
+        className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass)} 
         style={isEditor ? { display: 'none' } : backdropStyles}
       />
       <div 
         ref={isEditor ? animationTargetRef : null}
-        className={cn(styles.backdropStyle, {
-          [styles.editor]: isEditor,
+        className={cn(classes.backdropStyle, {
+          [classes.editor]: isEditor,
           [isClosing ? backdropDisappearClass : backdropAppearClass]: isEditor 
         })} 
         style={isEditor ? backdropStyles : { display: 'none' }}
         onClick={handleBackdropClick}
       />
         <div
-          className={cn(styles.contentStyle, !isClosing ? appearClass : disappearClass, { [styles.editor]: isEditor })}
+          className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor })}
           style={{
             animationDuration: `${parseInt(appear.duration)}ms`,
             animationTimingFunction: 'ease',
@@ -340,7 +340,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             key={splideKey}
             onMove={(splide) => setCurrentIndex(splide.index)}
             ref={lightboxRef}
-            className={styles.lightboxSplide}
+            className={classes.lightboxSplide}
             options={{
               arrows: false,
               speed: slider.duration ? parseInt(slider.duration) : 500,
@@ -358,6 +358,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           >
             {content.map((item, index) => {
               const positionStyles = getPositionStyles(layout.position, layout.offset, isEditor);
+              const padding = `${scalingValue(layout.padding.top, isEditor)} ${scalingValue(layout.padding.right, isEditor)} ${scalingValue(layout.padding.bottom, isEditor)} ${scalingValue(layout.padding.left, isEditor)}`;
               const imageStyle = slider.type === 'scale' 
                 ? (() => {
                     const { transform, ...restStyles } = positionStyles;
@@ -367,30 +368,20 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                     };
                   })()
                 : positionStyles;
-
               return (
                 <SplideSlide key={index}>
-                  <div 
-                    className={styles.imgWrapper} 
-                    onClick={handleImageWrapperClick}
-                    style={{padding: scalingValue(layout.padding.top, isEditor) + ' ' + scalingValue(layout.padding.right, isEditor) + ' ' + scalingValue(layout.padding.bottom, isEditor) + ' ' + scalingValue(layout.padding.left, isEditor)}}
-                  >
+                  <div className={classes.imgWrapper} onClick={handleImageWrapperClick} style={{ padding }}>
                     <img
                       ref={index === currentIndex ? imageRef : null}
-                      className={cn(styles.imageStyle, {
-                        [styles.contain]: item.image.objectFit === 'contain',
-                        [styles.cover]: item.image.objectFit === 'cover',
-                        [styles.scaleSlide]: slider.type === 'scale'
+                      className={cn(classes.imageStyle, {
+                        [classes.contain]: item.image.objectFit === 'contain',
+                        [classes.cover]: item.image.objectFit === 'cover',
+                        [classes.scaleSlide]: slider.type === 'scale'
                       })}
                       onClick={item.image.objectFit !== 'contain' ? onImageClick : undefined}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
-                      style={{
-                        ...imageStyle,
-                        ...(item.image.objectFit === 'contain' ? {
-                          pointerEvents: 'none'
-                        } : {})
-                      }}
+                      style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto'}}
                     />
                   </div>
               </SplideSlide>
@@ -400,11 +391,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           {controls.isActive && controls.arrowsImgUrl && (
             <>
               <div 
-                className={cn(styles.arrow, {[styles.arrowVertical]: slider.direction === 'vert' })}
+                className={cn(classes.arrow, {[classes.arrowVertical]: slider.direction === 'vert' })}
                 style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
               >
                 <button
-                  className={styles.arrowInner}
+                  className={classes.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
                   onClick={() => lightboxRef.current?.go('-1')}
                   aria-label='Previous'
@@ -414,17 +405,17 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                         url={controls.arrowsImgUrl}
                         fill={controls.color}
                         hoverFill={controls.hover}
-                        className={cn(styles.arrowImg, styles.mirror)}
+                        className={cn(classes.arrowImg, classes.mirror)}
                       />
                     )}
                   </button>
               </div>
               <div
-                className={cn(styles.arrow, styles.nextArrow, {[styles.arrowVertical]: slider.direction === 'vert'})}
+                className={cn(classes.arrow, classes.nextArrow, {[classes.arrowVertical]: slider.direction === 'vert'})}
                 style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
               >              
                 <button
-                  className={styles.arrowInner}
+                  className={classes.arrowInner}
                   style={{ transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
                   onClick={() => lightboxRef.current?.go('+1')}
                   aria-label='Next'
@@ -434,7 +425,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       url={controls.arrowsImgUrl}
                       fill={controls.color}
                       hoverFill={controls.hover}
-                      className={styles.arrowImg}
+                      className={classes.arrowImg}
                     />
                   )}
                 </button>
@@ -448,19 +439,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               ? `${positionStyles.transform} ${scaleTransform}`
               : scaleTransform;
             return (
-              <button
-                className={styles.closeButton}
-                style={{ ...positionStyles, transform: combinedTransform }}
-                onClick={handleClose}
-                aria-label='Close lightbox'
-              >
+              <button className={classes.closeButton} style={{ ...positionStyles, transform: combinedTransform }} onClick={handleClose} aria-label='Close lightbox'>
                 <SvgImage url={area.closeIconUrl} />
               </button>
             );
           })()}
           {caption.isActive && (
             <div 
-              className={styles.caption} 
+              className={classes.caption} 
               style={{
                 ...getPositionStyles(caption.alignment, caption.offset, isEditor),
                 fontFamily: fontSettings.fontFamily,
@@ -482,11 +468,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             >
               <div
                 data-styles="caption"
-                className={styles.captionTextInner}
-                style={{
-                  '--link-hover-color': caption.hover,
-                  position: 'relative',
-                } as React.CSSProperties}
+                className={classes.captionTextInner}
+                style={{['--link-hover-color' as string]: caption.hover}}
               >
                 <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
@@ -494,11 +477,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           )}
           {thumbnail.isActive && (
             <div
-              className={cn(styles.thumbsContainer, {
-                [styles.thumbsContainerVertical]: slider.direction === 'vert',
-                [styles.thumbsAlignStart]: thumbnail.align === 'start',
-                [styles.thumbsAlignCenter]: thumbnail.align === 'center',
-                [styles.thumbsAlignEnd]: thumbnail.align === 'end',
+              className={cn(classes.thumbsContainer, {
+                [classes.thumbsContainerVertical]: slider.direction === 'vert',
+                [classes.thumbsAlignStart]: thumbnail.align === 'start',
+                [classes.thumbsAlignCenter]: thumbnail.align === 'center',
+                [classes.thumbsAlignEnd]: thumbnail.align === 'end',
               })}
               style={{ 
                 position: isEditor ? 'absolute' : 'fixed',
@@ -511,7 +494,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 return (
                   <button
                     key={`${item.image.name}-${index}`}
-                    className={styles.thumbItem}
+                    className={classes.thumbItem}
                     style={{
                       ...(slider.direction === 'horiz' ? { height: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor) } : {}),
                       ...(slider.direction === 'vert' ? { width: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor) } : {}),

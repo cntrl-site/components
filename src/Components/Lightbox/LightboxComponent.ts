@@ -579,7 +579,7 @@ export const LightboxComponent: Component = {
             slider: {
               type: 'slide',
               direction: 'vert',
-              duration: '1050ms'
+              duration: '1500ms'
             },
             thumbnail: {
               isActive: true,
@@ -665,6 +665,26 @@ export const LightboxComponent: Component = {
             },
             then: {
               name: 'properties.lightboxBlock.properties.appear.properties.direction.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'lightboxBlock.slider.type',
+              value: 'fade'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.slider.properties.direction.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'lightboxBlock.slider.type',
+              value: 'scale'
+            },
+            then: {
+              name: 'properties.lightboxBlock.properties.slider.properties.direction.display.visible',
               value: false
             }
           },
