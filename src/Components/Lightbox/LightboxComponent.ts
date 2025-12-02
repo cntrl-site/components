@@ -195,7 +195,7 @@ export const LightboxComponent: Component = {
                     properties: {
                       size: {
                         type: 'number',
-                        label: 'H',
+                        label: 'Box',
                         scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
@@ -206,6 +206,7 @@ export const LightboxComponent: Component = {
                         type: 'number',
                         label: 'Gap',
                         scalingEnabled: true,
+                        min: 0,
                         display: {
                           type: 'numeric-input',
                         },

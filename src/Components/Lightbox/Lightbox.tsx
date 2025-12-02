@@ -69,6 +69,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const [splideKey, setSplideKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [animationFinished, setAnimationFinished] = useState(false);
+  const [thumbnailDimensions, setThumbnailDimensions] = useState<Record<number, { width: number; height: number }>>({});
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -208,6 +209,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       isClosingRef.current = false;
       setIsClosing(false);
       setAnimationFinished(false);
+      setThumbnailDimensions({});
     }
     return () => {
       if (animationTargetRef.current && animationEndHandlerRef.current) {
@@ -487,17 +489,41 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             >
               {content.map((item, index) => {
                 const isActive = index === currentIndex;
+                const thumbDims = thumbnailDimensions[index];
+                const baseSizeValue = thumbnail.grid.size;
+                const activeSizeValue = baseSizeValue * (isActive ? thumbnail.activeState.scale : 1);
+                const getFitDimensions = () => {
+                  if (thumbnail.fit !== 'fit' || !thumbDims) return {};
+                  const aspectRatio = thumbDims.width / thumbDims.height;
+                  if (slider.direction === 'horiz') {
+                    const heightValue = activeSizeValue;
+                    const widthValue = heightValue * aspectRatio;
+                    return { 
+                      width: scalingValue(widthValue, isEditor), 
+                      height: scalingValue(heightValue, isEditor) 
+                    };
+                  } else {
+                    const widthValue = activeSizeValue;
+                    const heightValue = widthValue / aspectRatio;
+                    return { 
+                      width: scalingValue(widthValue, isEditor), 
+                      height: scalingValue(heightValue, isEditor) 
+                    };
+                  }
+                };
+
                 return (
                   <button
                     key={`${item.image.name}-${index}`}
                     className={classes.thumbItem}
                     style={{
-                      ...(slider.direction === 'horiz' ? { height: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor) } : {}),
-                      ...(slider.direction === 'vert' ? { width: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor) } : {}),
+                      ...(slider.direction === 'horiz' && thumbnail.fit !== 'fit' ? { height: scalingValue(activeSizeValue, isEditor) } : {}),
+                      ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(thumbnail.fit === 'cover' ? {
-                        width: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor),
-                        height: isActive ? scalingValue(thumbnail.grid.size * (isActive ? thumbnail.activeState.scale : 1), isEditor) : scalingValue(thumbnail.grid.size, isEditor)
+                        width: scalingValue(activeSizeValue, isEditor),
+                        height: scalingValue(activeSizeValue, isEditor)
                       } : {}),
+                      ...(thumbnail.fit === 'fit' ? getFitDimensions() : {}),
                       transition: isActive ? 'all 0.2s ease' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
@@ -516,6 +542,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                     <img
                       src={item.image.url}
                       alt={item.image.name ?? ''}
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        if (img.naturalWidth && img.naturalHeight) {
+                          setThumbnailDimensions(prev => ({...prev,[index]: { width: img.naturalWidth, height: img.naturalHeight }
+                          }));
+                        }
+                      }}
                       style={{
                         objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
                         ...(thumbnail.fit === 'fit' ? { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } : {}),
