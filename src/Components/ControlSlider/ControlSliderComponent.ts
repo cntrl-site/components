@@ -18,9 +18,12 @@ export const ControlSliderComponent = {
       settings: {
         layoutBased: true,
         type: 'object',
+        display: {
+          type: 'settings-block',
+        },
         properties: {
           triggers: {
-            name: 'triggers',
+            title: 'triggers',
             icon: 'target',
             tooltip: 'Triggers',
             type: 'object',
@@ -50,7 +53,6 @@ export const ControlSliderComponent = {
             }
           },
           direction: {
-            name: 'direction',
             icon: 'horizontal-resize',
             tooltip: 'Direction',
             type: 'string',
@@ -60,7 +62,7 @@ export const ControlSliderComponent = {
             enum: ['horiz', 'vert']
           },
           transition: {
-            name: 'transit',
+            title: 'transit',
             icon: 'transition',
             tooltip: 'Transition',
             type: 'object',
@@ -74,7 +76,7 @@ export const ControlSliderComponent = {
               },
               backgroundColor: {
                 type: ['string', 'null'],
-                name: 'BG Color',
+                title: 'BG Color',
                 display: {
                   visible: false,
                   type: 'settings-color-picker',
@@ -83,7 +85,7 @@ export const ControlSliderComponent = {
               },
               duration: {
                 type: 'string',
-                label: 'hourglass-icon',
+                label: 'icon:hourglass',
                 display: {
                   type: 'step-selector',
                 },
@@ -92,7 +94,7 @@ export const ControlSliderComponent = {
             }
           },
           controls: {
-            name: 'controls',
+            title: 'controls',
             icon: 'controls',
             tooltip: 'Controls',
             type: 'object',
@@ -111,21 +113,34 @@ export const ControlSliderComponent = {
               },
               offset: {
                 type: 'object',
+                title: 'Offset',
                 display: {
-                  type: 'offset-controls',
+                  type: 'group',
                 },
                 properties: {
                   x: {
                     type: 'number',
+                    label: 'X',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
                   },
                   y: {
                     type: 'number',
-                  }
+                    label: 'Y',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
+                  },
                 }
               },
               scale: {
                 type: 'number',
-                name: 'scale',
+                title: 'scale',
                 min: 50,
                 max: 600,
                 display: {
@@ -133,7 +148,7 @@ export const ControlSliderComponent = {
                 },
               },
               color: {
-                name: 'color',
+                title: 'color',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -141,7 +156,7 @@ export const ControlSliderComponent = {
                 }
               },
               hover: {
-                name: 'hover',
+                title: 'hover',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -151,7 +166,7 @@ export const ControlSliderComponent = {
             },
           },
           pagination: {
-            name: 'nav',
+            title: 'nav',
             icon: 'pagination',
             tooltip: 'Navigation',
             type: 'object',
@@ -163,7 +178,6 @@ export const ControlSliderComponent = {
                 }
               },
               position: {
-                name: 'nav position',
                 display: {
                   type: 'socket',
                   direction: 'horizontal',
@@ -173,21 +187,34 @@ export const ControlSliderComponent = {
               },
               offset: {
                 type: 'object',
+                title: 'Offset',
                 display: {
-                  type: 'offset-controls',
+                  type: 'group',
                 },
                 properties: {
                   x: {
                     type: 'number',
+                    label: 'X',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
                   },
                   y: {
                     type: 'number',
-                  }
+                    label: 'Y',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
+                  },
                 }
               },
               scale: {
                 type: 'number',
-                name: 'scale',
+                title: 'scale',
                 min: 10,
                 max: 400,
                 display: {
@@ -199,14 +226,14 @@ export const ControlSliderComponent = {
                   type: 'settings-color-picker',
                   format: 'multiple'
                 },
-                name: 'color',
+                title: 'color',
                 type: 'array',
                 items: {
                   type: 'string',
                 }
               },
               hover: {
-                name: 'hover',
+                title: 'hover',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -216,7 +243,7 @@ export const ControlSliderComponent = {
             }
           },
           caption: {
-            name: 'Caption',
+            title: 'Caption',
             icon: 'text-icon',
             tooltip: 'Caption',
             type: 'object',
@@ -227,9 +254,7 @@ export const ControlSliderComponent = {
                   type: 'setting-toggle',
                 }
               },
-              alignment: {
-                name: 'Alignment',
-                type: 'string',
+              alignment: {                type: 'string',
                 display: {
                   type: 'align-grid'
                 },
@@ -237,20 +262,33 @@ export const ControlSliderComponent = {
               },
               offset: {
                 type: 'object',
+                title: 'Offset',
                 display: {
-                  type: 'offset-controls',
+                  type: 'group',
                 },
                 properties: {
                   x: {
                     type: 'number',
+                    label: 'X',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
                   },
                   y: {
                     type: 'number',
-                  }
+                    label: 'Y',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                      visible: true,
+                    },
+                  },
                 }
               },
               hover: {
-                name: 'hover',
+                title: 'Link Hover',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -341,11 +379,11 @@ export const ControlSliderComponent = {
           properties: {
             image: {
               type: 'object',
+              label: 'Image',
               display: {
-                type: 'media-input',
-                label: 'Image',
                 minWidth: 58,
-                maxWidth: 108
+                maxWidth: 108,
+                type: 'media-input',
               },
               properties: {
                 url: {
@@ -362,10 +400,10 @@ export const ControlSliderComponent = {
               required: ['url', 'name']
             },
             imageCaption: {
+              placeholder: 'Add Caption...',
+              label: 'Description',
               display: {
                 type: 'rich-text',
-                label: 'Description',
-                placeholder: 'Add Caption...',
                 minWidth: 300,
                 maxWidth: 550
               }

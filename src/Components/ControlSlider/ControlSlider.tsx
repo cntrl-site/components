@@ -128,7 +128,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
         options={{
           arrows: false,
           speed: transition.duration ? parseInt(transition.duration) : 500,
-          autoplay: isEditor ? false : triggers.autoPlay !== null,
+          autoplay: triggers.autoPlay !== null,
           ...(triggers.autoPlay !== null && {
             interval: parseInt(triggers.autoPlay) * 1000,
           }),
