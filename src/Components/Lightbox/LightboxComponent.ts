@@ -581,7 +581,7 @@ export const LightboxComponent: Component = {
               slider: {
                 type: 'slide',
                 direction: 'vert',
-                duration: '1500ms'
+                duration: '1000ms'
               },
               thumbnail: {
                 isActive: true,
@@ -590,8 +590,8 @@ export const LightboxComponent: Component = {
                 align: 'start',
                 triggers: 'hov',
                 grid: {
-                  size: 0.03,
-                  gap: 0.008
+                  size: 0.05,
+                  gap: 0.01
                 },
                 offset: { x: 0.01, y: 0 },
                 opacity: 50,
@@ -637,8 +637,8 @@ export const LightboxComponent: Component = {
           },
           lightboxBlock: {
             appear: {
-              type: 'slide in',
-              duration: '1000ms',
+              type: 'fade in',
+              duration: '500ms',
               direction: 'bottom',
             },
             triggers: {
@@ -649,19 +649,19 @@ export const LightboxComponent: Component = {
             slider: {
               type: 'slide',
               direction: 'horiz',
-              duration: '1500ms'
+              duration: '1000ms'
             },
             thumbnail: {
               isActive: true,
-              position: 'middle-left',
+              position: 'bottom-center',
               fit: 'fit',
               align: 'start',
               triggers: 'hov',
               grid: {
-                size: 0.03,
-                gap: 0.008
+                size: 0.1,
+                gap: 0.05
               },
-              offset: { x: 0.01, y: 0 },
+              offset: { x: 0.01, y: -0.05 },
               opacity: 50,
               activeState: {
                 scale: 1,
@@ -671,7 +671,75 @@ export const LightboxComponent: Component = {
             layout: {
               position: 'middle-center',
               offset: { x: 0, y: 0 },
-              padding: { top: 0.06, right: 0, bottom: 0.06, left: 0 }
+              padding: { top: 0.06, right: 0.05, bottom: 0.06, left: 0.05 }
+            },
+            controls: {
+              isActive: true,
+              arrowsImgUrl: null,
+              offset: { x: 0, y: 0 },
+              scale: 1,
+              color: '#000000',
+              hover: '#cccccc'
+            },
+            area: {
+              color: 'rgba(28,31,34,0.9)',
+              blur: 0,
+              closeIconUrl: null,
+              closeIconAlign: 'top-right',
+              closeIconOffset: { x: 0, y: 0 },
+              closeIconScale: 1
+            },
+            caption: {
+              isActive: true,
+              alignment: 'middle-center',
+              offset: { x: 0, y: 0 },
+              hover: '#cccccc'
+            }
+          }
+        },
+        't': {
+          thumbnailBlock: {
+            cover: {
+              url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
+            },
+          },
+          lightboxBlock: {
+            appear: {
+              type: 'fade in',
+              duration: '500ms',
+              direction: 'bottom',
+            },
+            triggers: {
+              type: 'click',
+              switch: 'image',
+              repeat: 'loop'
+            },
+            slider: {
+              type: 'slide',
+              direction: 'vert',
+              duration: '1000ms'
+            },
+            thumbnail: {
+              isActive: true,
+              position: 'middle-left',
+              fit: 'fit',
+              align: 'start',
+              triggers: 'hov',
+              grid: {
+                size: 0.05,
+                gap: 0.01
+              },
+              offset: { x: 0.03, y: 0 },
+              opacity: 50,
+              activeState: {
+                scale: 1,
+                opacity: 100
+              }
+            },
+            layout: {
+              position: 'middle-center',
+              offset: { x: 0, y: 0 },
+              padding: { top: 0.06, right: 0.1, bottom: 0.06, left: 0.1 }
             },
             controls: {
               isActive: true,
