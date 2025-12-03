@@ -323,17 +323,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     <>
       <div
         ref={!isEditor ? animationTargetRef : null}
-        className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass)} 
+        className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass, { [classes.editor]: isEditor })} 
         style={{
-          ...(isEditor ? { display: 'none' } : backdropStyles),
-          ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {})
+          ...backdropStyles,
+          ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {}),
         }}
       />
         <div
           ref={isEditor ? animationTargetRef : null}
           className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor })}
           style={{
-            ...(isEditor ? backdropStyles : {}),
             animationDuration: `${parseInt(appear.duration)}ms`,
             animationTimingFunction: 'ease',
             animationFillMode: 'both'
