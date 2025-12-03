@@ -55,7 +55,6 @@ export const ControlSliderComponent = {
           direction: {
             icon: 'horizontal-resize',
             tooltip: 'Direction',
-            title: 'direction',
             type: 'string',
             display: {
               type: 'ratio-group'
@@ -263,6 +262,7 @@ export const ControlSliderComponent = {
               },
               offset: {
                 type: 'object',
+                title: 'Offset',
                 display: {
                   type: 'group',
                 },

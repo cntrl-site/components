@@ -87,9 +87,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         lightboxRef.current?.splide?.refresh();
       }, 16);
     };
+    const handleComponentContentChange = () => {
+      setSplideKey(prev => prev + 1);
+    };
     window.addEventListener('ArticleEditor.Layout:change', handleLayoutChange);
+    window.addEventListener('ArticleEditor.ComponentContent:change', handleComponentContentChange);
     return () => {
       window.removeEventListener('ArticleEditor.Layout:change', handleLayoutChange);
+      window.removeEventListener('ArticleEditor.ComponentContent:change', handleComponentContentChange);
     };
   }, []);
 
@@ -362,13 +367,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                     const { transform, ...restStyles } = positionStyles;
                     return {
                       ...restStyles,
+                      position: 'absolute',
+                      padding,
+                      boxSizing: 'border-box',
                       '--position-transform': (transform as string) || 'none'
                     };
                   })()
-                : positionStyles;
+                : { ...positionStyles, position: 'absolute', padding, boxSizing: 'border-box' };
               return (
                 <SplideSlide key={index}>
-                  <div className={classes.imgWrapper} onClick={handleImageWrapperClick} style={{ padding }}>
+                  <div className={classes.imgWrapper} onClick={handleImageWrapperClick}>
                     <img
                       ref={index === currentIndex ? imageRef : null}
                       className={cn(classes.imageStyle, {
@@ -379,7 +387,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       onClick={item.image.objectFit !== 'contain' ? onImageClick : undefined}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
-                      style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto'}}
+                      style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
                     />
                   </div>
               </SplideSlide>
@@ -459,8 +467,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 textTransform: textAppearance.textTransform ?? 'none',
                 textDecoration: textAppearance.textDecoration ?? 'none',
                 fontVariant: textAppearance.fontVariant ?? 'normal',
-                color,
-                transitionDuration: `${Math.round(parseInt(slider.duration) / 2)}ms`,
+                color
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -519,10 +526,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                     style={{
                       ...(slider.direction === 'horiz' && thumbnail.fit !== 'fit' ? { height: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
-                      ...(thumbnail.fit === 'cover' ? {
-                        width: scalingValue(activeSizeValue, isEditor),
-                        height: scalingValue(activeSizeValue, isEditor)
-                      } : {}),
+                      ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
                       ...(thumbnail.fit === 'fit' ? getFitDimensions() : {}),
                       transition: isActive ? 'all 0.2s ease' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
