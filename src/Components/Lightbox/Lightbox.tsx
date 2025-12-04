@@ -277,6 +277,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         e.stopPropagation();
         return;
       }
+      const target = e.target as HTMLElement | null;
+      if (target && (target.closest(`.${classes.thumbsContainer}`) || target.closest(`.${classes.thumbItem}`))) {
+        return;
+      }
       if (e.touches.length === 0 && e.changedTouches.length > 0) {
         const currentImage = content[currentIndex];
         const isCover = currentImage?.image.objectFit === 'cover';
