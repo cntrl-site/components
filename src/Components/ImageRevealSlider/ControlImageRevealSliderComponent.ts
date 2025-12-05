@@ -193,11 +193,14 @@ export const ControlImageRevealSliderComponent = {
             image: {
               type: 'object',
               display: {
-                type: 'media-input',
+                type: 'object',
                 label: 'Image',
-                isObjectFitEditable: false,
-                minWidth: 58,
-                maxWidth: 108
+                display: {
+                  type: 'media-input',
+                  isObjectFitEditable: false,
+                  minWidth: 58,
+                  maxWidth: 108
+                }
               },
               properties: {
                 url: {
@@ -214,13 +217,16 @@ export const ControlImageRevealSliderComponent = {
               required: ['url', 'name']
             },
             link: {
-              type: 'string',
+              type: 'object',
               display: {
-                type: 'text-input',
+                type: 'object',
                 label: 'URL',
                 placeholder: 'Enter link...',
-                minWidth: 300,
-                maxWidth: 550
+                display: {
+                  type: 'text-input',
+                  minWidth: 300,
+                  maxWidth: 550
+                }
               }
             }
           },
