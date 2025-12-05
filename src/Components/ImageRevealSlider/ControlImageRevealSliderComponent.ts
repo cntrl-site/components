@@ -8,10 +8,6 @@ export const ControlImageRevealSliderComponent = {
     type: 'video' as const,
     url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7EQ3WSW43JG5YMC8B2HTPKT.mp4'
   },
-  defaultSize: {
-    width: 700,
-    height: 400,
-  },
   schema: {
     type: 'object',
     properties: {
@@ -196,12 +192,12 @@ export const ControlImageRevealSliderComponent = {
           properties: {
             image: {
               type: 'object',
+              label: 'Image',
               display: {
-                type: 'media-input',
-                label: 'Image',
                 isObjectFitEditable: false,
                 minWidth: 58,
-                maxWidth: 108
+                maxWidth: 108,
+                type: 'media-input',
               },
               properties: {
                 url: {
@@ -218,11 +214,10 @@ export const ControlImageRevealSliderComponent = {
               required: ['url', 'name']
             },
             link: {
-              type: 'string',
+              label: 'URL',
+              placeholder: 'Enter link...',
               display: {
                 type: 'text-input',
-                label: 'URL',
-                placeholder: 'Enter link...',
                 minWidth: 300,
                 maxWidth: 550
               }

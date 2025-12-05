@@ -4,9 +4,9 @@ export type Component = {
   element: (props: any) => React.ReactElement;
   id: string;
   name: string;
-  defaultSize: {
-    width: number;
-    height: number;
+  defaultSize?: {
+    width?: number;
+    height?: number;
   };
   schema: any;
   preview?: {
