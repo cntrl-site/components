@@ -192,15 +192,12 @@ export const ControlImageRevealSliderComponent = {
           properties: {
             image: {
               type: 'object',
+              label: 'Image',
               display: {
-                type: 'object',
-                label: 'Image',
-                display: {
-                  type: 'media-input',
-                  isObjectFitEditable: false,
-                  minWidth: 58,
-                  maxWidth: 108
-                }
+                isObjectFitEditable: false,
+                minWidth: 58,
+                maxWidth: 108,
+                type: 'media-input',
               },
               properties: {
                 url: {
