@@ -8,6 +8,10 @@ export const ControlImageRevealSliderComponent = {
     type: 'video' as const,
     url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7EQ3WSW43JG5YMC8B2HTPKT.mp4'
   },
+  defaultSize: {
+    width: '100%',
+    height: '100%'
+  },
   schema: {
     type: 'object',
     properties: {
