@@ -808,26 +808,6 @@ export const LightboxComponent: Component = {
             }
           },
           {
-            if: {
-              name: 'lightboxBlock.slider.type',
-              value: 'fade'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.slider.properties.direction.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'lightboxBlock.slider.type',
-              value: 'scale'
-            },
-            then: {
-              name: 'properties.lightboxBlock.properties.slider.properties.direction.display.visible',
-              value: false
-            }
-          },
-          {
             if: [
               { name: 'lightboxBlock.triggers.type', value: 'click' },
               { name: 'lightboxBlock.triggers.switch', value: 'image' },
