@@ -270,7 +270,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       ref={divRef}
       onClick={handleClick}
       style={{
-        cursor: !defaultCursor ? 'default' : 'none',
+        cursor: cursorType === 'custom' ? !defaultCursor ? 'default' : 'none' : 'default',
         position: 'absolute',
         top: '0',
         left: '0',
@@ -289,7 +289,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             transform: 'translate(-50%, -50%)',
             width: img.width ?? 'auto',
             height: 'auto',
-            cursor: !hoverCursor ? 'default' : 'none'
+            cursor: cursorType === 'custom' ? !hoverCursor ? 'default' : 'none' : 'default'
           }}
         >
           {target === 'area' && img.link ? (
@@ -328,7 +328,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             transform: `translate(-50%, -50%) scale(${cursorScale})`,
-            transition: 'transform 0.1s ease-out',
             zIndex: 1000,
           }}
         />
@@ -347,10 +346,10 @@ const sett: ImageRevealSliderSettings = {
     }
   },
   cursor: {
-    cursorType: 'custom',
-    defaultCursor: null, // "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
+    cursorType: 'system',
+    defaultCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
     defaultCursorScale: 1,
-    hoverCursor: null, // "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
+    hoverCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
     hoverCursorScale: 1
   },
   position: {

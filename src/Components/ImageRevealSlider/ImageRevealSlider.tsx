@@ -268,7 +268,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       ref={divRef}
       onClick={handleClick}
       className={styles.imageRevealSlider}
-      style={{ cursor: !defaultCursor ? 'default' : 'none' }}
+      style={{ cursor: cursorType === 'custom' ? !defaultCursor ? 'default' : 'none' : 'default' }}
     >
       {placedImages.map(img => (
         <div
@@ -280,7 +280,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             transform: 'translate(-50%, -50%)',
             width: img.width ?? 'auto',
             height: 'auto',
-            cursor: !hoverCursor ? 'default' : 'none'
+            cursor: cursorType === 'custom' ? !hoverCursor ? 'default' : 'none' : 'default'
           }}
         >
           {target === 'area' && img.link ? (
@@ -316,7 +316,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             transform: `translate(-50%, -50%) scale(${cursorScale})`,
-            transition: 'transform 0.1s ease-out',
             zIndex: 1000,
           }}
         />
