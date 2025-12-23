@@ -20,7 +20,9 @@ type ImageRevealSliderImageSize = {
 
 type ImageRevealSliderCursor = {
   cursorType: 'system' | 'custom';
+  defaultCursorScale: number;
   defaultCursor: string | null;
+  hoverCursorScale: number;
   hoverCursor: string | null;
 };
 
@@ -122,7 +124,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
   const { sizeType, imageWidth: customWidth, randomRangeImageWidth: randomRange } = settings.imageSize;
   const { revealPosition, visible, target } = settings.position;
-  const { cursorType, defaultCursor, hoverCursor } = settings.cursor;
+  const { cursorType, defaultCursorScale, defaultCursor, hoverCursorScale, hoverCursor } = settings.cursor;
 
   const createNewImage = async (
     imgData: ImageRevealSliderItem,
@@ -164,7 +166,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const defaultContentLength = Math.min(content.length, defaultImageCount);
     return content.filter((_, i) => i < defaultContentLength).map((c) => c.image.url).join('-');
   }, [content])
-
 
   useEffect(() => {
     if (!divRef.current || content.length === 0) return;
