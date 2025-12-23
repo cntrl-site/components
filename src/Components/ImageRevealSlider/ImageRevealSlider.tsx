@@ -244,6 +244,8 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     };
   }, [placedImages, hoverCursorScale, defaultCursorScale]);
 
+  console.log(cursorPos);
+
   return (
     <div
       ref={divRef}
