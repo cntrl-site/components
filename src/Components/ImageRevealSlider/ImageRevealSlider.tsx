@@ -127,6 +127,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [cursorScale, setCursorScale] = useState(defaultCursorScale);
+  const [isCursorVisible, setIsCursorVisible] = useState(false);
 
   const createNewImage = async (
     imgData: ImageRevealSliderItem,
@@ -226,20 +227,35 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   };
 
   useEffect(() => {
+    if (!divRef.current) return;
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!divRef.current) return;
-      const rect = divRef.current.getBoundingClientRect();
+      const rect = divRef.current!.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      setCursorPos({ x, y });
 
-      const hovering = isMouseOverImage(x, y, placedImages);
-      setCursorScale(hovering ? hoverCursorScale : defaultCursorScale);
+      const insideContainer = e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom;
+
+      const hoveringImage = isMouseOverImage(x, y, placedImages);
+
+      setCursorPos({ x, y });
+      setCursorScale(hoveringImage ? hoverCursorScale : defaultCursorScale);
+
+      setIsCursorVisible(insideContainer || hoveringImage);
     };
 
-    divRef.current?.addEventListener('mousemove', handleMouseMove);
+    const handleMouseLeave = () => {
+      setIsCursorVisible(false);
+    };
+
+    const divEl = divRef.current;
+    divEl.addEventListener('mousemove', handleMouseMove);
+    divEl.addEventListener('mouseleave', handleMouseLeave);
+
     return () => {
-      divRef.current?.removeEventListener('mousemove', handleMouseMove);
+      divEl.removeEventListener('mousemove', handleMouseMove);
+      divEl.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [placedImages, hoverCursorScale, defaultCursorScale]);
 
@@ -250,7 +266,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       ref={divRef}
       onClick={handleClick}
       className={styles.imageRevealSlider}
-      style={{ cursor: cursorType === 'custom' ? 'none' : 'default' }} // position: 'relative'
+      style={{ cursor: cursorType === 'custom' ? 'none' : 'default' }}
     >
       {placedImages.map(img => (
         <div
@@ -284,7 +300,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
         </div>
       ))}
 
-      {cursorType === 'custom' && (defaultCursor || hoverCursor) && (
+      {cursorType === 'custom' && (defaultCursor || hoverCursor) && isCursorVisible && (
         <div
           style={{
             position: 'absolute',

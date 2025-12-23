@@ -120,6 +120,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const [placedImages, setPlacedImages] = useState<PlacedImage[]>([]);
   const [counter, setCounter] = useState(0);
   const imageIdCounter = useRef(0);
+  const [isCursorVisible, setIsCursorVisible] = useState(false);
 
   const { sizeType, imageWidth: customWidth, randomRangeImageWidth: randomRange } = settings.imageSize;
   const { revealPosition, visible, target } = settings.position;
@@ -226,20 +227,35 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   };
 
   useEffect(() => {
+    if (!divRef.current) return;
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!divRef.current) return;
-      const rect = divRef.current.getBoundingClientRect();
+      const rect = divRef.current!.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      setCursorPos({ x, y });
 
-      const hovering = isMouseOverImage(x, y, placedImages);
-      setCursorScale(hovering ? hoverCursorScale : defaultCursorScale);
+      const insideContainer = e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom;
+
+      const hoveringImage = isMouseOverImage(x, y, placedImages);
+
+      setCursorPos({ x, y });
+      setCursorScale(hoveringImage ? hoverCursorScale : defaultCursorScale);
+
+      setIsCursorVisible(insideContainer || hoveringImage);
     };
 
-    divRef.current?.addEventListener('mousemove', handleMouseMove);
+    const handleMouseLeave = () => {
+      setIsCursorVisible(false);
+    };
+
+    const divEl = divRef.current;
+    divEl.addEventListener('mousemove', handleMouseMove);
+    divEl.addEventListener('mouseleave', handleMouseLeave);
+
     return () => {
-      divRef.current?.removeEventListener('mousemove', handleMouseMove);
+      divEl.removeEventListener('mousemove', handleMouseMove);
+      divEl.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [placedImages, hoverCursorScale, defaultCursorScale]);
 
@@ -251,7 +267,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     <div
       ref={divRef}
       onClick={handleClick}
-      // className={styles.imageRevealSlider}
       style={{
         cursor: cursorType === 'custom' ? 'none' : 'default',
         position: 'absolute',
@@ -264,7 +279,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     >
       {placedImages.map(img => (
         <div
-          // className={styles.wrapper}
           key={img.id}
           style={{
             top: `${img.y}px`,
@@ -276,48 +290,46 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
           }}
         >
           {target === 'area' && img.link ? (
-            <a href={img.link} target='_blank' style={{width: '100%', height: '100%', display: 'block'}}>
-          <img
-            key={img.id}
-            src={img.url}
-            alt={img.name}
-            style={{width: '100%', height: '100%', objectFit: 'cover', position: 'relative', userSelect: 'none', pointerEvents: 'none'}}
-          // className={styles.image}
-          />
-        </a>
-      ) : (
-      <img
-        key={img.id}
-        src={img.url}
-        alt={img.name}
-        style={{width: '100%', height: '100%', objectFit: 'cover', position: 'relative', userSelect: 'none', pointerEvents: 'none'}}
-      // className={styles.image}
-      />
+            <a href={img.link} target='_blank' style={{ width: '100%', height: '100%', display: 'block' }}>
+              <img
+                key={img.id}
+                src={img.url}
+                alt={img.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', userSelect: 'none', pointerEvents: 'none' }}
+              // className={styles.image}
+              />
+            </a>
+          ) : (
+            <img
+              key={img.id}
+              src={img.url}
+              alt={img.name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', userSelect: 'none', pointerEvents: 'none' }}
+            // className={styles.image}
+            />
           )}
-    </div>
-  ))
-}
+        </div>
+      ))
+      }
 
-{
-  cursorType === 'custom' && ( defaultCursor || hoverCursor ) && (
-    <div
-      style={{
-        position: 'absolute',
-        top: cursorPos.y,
-        left: cursorPos.x,
-        width: '40px',
-        height: '40px',
-        pointerEvents: 'none',
-        backgroundImage: `url(${!ishovering ? defaultCursor : hoverCursor})`,
-        backgroundSize: 'contain',
-        backgroundRepeat: 'no-repeat',
-        transform: `translate(-50%, -50%) scale(${cursorScale})`,
-        transition: 'transform 0.1s ease-out',
-        zIndex: 1000,
-      }}
-    />
-  )
-}
+      {cursorType === 'custom' && (defaultCursor || hoverCursor) && isCursorVisible && (
+        <div
+          style={{
+            position: 'absolute',
+            top: cursorPos.y,
+            left: cursorPos.x,
+            width: '40px',
+            height: '40px',
+            pointerEvents: 'none',
+            backgroundImage: `url(${!ishovering ? defaultCursor : hoverCursor})`,
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            transform: `translate(-50%, -50%) scale(${cursorScale})`,
+            transition: 'transform 0.1s ease-out',
+            zIndex: 1000,
+          }}
+        />
+      )}
     </div >
   );
 }
