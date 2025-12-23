@@ -270,13 +270,13 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       ref={divRef}
       onClick={handleClick}
       style={{
-        cursor: cursorType === 'custom' ? 'none' : 'default',
+        cursor: !defaultCursor ? 'default' : 'none',
         position: 'absolute',
         top: '0',
         left: '0',
         width: '100%',
         height: '100%',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
       {placedImages.map(img => (
@@ -289,6 +289,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             transform: 'translate(-50%, -50%)',
             width: img.width ?? 'auto',
             height: 'auto',
+            cursor: !hoverCursor ? 'default' : 'none'
           }}
         >
           {target === 'area' && img.link ? (
@@ -347,9 +348,9 @@ const sett: ImageRevealSliderSettings = {
   },
   cursor: {
     cursorType: 'custom',
-    defaultCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
+    defaultCursor: null, // "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
     defaultCursorScale: 1,
-    hoverCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
+    hoverCursor: null, // "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
     hoverCursorScale: 1
   },
   position: {
