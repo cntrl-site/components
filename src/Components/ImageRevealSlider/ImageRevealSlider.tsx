@@ -56,8 +56,9 @@ interface PlacedImage {
   width?: string;
 }
 
-function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedImage[]) {
-  for (const img of placedImages) {
+function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedImage[]): { isOverImage: boolean, hasLink: boolean } {
+  for (let i = placedImages.length - 1; i >= 0; i--) {
+    const img = placedImages[i];
     const imgEl = new Image();
     imgEl.src = img.url;
 
@@ -73,10 +74,10 @@ function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedIm
       mouseY >= img.y - halfH &&
       mouseY <= img.y + halfH
     ) {
-      return true;
+      return { isOverImage: true, hasLink: img.link.length > 0 };
     }
   }
-  return false;
+  return { isOverImage: false, hasLink: false };
 }
 
 function getImageSize(url: string): Promise<{ width: number; height: number }> {
@@ -205,7 +206,8 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
-    if (target === 'image' && !isMouseOverImage(clickX, clickY, placedImages)) return;
+    const { isOverImage } = isMouseOverImage(clickX, clickY, placedImages)
+    if (target === 'image' && !isOverImage) return;
 
     let x = 0, y = 0;
     if (revealPosition === 'on Click') {
@@ -237,12 +239,12 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       const insideContainer = e.clientX >= rect.left && e.clientX <= rect.right &&
         e.clientY >= rect.top && e.clientY <= rect.bottom;
 
-      const hoveringImage = isMouseOverImage(x, y, placedImages);
+      const { isOverImage } = isMouseOverImage(x, y, placedImages);
 
       setCursorPos({ x, y });
-      setCursorScale(hoveringImage ? hoverCursorScale : defaultCursorScale);
+      setCursorScale(isOverImage ? hoverCursorScale : defaultCursorScale);
 
-      setIsCursorVisible(insideContainer || hoveringImage);
+      setIsCursorVisible(insideContainer || isOverImage);
     };
 
     const handleMouseLeave = () => {
@@ -259,7 +261,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     };
   }, [placedImages, hoverCursorScale, defaultCursorScale]);
 
-  const ishovering = isMouseOverImage(cursorPos.x, cursorPos.y, placedImages);
+  const { isOverImage, hasLink: overImageHasLink } = isMouseOverImage(cursorPos.x, cursorPos.y, placedImages);
 
   return (
     <div
@@ -300,7 +302,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
         </div>
       ))}
 
-      {cursorType === 'custom' && (defaultCursor || hoverCursor) && isCursorVisible && (
+      {cursorType === 'custom' && (defaultCursor || hoverCursor) && isCursorVisible && ( (target === 'area' && !overImageHasLink) || target !== 'area') && (
         <div
           style={{
             position: 'absolute',
@@ -309,7 +311,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             width: '40px',
             height: '40px',
             pointerEvents: 'none',
-            backgroundImage: `url(${!ishovering ? defaultCursor : hoverCursor})`,
+            backgroundImage: `url(${!isOverImage ? defaultCursor : hoverCursor})`,
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             transform: `translate(-50%, -50%) scale(${cursorScale})`,
