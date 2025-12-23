@@ -5,7 +5,7 @@ interface ImageRevealSliderProps {
   settings: ImageRevealSliderSettings;
   content: ImageRevealSliderItem[];
   isEditor?: boolean;
-};
+}
 
 type RandomRange = {
   min: number;
@@ -54,7 +54,7 @@ interface PlacedImage {
   x: number;
   y: number;
   width?: string;
-};
+}
 
 function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedImage[]) {
   for (const img of placedImages) {
@@ -68,10 +68,10 @@ function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedIm
     const halfH = imgHeight / 2;
 
     if (
-      mouseX >= img.x - halfW
-      && mouseX <= img.x + halfW
-      && mouseY >= img.y - halfH
-      && mouseY <= img.y + halfH
+      mouseX >= img.x - halfW &&
+      mouseX <= img.x + halfW &&
+      mouseY >= img.y - halfH &&
+      mouseY <= img.y + halfH
     ) {
       return true;
     }
@@ -120,11 +120,13 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const [placedImages, setPlacedImages] = useState<PlacedImage[]>([]);
   const [counter, setCounter] = useState(0);
   const imageIdCounter = useRef(0);
-  const defaultImageCount = 1;
 
   const { sizeType, imageWidth: customWidth, randomRangeImageWidth: randomRange } = settings.imageSize;
   const { revealPosition, visible, target } = settings.position;
   const { cursorType, defaultCursorScale, defaultCursor, hoverCursorScale, hoverCursor } = settings.cursor;
+
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [cursorScale, setCursorScale] = useState(defaultCursorScale);
 
   const createNewImage = async (
     imgData: ImageRevealSliderItem,
@@ -163,9 +165,9 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   };
 
   const defaultContentUrls = useMemo(() => {
-    const defaultContentLength = Math.min(content.length, defaultImageCount);
+    const defaultContentLength = Math.min(content.length, 1);
     return content.filter((_, i) => i < defaultContentLength).map((c) => c.image.url).join('-');
-  }, [content])
+  }, [content]);
 
   useEffect(() => {
     if (!divRef.current || content.length === 0) return;
@@ -177,14 +179,14 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const defaultPlaced: PlacedImage[] = [];
 
     const placeImages = async () => {
-      for (let i = 0; i < defaultImageCount && i < content.length; i++) {
+      for (let i = 0; i < 1 && i < content.length; i++) {
         const imgData = content[i];
         const newImg = await createNewImage(imgData, containerWidth, containerHeight);
         defaultPlaced.push(newImg);
       }
 
       setPlacedImages(defaultPlaced);
-      setCounter(defaultImageCount % content.length);
+      setCounter(1 % content.length);
     };
 
     placeImages();
@@ -223,15 +225,35 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     setCounter(prev => (prev >= content.length - 1 ? 0 : prev + 1));
   };
 
+  // Логика кастомного курсора
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!divRef.current) return;
+      const rect = divRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setCursorPos({ x, y });
+
+      const hovering = isMouseOverImage(x, y, placedImages);
+      setCursorScale(hovering ? hoverCursorScale : defaultCursorScale);
+    };
+
+    divRef.current?.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      divRef.current?.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [placedImages, hoverCursorScale, defaultCursorScale]);
+
   return (
     <div
       ref={divRef}
       onClick={handleClick}
       className={styles.imageRevealSlider}
-      style={{ cursor: cursorType !== 'system' && defaultCursor ? `url(${ target === 'area' ? hoverCursor : defaultCursor}), auto` : 'default' }}
+      style={{ cursor: cursorType === 'custom' ? 'none' : 'default', position: 'relative' }}
     >
       {placedImages.map(img => (
-        <div className={styles.wrapper}
+        <div
+          className={styles.wrapper}
           key={img.id}
           style={{
             top: `${img.y}px`,
@@ -240,7 +262,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             transform: 'translate(-50%, -50%)',
             width: img.width ?? 'auto',
             height: 'auto',
-            cursor: cursorType !== 'system' && hoverCursor ? `url(${hoverCursor}), auto` : 'default'
           }}
         >
           {target === 'area' && img.link ? (
@@ -262,6 +283,26 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
           )}
         </div>
       ))}
+
+      {cursorType === 'custom' && defaultCursor && (
+        <div
+          className={styles.customCursor}
+          style={{
+            position: 'absolute',
+            top: cursorPos.y,
+            left: cursorPos.x,
+            width: '40px',
+            height: '40px',
+            pointerEvents: 'none',
+            backgroundImage: `url(${defaultCursor})`,
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            transform: `translate(-50%, -50%) scale(${cursorScale})`,
+            transition: 'transform 0.1s ease-out',
+            zIndex: 1000,
+          }}
+        />
+      )}
     </div>
   );
 }
