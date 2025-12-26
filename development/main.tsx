@@ -250,7 +250,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       const { isOverImage } = isMouseOverImage(x, y, placedImages);
 
       setCursorPos({ x, y });
-      setCursorScale(isOverImage || target === 'image' ? hoverCursorScale : defaultCursorScale);
+      setCursorScale(isOverImage || target === 'area' ? hoverCursorScale : defaultCursorScale);
       setIsCursorVisible(insideContainer || isOverImage);
     };
 
@@ -272,7 +272,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       const { isOverImage } = isMouseOverImage(x, y, placedImages);
 
       setCursorPos({ x, y });
-      setCursorScale(isOverImage || target === 'image' ? hoverCursorScale : defaultCursorScale);
+      setCursorScale(isOverImage || target === 'area' ? hoverCursorScale : defaultCursorScale);
       setIsCursorVisible(insideContainer || isOverImage);
     };
 
@@ -354,7 +354,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
               width: '40px',
               height: '40px',
               pointerEvents: 'none',
-              backgroundImage: `url(${isOverImage || target === 'image' ? hoverCursor : defaultCursor})`,
+              backgroundImage: `url(${isOverImage || target === 'area' ? hoverCursor : defaultCursor})`,
               backgroundSize: 'contain',
               backgroundRepeat: 'no-repeat',
               transform: `translate(-50%, -50%) scale(${cursorScale})`,
