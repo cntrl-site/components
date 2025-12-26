@@ -81,11 +81,33 @@ export const ControlImageRevealSliderComponent = {
                   visible: false
                 },
               },
+              defaultCursorScale: {
+                type: 'number',
+                title: 'Scale',
+                min: 1,
+                max: 5,
+                step: 0.1,
+                display: {
+                  type: 'range-control',
+                  visible: false
+                },
+              },
               hoverCursor: {
                 type: ['string', 'null'],
                 title: 'Hover',
                 display: {
                   type: 'settings-image-input',
+                  visible: false
+                },
+              },
+              hoverCursorScale: {
+                type: 'number',
+                title: 'Scale',
+                min: 1,
+                max: 5,
+                step: 0.1,
+                display: {
+                  type: 'range-control',
                   visible: false
                 },
               },
@@ -133,7 +155,9 @@ export const ControlImageRevealSliderComponent = {
           cursor: {
             cursorType: 'system',
             defaultCursor: null,
-            hoverCursor: null
+            defaultCursorScale: 2,
+            hoverCursor: null,
+            hoverCursorScale: 2
           },
           position: {
             revealPosition: 'random',
@@ -173,12 +197,32 @@ export const ControlImageRevealSliderComponent = {
             }
           },
           {
+            if: [
+              { name: 'position.target', value: 'image' },
+              { name: 'cursor.cursorType', value: 'custom' },
+            ],
+            then: {
+              name: 'properties.cursor.properties.defaultCursorScale.display.visible',
+              value: true
+            }
+          },
+          {
             if: {
               name: 'cursor.cursorType',
               value: 'custom'
             },
             then: {
               name: 'properties.cursor.properties.hoverCursor.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'cursor.cursorType',
+              value: 'custom'
+            },
+            then: {
+              name: 'properties.cursor.properties.hoverCursorScale.display.visible',
               value: true
             }
           },
