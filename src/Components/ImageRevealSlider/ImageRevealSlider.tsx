@@ -129,6 +129,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
   const [cursorScale, setCursorScale] = useState(defaultCursorScale);
   const [isCursorVisible, setIsCursorVisible] = useState(false);
+  const lastMousePos = useRef<{ x: number; y: number } | null>(null);
 
   const createNewImage = async (
     imgData: ImageRevealSliderItem,
@@ -232,18 +233,46 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     if (!divRef.current) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = divRef.current!.getBoundingClientRect();
+      if (!divRef.current) return;
+
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+
+      const rect = divRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      const insideContainer = e.clientX >= rect.left && e.clientX <= rect.right &&
-        e.clientY >= rect.top && e.clientY <= rect.bottom;
+      const insideContainer =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
 
       const { isOverImage } = isMouseOverImage(x, y, placedImages);
 
       setCursorPos({ x, y });
       setCursorScale(isOverImage ? hoverCursorScale : defaultCursorScale);
+      setIsCursorVisible(insideContainer || isOverImage);
+    };
 
+    const handleScroll = () => {
+      if (!divRef.current || !lastMousePos.current) return;
+
+      const rect = divRef.current.getBoundingClientRect();
+      const { x: clientX, y: clientY } = lastMousePos.current;
+
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      const insideContainer =
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom;
+
+      const { isOverImage } = isMouseOverImage(x, y, placedImages);
+
+      setCursorPos({ x, y });
+      setCursorScale(isOverImage ? hoverCursorScale : defaultCursorScale);
       setIsCursorVisible(insideContainer || isOverImage);
     };
 
@@ -254,10 +283,12 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const divEl = divRef.current;
     divEl.addEventListener('mousemove', handleMouseMove);
     divEl.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       divEl.removeEventListener('mousemove', handleMouseMove);
       divEl.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [placedImages, hoverCursorScale, defaultCursorScale]);
 
@@ -303,7 +334,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
         </div>
       ))}
 
-      {cursorType === 'custom' && (defaultCursor || hoverCursor) && isCursorVisible && ( (target === 'area' && !overImageHasLink) || target !== 'area') && (
+      {cursorType === 'custom' && (defaultCursor || hoverCursor) && isCursorVisible && ((target === 'area' && !overImageHasLink) || target !== 'area') && (
         <div
           style={{
             position: 'absolute',
@@ -312,7 +343,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             width: '40px',
             height: '40px',
             pointerEvents: 'none',
-            backgroundImage: `url(${!isOverImage ? defaultCursor : hoverCursor})`,
+            backgroundImage: `url(${!isOverImage || target === 'area' ? defaultCursor : hoverCursor})`,
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             transform: `translate(-50%, -50%) scale(${cursorScale})`,
