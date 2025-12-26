@@ -250,7 +250,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       const { isOverImage } = isMouseOverImage(x, y, placedImages);
 
       setCursorPos({ x, y });
-      setCursorScale(isOverImage ? hoverCursorScale : defaultCursorScale);
+      setCursorScale(isOverImage || target === 'image' ? hoverCursorScale : defaultCursorScale);
       setIsCursorVisible(insideContainer || isOverImage);
     };
 
@@ -272,7 +272,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       const { isOverImage } = isMouseOverImage(x, y, placedImages);
 
       setCursorPos({ x, y });
-      setCursorScale(isOverImage ? hoverCursorScale : defaultCursorScale);
+      setCursorScale(isOverImage || target === 'image' ? hoverCursorScale : defaultCursorScale);
       setIsCursorVisible(insideContainer || isOverImage);
     };
 
@@ -354,7 +354,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
               width: '40px',
               height: '40px',
               pointerEvents: 'none',
-              backgroundImage: `url(${!isOverImage || target === 'area' ? defaultCursor : hoverCursor})`,
+              backgroundImage: `url(${isOverImage || target === 'image' ? hoverCursor : defaultCursor})`,
               backgroundSize: 'contain',
               backgroundRepeat: 'no-repeat',
               transform: `translate(-50%, -50%) scale(${cursorScale})`,
@@ -378,15 +378,15 @@ const sett: ImageRevealSliderSettings = {
   },
   cursor: {
     cursorType: 'custom',
-    defaultCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
-    defaultCursorScale: 1,
-    hoverCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
+    defaultCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
+    defaultCursorScale: 2,
+    hoverCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
     hoverCursorScale: 1
   },
   position: {
     revealPosition: 'random',
     visible: 'all',
-    target: 'area',
+    target: 'image',
   }
 }
 
