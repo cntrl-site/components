@@ -6,7 +6,7 @@ interface ImageRevealSliderProps {
   settings: ImageRevealSliderSettings;
   content: ImageRevealSliderItem[];
   isEditor?: boolean;
-}
+};
 
 type RandomRange = {
   min: number;
@@ -55,11 +55,10 @@ interface PlacedImage {
   x: number;
   y: number;
   width?: string;
-}
+};
 
-function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedImage[]): { isOverImage: boolean, hasLink: boolean } {
-  for (let i = placedImages.length - 1; i >= 0; i--) {
-    const img = placedImages[i];
+function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedImage[]) {
+  for (const img of placedImages) {
     const imgEl = new Image();
     imgEl.src = img.url;
 
@@ -70,15 +69,15 @@ function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedIm
     const halfH = imgHeight / 2;
 
     if (
-      mouseX >= img.x - halfW &&
-      mouseX <= img.x + halfW &&
-      mouseY >= img.y - halfH &&
-      mouseY <= img.y + halfH
+      mouseX >= img.x - halfW
+      && mouseX <= img.x + halfW
+      && mouseY >= img.y - halfH
+      && mouseY <= img.y + halfH
     ) {
-      return { isOverImage: true, hasLink: img.link.length > 0 };
+      return true;
     }
   }
-  return { isOverImage: false, hasLink: false };
+  return false;
 }
 
 function getImageSize(url: string): Promise<{ width: number; height: number }> {
@@ -123,9 +122,11 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const [counter, setCounter] = useState(0);
   const imageIdCounter = useRef(0);
   const defaultImageCount = 1;
+  const lastMousePos = useRef({ x: 0, y: 0 });
+  const [isInside, setIsInside] = useState(false);
 
-  const cursorX = useMotionValue(0);
-  const cursorY = useMotionValue(0);
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
   const defaultScale = 32;
   const cursorW = useMotionValue(32);
   const cursorH = useMotionValue(32);
@@ -133,17 +134,43 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
   useEffect(() => {
     if (!divRef) return;
+
+    const updateCursorPosition = (clientX: number, clientY: number) => {
+      const divRect = divRef.getBoundingClientRect();
+      const newX = clientX - cursorW.get() / 2 - divRect.left;
+      const newY = clientY - cursorH.get() / 2 - divRect.top;
+
+      cursorX.jump(newX);
+      cursorY.jump(newY);
+    };
+
     const mouseMove = (e: MouseEvent) => {
       e.stopPropagation();
-      const divRect = divRef.getBoundingClientRect();
-      cursorX.set(e.clientX - cursorW.get() / 2 - divRect.left);
-      cursorY.set(e.clientY - cursorH.get() / 2 - divRect.top);
-      console.log(e);
+      lastMousePos.current = { x: e.clientX, y: e.clientY };
+      updateCursorPosition(e.clientX, e.clientY);
+    };
+
+    const handleScroll = () => {
+      if (!isInside) return;
+      updateCursorPosition(lastMousePos.current.x, lastMousePos.current.y);
     };
 
     divRef.addEventListener("mousemove", mouseMove);
-    return () => divRef.removeEventListener("mousemove", mouseMove);
-  }, [cursorX, cursorY, cursorW, cursorH, divRef]);
+    window.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      divRef.removeEventListener("mousemove", mouseMove);
+      window.removeEventListener("scroll", handleScroll, true);
+    }
+  }, [cursorX, cursorY, cursorW, cursorH, divRef, isInside]);
+
+  useEffect(() => {
+    if (!isInside) {
+      setCustomCursorImg("none");
+      cursorW.set(0);
+      cursorH.set(0);
+    }
+  }, [isInside]);
 
   const { sizeType, imageWidth: customWidth, randomRangeImageWidth: randomRange } = settings.imageSize;
   const { revealPosition, visible, target } = settings.position;
@@ -308,6 +335,8 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     <div
       ref={setDivRef}
       onClick={handleClick}
+      onMouseEnter={() => setIsInside(true)}
+      onMouseLeave={() => setIsInside(false)}
       className={styles.imageRevealSlider}
       style={{ cursor: customCursorImg === 'none' ? 'default' : 'none' }}
     >
