@@ -200,6 +200,7 @@ export const ControlImageRevealSliderComponent = {
             if: [
               { name: 'position.target', value: 'image' },
               { name: 'cursor.cursorType', value: 'custom' },
+              { name: 'cursor.defaultCursor', value: null, isNotEqual: true }
             ],
             then: {
               name: 'properties.cursor.properties.defaultCursorScale.display.visible',
@@ -217,10 +218,10 @@ export const ControlImageRevealSliderComponent = {
             }
           },
           {
-            if: {
-              name: 'cursor.cursorType',
-              value: 'custom'
-            },
+            if: [
+              { name: 'cursor.cursorType', value: 'custom' },
+              { name: 'cursor.hoverCursor', value: null, isNotEqual: true }
+            ],
             then: {
               name: 'properties.cursor.properties.hoverCursorScale.display.visible',
               value: true

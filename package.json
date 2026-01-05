@@ -1,6 +1,6 @@
 {
   "name": "@cntrl-site/components",
-  "version": "0.1.6-14",
+  "version": "0.1.6-17",
   "description": "Custom components for control editor and public websites.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -47,6 +47,7 @@
     "@antfu/eslint-config": "^3.16.0",
     "@splidejs/react-splide": "^0.7.12",
     "classnames": "^2.5.1",
+    "framer-motion": "^12.23.27",
     "ts-node": "^10.9.1"
   },
   "devDependencies": {
