@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { motion, useMotionValue, useSpring, Variants } from "framer-motion";
 import "./main.css"
 
 const content = [
@@ -57,7 +56,7 @@ const settings: ImageRevealSliderSettings = {
   position: {
     revealPosition: 'random',
     visible: 'all',
-    target: 'image',
+    target: 'area',
   }
 }
 
@@ -185,27 +184,25 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const [placedImages, setPlacedImages] = useState<PlacedImage[]>([]);
   const [counter, setCounter] = useState(0);
   const imageIdCounter = useRef(0);
-  const defaultImageCount = 1;
+
+  const defaultScale = 32;
+
+  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+  const [cursorSize, setCursorSize] = useState({ w: 32, h: 32 });
+  const [customCursorImg, setCustomCursorImg] = useState("none");
   const lastMousePos = useRef({ x: 0, y: 0 });
   const [isInside, setIsInside] = useState(false);
-
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  const defaultScale = 32;
-  const cursorW = useMotionValue(32);
-  const cursorH = useMotionValue(32);
-  const [customCursorImg, setCustomCursorImg] = useState('none');
 
   useEffect(() => {
     if (!divRef) return;
 
     const updateCursorPosition = (clientX: number, clientY: number) => {
-      const divRect = divRef.getBoundingClientRect();
-      const newX = clientX - cursorW.get() / 2 - divRect.left;
-      const newY = clientY - cursorH.get() / 2 - divRect.top;
+      const rect = divRef.getBoundingClientRect();
 
-      cursorX.jump(newX);
-      cursorY.jump(newY);
+      setCursorPos({
+        x: clientX - cursorSize.w / 2 - rect.left,
+        y: clientY - cursorSize.h / 2 - rect.top,
+      });
     };
 
     const mouseMove = (e: MouseEvent) => {
@@ -225,14 +222,13 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     return () => {
       divRef.removeEventListener("mousemove", mouseMove);
       window.removeEventListener("scroll", handleScroll, true);
-    }
-  }, [cursorX, cursorY, cursorW, cursorH, divRef, isInside]);
+    };
+  }, [divRef, cursorSize, isInside]);
 
   useEffect(() => {
     if (!isInside) {
       setCustomCursorImg("none");
-      cursorW.set(0);
-      cursorH.set(0);
+      setCursorSize({ w: 0, h: 0 });
     }
   }, [isInside]);
 
@@ -242,59 +238,45 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
   useEffect(() => {
     const updateCursor = () => {
-      if (cursorType === 'system') {
-        setCustomCursorImg('none');
-        cursorW.set(defaultScale);
-        cursorH.set(defaultScale);
+      if (!divRef) return;
+      if (cursorType === "system") {
+        setCustomCursorImg("none");
+        setCursorSize({ w: defaultScale, h: defaultScale });
         return;
       }
 
-      const elUnderCursor = document.elementFromPoint(cursorX.get() + cursorW.get() / 2, cursorY.get() + cursorH.get() / 2);
-      if (elUnderCursor && elUnderCursor.closest('a.link')) {
+      const cx = cursorPos.x + cursorSize.w / 2;
+      const cy = cursorPos.y + cursorSize.h / 2;
+
+      const rect = divRef.getBoundingClientRect();
+      const el = document.elementFromPoint(
+        rect.left + cx,
+        rect.top + cy
+      );
+      if (el && el.closest("a")) {
         setCustomCursorImg('none');
-        cursorW.set(defaultScale);
-        cursorH.set(defaultScale);
+        setCursorSize({ w: defaultScale, h: defaultScale });
         return;
       }
 
-      if (target === 'area') {
-        setCustomCursorImg(hoverCursor || 'none');
-        cursorW.set(defaultScale * hoverCursorScale || 1);
-        cursorH.set(defaultScale * hoverCursorScale || 1);
-      }
-      else if (isMouseOverImage(cursorX.get() + cursorW.get() / 2, cursorY.get() + cursorH.get() / 2, placedImages)) {
-        setCustomCursorImg(hoverCursor || 'none');
-        cursorW.set(defaultScale * hoverCursorScale || 1);
-        cursorH.set(defaultScale * hoverCursorScale || 1);
-      }
-      else {
-        setCustomCursorImg(defaultCursor || 'none');
-        cursorW.set(defaultScale * defaultCursorScale || 1);
-        cursorH.set(defaultScale * defaultCursorScale || 1);
-      }
+      const next = isMouseOverImage(cx, cy, placedImages) || target === "area"
+        ? { img: hoverCursor ?? "none", w: defaultScale * (hoverCursorScale || 1), h: defaultScale * (hoverCursorScale || 1) }
+        : { img: defaultCursor ?? "none", w: defaultScale * (defaultCursorScale || 1), h: defaultScale * (defaultCursorScale || 1) };
+
+      setCustomCursorImg(next.img);
+      setCursorSize( { w: next.w, h: next.h });
     };
-
-    const unsubscribeX = cursorX.onChange(updateCursor);
-    const unsubscribeY = cursorY.onChange(updateCursor);
 
     updateCursor();
-
-    return () => {
-      unsubscribeX();
-      unsubscribeY();
-    };
   }, [
+    cursorPos,
     cursorType,
     target,
     hoverCursor,
     defaultCursor,
     hoverCursorScale,
     defaultCursorScale,
-    cursorX,
-    cursorY,
-    cursorW,
-    cursorH,
-    placedImages
+    placedImages,
   ]);
 
 
@@ -335,7 +317,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   };
 
   const defaultContentUrls = useMemo(() => {
-    const defaultContentLength = Math.min(content.length, defaultImageCount);
+    const defaultContentLength = Math.min(content.length, 1);
     return content.filter((_, i) => i < defaultContentLength).map((c) => c.image.url).join('-');
   }, [content])
 
@@ -349,14 +331,14 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const defaultPlaced: PlacedImage[] = [];
 
     const placeImages = async () => {
-      for (let i = 0; i < defaultImageCount && i < content.length; i++) {
+      for (let i = 0; i < 1 && i < content.length; i++) {
         const imgData = content[i];
         const newImg = await createNewImage(imgData, containerWidth, containerHeight);
         defaultPlaced.push(newImg);
       }
 
       setPlacedImages(defaultPlaced);
-      setCounter(defaultImageCount % content.length);
+      setCounter(1 % content.length);
     };
 
     placeImages();
@@ -436,18 +418,23 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
           )}
         </div>
       ))}
-      <motion.div
-        className="cursor"
-        style={{
-          x: cursorX,
-          y: cursorY,
-          width: cursorW.get(),
-          height: cursorH.get(),
-          backgroundImage: `url('${customCursorImg}')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center"
-        }}
-      />
+      {isInside &&
+        <div
+          className="cursor"
+          style={{
+            transform: `translate(${cursorPos.x}px, ${cursorPos.y}px)`,
+            width: cursorSize.w,
+            height: cursorSize.h,
+            backgroundImage: `url('${customCursorImg}')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+          }}
+        />
+      }
     </div>
   );
 }
