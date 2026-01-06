@@ -162,7 +162,15 @@ export const ControlSliderComponent = {
                   type: 'settings-color-picker',
                   format: 'single'
                 },
-              }
+              },
+              show: {
+                title: 'Show',
+                type: 'string',
+                display: {
+                  type: 'ratio-group'
+                },
+                enum: ['always', 'on hover']
+              },
             },
           },
           pagination: {
@@ -316,6 +324,7 @@ export const ControlSliderComponent = {
             scale: 100,
             color: '#000000',
             hover: '#cccccc',
+            show: 'always',
           },
           transition: {
             type: 'slide',

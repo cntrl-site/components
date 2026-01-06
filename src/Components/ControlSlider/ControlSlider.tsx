@@ -166,7 +166,8 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
         <>
           <div
             className={cn(styles.arrow, {
-              [styles.arrowVertical]: direction === 'vert'
+              [styles.arrowVertical]: direction === 'vert',
+              [styles.hoverArrow]: controls.show === 'on-hover'
             })}
             style={{
               color: controls.color,
@@ -197,7 +198,8 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
           </div>
           <div
             className={cn(styles.arrow, styles.nextArrow, {
-              [styles.arrowVertical]: direction === 'vert'
+              [styles.arrowVertical]: direction === 'vert',
+              [styles.hoverArrow]: controls.show === 'on-hover'
             })}
             style={{
               color: controls.color,
@@ -314,6 +316,7 @@ type SliderControls = {
   arrowsImgUrl: string | null;
   isActive: boolean;
   color: string;
+  show: 'on-hover' | 'always';
   hover: string;
   offset: Offset;
   scale: number;
