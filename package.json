@@ -1,6 +1,6 @@
 {
   "name": "@cntrl-site/components",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Custom components for control editor and public websites.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
