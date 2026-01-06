@@ -4,6 +4,11 @@
   position: relative;
   width: 100%;
   height: 100%;
+  &:hover {
+    .hoverArrow {
+      opacity: 1 !important;
+    }
+  }
 }
 
 .slider {
@@ -100,6 +105,14 @@
 .arrowVertical {
   &.mirror {
     transform: translate(-50%, -50%) scaleY(-1) !important;
+  }
+}
+
+.hoverArrow {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+  &:hover {
+    opacity: 1;
   }
 }
 
