@@ -187,7 +187,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
   const defaultScale = 32;
 
-  const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
+  const [cursorCenter, setCursorCenter] = useState({ x: -100, y: -100 });
   const [cursorSize, setCursorSize] = useState({ w: 32, h: 32 });
   const [customCursorImg, setCustomCursorImg] = useState("none");
   const lastMousePos = useRef({ x: 0, y: 0 });
@@ -199,9 +199,9 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const updateCursorPosition = (clientX: number, clientY: number) => {
       const rect = divRef.getBoundingClientRect();
 
-      setCursorPos({
-        x: clientX - cursorSize.w / 2 - rect.left,
-        y: clientY - cursorSize.h / 2 - rect.top,
+      setCursorCenter({
+        x: clientX - rect.left,
+        y: clientY - rect.top,
       });
     };
 
@@ -223,7 +223,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       divRef.removeEventListener("mousemove", mouseMove);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [divRef, cursorSize, isInside]);
+  }, [divRef, isInside]);
 
   useEffect(() => {
     if (!isInside) {
@@ -245,8 +245,8 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
         return;
       }
 
-      const cx = cursorPos.x + cursorSize.w / 2;
-      const cy = cursorPos.y + cursorSize.h / 2;
+      const cx = cursorCenter.x;
+      const cy = cursorCenter.y;
 
       const rect = divRef.getBoundingClientRect();
       const el = document.elementFromPoint(
@@ -260,16 +260,16 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       }
 
       const next = isMouseOverImage(cx, cy, placedImages) || target === "area"
-        ? { img: hoverCursor ?? "none", w: defaultScale * (hoverCursorScale || 1), h: defaultScale * (hoverCursorScale || 1) }
-        : { img: defaultCursor ?? "none", w: defaultScale * (defaultCursorScale || 1), h: defaultScale * (defaultCursorScale || 1) };
+        ? { img: hoverCursor ?? "none", w: defaultScale * hoverCursorScale, h: defaultScale * hoverCursorScale }
+        : { img: defaultCursor ?? "none", w: defaultScale * defaultCursorScale, h: defaultScale * defaultCursorScale };
 
       setCustomCursorImg(next.img);
-      setCursorSize( { w: next.w, h: next.h });
+      setCursorSize({ w: next.w, h: next.h });
     };
 
     updateCursor();
   }, [
-    cursorPos,
+    cursorCenter,
     cursorType,
     target,
     hoverCursor,
@@ -278,7 +278,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     defaultCursorScale,
     placedImages,
   ]);
-
 
   const createNewImage = async (
     imgData: ImageRevealSliderItem,
@@ -422,15 +421,15 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
         <div
           className="cursor"
           style={{
-            transform: `translate(${cursorPos.x}px, ${cursorPos.y}px)`,
+            left: `${cursorCenter.x}px`,
+            top: `${cursorCenter.y}px`,
             width: cursorSize.w,
             height: cursorSize.h,
+            transform: "translate(-50%, -50%)",
             backgroundImage: `url('${customCursorImg}')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             position: "absolute",
-            top: 0,
-            left: 0,
             pointerEvents: "none",
           }}
         />

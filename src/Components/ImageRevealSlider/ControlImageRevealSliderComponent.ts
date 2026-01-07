@@ -128,6 +128,7 @@ export const ControlImageRevealSliderComponent = {
               },
               visible: {
                 type: 'string',
+                title: 'Visible',
                 display: {
                   type: 'ratio-group'
                 },
@@ -135,6 +136,7 @@ export const ControlImageRevealSliderComponent = {
               },
               target: {
                 type: 'string',
+                title: 'Target',
                 display: {
                   type: 'ratio-group'
                 },
