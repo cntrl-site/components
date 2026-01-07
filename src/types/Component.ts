@@ -5,8 +5,8 @@ export type Component = {
   id: string;
   name: string;
   defaultSize?: {
-    width?: string | number;
-    height?: string | number;
+    width?: number | string;
+    height?: number | string;
   };
   schema: any;
   preview?: {
