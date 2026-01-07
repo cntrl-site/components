@@ -20,6 +20,7 @@ type ImageRevealSliderImageSize = {
 
 type ImageRevealSliderCursor = {
   cursorType: 'system' | 'custom';
+  target: 'area' | 'image';
   defaultCursorScale: number;
   defaultCursor: string | null;
   hoverCursorScale: number;
@@ -29,7 +30,6 @@ type ImageRevealSliderCursor = {
 type ImageRevealSliderPosition = {
   revealPosition: 'random' | 'same' | 'on Click';
   visible: 'all' | 'last One';
-  target: 'area' | 'image';
 };
 
 type ImageRevealSliderSettings = {
@@ -169,8 +169,8 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   }, [isInside]);
 
   const { sizeType, imageWidth: customWidth, randomRangeImageWidth: randomRange } = settings.imageSize;
-  const { revealPosition, visible, target } = settings.position;
-  const { cursorType, defaultCursorScale, defaultCursor, hoverCursorScale, hoverCursor } = settings.cursor;
+  const { revealPosition, visible } = settings.position;
+  const { cursorType, target, defaultCursorScale, defaultCursor, hoverCursorScale, hoverCursor } = settings.cursor;
 
   useEffect(() => {
     const updateCursor = () => {

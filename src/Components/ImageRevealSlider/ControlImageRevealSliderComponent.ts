@@ -73,6 +73,14 @@ export const ControlImageRevealSliderComponent = {
                 },
                 enum: ['system', 'custom']
               },
+              target: {
+                type: 'string',
+                title: 'Target',
+                display: {
+                  type: 'ratio-group'
+                },
+                enum: ['area', 'image']
+              },
               defaultCursor: {
                 type: ['string', 'null'],
                 title: 'Default',
@@ -134,14 +142,6 @@ export const ControlImageRevealSliderComponent = {
                 },
                 enum: ['all', 'last One']
               },
-              target: {
-                type: 'string',
-                title: 'Target',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['area', 'image']
-              },
             }
           }
         },
@@ -156,6 +156,7 @@ export const ControlImageRevealSliderComponent = {
           },
           cursor: {
             cursorType: 'system',
+            target: 'area',
             defaultCursor: null,
             defaultCursorScale: 2,
             hoverCursor: null,
@@ -164,7 +165,6 @@ export const ControlImageRevealSliderComponent = {
           position: {
             revealPosition: 'random',
             visible: 'all',
-            target: 'area',
           }
         },
         displayRules: [
@@ -190,7 +190,7 @@ export const ControlImageRevealSliderComponent = {
           },
           {
             if: [
-              { name: 'position.target', value: 'image' },
+              { name: 'cursor.target', value: 'image' },
               { name: 'cursor.cursorType', value: 'custom' },
             ],
             then: {
@@ -200,7 +200,7 @@ export const ControlImageRevealSliderComponent = {
           },
           {
             if: [
-              { name: 'position.target', value: 'image' },
+              { name: 'cursor.target', value: 'image' },
               { name: 'cursor.cursorType', value: 'custom' },
               { name: 'cursor.defaultCursor', value: null, isNotEqual: true }
             ],

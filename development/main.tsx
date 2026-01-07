@@ -48,6 +48,7 @@ const settings: ImageRevealSliderSettings = {
   },
   cursor: {
     cursorType: 'custom',
+    target: 'area',
     defaultCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5R8Z4M6SYP9EV83EES4STC.svg",
     defaultCursorScale: 2,
     hoverCursor: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KD5Q3TMHEWAWR2FY29EW8TPD.svg",
@@ -56,7 +57,6 @@ const settings: ImageRevealSliderSettings = {
   position: {
     revealPosition: 'random',
     visible: 'all',
-    target: 'area',
   }
 }
 
@@ -84,6 +84,7 @@ type ImageRevealSliderImageSize = {
 
 type ImageRevealSliderCursor = {
   cursorType: 'system' | 'custom';
+  target: 'area' | 'image';
   defaultCursorScale: number;
   defaultCursor: string | null;
   hoverCursorScale: number;
@@ -93,7 +94,6 @@ type ImageRevealSliderCursor = {
 type ImageRevealSliderPosition = {
   revealPosition: 'random' | 'same' | 'on Click';
   visible: 'all' | 'last One';
-  target: 'area' | 'image';
 };
 
 type ImageRevealSliderSettings = {
@@ -233,8 +233,8 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   }, [isInside]);
 
   const { sizeType, imageWidth: customWidth, randomRangeImageWidth: randomRange } = settings.imageSize;
-  const { revealPosition, visible, target } = settings.position;
-  const { cursorType, defaultCursorScale, defaultCursor, hoverCursorScale, hoverCursor } = settings.cursor;
+  const { revealPosition, visible } = settings.position;
+  const { cursorType, target, defaultCursorScale, defaultCursor, hoverCursorScale, hoverCursor } = settings.cursor;
 
   useEffect(() => {
     const updateCursor = () => {
