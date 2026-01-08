@@ -196,8 +196,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     defaultCursor,
     hoverCursorScale,
     defaultCursorScale,
-    placedImages,
-    window.scrollY
+    placedImages
   ]);
 
   useEffect(() => {
@@ -253,14 +252,12 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     const defaultPlaced: PlacedImage[] = [];
 
     const placeImages = async () => {
-      for (let i = 0; i < 1 && i < content.length; i++) {
-        const imgData = content[i];
-        const newImg = await createNewImage(imgData, containerWidth, containerHeight);
-        defaultPlaced.push(newImg);
-      }
+      const imgData = content[0];
+      const newImg = await createNewImage(imgData, containerWidth, containerHeight);
+      defaultPlaced.push(newImg);
 
       setPlacedImages(defaultPlaced);
-      setCounter(1 % content.length);
+      setCounter(1);
     };
 
     placeImages();
