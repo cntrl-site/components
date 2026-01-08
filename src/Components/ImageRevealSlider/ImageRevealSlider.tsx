@@ -121,8 +121,6 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const [counter, setCounter] = useState(0);
   const imageIdCounter = useRef(0);
 
-  const defaultScale = 32;
-
   const [cursorCenter, setCursorCenter] = useState({ x: 0, y: 0 });
   const [cursorScale, setCursorScale] = useState(1);
   const [customCursorImg, setCustomCursorImg] = useState("none");
@@ -344,7 +342,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
       ))}
       {isInside &&
         <div
-          className="cursor"
+          className={styles.cursor}
           style={{
             left: `${cursorCenter.x}px`,
             top: `${cursorCenter.y}px`,
