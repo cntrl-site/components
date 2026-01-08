@@ -73,7 +73,7 @@ export const LightboxComponent: Component = {
                   },
                   direction: {
                     type: 'string',
-                    title: 'FROM',
+                    title: 'From',
                     display: {
                       type: 'direction-control',
                     },
@@ -449,7 +449,7 @@ export const LightboxComponent: Component = {
                   },
                   closeIconUrl: {
                     type: ['string', 'null'],
-                    title: 'CLOSE ICON',
+                    title: 'Close Icon',
                     display: {
                       type: 'settings-image-input',
                     },
