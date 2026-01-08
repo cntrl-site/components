@@ -188,7 +188,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   const defaultScale = 32;
 
   const [cursorCenter, setCursorCenter] = useState({ x: 0, y: 0 });
-  const [cursorSize, setCursorSize] = useState({ w: 32, h: 32 });
+  const [cursorScale, setCursorScale] = useState(1);
   const [customCursorImg, setCustomCursorImg] = useState("none");
   const lastMousePos = useRef({ x: 0, y: 0 });
   const [isInside, setIsInside] = useState(false);
@@ -210,7 +210,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
       if (cursorType === "system") {
         setCustomCursorImg("none");
-        setCursorSize({ w: defaultScale, h: defaultScale });
+        setCursorScale(1);
         return;
       }
 
@@ -221,17 +221,17 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
       if (el && el.closest("a")) {
         setCustomCursorImg("none");
-        setCursorSize({ w: defaultScale, h: defaultScale });
+        setCursorScale(1);
         return;
       }
 
       const next =
         isMouseOverImage(cx, cy, placedImages) || target === "area"
-          ? { img: hoverCursor ?? "none", w: defaultScale * hoverCursorScale, h: defaultScale * hoverCursorScale }
-          : { img: defaultCursor ?? "none", w: defaultScale * defaultCursorScale, h: defaultScale * defaultCursorScale };
+          ? { img: hoverCursor ?? "none", scale: hoverCursorScale }
+          : { img: defaultCursor ?? "none", scale: defaultCursorScale };
 
       setCustomCursorImg(next.img);
-      setCursorSize({ w: next.w, h: next.h });
+      setCursorScale(next.scale);
     };
 
     const mouseMove = (e: MouseEvent) => {
@@ -269,7 +269,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
   useEffect(() => {
     if (!isInside) {
       setCustomCursorImg("none");
-      setCursorSize({ w: 0, h: 0 });
+      setCursorScale(0);
     }
   }, [isInside]);
 
@@ -412,9 +412,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
           style={{
             left: `${cursorCenter.x}px`,
             top: `${cursorCenter.y}px`,
-            width: cursorSize.w,
-            height: cursorSize.h,
-            transform: "translate(-50%, -50%)",
+            transform: `translate(-50%, -50%) scale(${cursorScale})`,
             backgroundImage: `url('${customCursorImg}')`,
             backgroundSize: "cover",
             backgroundPosition: "center",
