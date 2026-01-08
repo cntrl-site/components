@@ -73,6 +73,14 @@ export const ControlImageRevealSliderComponent = {
                 },
                 enum: ['system', 'custom']
               },
+              target: {
+                type: 'string',
+                title: 'Target',
+                display: {
+                  type: 'ratio-group'
+                },
+                enum: ['area', 'image']
+              },
               defaultCursor: {
                 type: ['string', 'null'],
                 title: 'Default',
@@ -81,11 +89,33 @@ export const ControlImageRevealSliderComponent = {
                   visible: false
                 },
               },
+              defaultCursorScale: {
+                type: 'number',
+                title: 'Scale',
+                min: 1,
+                max: 5,
+                step: 0.1,
+                display: {
+                  type: 'range-control',
+                  visible: false
+                },
+              },
               hoverCursor: {
                 type: ['string', 'null'],
                 title: 'Hover',
                 display: {
                   type: 'settings-image-input',
+                  visible: false
+                },
+              },
+              hoverCursorScale: {
+                type: 'number',
+                title: 'Scale',
+                min: 1,
+                max: 5,
+                step: 0.1,
+                display: {
+                  type: 'range-control',
                   visible: false
                 },
               },
@@ -106,17 +136,11 @@ export const ControlImageRevealSliderComponent = {
               },
               visible: {
                 type: 'string',
+                title: 'Visible',
                 display: {
                   type: 'ratio-group'
                 },
                 enum: ['all', 'last One']
-              },
-              target: {
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['area', 'image']
               },
             }
           }
@@ -132,13 +156,15 @@ export const ControlImageRevealSliderComponent = {
           },
           cursor: {
             cursorType: 'system',
+            target: 'area',
             defaultCursor: null,
-            hoverCursor: null
+            defaultCursorScale: 2,
+            hoverCursor: null,
+            hoverCursorScale: 2
           },
           position: {
             revealPosition: 'random',
             visible: 'all',
-            target: 'area',
           }
         },
         displayRules: [
@@ -164,11 +190,22 @@ export const ControlImageRevealSliderComponent = {
           },
           {
             if: [
-              { name: 'position.target', value: 'image' },
+              { name: 'cursor.target', value: 'image' },
               { name: 'cursor.cursorType', value: 'custom' },
             ],
             then: {
               name: 'properties.cursor.properties.defaultCursor.display.visible',
+              value: true
+            }
+          },
+          {
+            if: [
+              { name: 'cursor.target', value: 'image' },
+              { name: 'cursor.cursorType', value: 'custom' },
+              { name: 'cursor.defaultCursor', value: null, isNotEqual: true }
+            ],
+            then: {
+              name: 'properties.cursor.properties.defaultCursorScale.display.visible',
               value: true
             }
           },
@@ -179,6 +216,16 @@ export const ControlImageRevealSliderComponent = {
             },
             then: {
               name: 'properties.cursor.properties.hoverCursor.display.visible',
+              value: true
+            }
+          },
+          {
+            if: [
+              { name: 'cursor.cursorType', value: 'custom' },
+              { name: 'cursor.hoverCursor', value: null, isNotEqual: true }
+            ],
+            then: {
+              name: 'properties.cursor.properties.hoverCursorScale.display.visible',
               value: true
             }
           },
