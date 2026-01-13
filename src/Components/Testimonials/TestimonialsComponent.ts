@@ -33,12 +33,14 @@ export const TestimonialsComponent: Component = {
               autoplay: {
                 type: 'boolean',
                 display: {
-                  type: 'setting-toggle',
-                }
+                  type: 'ratio-group',
+                  direction: 'horizontal',
+                },
+                enum: ['on', 'off']
               },
               inView: {
                 type: 'number',
-                label: 'In View',
+                title: 'In View',
                 min: 1,
                 display: {
                   type: 'numeric-input',
@@ -46,21 +48,24 @@ export const TestimonialsComponent: Component = {
               },
               alignment: {
                 type: 'string',
+                title: 'Align',
                 display: {
-                  type: 'ratio-group'
+                  type: 'align-group',
+                  direction: 'horizontal',
                 },
-                enum: ['left', 'center', 'right']
+                enum: ['start', 'center', 'end']
               },
               move: {
                 type: 'string',
                 display: {
-                  type: 'ratio-group'
+                  type: 'ratio-group',
+                  direction: 'horizontal',
                 },
                 enum: ['one', 'view']
               },
               speed: {
                 type: 'number',
-                label: 'Speed',
+                title: 'Speed',
                 min: 100,
                 max: 10000,
                 step: 100,
@@ -76,6 +81,7 @@ export const TestimonialsComponent: Component = {
                 enum: ['left', 'right']
               },
               pause: {
+                title: 'Pause on',
                 type: 'string',
                 display: {
                   type: 'ratio-group'
@@ -92,14 +98,14 @@ export const TestimonialsComponent: Component = {
             properties: {
               dimensions: {
                 type: 'object',
-                title: 'Dimensions',
+                title: 'Size',
                 display: {
                   type: 'group',
                 },
                 properties: {
                   width: {
                     type: 'number',
-                    label: 'Width',
+                    label: 'W',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -108,7 +114,7 @@ export const TestimonialsComponent: Component = {
                   },
                   height: {
                     type: 'number',
-                    label: 'Height',
+                    label: 'H',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -119,7 +125,7 @@ export const TestimonialsComponent: Component = {
               },
               gap: {
                 type: 'number',
-                label: 'Gap',
+                title: 'Gap',
                 scalingEnabled: true,
                 min: 0,
                 display: {
@@ -128,32 +134,41 @@ export const TestimonialsComponent: Component = {
               },
               corner: {
                 type: 'number',
-                label: 'Corners',
+                title: 'Corners',
                 scalingEnabled: true,
                 min: 0,
                 display: {
                   type: 'numeric-input',
                 },
               },
-              borderWidth: {
-                type: 'number',
-                label: 'Borders',
-                scalingEnabled: true,
-                min: 0,
+              borders: {
+                type: 'object',
+                title: 'Borders',
                 display: {
-                  type: 'numeric-input',
-                },
-              },
-              borderColor: {
-                title: 'Border Color',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
+                  type: 'group'
+                },  
+                properties: {
+                  borderWidth: {
+                    type: 'number',
+                    title: 'Borders',
+                    scalingEnabled: true,
+                    min: 0,
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  borderColor: {
+                    title: 'Border Color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
                 }
               },
               bgColor: {
-                title: 'Background Color',
+                title: 'BG color',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -400,7 +415,7 @@ export const TestimonialsComponent: Component = {
         },
         default: {
           general: {
-            autoplay: false,
+            autoplay: true,
             inView: 3,
             alignment: 'center',
             move: 'one',
@@ -414,13 +429,13 @@ export const TestimonialsComponent: Component = {
               height: 400
             },
             gap: 20,
-            corner: 0,
+            corner: 10,
             borderWidth: 0,
             borderColor: '#000000',
             bgColor: '#ffffff'
           },
           controls: {
-            isActive: true,
+            isActive: false,
             arrowsImgUrl: null,
             offset: {
               x: 0,
@@ -454,7 +469,7 @@ export const TestimonialsComponent: Component = {
               }
             },
             cover: {
-              gradient: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%)'
+              gradient: ''
             }
           }
         }
@@ -538,7 +553,7 @@ export const TestimonialsComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png',
+              url: 'https://cdn.cntrl.site/component-assets/2.jpg',
               name: 'Testimonial-1.png'
             },
             icon: {
@@ -562,7 +577,7 @@ export const TestimonialsComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMTZA3RYMXKF0M095D6JD.png',
+              url: 'https://cdn.cntrl.site/component-assets/3.jpg',
               name: 'Testimonial-2.png'
             },
             icon: {
@@ -586,7 +601,7 @@ export const TestimonialsComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMVSCMPVJBG2WF5KJZYHZ.png',
+              url: 'https://cdn.cntrl.site/component-assets/4.jpg',
               name: 'Testimonial-3.png'
             },
             icon: {
