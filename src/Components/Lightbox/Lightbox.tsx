@@ -392,12 +392,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       alt={item.image.name ?? ''}
                       style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
                     />
+                    <div className={classes.imageCaption}>
+                      <RichTextRenderer content={item.imageCaption} />
+                    </div>
                   </div>
               </SplideSlide>
               );
             })}
           </Splide>
-          {controls.isActive && controls.arrowsImgUrl && (
+          {controls.isActive && (
             <>
               <div 
                 className={cn(classes.arrow, {[classes.arrowVertical]: slider.direction === 'vert' })}
@@ -416,6 +419,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                         hoverFill={controls.hover}
                         className={cn(classes.arrowImg, classes.mirror)}
                       />
+                    )}
+                    {!controls.arrowsImgUrl && (
+                      <ArrowIcon color={controls.color} className={cn(classes.arrowIcon, classes.arrowImg, classes.mirror)} />
                     )}
                   </button>
               </div>
@@ -436,6 +442,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       hoverFill={controls.hover}
                       className={classes.arrowImg}
                     />
+                  )}
+                  {!controls.arrowsImgUrl && (
+                    <ArrowIcon color={controls.color} className={cn(classes.arrowIcon, classes.arrowImg)} />
                   )}
                 </button>
               </div>
@@ -572,6 +581,16 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     document.getElementById(portalId)!
   );
 };
+
+function ArrowIcon({ color, className }: { color: string, className: string }) {
+  return (
+    <svg viewBox="0 0 10 18" className={className}>
+      <g id="Symbols" stroke="none" strokeWidth="1" fillRule="evenodd">
+          <path d="M-3.70710678,4.29289322 C-3.34662282,3.93240926 -2.77939176,3.90467972 -2.38710056,4.20970461 L-2.29289322,4.29289322 L5,11.585 L12.2928932,4.29289322 C12.6533772,3.93240926 13.2206082,3.90467972 13.6128994,4.20970461 L13.7071068,4.29289322 C14.0675907,4.65337718 14.0953203,5.22060824 13.7902954,5.61289944 L13.7071068,5.70710678 L5.70710678,13.7071068 C5.34662282,14.0675907 4.77939176,14.0953203 4.38710056,13.7902954 L4.29289322,13.7071068 L-3.70710678,5.70710678 C-4.09763107,5.31658249 -4.09763107,4.68341751 -3.70710678,4.29289322 Z" id="Shape-Copy" fill={color} transform="translate(5, 9) rotate(-90) translate(-5, -9)"></path>
+      </g>
+    </svg>
+  );
+}
 
 type LightboxImage = {
   image: {

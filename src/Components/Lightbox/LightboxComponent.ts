@@ -606,7 +606,7 @@ export const LightboxComponent: Component = {
                 padding: { top: 0.06, right: 0, bottom: 0.06, left: 0 }
               },
               controls: {
-                isActive: true,
+                isActive: false,
                 arrowsImgUrl: null,
                 offset: { x: 0, y: 0 },
                 scale: 1,
@@ -674,7 +674,7 @@ export const LightboxComponent: Component = {
               padding: { top: 0.06, right: 0.05, bottom: 0.06, left: 0.05 }
             },
             controls: {
-              isActive: true,
+              isActive: false,
               arrowsImgUrl: null,
               offset: { x: 0, y: 0 },
               scale: 1,
@@ -742,7 +742,7 @@ export const LightboxComponent: Component = {
               padding: { top: 0.06, right: 0.1, bottom: 0.06, left: 0.1 }
             },
             controls: {
-              isActive: true,
+              isActive: false,
               arrowsImgUrl: null,
               offset: { x: 0, y: 0 },
               scale: 1,
