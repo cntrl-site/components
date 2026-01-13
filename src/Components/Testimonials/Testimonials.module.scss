@@ -1,0 +1,139 @@
+@use '../mixins.scss' as *;
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  
+  :global(.splide) {
+    overflow: hidden;
+  }
+  
+  :global(.splide__track) {
+    overflow: hidden;
+  }
+  
+  :global(.splide__list) {
+    display: flex;
+  }
+  
+  &.alignLeft {
+    margin-right: auto;
+  }
+  
+  &.alignCenter {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  &.alignRight {
+    margin-left: auto;
+  }
+  
+  &:hover {
+    .hoverArrow {
+      opacity: 1 !important;
+    }
+  }
+}
+
+.cover {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.caption {
+  position: absolute;
+}
+
+.creds {
+  position: absolute;
+}
+
+.icon {
+  position: absolute;
+  @include size(width, 30);
+  @include size(height, 30);
+}
+
+.arrow {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  top: 50%;
+  @include size(left, -20);
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  @include size(width, 30);
+  @include size(height, 30);
+  &.arrowVertical {
+    left: 50%;
+    @include size(top, -20);
+    transform: translate(-50%, -50%);
+  }
+}
+
+.nextArrow {
+  left: unset;
+  @include size(right, -20);
+  transform: translate(50%, -50%);
+  &.arrowVertical {
+    left: 50%;
+    right: unset;
+    top: unset;
+    @include size(bottom, -20);
+    transform: translate(-50%, 50%);
+  }
+}
+
+.arrowInner {
+  all: unset;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  &:hover {
+    .arrowIcon path {
+      fill: var(--arrow-hover-color) !important;
+    }
+  }
+}
+
+.arrowImg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.arrowIcon {
+  width: 100%;
+  height: 100%;
+  & path {
+    transition: fill 0.15s ease-in-out;
+  }
+}
+
+.mirror {
+  transform: translate(-50%, -50%) scaleX(-1) !important;
+}
+
+.arrowVertical {
+  &.mirror {
+    transform: translate(-50%, -50%) scaleY(-1) !important;
+  }
+}
+
+.hoverArrow {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+  &:hover {
+    opacity: 1;
+  }
+}
