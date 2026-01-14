@@ -12,9 +12,10 @@ type TestimonialsProps = {
   settings: TestimonialsSettings;
   content: TestimonialsImage[];
   styles: TestimonialsStyles;
+  isEditor?: boolean;
 };
 
-export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles }) => {
+export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles, isEditor }) => {
   const sliderRef = useRef<Splide | null>(null);
   const { general, card, controls } = settings;
   const { width, height } = card.dimensions;
@@ -22,32 +23,32 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles 
   const perPage = settings.general.inView || 3;
   
   const wrapperWidth = !settings.general.autoplay 
-    ? (width * perPage) + (settings.card.gap * (perPage - 1)) + (card.borderWidth * 2)
+    ? scalingValue((width * perPage) + (settings.card.gap * (perPage - 1)) + (card.borders.width * 2), isEditor ?? false)
     : undefined;
-  
+  console.log(wrapperWidth);
   return (
     <>
-      <div style={{ overflow: 'hidden', display: 'flex', justifyContent: settings.general.alignment }}>
+      <div style={{ overflow: 'hidden', display: 'flex', justifyContent: settings.general.alignment, height: '100%' }}>
         <div 
           className={`${classes.wrapper}`}
-          style={wrapperWidth ? { width: `${scalingValue(wrapperWidth, false)}` } : undefined}
+          style={wrapperWidth ? { width: wrapperWidth } : undefined}
         >
           <Splide 
             ref={sliderRef}
             options={{
               type: 'loop',
-              fixedWidth: width,
-              ...(!settings.general.autoplay && { 
+              fixedWidth: scalingValue(width, isEditor ?? false),
+              ...(settings.general.autoplay === 'off' && { 
                 perPage,
                 width: wrapperWidth 
               }),
               arrows: false,
               perMove,
-              gap: settings.card.gap,
+              gap: scalingValue(settings.card.gap, isEditor ?? false),
               padding: 0,
-              autoplay: settings.general.autoplay,
-              speed: settings.general.speed,
-              interval: settings.general.autoplay ? settings.general.speed : 0,
+              autoplay: settings.general.autoplay === 'on' ? true : false,
+              speed: settings.general.speed ? parseInt(settings.general.speed) : 0,
+              interval: settings.general.autoplay ? (settings.general.speed ? parseInt(settings.general.speed) : 0) : 0,
               rewind: true,
               easing: 'linear',
               direction: settings.general.direction === 'left' ? 'ltr' : 'rtl',
@@ -57,15 +58,15 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles 
             }}>
             {content.map((item, index) => (
               <SplideSlide key={index}>
-                <div style={{ width: `${width}px`, height: `${height}px`, borderRadius: `${settings.card.corner}px`, border: `${settings.card.borderWidth}px solid ${settings.card.borderColor}`, backgroundColor: settings.card.bgColor, overflow: 'hidden', boxSizing: 'border-box' }}>
+                <div style={{ width: scalingValue(width, isEditor ?? false), height: scalingValue(height, isEditor ?? false), borderRadius: scalingValue(settings.card.corner, isEditor ?? false), border: `${scalingValue(settings.card.borders.width, isEditor ?? false)} solid ${settings.card.borders.color}`, overflow: 'hidden', boxSizing: 'border-box' }}>
                   <img src={item.image?.url} alt={item.image?.name} style={{ width: '100%', height: '100%', objectFit: item.image?.objectFit || 'cover' }} />
-                  <div className={classes.cover} style={{ background: settings.elements.cover.gradient, borderRadius: `${settings.card.corner}px`, }}></div>
+                  <div className={classes.cover} style={{ background: settings.card.bgColor, borderRadius: `${scalingValue(settings.card.corner, isEditor ?? false)}`, }}></div>
                   <div>
-                    <img src={item.icon?.url} alt={item.icon?.name} className={classes.icon} style={getAlignPosition(settings.elements.icon.alignment, settings.elements.icon.offset)} />
-                    <div className={classes.caption} style={getAlignPosition(settings.elements.text.alignment, settings.elements.text.offset)}>
+                    <img src={item.icon?.url} alt={item.icon?.name} className={classes.icon} style={getAlignPosition(settings.elements.icon.alignment, settings.elements.icon.offset, isEditor)} />
+                    <div className={classes.caption} style={getAlignPosition(settings.elements.text.alignment, settings.elements.text.offset, isEditor)}>
                       <RichTextRenderer content={item.imageCaption} />
                     </div>
-                    <div className={classes.creds} style={getAlignPosition(settings.elements.creds.alignment, settings.elements.creds.offset)}>
+                    <div className={classes.creds} style={getAlignPosition(settings.elements.creds.alignment, settings.elements.creds.offset, isEditor)}>
                       <RichTextRenderer content={item.creds} />
                     </div>
                   </div>
@@ -83,7 +84,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles 
           >
             <button
               className={classes.arrowInner}
-              style={{ transform: `translate(${scalingValue(controls.offset.x, false)}, ${scalingValue(controls.offset.y, false)}) scale(${controls.scale / 100})`}}
+              style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor ?? false)}, ${scalingValue(controls.offset.y, isEditor ?? false)}) scale(${controls.scale / 100})`}}
               onClick={() => sliderRef.current?.go('-1')}
               aria-label='Previous'
               >
@@ -106,7 +107,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles 
           >              
             <button
               className={classes.arrowInner}
-              style={{ transform: `translate(${scalingValue(controls.offset.x * -1, false)}, ${scalingValue(controls.offset.y, false)}) scale(${controls.scale / 100})`}}
+              style={{ transform: `translate(${scalingValue(controls.offset.x * -1, isEditor ?? false)}, ${scalingValue(controls.offset.y, isEditor ?? false)}) scale(${controls.scale / 100})`}}
               onClick={() => sliderRef.current?.go('+1')}
               aria-label='Next'
             >
@@ -162,11 +163,11 @@ export type Offset = {
 };
 
 type TestimonialsGeneral = {
-  autoplay: boolean;
+  autoplay: 'on' | 'off';
   inView?: number;
   alignment: 'left' | 'center' | 'right';
   move: 'one' | 'view';
-  speed: number;
+  speed: string;
   direction: 'left' | 'right';
   pause: 'hover' | 'click' | 'off';
 };
@@ -187,8 +188,10 @@ type TestimonialsCard = {
   };
   gap: number;
   corner: number;
-  borderWidth: number;
-  borderColor: string;
+  borders: {
+    width: number;
+    color: string;
+  };
   bgColor: string;
 };
 
@@ -206,9 +209,9 @@ type TestimonialsElements = {
     alignment: Alignment;
     offset: Offset;
   };
-  cover: {
-    gradient: string
-  };
+  // cover: {
+  //   gradient: string
+  // };
 };
 
 type TestimonialsSettings = {

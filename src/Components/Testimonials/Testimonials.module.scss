@@ -67,10 +67,10 @@
   border: none;
   background-color: transparent;
   top: 50%;
-  @include size(left, -20);
   z-index: 1;
   transform: translate(-50%, -50%);
   padding: 0;
+  @include size(left, -20);
   @include size(width, 30);
   @include size(height, 30);
   &.arrowVertical {

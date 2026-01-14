@@ -31,7 +31,7 @@ export const TestimonialsComponent: Component = {
             type: 'object',
             properties: {
               autoplay: {
-                type: 'boolean',
+                type: 'string',
                 display: {
                   type: 'ratio-group',
                   direction: 'horizontal',
@@ -51,7 +51,7 @@ export const TestimonialsComponent: Component = {
                 title: 'Align',
                 display: {
                   type: 'align-group',
-                  direction: 'horizontal',
+                  direction: 'vertical',
                 },
                 enum: ['start', 'center', 'end']
               },
@@ -64,14 +64,12 @@ export const TestimonialsComponent: Component = {
                 enum: ['one', 'view']
               },
               speed: {
-                type: 'number',
+                type: ['string', 'null'],
                 title: 'Speed',
-                min: 100,
-                max: 10000,
-                step: 100,
                 display: {
-                  type: 'numeric-input',
+                  type: 'step-selector',
                 },
+                enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
               },
               direction: {
                 type: 'string',
@@ -148,17 +146,15 @@ export const TestimonialsComponent: Component = {
                   type: 'group'
                 },  
                 properties: {
-                  borderWidth: {
+                  width: {
                     type: 'number',
-                    title: 'Borders',
                     scalingEnabled: true,
                     min: 0,
                     display: {
                       type: 'numeric-input',
                     },
                   },
-                  borderColor: {
-                    title: 'Border Color',
+                  color: {
                     type: 'string',
                     display: {
                       type: 'settings-color-picker',
@@ -280,7 +276,7 @@ export const TestimonialsComponent: Component = {
               },
               creds: {
                 type: 'object',
-                title: 'Credentials',
+                title: 'Caption',
                 display: {
                   type: 'group',
                 },
@@ -317,23 +313,6 @@ export const TestimonialsComponent: Component = {
                           visible: true,
                         },
                       },
-                    }
-                  }
-                }
-              },
-              cover: {
-                type: 'object',
-                title: 'Cover',
-                display: {
-                  type: 'group',
-                },
-                properties: {
-                  gradient: {
-                    title: 'Gradient',
-                    type: 'string',
-                    display: {
-                      type: 'settings-color-picker',
-                      format: 'gradient'
                     }
                   }
                 }
@@ -415,24 +394,26 @@ export const TestimonialsComponent: Component = {
         },
         default: {
           general: {
-            autoplay: true,
+            autoplay: 'off',
             inView: 3,
             alignment: 'center',
             move: 'one',
-            speed: 3000,
+            speed: '3s',
             direction: 'left',
-            pause: 'hover'
+            pause: 'off'
           },
           card: {
             dimensions: {
-              width: 300,
-              height: 400
+              width: 0.1,
+              height: 0.2
             },
-            gap: 20,
-            corner: 10,
-            borderWidth: 0,
-            borderColor: '#000000',
-            bgColor: '#ffffff'
+            gap: 0.02,
+            corner: 0.01,
+            borders: {
+              width: 0.001,
+              color: '#000000',
+            },
+            bgColor: 'rgba(255, 255, 255, 0.2)'
           },
           controls: {
             isActive: false,
@@ -447,7 +428,7 @@ export const TestimonialsComponent: Component = {
           },
           elements: {
             text: {
-              alignment: 'bottom-center',
+              alignment: 'middle-left',
               offset: {
                 x: 0,
                 y: 0
@@ -462,17 +443,136 @@ export const TestimonialsComponent: Component = {
               scale: 100
             },
             creds: {
-              alignment: 'bottom-center',
+              alignment: 'bottom-left',
               offset: {
                 x: 0,
                 y: 0
               }
-            },
-            cover: {
-              gradient: ''
             }
           }
-        }
+        },
+        displayRules: [
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'off'
+            },
+            then: {
+              name: 'properties.general.properties.inView.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'off'
+            },
+            then: {
+              name: 'properties.general.properties.alignment.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'off'
+            },
+            then: {
+              name: 'properties.general.properties.move.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.inView.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.move.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.speed.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.direction.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.pause.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'off'
+            },
+            then: {
+              name: 'properties.general.properties.speed.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'off'
+            },
+            then: {
+              name: 'properties.general.properties.direction.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'off'
+            },
+            then: {
+              name: 'properties.general.properties.pause.display.visible',
+              value: false
+            }
+          }
+        ]
       },
       content: {
         layoutBased: false,
@@ -558,7 +658,7 @@ export const TestimonialsComponent: Component = {
             },
             icon: {
               objectFit: 'cover',
-              url: '',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KEXYWFPR7GB70E4YBF28T8R6.png',
               name: ''
             },
             imageCaption: [
@@ -582,7 +682,7 @@ export const TestimonialsComponent: Component = {
             },
             icon: {
               objectFit: 'cover',
-              url: '',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KEXYWFPR7GB70E4YBF28T8R6.png',
               name: ''
             },
             imageCaption: [
@@ -606,7 +706,7 @@ export const TestimonialsComponent: Component = {
             },
             icon: {
               objectFit: 'cover',
-              url: '',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KEXYWFPR7GB70E4YBF28T8R6.png',
               name: ''
             },
             imageCaption: [
