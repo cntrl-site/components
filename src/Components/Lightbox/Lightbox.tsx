@@ -77,8 +77,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const animationTargetRef = useRef<HTMLDivElement | null>(null);
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
-  const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
+  const { appear, triggers, slider, thumbnail, controls, area, imageCaption, layout } = settings.lightboxBlock;
+  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.imageCaption;
   const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
 
   useEffect(() => {
@@ -453,11 +453,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               </button>
             );
           })()}
-          {caption.isActive && (
+          {imageCaption.isActive && (
             <div 
               className={classes.caption} 
               style={{
-                ...getPositionStyles(caption.alignment, caption.offset, isEditor),
+                ...getPositionStyles(imageCaption.alignment, imageCaption.offset, isEditor),
                 fontFamily: fontSettings.fontFamily,
                 fontWeight: fontSettings.fontWeight,
                 fontStyle: fontSettings.fontStyle,
@@ -475,9 +475,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               onClick={(e) => e.stopPropagation()}
             >
               <div
-                data-styles="caption"
+                data-styles="imageCaption"
                 className={classes.captionTextInner}
-                style={{['--link-hover-color' as string]: caption.hover}}
+                style={{['--link-hover-color' as string]: imageCaption.hover}}
               >
                 <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
@@ -661,12 +661,12 @@ type LightboxSettings = {
       closeIconOffset: Offset;
       closeIconScale: number;
     },
-    caption: Caption;
+    imageCaption: Caption;
   }
 };
 
 type LightboxStyles = {
-  caption: CaptionStyles;
+  imageCaption: CaptionStyles;
 }
 
 type CaptionStyles = {
