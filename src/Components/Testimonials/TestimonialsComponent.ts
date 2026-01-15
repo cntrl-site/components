@@ -25,13 +25,12 @@ export const TestimonialsComponent: Component = {
         },
         properties: {
           general: {
-            title: 'general',
             icon: 'thumbnail',
-            tooltip: 'General',
             type: 'object',
             properties: {
               autoplay: {
                 type: 'string',
+                title: 'Autoplay',
                 display: {
                   type: 'ratio-group',
                   direction: 'horizontal',
@@ -48,15 +47,16 @@ export const TestimonialsComponent: Component = {
               },
               alignment: {
                 type: 'string',
-                title: 'Align',
+                title: 'Alignment',
                 display: {
                   type: 'align-group',
                   direction: 'vertical',
                 },
-                enum: ['start', 'center', 'end']
+                enum: ['left', 'center', 'right']
               },
               move: {
                 type: 'string',
+                title: 'Move',
                 display: {
                   type: 'ratio-group',
                   direction: 'horizontal',
@@ -89,9 +89,7 @@ export const TestimonialsComponent: Component = {
             }
           },
           card: {
-            title: 'card',
             icon: 'card',
-            tooltip: 'Card',
             type: 'object',
             properties: {
               dimensions: {
@@ -135,6 +133,7 @@ export const TestimonialsComponent: Component = {
                 title: 'Corners',
                 scalingEnabled: true,
                 min: 0,
+                label: 'icon:border-radius',
                 display: {
                   type: 'numeric-input',
                 },
@@ -148,6 +147,7 @@ export const TestimonialsComponent: Component = {
                 properties: {
                   width: {
                     type: 'number',
+                    label: 'icon:border-width',
                     scalingEnabled: true,
                     min: 0,
                     display: {
@@ -176,12 +176,17 @@ export const TestimonialsComponent: Component = {
           elements: {
             title: 'elements',
             icon: 'star',
-            tooltip: 'Elements',
             type: 'object',
             properties: {
+              elements: {
+                type: 'string',
+                display: {
+                  type: 'ratio-group'
+                },
+                enum: ['text', 'icon', 'caption']
+              },
               text: {
                 type: 'object',
-                title: 'Text',
                 display: {
                   type: 'group',
                 },
@@ -189,7 +194,8 @@ export const TestimonialsComponent: Component = {
                   alignment: {
                     type: 'string',
                     display: {
-                      type: 'position-selector',
+                      type: 'align-grid',
+                      visible: true,
                     },
                     enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
                   },
@@ -198,6 +204,7 @@ export const TestimonialsComponent: Component = {
                     title: 'Offset',
                     display: {
                       type: 'group',
+                      visible: true,
                     },
                     properties: {
                       x: {
@@ -224,7 +231,6 @@ export const TestimonialsComponent: Component = {
               },
               icon: {
                 type: 'object',
-                title: 'Icon',
                 display: {
                   type: 'group',
                 },
@@ -232,7 +238,7 @@ export const TestimonialsComponent: Component = {
                   alignment: {
                     type: 'string',
                     display: {
-                      type: 'position-selector',
+                      type: 'align-grid'
                     },
                     enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
                   },
@@ -270,13 +276,13 @@ export const TestimonialsComponent: Component = {
                     max: 600,
                     display: {
                       type: 'range-control',
+                      visible: false,
                     },
                   }
                 }
               },
               creds: {
                 type: 'object',
-                title: 'Caption',
                 display: {
                   type: 'group',
                 },
@@ -284,7 +290,7 @@ export const TestimonialsComponent: Component = {
                   alignment: {
                     type: 'string',
                     display: {
-                      type: 'position-selector',
+                      type: 'align-grid'
                     },
                     enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
                   },
@@ -427,6 +433,7 @@ export const TestimonialsComponent: Component = {
             hover: '#cccccc',
           },
           elements: {
+            elements: 'text',
             text: {
               alignment: 'middle-left',
               offset: {
@@ -571,6 +578,216 @@ export const TestimonialsComponent: Component = {
               name: 'properties.general.properties.pause.display.visible',
               value: false
             }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.text.properties.alignment.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.text.properties.offset.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.creds.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.creds.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.alignment.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.offset.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.text.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.text.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.creds.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.creds.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.creds.properties.alignment.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.creds.properties.offset.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.text.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.text.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.alignment.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.scale.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.scale.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.scale.display.visible',
+              value: false
+            }
           }
         ]
       },
@@ -629,8 +846,8 @@ export const TestimonialsComponent: Component = {
               required: ['url', 'name']
             },
             imageCaption: {
-              placeholder: 'Add Caption...',
-              label: 'Description',
+              placeholder: 'Add Text...',
+              label: 'Text',
               display: {
                 type: 'rich-text',
                 minWidth: 300,
@@ -638,8 +855,8 @@ export const TestimonialsComponent: Component = {
               }
             },
             creds: {
-              placeholder: 'Add Credentials...',
-              label: 'Credentials',
+              placeholder: 'Add Caption...',
+              label: 'Caption',
               display: {
                 type: 'rich-text',
                 minWidth: 300,
