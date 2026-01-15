@@ -75,6 +75,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
               perMove: isAutoplay ? marqueePerMove : perMove,
               gap: scalingValue(settings.card.gap, isEditor ?? false),
               padding: 0,
+              drag: false,
               autoplay: isAutoplay,
               speed: speedMs, // Transition duration (default to 500ms if not set)
               interval: speedMs, // Match speed for continuous marquee flow
@@ -148,7 +149,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
             <button
               className={classes.arrowInner}
               style={{transform: `translate(${scalingValue(controls.offset.x, isEditor ?? false)}, ${scalingValue(controls.offset.y, isEditor ?? false)}) scale(${controls.scale / 100})`}}
-              onClick={() => sliderRef.current?.go('-1')}
+              onClick={() => sliderRef.current?.go(isAutoplay ? '-1' : `-${perMove}`)}
               aria-label='Previous'
               >
                 {controls.arrowsImgUrl && (
@@ -171,7 +172,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
             <button
               className={classes.arrowInner}
               style={{ transform: `translate(${scalingValue(controls.offset.x * -1, isEditor ?? false)}, ${scalingValue(controls.offset.y, isEditor ?? false)}) scale(${controls.scale / 100})`}}
-              onClick={() => sliderRef.current?.go('+1')}
+              onClick={() => sliderRef.current?.go(isAutoplay ? '+1' : `+${perMove}`)}
               aria-label='Next'
             >
               {controls.arrowsImgUrl && (
