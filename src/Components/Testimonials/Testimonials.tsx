@@ -85,7 +85,9 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
               pauseOnHover: settings.general.pause === 'hover',
               pauseOnFocus: settings.general.pause === 'click',
             }}>
-            {content.map((item, index) => (
+            {content.map((item, index) => {
+              const iconPositionStyles = getAlignPosition(settings.elements.icon.alignment, settings.elements.icon.offset, isEditor);
+              return (
               <SplideSlide key={index}>
                 <div
                   style={{
@@ -112,7 +114,10 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                       src={item.icon?.url}
                       alt={item.icon?.name}
                       className={classes.icon}
-                      style={{...getAlignPosition(settings.elements.icon.alignment, settings.elements.icon.offset, isEditor), transform: `scale(${settings.elements.icon.scale / 100})`}}
+                      style={{
+                        ...iconPositionStyles,
+                        transform: `${iconPositionStyles.transform || ''} scale(${settings.elements.icon.scale / 100})`
+                      }}
                     />
                     <div
                       className={classes.caption}
@@ -129,7 +134,8 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                   </div>
                 </div>
               </SplideSlide>
-            ))} 
+              );
+            })} 
           </Splide>
         </div>
       </div>
