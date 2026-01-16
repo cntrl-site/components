@@ -31,7 +31,7 @@ type LightboxGalleryProps = {
 };
 
 export const LightboxGallery = ({ settings, content, styles, portalId, activeEvent, isEditor }: LightboxGalleryProps) => {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const { url } = settings.thumbnailBlock.cover;
 
   useEffect(() => {
@@ -69,6 +69,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const [splideKey, setSplideKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [animationFinished, setAnimationFinished] = useState(false);
+  const [isSplideReady, setIsSplideReady] = useState(false);
   const [thumbnailDimensions, setThumbnailDimensions] = useState<Record<number, { width: number; height: number }>>({});
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
@@ -232,7 +233,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     prevSliderTypeRef.current = slider.type;
   }, [slider.type]);
 
-
   useEffect(() => {
     if (!isOpen) return;
     const originalOverflow = document.body.style.overflow;
@@ -358,7 +358,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               height: '100%',
               type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
               padding: 0,
-              rewind: (slider.type === 'scale' || slider.type === 'fade') && triggers.repeat === 'loop'
+              rewind: (slider.type === 'scale' || slider.type === 'fade') && triggers.repeat === 'loop',
+              start: 0
             }}
             style={{'--splide-speed': slider.duration} as React.CSSProperties}
           >
@@ -458,7 +459,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               : scaleTransform;
             return (
               <button className={classes.closeButton} style={{ ...positionStyles, transform: combinedTransform }} onClick={handleClose} aria-label='Close lightbox'>
-                <SvgImage url={area.closeIconUrl} />
+                <SvgImage url={area.closeIconUrl} fill={area.closeIconColor} hoverFill={area.closeIconHover} />
               </button>
             );
           })()}
@@ -494,19 +495,24 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           )}
           {thumbnail.isActive && (
             <div
-              className={cn(classes.thumbsContainer, {
-                [classes.thumbsContainerVertical]: slider.direction === 'vert',
-                [classes.thumbsAlignStart]: thumbnail.align === 'start',
-                [classes.thumbsAlignCenter]: thumbnail.align === 'center',
-                [classes.thumbsAlignEnd]: thumbnail.align === 'end',
-              })}
+              className={classes.thumbsWrapper}
               style={{ 
                 position: isEditor ? 'absolute' : 'fixed',
-                gap: scalingValue(thumbnail.grid.gap, isEditor),
                 ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor)
               }}
             >
-              {content.map((item, index) => {
+              <div
+                className={cn(classes.thumbsContainer, {
+                  [classes.thumbsContainerVertical]: slider.direction === 'vert',
+                  [classes.thumbsAlignStart]: thumbnail.align === 'start',
+                  [classes.thumbsAlignCenter]: thumbnail.align === 'center',
+                  [classes.thumbsAlignEnd]: thumbnail.align === 'end',
+                })}
+                style={{ 
+                  gap: scalingValue(thumbnail.grid.gap, isEditor)
+                }}
+              >
+                {content.map((item, index) => {
                 const isActive = index === currentIndex;
                 const thumbDims = thumbnailDimensions[index];
                 const baseSizeValue = thumbnail.grid.size;
@@ -574,6 +580,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   </button>
                 );
               })}
+              </div>
             </div>
           )}
         </div>
@@ -679,6 +686,8 @@ type LightboxSettings = {
       closeIconAlign: Alignment;
       closeIconOffset: Offset;
       closeIconScale: number;
+      closeIconColor: string;
+      closeIconHover: string;
     },
     caption: Caption;
   }

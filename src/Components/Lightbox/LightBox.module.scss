@@ -155,6 +155,21 @@
   }
 }
 
+.thumbsWrapper {
+  height: auto;
+  width: auto;
+  max-height: 100vh;
+  max-width: 100vw;
+  overflow: auto;
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+  &::-webkit-scrollbar {
+    padding: 10px;
+    scrollbar-width: none;
+  }
+}
+
 .thumbsContainerVertical {
   flex-direction: column;
   display: flex;

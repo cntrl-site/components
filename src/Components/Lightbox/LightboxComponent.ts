@@ -498,6 +498,22 @@ export const LightboxComponent: Component = {
                         },
                       },
                     }
+                  },
+                  closeIconColor: {
+                    title: 'Color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  closeIconHover: {
+                    title: 'Hover',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    },
                   }
                 }
               },
@@ -617,6 +633,8 @@ export const LightboxComponent: Component = {
                 color: 'rgba(28,31,34,0.9)',
                 blur: 0,
                 closeIconUrl: null,
+                closeIconColor: '#000000',
+                closeIconHover: '#cccccc',
                 closeIconAlign: 'top-right',
                 closeIconOffset: { x: 0, y: 0 },
                 closeIconScale: 1
@@ -685,6 +703,8 @@ export const LightboxComponent: Component = {
               color: 'rgba(28,31,34,0.9)',
               blur: 0,
               closeIconUrl: null,
+              closeIconColor: '#000000',
+              closeIconHover: '#cccccc',
               closeIconAlign: 'top-right',
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
@@ -753,6 +773,8 @@ export const LightboxComponent: Component = {
               color: 'rgba(28,31,34,0.9)',
               blur: 0,
               closeIconUrl: null,
+              closeIconColor: '#000000',
+              closeIconHover: '#cccccc',
               closeIconAlign: 'top-right',
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
