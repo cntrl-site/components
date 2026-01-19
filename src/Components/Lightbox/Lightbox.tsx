@@ -69,7 +69,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const [splideKey, setSplideKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [animationFinished, setAnimationFinished] = useState(false);
-  const [isSplideReady, setIsSplideReady] = useState(false);
   const [thumbnailDimensions, setThumbnailDimensions] = useState<Record<number, { width: number; height: number }>>({});
   const lightboxRef = useRef<Splide | null>(null);
   const prevSliderTypeRef = useRef<string | null>(null);
@@ -393,9 +392,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       alt={item.image.name ?? ''}
                       style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
                     />
-                    <div className={classes.imageCaption}>
-                      <RichTextRenderer content={item.imageCaption} />
-                    </div>
                   </div>
               </SplideSlide>
               );
@@ -493,14 +489,34 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               </div>
             </div>
           )}
-          {thumbnail.isActive && (
-            <div
-              className={classes.thumbsWrapper}
-              style={{ 
-                position: isEditor ? 'absolute' : 'fixed',
-                ...getPositionStyles(thumbnail.position, thumbnail.offset, isEditor)
-              }}
-            >
+          {thumbnail.isActive && (() => {
+            const [vertical] = thumbnail.position.split('-');
+            const effectivePosition: Alignment =
+              slider.direction === 'horiz'
+                ? (`${vertical}-left` as Alignment)
+                : thumbnail.position;
+            const thumbsPositionStyles = getPositionStyles(effectivePosition, thumbnail.offset, isEditor);
+
+            return (
+              <div
+                className={classes.thumbsWrapper}
+                style={{
+                  position: isEditor ? 'absolute' : 'fixed',
+                  ...thumbsPositionStyles,
+                  ...(slider.direction === 'horiz'
+                    ? {
+                        maxWidth: '100vw',
+                        width: '100vw',
+                        overflowX: 'auto',
+                        overflowY: 'hidden'
+                      }
+                    : {
+                        maxHeight: '100vh',
+                        overflowY: 'auto',
+                        overflowX: 'hidden'
+                      })
+                }}
+              >
               <div
                 className={cn(classes.thumbsContainer, {
                   [classes.thumbsContainerVertical]: slider.direction === 'vert',
@@ -580,9 +596,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   </button>
                 );
               })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
     </>,
     document.getElementById(portalId)!
