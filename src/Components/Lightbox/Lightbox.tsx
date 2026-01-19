@@ -528,7 +528,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   gap: scalingValue(thumbnail.grid.gap, isEditor)
                 }}
               >
-                {content.map((item, index) => {
+              {content.map((item, index) => {
                 const isActive = index === currentIndex;
                 const thumbDims = thumbnailDimensions[index];
                 const baseSizeValue = thumbnail.grid.size;
