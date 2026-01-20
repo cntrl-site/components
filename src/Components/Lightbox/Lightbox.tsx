@@ -211,6 +211,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(0);
+      setSplideKey(prev => prev + 1);
       isClosingRef.current = false;
       setIsClosing(false);
       setAnimationFinished(false);
@@ -320,21 +321,22 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     animationFillMode: 'both'
   };
   
-  if (!isOpen && !isClosing) return null;
+  if (!document.getElementById(portalId)) return null;
 
   return createPortal(
     <>
       <div
         ref={!isEditor ? animationTargetRef : null}
-        className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass, { [classes.editor]: isEditor })} 
+        className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass, { [classes.editor]: isEditor }, { [classes.hidden]: !isOpen })} 
         style={{
           ...backdropStyles,
           ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {}),
+
         }}
       />
         <div
           ref={isEditor ? animationTargetRef : null}
-          className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor })}
+          className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor }, { [classes.hidden]: !isOpen })}
           style={{
             animationDuration: `${parseInt(appear.duration)}ms`,
             animationTimingFunction: 'ease',
@@ -534,7 +536,15 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 const baseSizeValue = thumbnail.grid.size;
                 const activeSizeValue = baseSizeValue * (isActive ? thumbnail.activeState.scale : 1);
                 const getFitDimensions = () => {
-                  if (thumbnail.fit !== 'fit' || !thumbDims) return {};
+                  if (thumbnail.fit !== 'fit') return {};
+                  if (!thumbDims) {
+                    // Return default dimensions until image loads
+                    if (slider.direction === 'horiz') {
+                      return { height: scalingValue(activeSizeValue, isEditor) };
+                    } else {
+                      return { width: scalingValue(activeSizeValue, isEditor) };
+                    }
+                  }
                   const aspectRatio = thumbDims.width / thumbDims.height;
                   if (slider.direction === 'horiz') {
                     const heightValue = activeSizeValue;
@@ -561,7 +571,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       ...(slider.direction === 'horiz' && thumbnail.fit !== 'fit' ? { height: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
-                      ...(thumbnail.fit === 'fit' ? getFitDimensions() : {}),
+                      ...getFitDimensions(),
                       transition: isActive ? 'all 0.2s ease' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
