@@ -172,7 +172,7 @@
   height: auto;
   width: auto;
   max-height: 100vh;
-  max-width: 100vw;
+  max-width: 100%;
   overflow: auto;
   position: absolute;
   top: 0;
@@ -190,9 +190,6 @@
 
 .thumbsContainer {
   display: flex;
-  align-items: center;
-  // justify-content: center;
-  // flex-wrap: nowrap;
   pointer-events: auto;
 }
 
