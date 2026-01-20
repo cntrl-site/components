@@ -523,12 +523,28 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             </div>
           )}
           {thumbnail.isActive && (() => {
-            const [vertical] = thumbnail.position.split('-');
+            const [vertical, horizontal] = thumbnail.position.split('-');
             const effectivePosition: Alignment =
               slider.direction === 'horiz'
                 ? (`${vertical}-left` as Alignment)
                 : thumbnail.position;
             const thumbsPositionStyles = getPositionStyles(effectivePosition, thumbnail.offset, isEditor);
+
+            // Map position to justify-content for main axis alignment
+            const getJustifyContent = () => {
+              if (slider.direction === 'horiz') {
+                // For horizontal slider, use horizontal part of position
+                if (horizontal === 'left') return 'flex-start';
+                if (horizontal === 'center') return 'center';
+                if (horizontal === 'right') return 'flex-end';
+              } else {
+                // For vertical slider, use vertical part of position
+                if (vertical === 'top') return 'flex-start';
+                if (vertical === 'middle') return 'center';
+                if (vertical === 'bottom') return 'flex-end';
+              }
+              return 'flex-start';
+            };
 
             return (
               <div
@@ -558,7 +574,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   [classes.thumbsAlignEnd]: thumbnail.align === 'end',
                 })}
                 style={{ 
-                  gap: scalingValue(thumbnail.grid.gap, isEditor)
+                  gap: scalingValue(thumbnail.grid.gap, isEditor),
+                  justifyContent: getJustifyContent()
                 }}
               >
               {content.map((item, index) => {
@@ -602,7 +619,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
                       ...getFitDimensions(),
-                      transition: isActive ? 'all 0.3s ease-out' : 'none',
+                      transition: isActive ? 'all 0.25s ease-out' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
                     }}
