@@ -602,7 +602,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
                       ...getFitDimensions(),
-                      transition: isActive ? 'all 0.2s ease-out' : 'none',
+                      transition: isActive ? 'all 0.3s ease-out' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
                     }}
@@ -630,7 +630,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       style={{
                         objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
                         ...(thumbnail.fit === 'fit' ? { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } : {}),
-                        ...(thumbnail.fit === 'cover' && slider.direction === 'horiz' ? { width: '100%', height: '100%' } : {}),
+                        ...(thumbnail.fit === 'cover' ? { width: '100%', height: '100%' } : {}),
                       }}
                     />
                   </button>
