@@ -146,6 +146,22 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
   };
 
+  const isClickInImagePadding = (img: HTMLImageElement, clientX: number, clientY: number) => {
+    const rect = img.getBoundingClientRect();
+    const style = window.getComputedStyle(img);
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const paddingRight = parseFloat(style.paddingRight) || 0;
+    const paddingBottom = parseFloat(style.paddingBottom) || 0;
+    const paddingLeft = parseFloat(style.paddingLeft) || 0;
+
+    const contentLeft = rect.left + paddingLeft;
+    const contentRight = rect.right - paddingRight;
+    const contentTop = rect.top + paddingTop;
+    const contentBottom = rect.bottom - paddingBottom;
+
+    return clientX < contentLeft || clientX > contentRight || clientY < contentTop || clientY > contentBottom;
+  };
+
   const handleImageWrapperClick = (e: MouseEvent | TouchEvent) => {
     const currentImage = content[currentIndex];
     const isCover = currentImage?.image.objectFit === 'cover';
@@ -164,7 +180,18 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     let inside: boolean;
     if (isCover && imageRef.current) {
       const imgRect = imageRef.current.getBoundingClientRect();
-      inside = clientX >= imgRect.left && clientX <= imgRect.right && clientY >= imgRect.top && clientY <= imgRect.bottom;
+      const style = window.getComputedStyle(imageRef.current);
+      const paddingTop = parseFloat(style.paddingTop) || 0;
+      const paddingRight = parseFloat(style.paddingRight) || 0;
+      const paddingBottom = parseFloat(style.paddingBottom) || 0;
+      const paddingLeft = parseFloat(style.paddingLeft) || 0;
+
+      const contentLeft = imgRect.left + paddingLeft;
+      const contentRight = imgRect.right - paddingRight;
+      const contentTop = imgRect.top + paddingTop;
+      const contentBottom = imgRect.bottom - paddingBottom;
+
+      inside = clientX >= contentLeft && clientX <= contentRight && clientY >= contentTop && clientY <= contentBottom;
     } else {
       const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
       if (!rect ) {
@@ -182,6 +209,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
 
   const onImageClick = (e: MouseEvent<HTMLImageElement>) => {
     e.stopPropagation();
+    if (isClickInImagePadding(e.currentTarget, e.clientX, e.clientY)) {
+      handleClose();
+      return;
+    }
     handleTriggerClick(e.currentTarget, e.clientX, e.clientY);
   };
 
@@ -538,7 +569,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 const getFitDimensions = () => {
                   if (thumbnail.fit !== 'fit') return {};
                   if (!thumbDims) {
-                    // Return default dimensions until image loads
                     if (slider.direction === 'horiz') {
                       return { height: scalingValue(activeSizeValue, isEditor) };
                     } else {
@@ -572,7 +602,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
                       ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
                       ...getFitDimensions(),
-                      transition: isActive ? 'all 0.2s ease' : 'none',
+                      transition: isActive ? 'all 0.2s ease-out' : 'none',
                       opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
                       ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
                     }}

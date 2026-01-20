@@ -216,7 +216,6 @@
   flex: 0 0 auto;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.1s ease, opacity 0.1s ease;
   &:hover {
     opacity: var(--thumb-hover) !important;
   }

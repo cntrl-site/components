@@ -1,7 +1,13 @@
 export function getDisplayedImageRect(img: HTMLImageElement) {
   const container = img.getBoundingClientRect();
-  const containerW = container.width;
-  const containerH = container.height;
+  const style = window.getComputedStyle(img);
+  const paddingTop = parseFloat(style.paddingTop) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const paddingBottom = parseFloat(style.paddingBottom) || 0;
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+
+  const containerW = Math.max(0, container.width - paddingLeft - paddingRight);
+  const containerH = Math.max(0, container.height - paddingTop - paddingBottom);
   const imgW = img.naturalWidth;
   const imgH = img.naturalHeight;
   const containerRatio = containerW / containerH;
@@ -17,8 +23,10 @@ export function getDisplayedImageRect(img: HTMLImageElement) {
     renderedW = containerH * imgRatio;
   }
 
-  const offsetX = (containerW - renderedW) / 2 + container.left;
-  const offsetY = (containerH - renderedH) / 2 + container.top;
+  const contentLeft = container.left + paddingLeft;
+  const contentTop = container.top + paddingTop;
+  const offsetX = (containerW - renderedW) / 2 + contentLeft;
+  const offsetY = (containerH - renderedH) / 2 + contentTop;
 
   return {
     x: offsetX,
