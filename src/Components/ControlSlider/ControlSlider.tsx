@@ -28,12 +28,12 @@ const alignmentClassName: Record<Alignment, string> = {
 
 export function ControlSlider({ settings, content, styles: sliderStyles, isEditor }: SliderProps) {
   const [sliderRef, setSliderRef] = useState<Splide | null>(null);
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.caption;
+  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
   const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [key, setKey] = useState(0);
-  const { direction, transition, controls, pagination, caption, triggers } = settings;
+  const { direction, transition, controls, pagination, imageCaption, triggers } = settings;
   const prevSliderTypeRef = useRef<string | null>(transition.type);
   const { x: controlsOffsetX, y: controlsOffsetY } = settings.controls.offset;
   const handleArrowClick = (dir: '+1' | '-1') => {
@@ -71,7 +71,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
           backgroundColor: transition.backgroundColor && transition.type === 'fade in' ? transition.backgroundColor : 'transparent'
         }}
       >
-      {settings.caption.isActive && (
+      {settings.imageCaption.isActive && (
         <div
           className={cn(styles.captionBlock)}
         >
@@ -81,7 +81,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
             {content.map((item, index) => (
               <div
                 key={index}
-                className={cn(styles.captionText, alignmentClassName[caption.alignment], { 
+                className={cn(styles.captionText, alignmentClassName[imageCaption.alignment], { 
                   [styles.withPointerEvents]: index === currentSlideIndex && isEditor,
                   [styles.active]: index === currentSlideIndex,
                 })}
@@ -103,13 +103,13 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
                 }}
               >
                 <div
-                  data-styles="caption"
+                  data-styles="imageCaption"
                   className={styles.captionTextInner}
                   style={{
-                    '--link-hover-color': caption.hover,
+                    '--link-hover-color': imageCaption.hover,
                     position: 'relative',
-                    top: scalingValue(caption.offset.y, isEditor),
-                    left: scalingValue(caption.offset.x, isEditor)
+                    top: scalingValue(imageCaption.offset.y, isEditor),
+                    left: scalingValue(imageCaption.offset.x, isEditor)
                   } as React.CSSProperties}
                 >
                   <RichTextRenderer content={item.imageCaption} />
@@ -358,7 +358,7 @@ type SliderSettings = {
     duration: string;
     backgroundColor: string | null;
   };
-  caption: SliderCaption;
+  imageCaption: SliderCaption;
   triggers: Triggers;
 };
 
@@ -388,7 +388,7 @@ type CaptionStyles = {
 };
 
 type SliderStyles = {
-  caption: CaptionStyles;
+  imageCaption: CaptionStyles;
 }
 
 type Dimensions = {
