@@ -256,6 +256,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       setIsClosing(false);
       setAnimationFinished(false);
       setThumbnailDimensions({});
+      const event = new CustomEvent('page-overlay');
+      window.dispatchEvent(event);
     }
     return () => {
       if (animationTargetRef.current && animationEndHandlerRef.current) {
