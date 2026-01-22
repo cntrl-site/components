@@ -663,7 +663,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   ...(slider.direction === 'horiz'
                     ? {
                         maxWidth: '100vw',
-                        width: '100vw',
+                        width: '100%',
                         overflowX: 'auto',
                         overflowY: 'hidden'
                       }
