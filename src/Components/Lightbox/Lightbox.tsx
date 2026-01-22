@@ -78,8 +78,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDraggedRef = useRef<boolean>(false);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
 
   useEffect(() => {
@@ -164,6 +164,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   };
 
   const handleImageWrapperClick = (e: MouseEvent | TouchEvent) => {
+    // If a drag occurred, prevent the click from closing the lightbox
+    if (hasDraggedRef.current) {
+      hasDraggedRef.current = false;
+      return;
+    }
+    
     const currentImage = content[currentIndex];
     const isCover = currentImage?.image.objectFit === 'cover';
     let clientX: number;
@@ -215,6 +221,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       return;
     }
     handleTriggerClick(e.currentTarget, e.clientX, e.clientY);
+  };
+
+  const handleThumbWrapperClick = (e: MouseEvent | TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains(classes.thumbsWrapper) || target.classList.contains(classes.thumbsContainer)) {
+      handleImageWrapperClick(e as MouseEvent);
+    }
   };
 
   useEffect(() => {
@@ -289,7 +302,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       appearAnimationEndHandlerRef.current = handleAppearAnimationEnd;
       animationTargetRef.current.addEventListener('animationend', handleAppearAnimationEnd);
     }
-    const preventScroll = (e: TouchEvent) => e.preventDefault();
+    const preventScroll = (e: TouchEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.closest(`.${classes.thumbsWrapper}`) || target.closest(`.${classes.thumbsContainer}`))) {
+        return;
+      }
+      e.preventDefault();
+    };
     document.addEventListener("touchmove", preventScroll, { passive: false });
     return () => {
       document.body.style.overflow = originalOverflow;
@@ -307,6 +326,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     const handleTouchEnd = (e: TouchEvent) => {
       if (isClosingRef.current) {
         e.stopPropagation();
+        return;
+      }
+      // If a drag occurred, prevent closing the lightbox
+      if (hasDraggedRef.current) {
+        hasDraggedRef.current = false;
         return;
       }
       const target = e.target as HTMLElement | null;
@@ -346,43 +370,109 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   }, [isOpen, handleClose, currentIndex, content]);
 
   // Custom vertical drag handling for (scale || fade) + vert + drag configuration
-  // Splide's fade type doesn't support vertical direction, so we need custom drag handling: https://github.com/Splidejs/splide/issues/1095
-  const needsCustomVerticalDrag = slider.type === 'scale' && slider.direction === 'vert' && triggers.type === 'drag';
+  // Splide's fade type doesn't support vertical direction, so we need custom drag handling
+  // open issue: https://github.com/Splidejs/splide/issues/1095
+  const needsCustomVerticalDrag = (slider.type === 'scale' || slider.type === 'fade') && slider.direction === 'vert' && triggers.type === 'drag';
   
   useEffect(() => {
     if (!isOpen || !needsCustomVerticalDrag || !lightboxRef.current?.splide?.root) return;
     const container = lightboxRef.current.splide.root as HTMLDivElement;
     const DRAG_THRESHOLD = 30;
-    const handlePointerDown = (e: PointerEvent) => {
-      dragStartRef.current = { x: e.clientX, y: e.clientY };
+    
+    const handleMove = (clientX: number, clientY: number) => {
+      if (dragStartRef.current) {
+        const deltaX = Math.abs(clientX - dragStartRef.current.x);
+        const deltaY = Math.abs(clientY - dragStartRef.current.y);
+        if (deltaX > 0 || deltaY > 0) {
+          hasDraggedRef.current = true;
+        }
+      }
     };
     const handlePointerMove = (e: PointerEvent) => {
-      if (dragStartRef.current) e.preventDefault();
-    }
-    const handlePointerUp = (e: PointerEvent) => {
+      if (dragStartRef.current) {
+        e.preventDefault();
+        handleMove(e.clientX, e.clientY);
+      }
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (dragStartRef.current && e.touches.length > 0) {
+        e.preventDefault();
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const handleUp = (clientX: number, clientY: number) => {
       if (!dragStartRef.current || !lightboxRef.current) {
         dragStartRef.current = null;
         return;
       }
-      const deltaX = Math.abs(e.clientX - dragStartRef.current.x);
-      const deltaY = Math.abs(e.clientY - dragStartRef.current.y);
+      const deltaX = Math.abs(clientX - dragStartRef.current.x);
+      const deltaY = Math.abs(clientY - dragStartRef.current.y);
       if (deltaY > DRAG_THRESHOLD && deltaY > deltaX) {
-        lightboxRef.current.go(e.clientY < dragStartRef.current.y ? '+1' : '-1');
+        lightboxRef.current.go(clientY < dragStartRef.current.y ? '+1' : '-1');
       }
       dragStartRef.current = null;
     };
-
+    
+    const handlePointerUp = (e: PointerEvent) => {
+      if (!dragStartRef.current) {
+        document.removeEventListener('pointerup', handlePointerUp);
+        document.removeEventListener('pointercancel', handlePointerUp);
+        document.removeEventListener('pointermove', handlePointerMove);
+        return;
+      }
+      handleUp(e.clientX, e.clientY);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+      document.removeEventListener('pointermove', handlePointerMove);
+    };
+    
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!dragStartRef.current) {
+        document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener('touchcancel', handleTouchEnd);
+        document.removeEventListener('touchmove', handleTouchMove);
+        return;
+      }
+      if (e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        handleUp(touch.clientX, touch.clientY);
+      }
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+    
+    const handlePointerDown = (e: PointerEvent) => {
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      hasDraggedRef.current = false;
+      document.addEventListener('pointermove', handlePointerMove, { passive: false });
+      document.addEventListener('pointerup', handlePointerUp);
+      document.addEventListener('pointercancel', handlePointerUp);
+    };
+    
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        dragStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        hasDraggedRef.current = false;
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
+        document.addEventListener('touchcancel', handleTouchEnd);
+      }
+    };
     container.addEventListener('pointerdown', handlePointerDown);
-    container.addEventListener('pointermove', handlePointerMove, { passive: false });
-    container.addEventListener('pointerup', handlePointerUp);
-    container.addEventListener('pointercancel', handlePointerUp);
+    container.addEventListener('touchstart', handleTouchStart);
 
     return () => {
       container.removeEventListener('pointerdown', handlePointerDown);
-      container.removeEventListener('pointermove', handlePointerMove);
-      container.removeEventListener('pointerup', handlePointerUp);
-      container.removeEventListener('pointercancel', handlePointerUp);
+      container.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
       dragStartRef.current = null;
+      hasDraggedRef.current = false;
     };
   }, [isOpen, needsCustomVerticalDrag, splideKey]);
 
@@ -539,36 +629,39 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               </button>
             );
           })()}
-          {caption.isActive && (
-            <div 
-              className={classes.caption} 
-              style={{
-                ...getPositionStyles(caption.alignment, caption.offset, isEditor),
-                fontFamily: fontSettings.fontFamily,
-                fontWeight: fontSettings.fontWeight,
-                fontStyle: fontSettings.fontStyle,
-                width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
-                letterSpacing: scalingValue(letterSpacing, isEditor),
-                wordSpacing: scalingValue(wordSpacing, isEditor),
-                textAlign,
-                fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                textTransform: textAppearance.textTransform ?? 'none',
-                textDecoration: textAppearance.textDecoration ?? 'none',
-                fontVariant: textAppearance.fontVariant ?? 'normal',
-                color
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div
-                data-styles="caption"
-                className={classes.captionTextInner}
-                style={{['--link-hover-color' as string]: caption.hover}}
+          {caption.isActive && lightboxStyles.caption && (() => {
+            const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
+            return (
+              <div 
+                className={classes.caption} 
+                style={{
+                  ...getPositionStyles(caption.alignment, caption.offset, isEditor),
+                  fontFamily: fontSettings.fontFamily,
+                  fontWeight: fontSettings.fontWeight,
+                  fontStyle: fontSettings.fontStyle,
+                  width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
+                  letterSpacing: scalingValue(letterSpacing, isEditor),
+                  wordSpacing: scalingValue(wordSpacing, isEditor),
+                  textAlign,
+                  fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                  lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                  textTransform: textAppearance.textTransform ?? 'none',
+                  textDecoration: textAppearance.textDecoration ?? 'none',
+                  fontVariant: textAppearance.fontVariant ?? 'normal',
+                  color
+                }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <RichTextRenderer content={content[currentIndex].imageCaption} />
+                <div
+                  data-styles="caption"
+                  className={classes.captionTextInner}
+                  style={{['--link-hover-color' as string]: caption.hover}}
+                >
+                  <RichTextRenderer content={content[currentIndex].imageCaption} />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           {thumbnail.isActive && (() => {
             const [vertical, horizontal] = thumbnail.position.split('-');
             const effectivePosition: Alignment =
@@ -592,6 +685,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             return (
               <div
                 className={classes.thumbsWrapper}
+                onClick={(e) => handleThumbWrapperClick(e)}
                 style={{
                   position: isEditor ? 'absolute' : 'fixed',
                   ...thumbsPositionStyles,

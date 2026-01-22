@@ -176,7 +176,7 @@
   overflow: auto;
   position: absolute;
   top: 0;
-  pointer-events: none;
+  -webkit-overflow-scrolling: touch; 
   &::-webkit-scrollbar {
     padding: 10px;
     scrollbar-width: none;
