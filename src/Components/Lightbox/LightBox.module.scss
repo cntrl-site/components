@@ -190,7 +190,7 @@
 
 .thumbsContainer {
   display: flex;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .thumbsAlignStart {
@@ -210,6 +210,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  pointer-events: all;
   flex: 0 0 auto;
   cursor: pointer;
   overflow: hidden;

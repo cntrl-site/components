@@ -77,6 +77,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const animationTargetRef = useRef<HTMLDivElement | null>(null);
   const animationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.caption;
   const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
@@ -344,6 +345,47 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     };
   }, [isOpen, handleClose, currentIndex, content]);
 
+  // Custom vertical drag handling for (scale || fade) + vert + drag configuration
+  // Splide's fade type doesn't support vertical direction, so we need custom drag handling: https://github.com/Splidejs/splide/issues/1095
+  const needsCustomVerticalDrag = slider.type === 'scale' && slider.direction === 'vert' && triggers.type === 'drag';
+  
+  useEffect(() => {
+    if (!isOpen || !needsCustomVerticalDrag || !lightboxRef.current?.splide?.root) return;
+    const container = lightboxRef.current.splide.root as HTMLDivElement;
+    const DRAG_THRESHOLD = 30;
+    const handlePointerDown = (e: PointerEvent) => {
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const handlePointerMove = (e: PointerEvent) => {
+      if (dragStartRef.current) e.preventDefault();
+    }
+    const handlePointerUp = (e: PointerEvent) => {
+      if (!dragStartRef.current || !lightboxRef.current) {
+        dragStartRef.current = null;
+        return;
+      }
+      const deltaX = Math.abs(e.clientX - dragStartRef.current.x);
+      const deltaY = Math.abs(e.clientY - dragStartRef.current.y);
+      if (deltaY > DRAG_THRESHOLD && deltaY > deltaX) {
+        lightboxRef.current.go(e.clientY < dragStartRef.current.y ? '+1' : '-1');
+      }
+      dragStartRef.current = null;
+    };
+
+    container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('pointermove', handlePointerMove, { passive: false });
+    container.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('pointercancel', handlePointerUp);
+      dragStartRef.current = null;
+    };
+  }, [isOpen, needsCustomVerticalDrag, splideKey]);
+
   const backdropStyles = {
     backgroundColor: area.color,
     backdropFilter: `blur(${area.blur}px)`,
@@ -382,9 +424,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             options={{
               arrows: false,
               speed: slider.duration ? parseInt(slider.duration) : 500,
-              direction: slider.direction === 'horiz' || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb',
+              direction: (() => {
+                const isHoriz = slider.direction === 'horiz';
+                // Scale and fade transitions always use 'ltr' because Splide's fade type doesn't support vertical direction
+                return isHoriz || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb';
+              })(),
               pagination: false,
-              drag: triggers.type === 'drag',
+              // Disable Splide's drag when we need custom vertical drag handling
+              drag: triggers.type === 'drag' && !needsCustomVerticalDrag,
               perPage: 1,
               width: '100%',
               height: '100%',
@@ -529,16 +576,12 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 ? (`${vertical}-left` as Alignment)
                 : thumbnail.position;
             const thumbsPositionStyles = getPositionStyles(effectivePosition, thumbnail.offset, isEditor);
-
-            // Map position to justify-content for main axis alignment
             const getJustifyContent = () => {
               if (slider.direction === 'horiz') {
-                // For horizontal slider, use horizontal part of position
                 if (horizontal === 'left') return 'flex-start';
                 if (horizontal === 'center') return 'center';
                 if (horizontal === 'right') return 'flex-end';
               } else {
-                // For vertical slider, use vertical part of position
                 if (vertical === 'top') return 'flex-start';
                 if (vertical === 'middle') return 'center';
                 if (vertical === 'bottom') return 'flex-end';
