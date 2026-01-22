@@ -147,21 +147,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
   };
 
-  const isClickInImagePadding = (img: HTMLImageElement, clientX: number, clientY: number) => {
-    const rect = img.getBoundingClientRect();
-    const style = window.getComputedStyle(img);
-    const paddingTop = parseFloat(style.paddingTop) || 0;
-    const paddingRight = parseFloat(style.paddingRight) || 0;
-    const paddingBottom = parseFloat(style.paddingBottom) || 0;
-    const paddingLeft = parseFloat(style.paddingLeft) || 0;
-    const contentLeft = rect.left + paddingLeft;
-    const contentRight = rect.right - paddingRight;
-    const contentTop = rect.top + paddingTop;
-    const contentBottom = rect.bottom - paddingBottom;
-
-    return clientX < contentLeft || clientX > contentRight || clientY < contentTop || clientY > contentBottom;
-  };
-
   const handleImageWrapperClick = (e: MouseEvent | TouchEvent) => {
     if (hasDraggedRef.current) {
       hasDraggedRef.current = false;
@@ -207,15 +192,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     } else {
       handleClose();
     }
-  };
-
-  const onImageClick = (e: MouseEvent<HTMLImageElement>) => {
-    e.stopPropagation();
-    if (isClickInImagePadding(e.currentTarget, e.clientX, e.clientY)) {
-      handleClose();
-      return;
-    }
-    handleTriggerClick(e.currentTarget, e.clientX, e.clientY);
   };
 
   const handleThumbWrapperClick = (e: MouseEvent | TouchEvent) => {
@@ -553,7 +529,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                         [classes.cover]: item.image.objectFit === 'cover',
                         [classes.scaleSlide]: slider.type === 'scale'
                       })}
-                      onClick={item.image.objectFit !== 'contain' ? onImageClick : undefined}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
                       style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
