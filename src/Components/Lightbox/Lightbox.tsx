@@ -619,7 +619,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               : scaleTransform;
             return (
               <button className={classes.closeButton} style={{ ...positionStyles, transform: combinedTransform }} onClick={handleClose} aria-label='Close lightbox'>
-                <SvgImage url={area.closeIconUrl} fill={area.closeIconColor} hoverFill={area.closeIconHover} />
+                <SvgImage url={area.closeIconUrl} fill={area.closeIconColor ?? '#000000'} hoverFill={area.closeIconHover ?? '#cccccc'} />
               </button>
             );
           })()}
@@ -891,8 +891,8 @@ type LightboxSettings = {
       closeIconAlign: Alignment;
       closeIconOffset: Offset;
       closeIconScale: number;
-      closeIconColor: string;
-      closeIconHover: string;
+      closeIconColor?: string;
+      closeIconHover?: string;
     },
     imageCaption: Caption;
   }
