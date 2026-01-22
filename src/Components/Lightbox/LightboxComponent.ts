@@ -517,7 +517,7 @@ export const LightboxComponent: Component = {
                   }
                 }
               },
-              caption: {
+              imageCaption: {
                 title: 'DESC',
                 icon: 'text-icon',
                 tooltip: 'Description',
@@ -639,7 +639,7 @@ export const LightboxComponent: Component = {
                 closeIconOffset: { x: 0, y: 0 },
                 closeIconScale: 1
               },
-              caption: {
+              imageCaption: {
                 isActive: true,
                 alignment: 'middle-center',
                 offset: { x: 0, y: 0 },
@@ -709,7 +709,7 @@ export const LightboxComponent: Component = {
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
             },
-            caption: {
+            imageCaption: {
               isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },
@@ -779,7 +779,7 @@ export const LightboxComponent: Component = {
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
             },
-            caption: {
+            imageCaption: {
               isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },
@@ -931,7 +931,7 @@ export const LightboxComponent: Component = {
         layoutBased: true,
         type: 'object',
         properties: {
-          caption: {
+          imageCaption: {
             dataName: 'caption',
             type: 'object',
             properties: {
@@ -1029,7 +1029,7 @@ export const LightboxComponent: Component = {
           }
         },
         default: {
-          caption: {
+          imageCaption: {
             widthSettings: {
               width: 0.13,
               sizing: 'auto',

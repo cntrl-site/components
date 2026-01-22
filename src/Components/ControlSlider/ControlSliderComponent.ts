@@ -250,7 +250,7 @@ export const ControlSliderComponent = {
               }
             }
           },
-          caption: {
+          imageCaption: {
             title: 'Caption',
             icon: 'text-icon',
             tooltip: 'Caption',
@@ -343,7 +343,7 @@ export const ControlSliderComponent = {
             hover: '#cccccc'
           },
           direction: 'horiz',
-          caption: {
+          imageCaption: {
             offset: {
               x: 0,
               y: 0
@@ -466,7 +466,7 @@ export const ControlSliderComponent = {
         layoutBased: true,
         type: 'object',
         properties: {
-          caption: {
+          imageCaption: {
             dataName: 'caption',
             type: 'object',
             properties: {
@@ -564,7 +564,7 @@ export const ControlSliderComponent = {
           }
         },
         default: {
-          caption: {
+          imageCaption: {
             widthSettings: {
               width: 0.13,
               sizing: 'auto',
