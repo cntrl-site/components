@@ -154,7 +154,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     const paddingRight = parseFloat(style.paddingRight) || 0;
     const paddingBottom = parseFloat(style.paddingBottom) || 0;
     const paddingLeft = parseFloat(style.paddingLeft) || 0;
-
     const contentLeft = rect.left + paddingLeft;
     const contentRight = rect.right - paddingRight;
     const contentTop = rect.top + paddingTop;
@@ -164,12 +163,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   };
 
   const handleImageWrapperClick = (e: MouseEvent | TouchEvent) => {
-    // If a drag occurred, prevent the click from closing the lightbox
     if (hasDraggedRef.current) {
       hasDraggedRef.current = false;
       return;
     }
-    
     const currentImage = content[currentIndex];
     const isCover = currentImage?.image.objectFit === 'cover';
     let clientX: number;
@@ -192,12 +189,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       const paddingRight = parseFloat(style.paddingRight) || 0;
       const paddingBottom = parseFloat(style.paddingBottom) || 0;
       const paddingLeft = parseFloat(style.paddingLeft) || 0;
-
       const contentLeft = imgRect.left + paddingLeft;
       const contentRight = imgRect.right - paddingRight;
       const contentTop = imgRect.top + paddingTop;
       const contentBottom = imgRect.bottom - paddingBottom;
-
       inside = clientX >= contentLeft && clientX <= contentRight && clientY >= contentTop && clientY <= contentBottom;
     } else {
       const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
@@ -328,7 +323,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         e.stopPropagation();
         return;
       }
-      // If a drag occurred, prevent closing the lightbox
       if (hasDraggedRef.current) {
         hasDraggedRef.current = false;
         return;
@@ -516,7 +510,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               speed: slider.duration ? parseInt(slider.duration) : 500,
               direction: (() => {
                 const isHoriz = slider.direction === 'horiz';
-                // Scale and fade transitions always use 'ltr' because Splide's fade type doesn't support vertical direction
+                // Scale and fade types always use 'ltr' because Splide doesn't support vertical direction for fade and scale types
                 return isHoriz || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb';
               })(),
               pagination: false,
