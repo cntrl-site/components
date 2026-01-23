@@ -7,7 +7,7 @@ import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import cn from 'classnames';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
-import { getDisplayedImageRect } from '../utils/getImageRect';
+import { getDisplayedImageRect, getPaddedContainerBounds } from '../utils/getImageRect';
 import { getColorAlpha } from '../utils/getColorAlpha';
 import { getAnimationClasses } from './getAnimationClasses';
 
@@ -168,17 +168,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     }
     let inside: boolean;
     if (isCover && imageRef.current) {
-      const imgRect = imageRef.current.getBoundingClientRect();
-      const style = window.getComputedStyle(imageRef.current);
-      const paddingTop = parseFloat(style.paddingTop) || 0;
-      const paddingRight = parseFloat(style.paddingRight) || 0;
-      const paddingBottom = parseFloat(style.paddingBottom) || 0;
-      const paddingLeft = parseFloat(style.paddingLeft) || 0;
-      const contentLeft = imgRect.left + paddingLeft;
-      const contentRight = imgRect.right - paddingRight;
-      const contentTop = imgRect.top + paddingTop;
-      const contentBottom = imgRect.bottom - paddingBottom;
-      inside = clientX >= contentLeft && clientX <= contentRight && clientY >= contentTop && clientY <= contentBottom;
+      const bounds = getPaddedContainerBounds(imageRef.current);
+      inside = clientX >= bounds.left && clientX <= bounds.right && clientY >= bounds.top && clientY <= bounds.bottom;
     } else {
       const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
       if (!rect ) {
@@ -315,8 +306,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         const touch = e.changedTouches[0];
         let inside: boolean;
         if (isCover && imageRef.current) {
-          const imgRect = imageRef.current.getBoundingClientRect();
-          inside = touch.clientX >= imgRect.left && touch.clientX <= imgRect.right && touch.clientY >= imgRect.top && touch.clientY <= imgRect.bottom;
+          const bounds = getPaddedContainerBounds(imageRef.current);
+          inside = touch.clientX >= bounds.left && touch.clientX <= bounds.right && touch.clientY >= bounds.top && touch.clientY <= bounds.bottom;
         } else {
           const rect = imageRef.current ? getDisplayedImageRect(imageRef.current) : null;
           if (!rect) return;
@@ -465,8 +456,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         className={cn(classes.background, isClosing ? backdropDisappearClass : backdropAppearClass, { [classes.editor]: isEditor }, { [classes.hidden]: !isOpen })} 
         style={{
           ...backdropStyles,
-          ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {}),
-
+          ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {})
         }}
       />
         <div
