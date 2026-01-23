@@ -271,6 +271,11 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       if (target && (target.closest(`.${classes.thumbsWrapper}`) || target.closest(`.${classes.thumbsContainer}`))) {
         return;
       }
+      // Don't prevent default when slider type is slide - let Splide handle drag natively
+      // Splide supports vertical looping with drag when direction is 'ttb' and type is 'loop'
+      if (slider.type === 'slide') {
+        return;
+      }
       e.preventDefault();
     };
     document.addEventListener("touchmove", preventScroll, { passive: false });
@@ -283,7 +288,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       }
       setAnimationFinished(false);
     };
-  }, [isOpen, isEditor, area.color]);
+  }, [isOpen, isEditor, area.color, slider.type]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -299,6 +304,14 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       const target = e.target as HTMLElement | null;
       if (target && (target.closest(`.${classes.thumbsContainer}`) || target.closest(`.${classes.thumbItem}`))) {
         return;
+      }
+      // Don't close if touch is within Splide container when slide type with drag is enabled
+      // Splide handles drag natively, so we shouldn't interfere
+      if (slider.type === 'slide' && triggers.type === 'drag' && lightboxRef.current?.splide?.root) {
+        const splideContainer = lightboxRef.current.splide.root as HTMLElement;
+        if (target && (splideContainer.contains(target) || splideContainer === target)) {
+          return;
+        }
       }
       if (e.touches.length === 0 && e.changedTouches.length > 0) {
         const currentImage = content[currentIndex];
@@ -459,303 +472,303 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           ...(animationFinished && !isEditor && !isClosing ? { position: 'absolute' } : {})
         }}
       />
-        <div
-          ref={isEditor ? animationTargetRef : null}
-          className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor }, { [classes.hidden]: !isOpen })}
-          style={{
-            animationDuration: `${parseInt(appear.duration)}ms`,
-            animationTimingFunction: 'ease',
-            animationFillMode: 'both'
+      <div
+        ref={isEditor ? animationTargetRef : null}
+        className={cn(classes.contentStyle, !isClosing ? appearClass : disappearClass, { [classes.editor]: isEditor }, { [classes.hidden]: !isOpen })}
+        style={{
+          animationDuration: `${parseInt(appear.duration)}ms`,
+          animationTimingFunction: 'ease',
+          animationFillMode: 'both'
+        }}
+      >
+        <Splide
+          key={splideKey}
+          onMove={(splide) => setCurrentIndex(splide.index)}
+          ref={lightboxRef}
+          className={classes.lightboxSplide}
+          options={{
+            arrows: false,
+            speed: slider.duration ? parseInt(slider.duration) : 500,
+            direction: (() => {
+              const isHoriz = slider.direction === 'horiz';
+              // Scale and fade types always use 'ltr' because Splide doesn't support vertical direction for fade and scale types
+              return isHoriz || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb';
+            })(),
+            pagination: false,
+            // Disable Splide's drag when we need custom vertical drag handling
+            drag: triggers.type === 'drag' && !needsCustomVerticalDrag,
+            perPage: 1,
+            width: '100%',
+            height: '100%',
+            type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
+            padding: 0,
+            rewind: triggers.repeat !== 'close',
+            start: 0
           }}
+          style={{'--splide-speed': slider.duration} as React.CSSProperties}
         >
-          <Splide
-            key={splideKey}
-            onMove={(splide) => setCurrentIndex(splide.index)}
-            ref={lightboxRef}
-            className={classes.lightboxSplide}
-            options={{
-              arrows: false,
-              speed: slider.duration ? parseInt(slider.duration) : 500,
-              direction: (() => {
-                const isHoriz = slider.direction === 'horiz';
-                // Scale and fade types always use 'ltr' because Splide doesn't support vertical direction for fade and scale types
-                return isHoriz || slider.type === 'fade' || slider.type === 'scale' ? 'ltr' : 'ttb';
-              })(),
-              pagination: false,
-              // Disable Splide's drag when we need custom vertical drag handling
-              drag: triggers.type === 'drag' && !needsCustomVerticalDrag,
-              perPage: 1,
-              width: '100%',
-              height: '100%',
-              type: slider.type === 'fade' || slider.type === 'scale' ? 'fade' : 'loop',
-              padding: 0,
-              rewind: (slider.type === 'scale' || slider.type === 'fade') && triggers.repeat === 'loop',
-              start: 0
-            }}
-            style={{'--splide-speed': slider.duration} as React.CSSProperties}
-          >
-            {content.map((item, index) => {
-              const positionStyles = getPositionStyles(layout.position, layout.offset, isEditor);
-              const padding = `${scalingValue(layout.padding.top, isEditor)} ${scalingValue(layout.padding.right, isEditor)} ${scalingValue(layout.padding.bottom, isEditor)} ${scalingValue(layout.padding.left, isEditor)}`;
-              const imageStyle = slider.type === 'scale' 
-                ? (() => {
-                    const { transform, ...restStyles } = positionStyles;
-                    return {
-                      ...restStyles,
-                      position: 'absolute',
-                      padding,
-                      boxSizing: 'border-box',
-                      '--position-transform': (transform as string) || 'none'
-                    };
-                  })()
-                : { ...positionStyles, position: 'absolute', padding, boxSizing: 'border-box' };
-              return (
-                <SplideSlide key={index}>
-                  <div className={classes.imgWrapper} onClick={handleImageWrapperClick}>
-                    <img
-                      ref={index === currentIndex ? imageRef : null}
-                      className={cn(classes.imageStyle, {
-                        [classes.contain]: item.image.objectFit === 'contain',
-                        [classes.cover]: item.image.objectFit === 'cover',
-                        [classes.scaleSlide]: slider.type === 'scale'
-                      })}
-                      src={item.image.url}
-                      alt={item.image.name ?? ''}
-                      style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
-                    />
-                  </div>
-              </SplideSlide>
-              );
-            })}
-          </Splide>
-          {controls.isActive && (
-            <>
-              <div 
-                className={cn(classes.arrow, {[classes.arrowVertical]: slider.direction === 'vert' })}
-                style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
-              >
-                <button
-                  className={classes.arrowInner}
-                  style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
-                  onClick={() => lightboxRef.current?.go('-1')}
-                  aria-label='Previous'
-                  >
-                    {controls.arrowsImgUrl && (
-                      <SvgImage
-                        url={controls.arrowsImgUrl}
-                        fill={controls.color}
-                        hoverFill={controls.hover}
-                        className={cn(classes.arrowImg, classes.mirror)}
-                      />
-                    )}
-                    {!controls.arrowsImgUrl && (
-                      <ArrowIcon color={controls.color} className={cn(classes.arrowIcon, classes.arrowImg, classes.mirror)} />
-                    )}
-                  </button>
-              </div>
-              <div
-                className={cn(classes.arrow, classes.nextArrow, {[classes.arrowVertical]: slider.direction === 'vert'})}
-                style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
-              >              
-                <button
-                  className={classes.arrowInner}
-                  style={{ transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
-                  onClick={() => lightboxRef.current?.go('+1')}
-                  aria-label='Next'
+          {content.map((item, index) => {
+            const positionStyles = getPositionStyles(layout.position, layout.offset, isEditor);
+            const padding = `${scalingValue(layout.padding.top, isEditor)} ${scalingValue(layout.padding.right, isEditor)} ${scalingValue(layout.padding.bottom, isEditor)} ${scalingValue(layout.padding.left, isEditor)}`;
+            const imageStyle = slider.type === 'scale' 
+              ? (() => {
+                  const { transform, ...restStyles } = positionStyles;
+                  return {
+                    ...restStyles,
+                    position: 'absolute',
+                    padding,
+                    boxSizing: 'border-box',
+                    '--position-transform': (transform as string) || 'none'
+                  };
+                })()
+              : { ...positionStyles, position: 'absolute', padding, boxSizing: 'border-box' };
+            return (
+              <SplideSlide key={index}>
+                <div className={classes.imgWrapper} onClick={handleImageWrapperClick}>
+                  <img
+                    ref={index === currentIndex ? imageRef : null}
+                    className={cn(classes.imageStyle, {
+                      [classes.contain]: item.image.objectFit === 'contain',
+                      [classes.cover]: item.image.objectFit === 'cover',
+                      [classes.scaleSlide]: slider.type === 'scale'
+                    })}
+                    src={item.image.url}
+                    alt={item.image.name ?? ''}
+                    style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
+                  />
+                </div>
+            </SplideSlide>
+            );
+          })}
+        </Splide>
+        {controls.isActive && (
+          <>
+            <div 
+              className={cn(classes.arrow, {[classes.arrowVertical]: slider.direction === 'vert' })}
+              style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
+            >
+              <button
+                className={classes.arrowInner}
+                style={{ transform: `translate(${scalingValue(controls.offset.x, isEditor)}, ${scalingValue(controls.offset.y * (slider.direction === 'horiz' ? 1 : -1), isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
+                onClick={() => lightboxRef.current?.go('-1')}
+                aria-label='Previous'
                 >
                   {controls.arrowsImgUrl && (
                     <SvgImage
                       url={controls.arrowsImgUrl}
                       fill={controls.color}
                       hoverFill={controls.hover}
-                      className={classes.arrowImg}
+                      className={cn(classes.arrowImg, classes.mirror)}
                     />
                   )}
                   {!controls.arrowsImgUrl && (
-                    <ArrowIcon color={controls.color} className={cn(classes.arrowIcon, classes.arrowImg)} />
+                    <ArrowIcon color={controls.color} className={cn(classes.arrowIcon, classes.arrowImg, classes.mirror)} />
                   )}
                 </button>
-              </div>
-            </>
-          )}
-          {area.closeIconUrl && (() => {
-            const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset, isEditor);
-            const scaleTransform = `scale(${area.closeIconScale})`;
-            const combinedTransform = positionStyles.transform
-              ? `${positionStyles.transform} ${scaleTransform}`
-              : scaleTransform;
-            return (
-              <button className={classes.closeButton} style={{ ...positionStyles, transform: combinedTransform }} onClick={handleClose} aria-label='Close lightbox'>
-                <SvgImage url={area.closeIconUrl} fill={area.closeIconColor ?? '#000000'} hoverFill={area.closeIconHover ?? '#cccccc'} />
+            </div>
+            <div
+              className={cn(classes.arrow, classes.nextArrow, {[classes.arrowVertical]: slider.direction === 'vert'})}
+              style={{color: controls.color,['--arrow-hover-color' as string]: controls.hover}}
+            >              
+              <button
+                className={classes.arrowInner}
+                style={{ transform: `translate(${scalingValue(controls.offset.x * (slider.direction === 'horiz' ? -1 : 1), isEditor)}, ${scalingValue(controls.offset.y, isEditor)}) scale(${controls.scale}) rotate(${slider.direction === 'horiz' ? '0deg' : '90deg'})`}}
+                onClick={() => lightboxRef.current?.go('+1')}
+                aria-label='Next'
+              >
+                {controls.arrowsImgUrl && (
+                  <SvgImage
+                    url={controls.arrowsImgUrl}
+                    fill={controls.color}
+                    hoverFill={controls.hover}
+                    className={classes.arrowImg}
+                  />
+                )}
+                {!controls.arrowsImgUrl && (
+                  <ArrowIcon color={controls.color} className={cn(classes.arrowIcon, classes.arrowImg)} />
+                )}
               </button>
-            );
-          })()}
-          {imageCaption.isActive && lightboxStyles.imageCaption && (() => {
-            const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.imageCaption;
-            return (
-              <div 
-                className={classes.caption} 
-                style={{
-                  ...getPositionStyles(imageCaption.alignment, imageCaption.offset, isEditor),
-                  fontFamily: fontSettings.fontFamily,
-                  fontWeight: fontSettings.fontWeight,
-                  fontStyle: fontSettings.fontStyle,
-                  width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
-                  letterSpacing: scalingValue(letterSpacing, isEditor),
-                  wordSpacing: scalingValue(wordSpacing, isEditor),
-                  textAlign,
-                  fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                  lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                  textTransform: textAppearance.textTransform ?? 'none',
-                  textDecoration: textAppearance.textDecoration ?? 'none',
-                  fontVariant: textAppearance.fontVariant ?? 'normal',
-                  color
-                }}
-                onClick={(e) => e.stopPropagation()}
+            </div>
+          </>
+        )}
+        {area.closeIconUrl && (() => {
+          const positionStyles = getPositionStyles(area.closeIconAlign, area.closeIconOffset, isEditor);
+          const scaleTransform = `scale(${area.closeIconScale})`;
+          const combinedTransform = positionStyles.transform
+            ? `${positionStyles.transform} ${scaleTransform}`
+            : scaleTransform;
+          return (
+            <button className={classes.closeButton} style={{ ...positionStyles, transform: combinedTransform }} onClick={handleClose} aria-label='Close lightbox'>
+              <SvgImage url={area.closeIconUrl} fill={area.closeIconColor ?? '#000000'} hoverFill={area.closeIconHover ?? '#cccccc'} />
+            </button>
+          );
+        })()}
+        {imageCaption.isActive && lightboxStyles.imageCaption && (() => {
+          const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.imageCaption;
+          return (
+            <div 
+              className={classes.caption} 
+              style={{
+                ...getPositionStyles(imageCaption.alignment, imageCaption.offset, isEditor),
+                fontFamily: fontSettings.fontFamily,
+                fontWeight: fontSettings.fontWeight,
+                fontStyle: fontSettings.fontStyle,
+                width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
+                letterSpacing: scalingValue(letterSpacing, isEditor),
+                wordSpacing: scalingValue(wordSpacing, isEditor),
+                textAlign,
+                fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                textTransform: textAppearance.textTransform ?? 'none',
+                textDecoration: textAppearance.textDecoration ?? 'none',
+                fontVariant: textAppearance.fontVariant ?? 'normal',
+                color
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                data-styles="caption"
+                className={classes.captionTextInner}
+                style={{['--link-hover-color' as string]: imageCaption.hover}}
               >
-                <div
-                  data-styles="caption"
-                  className={classes.captionTextInner}
-                  style={{['--link-hover-color' as string]: imageCaption.hover}}
-                >
-                  <RichTextRenderer content={content[currentIndex].imageCaption} />
-                </div>
+                <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
-            );
-          })()}
-          {thumbnail.isActive && (() => {
-            const [vertical, horizontal] = thumbnail.position.split('-');
-            const effectivePosition: Alignment =
-              slider.direction === 'horiz'
-                ? (`${vertical}-left` as Alignment)
-                : thumbnail.position;
-            const thumbsPositionStyles = getPositionStyles(effectivePosition, thumbnail.offset, isEditor);
-            const getJustifyContent = () => {
-              if (slider.direction === 'horiz') {
-                if (horizontal === 'left') return 'flex-start';
-                if (horizontal === 'center') return 'center';
-                if (horizontal === 'right') return 'flex-end';
-              } else {
-                if (vertical === 'top') return 'flex-start';
-                if (vertical === 'middle') return 'center';
-                if (vertical === 'bottom') return 'flex-end';
-              }
-              return 'flex-start';
-            };
+            </div>
+          );
+        })()}
+        {thumbnail.isActive && (() => {
+          const [vertical, horizontal] = thumbnail.position.split('-');
+          const effectivePosition: Alignment =
+            slider.direction === 'horiz'
+              ? (`${vertical}-left` as Alignment)
+              : thumbnail.position;
+          const thumbsPositionStyles = getPositionStyles(effectivePosition, thumbnail.offset, isEditor);
+          const getJustifyContent = () => {
+            if (slider.direction === 'horiz') {
+              if (horizontal === 'left') return 'flex-start';
+              if (horizontal === 'center') return 'center';
+              if (horizontal === 'right') return 'flex-end';
+            } else {
+              if (vertical === 'top') return 'flex-start';
+              if (vertical === 'middle') return 'center';
+              if (vertical === 'bottom') return 'flex-end';
+            }
+            return 'flex-start';
+          };
 
-            return (
-              <div
-                className={classes.thumbsWrapper}
-                onClick={(e) => handleThumbWrapperClick(e)}
-                style={{
-                  position: isEditor ? 'absolute' : 'fixed',
-                  ...thumbsPositionStyles,
-                  ...(slider.direction === 'horiz'
-                    ? {
-                        maxWidth: '100vw',
-                        width: '100%',
-                        overflowX: 'auto',
-                        overflowY: 'hidden'
-                      }
-                    : {
-                        maxHeight: '100vh',
-                        overflowY: 'auto',
-                        overflowX: 'hidden'
-                      })
-                }}
-              >
-              <div
-                className={cn(classes.thumbsContainer, {
-                  [classes.thumbsContainerVertical]: slider.direction === 'vert',
-                  [classes.thumbsAlignStart]: thumbnail.align === 'start',
-                  [classes.thumbsAlignCenter]: thumbnail.align === 'center',
-                  [classes.thumbsAlignEnd]: thumbnail.align === 'end',
-                })}
-                style={{ 
-                  gap: scalingValue(thumbnail.grid.gap, isEditor),
-                  justifyContent: getJustifyContent()
-                }}
-              >
-              {content.map((item, index) => {
-                const isActive = index === currentIndex;
-                const thumbDims = thumbnailDimensions[index];
-                const baseSizeValue = thumbnail.grid.size;
-                const activeSizeValue = baseSizeValue * (isActive ? thumbnail.activeState.scale : 1);
-                const getFitDimensions = () => {
-                  if (thumbnail.fit !== 'fit') return {};
-                  if (!thumbDims) {
-                    if (slider.direction === 'horiz') {
-                      return { height: scalingValue(activeSizeValue, isEditor) };
-                    } else {
-                      return { width: scalingValue(activeSizeValue, isEditor) };
+          return (
+            <div
+              className={classes.thumbsWrapper}
+              onClick={(e) => handleThumbWrapperClick(e)}
+              style={{
+                position: isEditor ? 'absolute' : 'fixed',
+                ...thumbsPositionStyles,
+                ...(slider.direction === 'horiz'
+                  ? {
+                      maxWidth: '100vw',
+                      width: '100%',
+                      overflowX: 'auto',
+                      overflowY: 'hidden'
                     }
-                  }
-                  const aspectRatio = thumbDims.width / thumbDims.height;
+                  : {
+                      maxHeight: '100vh',
+                      overflowY: 'auto',
+                      overflowX: 'hidden'
+                    })
+              }}
+            >
+            <div
+              className={cn(classes.thumbsContainer, {
+                [classes.thumbsContainerVertical]: slider.direction === 'vert',
+                [classes.thumbsAlignStart]: thumbnail.align === 'start',
+                [classes.thumbsAlignCenter]: thumbnail.align === 'center',
+                [classes.thumbsAlignEnd]: thumbnail.align === 'end',
+              })}
+              style={{ 
+                gap: scalingValue(thumbnail.grid.gap, isEditor),
+                justifyContent: getJustifyContent()
+              }}
+            >
+            {content.map((item, index) => {
+              const isActive = index === currentIndex;
+              const thumbDims = thumbnailDimensions[index];
+              const baseSizeValue = thumbnail.grid.size;
+              const activeSizeValue = baseSizeValue * (isActive ? thumbnail.activeState.scale : 1);
+              const getFitDimensions = () => {
+                if (thumbnail.fit !== 'fit') return {};
+                if (!thumbDims) {
                   if (slider.direction === 'horiz') {
-                    const heightValue = activeSizeValue;
-                    const widthValue = heightValue * aspectRatio;
-                    return { 
-                      width: scalingValue(widthValue, isEditor), 
-                      height: scalingValue(heightValue, isEditor) 
-                    };
+                    return { height: scalingValue(activeSizeValue, isEditor) };
                   } else {
-                    const widthValue = activeSizeValue;
-                    const heightValue = widthValue / aspectRatio;
-                    return { 
-                      width: scalingValue(widthValue, isEditor), 
-                      height: scalingValue(heightValue, isEditor) 
-                    };
+                    return { width: scalingValue(activeSizeValue, isEditor) };
                   }
-                };
+                }
+                const aspectRatio = thumbDims.width / thumbDims.height;
+                if (slider.direction === 'horiz') {
+                  const heightValue = activeSizeValue;
+                  const widthValue = heightValue * aspectRatio;
+                  return { 
+                    width: scalingValue(widthValue, isEditor), 
+                    height: scalingValue(heightValue, isEditor) 
+                  };
+                } else {
+                  const widthValue = activeSizeValue;
+                  const heightValue = widthValue / aspectRatio;
+                  return { 
+                    width: scalingValue(widthValue, isEditor), 
+                    height: scalingValue(heightValue, isEditor) 
+                  };
+                }
+              };
 
-                return (
-                  <button
-                    key={`${item.image.name}-${index}`}
-                    className={classes.thumbItem}
-                    style={{
-                      ...(slider.direction === 'horiz' && thumbnail.fit !== 'fit' ? { height: scalingValue(activeSizeValue, isEditor) } : {}),
-                      ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
-                      ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
-                      ...getFitDimensions(),
-                      transition: isActive ? 'all 0.25s ease-out' : 'none',
-                      opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
-                      ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentIndex(index);
+              return (
+                <button
+                  key={`${item.image.name}-${index}`}
+                  className={classes.thumbItem}
+                  style={{
+                    ...(slider.direction === 'horiz' && thumbnail.fit !== 'fit' ? { height: scalingValue(activeSizeValue, isEditor) } : {}),
+                    ...(slider.direction === 'vert' && thumbnail.fit !== 'fit' ? { width: scalingValue(activeSizeValue, isEditor) } : {}),
+                    ...(thumbnail.fit === 'cover' ? {width: scalingValue(activeSizeValue, isEditor),height: scalingValue(activeSizeValue, isEditor)} : {}),
+                    ...getFitDimensions(),
+                    transition: isActive ? 'all 0.25s ease-out' : 'none',
+                    opacity: isActive ? thumbnail.activeState.opacity / 100 : thumbnail.opacity / 100,
+                    ['--thumb-hover' as string]: thumbnail.activeState.opacity / 100
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndex(index);
+                    lightboxRef.current?.go(index);
+                  }}
+                  onMouseEnter={() => {
+                    if (thumbnail.triggers === 'hov') {
                       lightboxRef.current?.go(index);
-                    }}
-                    onMouseEnter={() => {
-                      if (thumbnail.triggers === 'hov') {
-                        lightboxRef.current?.go(index);
+                    }
+                  }}
+                >
+                  <img
+                    src={item.image.url}
+                    alt={item.image.name ?? ''}
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      if (img.naturalWidth && img.naturalHeight) {
+                        setThumbnailDimensions(prev => ({...prev,[index]: { width: img.naturalWidth, height: img.naturalHeight }
+                        }));
                       }
                     }}
-                  >
-                    <img
-                      src={item.image.url}
-                      alt={item.image.name ?? ''}
-                      onLoad={(e) => {
-                        const img = e.currentTarget;
-                        if (img.naturalWidth && img.naturalHeight) {
-                          setThumbnailDimensions(prev => ({...prev,[index]: { width: img.naturalWidth, height: img.naturalHeight }
-                          }));
-                        }
-                      }}
-                      style={{
-                        objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
-                        ...(thumbnail.fit === 'fit' ? { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } : {}),
-                        ...(thumbnail.fit === 'cover' ? { width: '100%', height: '100%' } : {}),
-                      }}
-                    />
-                  </button>
-                );
-              })}
-                </div>
+                    style={{
+                      objectFit: thumbnail.fit === 'cover' ? 'cover' : 'contain',
+                      ...(thumbnail.fit === 'fit' ? { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' } : {}),
+                      ...(thumbnail.fit === 'cover' ? { width: '100%', height: '100%' } : {}),
+                    }}
+                  />
+                </button>
+              );
+            })}
               </div>
-            );
-          })()}
-        </div>
+            </div>
+          );
+        })()}
+      </div>
     </>,
     document.getElementById(portalId)!
   );
