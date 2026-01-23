@@ -393,13 +393,9 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     };
     
     const handlePointerUp = (e: PointerEvent) => {
-      if (!dragStartRef.current) {
-        document.removeEventListener('pointerup', handlePointerUp);
-        document.removeEventListener('pointercancel', handlePointerUp);
-        document.removeEventListener('pointermove', handlePointerMove);
-        return;
+      if (dragStartRef.current) {
+        handleUp(e.clientX, e.clientY);
       }
-      handleUp(e.clientX, e.clientY);
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('pointercancel', handlePointerUp);
       document.removeEventListener('pointermove', handlePointerMove);
@@ -407,9 +403,6 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     
     const handleTouchEnd = (e: TouchEvent) => {
       if (!dragStartRef.current) {
-        document.removeEventListener('touchend', handleTouchEnd);
-        document.removeEventListener('touchcancel', handleTouchEnd);
-        document.removeEventListener('touchmove', handleTouchMove);
         return;
       }
       if (e.changedTouches.length > 0) {
