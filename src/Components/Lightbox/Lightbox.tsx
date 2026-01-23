@@ -606,7 +606,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             </button>
           );
         })()}
-        {imageCaption.isActive && lightboxStyles.imageCaption && (() => {
+        {imageCaption && imageCaption.isActive && lightboxStyles.imageCaption && content[currentIndex]?.imageCaption && (() => {
           const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.imageCaption;
           return (
             <div 
