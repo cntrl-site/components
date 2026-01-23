@@ -6,13 +6,14 @@ import cn from 'classnames';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { CommonComponentProps } from '../props';
 
-interface SliderProps {
+type SliderProps = {
   settings: SliderSettings;
   content: SliderItem[];
   styles: SliderStyles;
   isEditor?: boolean;
-}
+} & CommonComponentProps;
 
 const alignmentClassName: Record<Alignment, string> = {
   'top-left': styles.topLeftAlignment,

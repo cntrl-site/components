@@ -10,6 +10,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { getDisplayedImageRect, getPaddedContainerBounds } from '../utils/getImageRect';
 import { getColorAlpha } from '../utils/getColorAlpha';
 import { getAnimationClasses } from './getAnimationClasses';
+import { CommonComponentProps } from '../props';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -19,7 +20,7 @@ type LightboxProps = {
   lightboxStyles: LightboxStyles;
   portalId: string;
   isEditor?: boolean;
-};
+} & CommonComponentProps;
 
 type LightboxGalleryProps = {
   settings: LightboxSettings;
@@ -64,7 +65,7 @@ export const LightboxGallery = ({ settings, content, styles, portalId, activeEve
   );
 };
 
-const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles, settings, portalId, isEditor }) => {
+const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles, settings, portalId, isEditor, metadata }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [splideKey, setSplideKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
@@ -81,6 +82,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const hasDraggedRef = useRef<boolean>(false);
   const { appear, triggers, slider, thumbnail, controls, area, imageCaption, layout } = settings.lightboxBlock;
   const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
+  const itemId = metadata?.itemId ?? null;
 
   useEffect(() => {
     const handleLayoutChange = () => {
@@ -223,7 +225,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       setIsClosing(false);
       setAnimationFinished(false);
       setThumbnailDimensions({});
-      const event = new CustomEvent('page-overlay');
+      if (!itemId) return;
+      const event = new CustomEvent('page-overlay', { detail: { itemId } });
       window.dispatchEvent(event);
     }
     return () => {
@@ -233,7 +236,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
       }
       setAnimationFinished(false);
     };
-  }, [isOpen]);
+  }, [isOpen, itemId]);
 
   useEffect(() => {
     if (prevSliderTypeRef.current !== null && prevSliderTypeRef.current !== slider.type) {
