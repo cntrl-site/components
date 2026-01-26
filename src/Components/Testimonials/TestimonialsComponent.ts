@@ -410,11 +410,11 @@ export const TestimonialsComponent: Component = {
           },
           card: {
             dimensions: {
-              width: 0.1,
+              width: 0.15,
               height: 0.2
             },
             gap: 0.02,
-            corner: 0.01,
+            corner: 0.005,
             borders: {
               width: 0.001,
               color: '#000000',
@@ -437,7 +437,7 @@ export const TestimonialsComponent: Component = {
             text: {
               alignment: 'middle-left',
               offset: {
-                x: 0,
+                x: 0.005,
                 y: 0
               }
             },
@@ -452,8 +452,8 @@ export const TestimonialsComponent: Component = {
             creds: {
               alignment: 'bottom-left',
               offset: {
-                x: 0,
-                y: 0
+                x: 0.005,
+                y: -0.005
               }
             }
           }
@@ -875,19 +875,19 @@ export const TestimonialsComponent: Component = {
             },
             icon: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KEXYWFPR7GB70E4YBF28T8R6.png',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
               name: ''
             },
             imageCaption: [
               {
                 type: 'paragraph',
-                children: [{ text: '' }]
+                children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }]
               }
             ],
             creds: [
               {
                 type: 'paragraph',
-                children: [{ text: '' }]
+                children: [{ text: 'CEO @ Company' }]
               }
             ]
           },
@@ -899,19 +899,19 @@ export const TestimonialsComponent: Component = {
             },
             icon: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KEXYWFPR7GB70E4YBF28T8R6.png',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
               name: ''
             },
             imageCaption: [
               {
                 type: 'paragraph',
-                children: [{ text: '' }]
+                children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }]
               }
             ],
             creds: [
               {
                 type: 'paragraph',
-                children: [{ text: '' }]
+                children: [{ text: 'CEO @ Company' }]
               }
             ]
           },
@@ -923,19 +923,19 @@ export const TestimonialsComponent: Component = {
             },
             icon: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KEXYWFPR7GB70E4YBF28T8R6.png',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
               name: ''
             },
             imageCaption: [
               {
                 type: 'paragraph',
-                children: [{ text: '' }]
+                children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }]
               }
             ],
             creds: [
               {
                 type: 'paragraph',
-                children: [{ text: '' }]
+                children: [{ text: 'CEO @ Company' }]
               }
             ]
           }

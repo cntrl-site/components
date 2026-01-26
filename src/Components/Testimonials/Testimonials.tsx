@@ -92,7 +92,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
               <SplideSlide key={index}>
                 <div
                   style={{
-                    width: scalingValue(width, isEditor ?? false),
+                    width: scalingValue(width + card.borders.width * 2, isEditor ?? false),
                     height: scalingValue(height, isEditor ?? false),
                     borderRadius: scalingValue(settings.card.corner, isEditor ?? false),
                     border: `${scalingValue(settings.card.borders.width, isEditor ?? false)} solid ${settings.card.borders.color}`,
