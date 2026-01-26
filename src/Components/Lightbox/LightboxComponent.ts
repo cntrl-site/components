@@ -498,10 +498,26 @@ export const LightboxComponent: Component = {
                         },
                       },
                     }
+                  },
+                  closeIconColor: {
+                    title: 'Color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  closeIconHover: {
+                    title: 'Hover',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    },
                   }
                 }
               },
-              caption: {
+              imageCaption: {
                 title: 'DESC',
                 icon: 'text-icon',
                 tooltip: 'Description',
@@ -606,7 +622,7 @@ export const LightboxComponent: Component = {
                 padding: { top: 0.06, right: 0, bottom: 0.06, left: 0 }
               },
               controls: {
-                isActive: true,
+                isActive: false,
                 arrowsImgUrl: null,
                 offset: { x: 0, y: 0 },
                 scale: 1,
@@ -617,11 +633,13 @@ export const LightboxComponent: Component = {
                 color: 'rgba(28,31,34,0.9)',
                 blur: 0,
                 closeIconUrl: null,
+                closeIconColor: '#000000',
+                closeIconHover: '#cccccc',
                 closeIconAlign: 'top-right',
                 closeIconOffset: { x: 0, y: 0 },
                 closeIconScale: 1
               },
-              caption: {
+              imageCaption: {
                 isActive: true,
                 alignment: 'middle-center',
                 offset: { x: 0, y: 0 },
@@ -674,7 +692,7 @@ export const LightboxComponent: Component = {
               padding: { top: 0.06, right: 0.05, bottom: 0.06, left: 0.05 }
             },
             controls: {
-              isActive: true,
+              isActive: false,
               arrowsImgUrl: null,
               offset: { x: 0, y: 0 },
               scale: 1,
@@ -685,11 +703,13 @@ export const LightboxComponent: Component = {
               color: 'rgba(28,31,34,0.9)',
               blur: 0,
               closeIconUrl: null,
+              closeIconColor: '#000000',
+              closeIconHover: '#cccccc',
               closeIconAlign: 'top-right',
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
             },
-            caption: {
+            imageCaption: {
               isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },
@@ -742,7 +762,7 @@ export const LightboxComponent: Component = {
               padding: { top: 0.06, right: 0.1, bottom: 0.06, left: 0.1 }
             },
             controls: {
-              isActive: true,
+              isActive: false,
               arrowsImgUrl: null,
               offset: { x: 0, y: 0 },
               scale: 1,
@@ -753,11 +773,13 @@ export const LightboxComponent: Component = {
               color: 'rgba(28,31,34,0.9)',
               blur: 0,
               closeIconUrl: null,
+              closeIconColor: '#000000',
+              closeIconHover: '#cccccc',
               closeIconAlign: 'top-right',
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
             },
-            caption: {
+            imageCaption: {
               isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },
@@ -909,7 +931,7 @@ export const LightboxComponent: Component = {
         layoutBased: true,
         type: 'object',
         properties: {
-          caption: {
+          imageCaption: {
             dataName: 'caption',
             type: 'object',
             properties: {
@@ -1007,7 +1029,7 @@ export const LightboxComponent: Component = {
           }
         },
         default: {
-          caption: {
+          imageCaption: {
             widthSettings: {
               width: 0.13,
               sizing: 'auto',
