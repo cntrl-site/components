@@ -623,7 +623,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               onClick={(e) => e.stopPropagation()}
             >
               <div
-                data-styles="caption"
+                data-styles="imageCaption"
                 className={classes.captionTextInner}
                 style={{['--link-hover-color' as string]: caption.hover}}
               >
