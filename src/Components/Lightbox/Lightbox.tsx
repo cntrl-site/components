@@ -80,6 +80,8 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
   const appearAnimationEndHandlerRef = useRef<((e: AnimationEvent) => void) | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const hasDraggedRef = useRef<boolean>(false);
+  const thumbsWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [hasThumbsOverflow, setHasThumbsOverflow] = useState(false);
   const { appear, triggers, slider, thumbnail, controls, area, caption, layout } = settings.lightboxBlock;
   const { appearClass, backdropAppearClass, backdropDisappearClass, disappearClass } = getAnimationClasses(appear.type, appear.direction);
   const itemId = metadata?.itemId ?? null;
@@ -101,6 +103,26 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen || !thumbnail.isActive) {
+      setHasThumbsOverflow(false);
+      return;
+    }
+    const ref = thumbsWrapperRef.current;
+    if (!ref) return;
+    const checkOverflow = () => {
+      if (slider.direction === 'horiz') {
+        setHasThumbsOverflow(ref.scrollWidth > ref.clientWidth);
+      } else {
+        setHasThumbsOverflow(ref.scrollHeight > ref.clientHeight);
+      }
+    };
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(ref);
+    return () => observer.disconnect();
+  }, [isOpen, thumbnail.isActive, content.length, thumbnailDimensions, slider.direction]);
+
   const handleClose = useCallback(() => {
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const colorAlpha = getColorAlpha(area.color);
@@ -115,7 +137,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
           animationTargetRef.current.removeEventListener('animationend', animationEndHandlerRef.current);
         }
         animationEndHandlerRef.current = null;
-        onClose();
+        if (isClosingRef.current) {
+          isClosingRef.current = false;
+          onClose();
+        }
         setIsClosing(false);
       }
     };
@@ -654,6 +679,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
 
           return (
             <div
+              ref={thumbsWrapperRef}
               className={classes.thumbsWrapper}
               onClick={(e) => handleThumbWrapperClick(e)}
               style={{
@@ -682,7 +708,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               })}
               style={{ 
                 gap: scalingValue(thumbnail.grid.gap, isEditor),
-                justifyContent: getJustifyContent()
+                justifyContent: hasThumbsOverflow ? 'flex-start' : getJustifyContent()
               }}
             >
             {content.map((item, index) => {
