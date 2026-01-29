@@ -11,6 +11,7 @@ interface SliderProps {
   settings: SliderSettings;
   content: SliderItem[];
   styles: SliderStyles;
+  layouts: any[]; // Layouts
   isEditor?: boolean;
 }
 
@@ -26,7 +27,7 @@ const alignmentClassName: Record<Alignment, string> = {
   'bottom-right': styles.bottomRightAlignment,
 };
 
-export function ControlSlider({ settings, content, styles: sliderStyles, isEditor }: SliderProps) {
+export function ControlSlider({ settings, content, styles: sliderStyles, layouts, isEditor }: SliderProps) {
   const [sliderRef, setSliderRef] = useState<Splide | null>(null);
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
@@ -112,7 +113,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
                     left: scalingValue(imageCaption.offset.x, isEditor)
                   } as React.CSSProperties}
                 >
-                  <RichTextRenderer content={item.imageCaption} />
+                  <RichTextRenderer content={item.imageCaption} layouts={layouts} />
                 </div>
               </div>
             ))}
@@ -304,7 +305,11 @@ type SliderItem = {
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
-  imageCaption: any[];
+  imageCaption: {
+    text: string;
+    blocks: any[];
+    layoutStyles: Record<string, any>;
+  };
 };
 
 type Offset = {

@@ -427,12 +427,16 @@ export const ControlSliderComponent = {
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMHNP08T27H1649S67NZV.png',
               name: 'Slider-1.png'
             },
-            imageCaption: [
-              {
-                type: 'paragraph',
-                children: [{ text: '' }]
-              }
-            ]
+            imageCaption: {
+              text: '',
+              blocks: [{
+                start: 0,
+                end: 0,
+                type: "unstyled",
+                entities: [],
+              }],
+              layoutStyles: [],
+            }
           },
           {
             image: {
@@ -440,12 +444,16 @@ export const ControlSliderComponent = {
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMTZA3RYMXKF0M095D6JD.png',
               name: 'Slider-2.png'
             },
-            imageCaption: [
-              {
-                type: 'paragraph',
-                children: [{ text: '' }]
-              }
-            ]
+            imageCaption: {
+              text: '',
+              blocks: [{
+                start: 0,
+                end: 0,
+                type: "unstyled",
+                entities: [],
+              }],
+              layoutStyles: [],
+            }
           },
           {
             image: {
@@ -453,12 +461,16 @@ export const ControlSliderComponent = {
               url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERMVSCMPVJBG2WF5KJZYHZ.png',
               name: 'Slider-3.png'
             },
-            imageCaption: [
-              {
-                type: 'paragraph',
-                children: [{ text: '' }]
-              }
-            ]
+            imageCaption: {
+              text: '',
+              blocks: [{
+                start: 0,
+                end: 0,
+                type: "unstyled",
+                entities: [],
+              }],
+              layoutStyles: [],
+            }
           }
         ]
       },

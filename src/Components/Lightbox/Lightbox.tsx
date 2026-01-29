@@ -479,7 +479,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 className={classes.captionTextInner}
                 style={{['--link-hover-color' as string]: imageCaption.hover}}
               >
-                <RichTextRenderer content={content[currentIndex].imageCaption} />
+                {/* <RichTextRenderer content={content[currentIndex].imageCaption} /> */}
               </div>
             </div>
           )}
