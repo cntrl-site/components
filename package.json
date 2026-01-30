@@ -1,6 +1,6 @@
 {
   "name": "@cntrl-site/components",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "description": "Custom components for control editor and public websites.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -44,12 +44,16 @@
     "lib": "dist"
   },
   "dependencies": {
-    "@antfu/eslint-config": "^3.16.0",
-    "@splidejs/react-splide": "^0.7.12",
-    "classnames": "^2.5.1",
-    "ts-node": "^10.9.1"
+    "classnames": "^2.5.1"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^3.16.0",
+    "@splidejs/react-splide": "^0.7.12",
+    "ts-node": "^10.9.1",
     "@tsconfig/node16": "^1.0.3",
     "@tsconfig/recommended": "^1.0.1",
     "@types/node": "^18.11.7",
