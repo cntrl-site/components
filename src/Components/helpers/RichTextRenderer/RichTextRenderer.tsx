@@ -8,9 +8,11 @@ interface Props {
     blocks: any[];
     layoutStyles: Record<string, any>;
   };
+  layoutId: string;
   layouts: any[];
+  isEditor?: boolean;
 }
-export const RichTextRenderer: FC<Props> = ({ content, layouts }) => {
+export const RichTextRenderer: FC<Props> = ({ content, isEditor, layouts, layoutId }) => {
   const id = useRef(useId().replace(/[^a-zA-Z0-9_-]/g, '')).current;
   // `useId` can contain characters like ":" which break CSS selectors.
   // Sanitize so generated class names are safely selectable in CSS.
@@ -21,6 +23,8 @@ export const RichTextRenderer: FC<Props> = ({ content, layouts }) => {
     content.layoutStyles,
     layouts,
     id,
+    layoutId,
+    isEditor ?? false,
   );
   return (
     <>
@@ -166,6 +170,8 @@ export class RichTextConverter {
     rangeStyles: Record<string, RichTextStyle[]>,
     layouts: Layout[],
     contentId: string,
+    layoutId: string,
+    isEditor: boolean
   ): [ReactNode[], string] {
     const root: ReactElement[] = [];
     const styleRules = layouts.reduce<Record<string, string[]>>((rec, layout) => {
@@ -296,7 +302,10 @@ export class RichTextConverter {
         root.push(<div key={blockClass} className={blockClass}>{kids}</div>);
       }
     }
-    const styles = layouts.map(l => `
+
+    // const styles = styleRules['m'].join('\n')
+
+    const styles = isEditor ? styleRules[layoutId].join('\n') : layouts.map(l => ` // передавати тільки styleRules для обраного layout, забрати getLayoutMediaQuery (це все тільки для editor)
       ${getLayoutMediaQuery(l.id, layouts)} {
         ${styleRules[l.id].join('\n')}
       }

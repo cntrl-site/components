@@ -6,13 +6,12 @@ import cn from 'classnames';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { ComponentProps } from '../../types/ComponentProps';
 
-interface SliderProps {
+interface SliderProps extends ComponentProps {
   settings: SliderSettings;
   content: SliderItem[];
   styles: SliderStyles;
-  layouts: any[]; // Layouts
-  isEditor?: boolean;
 }
 
 const alignmentClassName: Record<Alignment, string> = {
@@ -27,7 +26,8 @@ const alignmentClassName: Record<Alignment, string> = {
   'bottom-right': styles.bottomRightAlignment,
 };
 
-export function ControlSlider({ settings, content, styles: sliderStyles, layouts, isEditor }: SliderProps) {
+export function ControlSlider({ settings, content, styles: sliderStyles, ...props }: SliderProps) {
+  const isEditor = props.isEditor;
   const [sliderRef, setSliderRef] = useState<Splide | null>(null);
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
@@ -113,7 +113,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, layouts
                     left: scalingValue(imageCaption.offset.x, isEditor)
                   } as React.CSSProperties}
                 >
-                  <RichTextRenderer content={item.imageCaption} layouts={layouts} />
+                  <RichTextRenderer content={item.imageCaption} {...props} />
                 </div>
               </div>
             ))}
