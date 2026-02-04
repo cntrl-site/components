@@ -295,6 +295,14 @@ export const ControlSliderComponent = {
                   },
                 }
               },
+              linkColor: {
+                title: 'Link Color',
+                type: 'string',
+                display: {
+                  type: 'settings-color-picker',
+                  format: 'single'
+                }
+              },
               hover: {
                 title: 'Link Hover',
                 type: 'string',
@@ -350,7 +358,8 @@ export const ControlSliderComponent = {
             },
             isActive: true,
             alignment: 'middle-center',
-            hover: '#cccccc'
+            linkColor: '#cccccc',
+            hover: '#cccccc',
           }
         },
         displayRules: [
