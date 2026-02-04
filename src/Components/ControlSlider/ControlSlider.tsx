@@ -107,7 +107,8 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
                   data-styles="imageCaption"
                   className={styles.captionTextInner}
                   style={{
-                    '--link-hover-color': imageCaption.hover,
+                    '--link-hover-color': imageCaption.linkHoverColor,
+                    '--link-color': imageCaption.linkColor,
                     position: 'relative',
                     top: scalingValue(imageCaption.offset.y, isEditor),
                     left: scalingValue(imageCaption.offset.x, isEditor)
@@ -339,7 +340,8 @@ type SliderCaption = {
   isActive: boolean;
   color: string;
   offset: Offset;
-  hover: string;
+  linkColor: string;
+  linkHoverColor: string;
 };
 
 type Triggers = {

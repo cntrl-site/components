@@ -563,7 +563,15 @@ export const LightboxComponent: Component = {
                       },
                     }
                   },
-                  hover: {
+                  linkColor: {
+                    title: 'Link Color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  linkHoverColor: {
                     title: 'Link Hover',
                     type: 'string',
                     display: {
@@ -643,7 +651,8 @@ export const LightboxComponent: Component = {
                 isActive: true,
                 alignment: 'middle-center',
                 offset: { x: 0, y: 0 },
-                hover: '#cccccc'
+                linkColor: '#cccccc',
+                linkHoverColor: '#cccccc'
               }
             }
           }, 

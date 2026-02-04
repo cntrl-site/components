@@ -303,7 +303,7 @@ export const ControlSliderComponent = {
                   format: 'single'
                 }
               },
-              hover: {
+              linkHoverColor: {
                 title: 'Link Hover',
                 type: 'string',
                 display: {
@@ -359,7 +359,7 @@ export const ControlSliderComponent = {
             isActive: true,
             alignment: 'middle-center',
             linkColor: '#cccccc',
-            hover: '#cccccc',
+            linkHoverColor: '#cccccc',
           }
         },
         displayRules: [
