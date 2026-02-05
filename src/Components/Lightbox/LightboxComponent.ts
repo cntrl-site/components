@@ -564,7 +564,7 @@ export const LightboxComponent: Component = {
                     }
                   },
                   linkColor: {
-                    title: 'Link Color',
+                    title: 'Link',
                     type: 'string',
                     display: {
                       type: 'settings-color-picker',
@@ -572,7 +572,7 @@ export const LightboxComponent: Component = {
                     }
                   },
                   linkHoverColor: {
-                    title: 'Link Hover',
+                    title: 'Link Hov',
                     type: 'string',
                     display: {
                       type: 'settings-color-picker',

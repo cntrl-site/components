@@ -296,7 +296,7 @@ export const ControlSliderComponent = {
                 }
               },
               linkColor: {
-                title: 'Link Color',
+                title: 'Link',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
@@ -304,7 +304,7 @@ export const ControlSliderComponent = {
                 }
               },
               linkHoverColor: {
-                title: 'Link Hover',
+                title: 'Link Hov',
                 type: 'string',
                 display: {
                   type: 'settings-color-picker',
