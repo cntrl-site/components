@@ -650,7 +650,10 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               <div
                 data-styles="imageCaption"
                 className={classes.captionTextInner}
-                style={{['--link-hover-color' as string]: caption.hover}}
+                style={{
+                  ['--link-color' as string]: caption.linkColor,
+                  ['--link-hover-color' as string]: caption.linkHoverColor
+                }}
               >
                 <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
@@ -828,7 +831,8 @@ type Caption = {
   isActive: boolean;
   alignment: Alignment;
   offset: Offset;
-  hover: string;
+  linkColor: string;
+  linkHoverColor: string;
 };
 
 type Padding = {
