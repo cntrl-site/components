@@ -148,28 +148,121 @@ export const GridComponent = {
             properties: {
               entriesPerRow: {
                 type: 'number',
+                min: 1,
+                max: 40,
                 label: '#PR',
                 display: {
                   type: 'numeric-input',
                 },
               },
-              entryWidth: {
+              rowGap: {
                 type: 'number',
-                label: 'W',
+                scalingEnabled: true,
+                label: 'RG',
                 display: {
                   type: 'numeric-input',
                 },
               },
-              gutterWidth: {
+              columnGap: {
                 type: 'number',
-                label: 'G',
+                scalingEnabled: true,
+                label: 'CG',
                 display: {
                   type: 'numeric-input',
                 },
               }
             }
+          },
+          media: {
+            title: 'media',
+            icon: 'cover',
+            tooltip: 'Media',
+            type: 'object',
+            properties: {
+              widthType: {
+                type: 'string',
+                enum: ['auto', 'fixed'],
+              },
+              maxWidth: {
+                type: 'number',
+                min: 0,
+                label: 'W',
+                scalingEnabled: true,
+                display: {
+                  type: 'numeric-input',
+                },
+              },
+            }
+          },
+          title: {
+            title: 'title',
+            icon: 'text-icon',
+            tooltip: 'Title',
+            type: 'object',
+            properties: {
+              marginTop: {
+                type: 'number',
+                scalingEnabled: true,
+                label: 'MT',
+                display: {
+                  type: 'numeric-input',
+                },
+              },
+            }
+          },
+          subtitle: {
+            title: 'subtitle',
+            icon: 'text-icon',
+            tooltip: 'Subtitle',
+            type: 'object',
+            properties: {
+              marginTop: {
+                type: 'number',
+                scalingEnabled: true,
+                label: 'MT',
+                display: {
+                  type: 'numeric-input',
+                },
+              },
+            }
+          },
+          description: {
+            title: 'description',
+            icon: 'text-icon',
+            tooltip: 'Description',
+            type: 'object',
+            properties: {
+              marginTop: {
+                type: 'number',
+                scalingEnabled: true,
+                label: 'MT',
+                display: {
+                  type: 'numeric-input',
+                },
+              },
+            }
           }
         },
+        default: {
+          grid: {
+            entriesPerRow: 3,
+            rowGap: 0.05,
+            columnGap: 0.005,
+          },
+          media: {
+            widthType: 'auto',
+            maxWidth: 300,
+          },
+          title: {
+            marginTop: 0,
+          },
+          subtitle: {
+            marginTop: 0,
+          },
+          description: {
+            marginTop: 0,
+          }
+        }
       },
       content: {
         layoutBased: false,

@@ -14,14 +14,11 @@ type GridProps = {
 export const Grid = ({ settings, content, styles, isEditor }: GridProps) => {
   const gridConfig = settings.grid ?? {};
   const entriesPerRow = Math.max(1, Math.floor(gridConfig.entriesPerRow ?? 3));
-  const entryWidth = gridConfig.entryWidth;
-  const gutterWidth = Math.max(0, gridConfig.gutterWidth ?? 16);
   const gridStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: entryWidth != null
-      ? `repeat(${entriesPerRow}, ${entryWidth}px)`
-      : `repeat(${entriesPerRow}, 1fr)`,
-    gap: `${gutterWidth}px`,
+    gridTemplateColumns: `repeat(${entriesPerRow}, 1fr)`,
+    rowGap: scalingValue(gridConfig.rowGap, isEditor),
+    columnGap: scalingValue(gridConfig.columnGap, isEditor),
   };
 
   return (
@@ -29,28 +26,47 @@ export const Grid = ({ settings, content, styles, isEditor }: GridProps) => {
       {content.map((item, index) => {
         if (!item) return null;
         return (
-          <LinkWrapper key={index} className={classes.gridItem} link={item.link}>
+          <LinkWrapper
+            key={index}
+            className={classes.gridItem}
+            link={isEditor ? item.link : undefined}
+          >
             {item.image?.url && (
               <img
                 src={item.image.url}
                 alt={item.image.name ?? ''}
                 className={classes.gridItemImage}
-                style={{ objectFit: item.image.objectFit ?? 'cover' }}
+                style={{
+                  objectFit: item.image.objectFit ?? 'cover',
+                  maxWidth: settings.media?.widthType === 'fixed' ? scalingValue(settings.media?.maxWidth ?? 0, isEditor) : '100%',
+              }}
               />
             )}
             <div className={classes.gridItemContent}>
               {item.title && (
-                <div className={classes.gridItemTitle} style={getTextStyle(styles.title, isEditor)} data-styles="title">
+                <div
+                  className={classes.gridItemTitle}
+                  style={getTextStyle(styles.title, settings.title?.marginTop ?? 0, isEditor)}
+                  data-styles="title"
+                >
                   <RichTextRenderer content={item.title} />
                 </div>
               )}
               {item.subtitle && (
-                <div className={classes.gridItemSubtitle} style={getTextStyle(styles.subtitle, isEditor)} data-styles="subtitle">
+                <div
+                  className={classes.gridItemSubtitle}
+                  style={getTextStyle(styles.subtitle, settings.subtitle?.marginTop ?? 0, isEditor)}
+                  data-styles="subtitle"
+                >
                   <RichTextRenderer content={item.subtitle} />
                 </div>
               )}
               {item.description && (
-                <div className={classes.gridItemDescription} style={getTextStyle(styles.description, isEditor)} data-styles="description">
+                <div
+                  className={classes.gridItemDescription}
+                  style={getTextStyle(styles.description, settings.description?.marginTop ?? 0, isEditor)}
+                  data-styles="description"
+                >
                   <RichTextRenderer content={item.description} />
                 </div>
               )}
@@ -62,7 +78,7 @@ export const Grid = ({ settings, content, styles, isEditor }: GridProps) => {
   );
 };
 
-function getTextStyle(s: TextElementStyles, isEditor?: boolean): React.CSSProperties {
+function getTextStyle(s: TextElementStyles, marginTop: number, isEditor?: boolean): React.CSSProperties {
   const { fontSettings, widthSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = s;
   return {
     fontFamily: fontSettings.fontFamily,
@@ -79,6 +95,7 @@ function getTextStyle(s: TextElementStyles, isEditor?: boolean): React.CSSProper
     textDecoration: textAppearance.textDecoration ?? 'none',
     fontVariant: textAppearance.fontVariant ?? 'normal',
     color,
+    marginTop: scalingValue(marginTop, isEditor),
   };
 }
 
@@ -99,12 +116,24 @@ function LinkWrapper({ children, link, className }: { children: React.ReactNode;
 }
 
 type GridSettings = {
-  grid?: {
-    entriesPerRow?: number;
-    entryWidth?: number;
-    gutterWidth?: number;
+  grid: {
+    entriesPerRow: number;
+    rowGap: number;
+    columnGap: number;
   };
-  title?: Record<string, unknown>;
+  media?: {
+    widthType: 'auto' | 'fixed';
+    maxWidth: number;
+  };
+  title?: {
+    marginTop: number;
+  };
+  subtitle?: {
+    marginTop: number;
+  };
+  description?: {
+    marginTop: number;
+  };
 };
 
 type GridItem = {
