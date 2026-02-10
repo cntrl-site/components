@@ -251,7 +251,7 @@ export const GridComponent = {
           },
           media: {
             widthType: 'auto',
-            maxWidth: 300,
+            maxWidth: 0.5,
           },
           title: {
             marginTop: 0,
