@@ -12,6 +12,12 @@
   min-width: 0;
 }
 
+.gridItemImageWrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
 .gridItemImage {
   width: 100%;
   display: block;

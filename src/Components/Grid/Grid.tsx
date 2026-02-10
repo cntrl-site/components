@@ -32,15 +32,25 @@ export const Grid = ({ settings, content, styles, isEditor }: GridProps) => {
             link={!isEditor ? item.link : undefined}
           >
             {item.image?.url && (
-              <img
-                src={item.image.url}
-                alt={item.image.name ?? ''}
-                className={classes.gridItemImage}
+              <div
+                className={classes.gridItemImageWrapper}
                 style={{
-                  objectFit: item.image.objectFit ?? 'cover',
-                  maxWidth: settings.media?.widthType === 'fixed' ? scalingValue(settings.media?.maxWidth ?? 0, isEditor) : '100%',
-              }}
-              />
+                  aspectRatio: settings.media?.aspectRatioMode === 'fixed'
+                    ? `${settings.media?.aspectWidth} / ${settings.media?.aspectHeight}`
+                    : 'auto',
+                }}
+              >
+                <img
+                  src={item.image.url}
+                  alt={item.image.name ?? ''}
+                  className={classes.gridItemImage}
+                  style={{
+                    objectFit: item.image.objectFit,
+                    maxWidth: settings.media?.widthType === 'fixed' ? scalingValue(settings.media?.maxWidth ?? 0, isEditor) : '100%',
+                    ...(settings.media?.aspectRatioMode === 'fixed' && { height: '100%' }),
+                  }}
+                />
+              </div>
             )}
             <div className={classes.gridItemContent}>
               {item.title && (
@@ -124,6 +134,9 @@ type GridSettings = {
   media?: {
     widthType: 'auto' | 'fixed';
     maxWidth: number;
+    aspectRatioMode: 'fixed' | 'original';
+    aspectWidth: number;
+    aspectHeight: number;
   };
   title?: {
     marginTop: number;

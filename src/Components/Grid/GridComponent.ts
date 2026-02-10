@@ -192,6 +192,26 @@ export const GridComponent = {
                   type: 'numeric-input',
                 },
               },
+              aspectRatioMode: {
+                type: 'string',
+                enum: ['fixed', 'original'],
+              },
+              aspectWidth: {
+                type: 'number',
+                min: 1,
+                label: 'AW',
+                display: {
+                  type: 'numeric-input',
+                },
+              },
+              aspectHeight: {
+                type: 'number',
+                min: 1,
+                label: 'AH',
+                display: {
+                  type: 'numeric-input',
+                },
+              },
             }
           },
           title: {
@@ -252,6 +272,9 @@ export const GridComponent = {
           media: {
             widthType: 'auto',
             maxWidth: 0.5,
+            aspectRatioMode: 'original',
+            aspectWidth: 16,
+            aspectHeight: 9,
           },
           title: {
             marginTop: 0,
