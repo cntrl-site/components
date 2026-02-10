@@ -29,7 +29,7 @@ export const Grid = ({ settings, content, styles, isEditor }: GridProps) => {
           <LinkWrapper
             key={index}
             className={classes.gridItem}
-            link={isEditor ? item.link : undefined}
+            link={!isEditor ? item.link : undefined}
           >
             {item.image?.url && (
               <img
