@@ -517,7 +517,7 @@ export const LightboxComponent: Component = {
                   }
                 }
               },
-              imageCaption: {
+              caption: {
                 title: 'DESC',
                 icon: 'text-icon',
                 tooltip: 'Description',
@@ -563,8 +563,16 @@ export const LightboxComponent: Component = {
                       },
                     }
                   },
-                  hover: {
-                    title: 'Link Hover',
+                  linkColor: {
+                    title: 'Link',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  linkHoverColor: {
+                    title: 'Link Hov',
                     type: 'string',
                     display: {
                       type: 'settings-color-picker',
@@ -639,11 +647,12 @@ export const LightboxComponent: Component = {
                 closeIconOffset: { x: 0, y: 0 },
                 closeIconScale: 1
               },
-              imageCaption: {
+              caption: {
                 isActive: true,
                 alignment: 'middle-center',
                 offset: { x: 0, y: 0 },
-                hover: '#cccccc'
+                linkColor: '#cccccc',
+                linkHoverColor: '#cccccc'
               }
             }
           }, 
@@ -709,7 +718,7 @@ export const LightboxComponent: Component = {
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
             },
-            imageCaption: {
+            caption: {
               isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },
@@ -779,7 +788,7 @@ export const LightboxComponent: Component = {
               closeIconOffset: { x: 0, y: 0 },
               closeIconScale: 1
             },
-            imageCaption: {
+            caption: {
               isActive: true,
               alignment: 'middle-center',
               offset: { x: 0, y: 0 },

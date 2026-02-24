@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './ControlSlider.module.scss';
-import { Splide, SplideSlide, SplideProps } from '@splidejs/react-splide';
+import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import cn from 'classnames';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
@@ -28,7 +28,7 @@ const alignmentClassName: Record<Alignment, string> = {
 };
 
 export function ControlSlider({ settings, content, styles: sliderStyles, isEditor }: SliderProps) {
-  const [sliderRef, setSliderRef] = useState<Splide | null>(null);
+  const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
   const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
@@ -107,7 +107,8 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
                   data-styles="imageCaption"
                   className={styles.captionTextInner}
                   style={{
-                    '--link-hover-color': imageCaption.hover,
+                    '--link-hover-color': imageCaption.linkHoverColor,
+                    '--link-color': imageCaption.linkColor,
                     position: 'relative',
                     top: scalingValue(imageCaption.offset.y, isEditor),
                     left: scalingValue(imageCaption.offset.x, isEditor)
@@ -339,7 +340,8 @@ type SliderCaption = {
   isActive: boolean;
   color: string;
   offset: Offset;
-  hover: string;
+  linkColor: string;
+  linkHoverColor: string;
 };
 
 type Triggers = {

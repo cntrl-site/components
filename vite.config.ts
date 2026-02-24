@@ -9,11 +9,13 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
       name: "CntrlComponents",
-      fileName: (format) => `index.${format}.js`,
+      fileName: (format) => (format === "es" ? "index.mjs" : "index.js"),
       formats: ["es", "cjs"],
     },
     rollupOptions: {
-      external: ["react", "react-dom", "classnames"],
+      external: (id) =>
+        !id.includes("@splidejs") &&
+        (["react", "react-dom", "classnames"].includes(id) || id.startsWith("react/")),
       output: {
         preserveModules: false,
         manualChunks: undefined,
@@ -21,7 +23,6 @@ export default defineConfig({
     },
     outDir: "dist",
     emptyOutDir: true,
-    ssr: true,
   },
   css: {
     modules: {
