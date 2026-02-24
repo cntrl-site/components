@@ -120,18 +120,60 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                         transform: `${iconPositionStyles.transform || ''} scale(${settings.elements.icon.scale / 100})`
                       }}
                     />
-                    <div
+                    {styles.imageCaption && (() => {
+                      const { widthSettings, fontSettings,letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color} = styles.imageCaption;
+                    return(
+                      <div
+                      data-styles="imageCaption"
                       className={classes.caption}
-                      style={getAlignPosition(settings.elements.text.alignment, settings.elements.text.offset, isEditor)}
-                    >
-                      <RichTextRenderer content={item.imageCaption} />
-                    </div>
-                    <div
+                      style={{
+                        ...getAlignPosition(settings.elements.text.alignment, settings.elements.text.offset, isEditor),
+                        fontFamily: fontSettings.fontFamily,
+                        fontWeight: fontSettings.fontWeight,
+                        fontStyle: fontSettings.fontStyle,
+                        width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
+                        letterSpacing: scalingValue(letterSpacing, isEditor),
+                        wordSpacing: scalingValue(wordSpacing, isEditor),
+                        textAlign,
+                        fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                        lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                        textTransform: textAppearance.textTransform ?? 'none',
+                        textDecoration: textAppearance.textDecoration ?? 'none',
+                        fontVariant: textAppearance.fontVariant ?? 'normal',
+                        color
+                      }}
+                      >
+                        <RichTextRenderer content={item.imageCaption} />
+                      </div>
+                    );
+                  })()}
+                  {styles.creds && (() => {
+                    const { widthSettings, fontSettings,letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color} = styles.creds;
+                    return(
+                      <div
+                      data-styles="creds"
                       className={classes.creds}
-                      style={getAlignPosition(settings.elements.creds.alignment, settings.elements.creds.offset, isEditor)}
+                      style={{
+                        ...getAlignPosition(settings.elements.creds.alignment, settings.elements.creds.offset, isEditor),
+                        fontFamily: fontSettings.fontFamily,
+                        fontWeight: fontSettings.fontWeight,
+                        fontStyle: fontSettings.fontStyle,
+                        width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
+                        letterSpacing: scalingValue(letterSpacing, isEditor),
+                        wordSpacing: scalingValue(wordSpacing, isEditor),
+                        textAlign,
+                        fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                        lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                        textTransform: textAppearance.textTransform ?? 'none',
+                        textDecoration: textAppearance.textDecoration ?? 'none',
+                        fontVariant: textAppearance.fontVariant ?? 'normal',
+                        color
+                      }}
                     >
                       <RichTextRenderer content={item.creds} />
                     </div>
+                    );
+                  })()}
                   </div>
                 </div>
               </SplideSlide>
@@ -286,7 +328,8 @@ type TestimonialsSettings = {
 };
 
 type TestimonialsStyles = {
-  caption: CaptionStyles;
+  imageCaption: CaptionStyles;
+  creds: CaptionStyles;
 };
 
 type CaptionStyles = {

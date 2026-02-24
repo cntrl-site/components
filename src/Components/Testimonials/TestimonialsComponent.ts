@@ -795,7 +795,7 @@ export const TestimonialsComponent: Component = {
         layoutBased: false,
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
+          addItemFromFileExplorer: false,
           defaultWidth: 500
         },
         items: {
@@ -868,11 +868,7 @@ export const TestimonialsComponent: Component = {
         },
         default: [
           {
-            image: {
-              objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/2.jpg',
-              name: 'Testimonial-1.png'
-            },
+            image: {},
             icon: {
               objectFit: 'cover',
               url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
@@ -892,11 +888,7 @@ export const TestimonialsComponent: Component = {
             ]
           },
           {
-            image: {
-              objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/3.jpg',
-              name: 'Testimonial-2.png'
-            },
+            image: {},
             icon: {
               objectFit: 'cover',
               url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
@@ -916,11 +908,7 @@ export const TestimonialsComponent: Component = {
             ]
           },
           {
-            image: {
-              objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/4.jpg',
-              name: 'Testimonial-3.png'
-            },
+            image: {},
             icon: {
               objectFit: 'cover',
               url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
@@ -945,8 +933,8 @@ export const TestimonialsComponent: Component = {
         layoutBased: true,
         type: 'object',
         properties: {
-          caption: {
-            dataName: 'caption',
+          imageCaption: {
+            dataName: 'imageCaption',
             type: 'object',
             properties: {
               fontSettings: {
@@ -1043,10 +1031,10 @@ export const TestimonialsComponent: Component = {
           }
         },
         default: {
-          caption: {
+          imageCaption: {
             widthSettings: {
               width: 0.13,
-              sizing: 'auto',
+              sizing: 'manual',
             },
             fontSettings: {
               fontFamily: 'Arial',
@@ -1054,8 +1042,32 @@ export const TestimonialsComponent: Component = {
               fontStyle: 'normal',
             },
             fontSizeLineHeight: {
-              fontSize: 0.02,
-              lineHeight: 0.02
+              fontSize: 0.01,
+              lineHeight: 0.01
+            },
+            letterSpacing: 0,
+            wordSpacing: 0,
+            textAlign: 'left',
+            textAppearance: {
+              textTransform: 'none',
+              textDecoration: 'none',
+              fontVariant: 'normal',
+            },
+            color: '#000000'
+          },
+          creds: {
+            widthSettings: {
+              width: 0.13,
+              sizing: 'manual',
+            },
+            fontSettings: {
+              fontFamily: 'Arial',
+              fontWeight: 400,
+              fontStyle: 'normal',
+            },
+            fontSizeLineHeight: {
+              fontSize: 0.01,
+              lineHeight: 0.01
             },
             letterSpacing: 0,
             wordSpacing: 0,
@@ -1069,8 +1081,7 @@ export const TestimonialsComponent: Component = {
           }
         }
       },
-    },
-    required: ['settings', 'content', 'styles']
+      required: ['settings', 'content', 'styles']
+    }
   }
 };
-
