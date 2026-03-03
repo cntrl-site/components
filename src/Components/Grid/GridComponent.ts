@@ -181,6 +181,9 @@ export const GridComponent = {
             properties: {
               widthType: {
                 type: 'string',
+                display: {
+                  type: 'ratio-group'
+                },
                 enum: ['auto', 'fixed'],
               },
               maxWidth: {
@@ -190,11 +193,15 @@ export const GridComponent = {
                 scalingEnabled: true,
                 display: {
                   type: 'numeric-input',
+                  visible: false,
                 },
               },
               aspectRatioMode: {
                 type: 'string',
-                enum: ['fixed', 'original'],
+                display: {
+                  type: 'ratio-group'
+                },
+                enum: ['locked', 'original'],
               },
               aspectWidth: {
                 type: 'number',
@@ -202,6 +209,7 @@ export const GridComponent = {
                 label: 'AW',
                 display: {
                   type: 'numeric-input',
+                  visible: false,
                 },
               },
               aspectHeight: {
@@ -210,6 +218,7 @@ export const GridComponent = {
                 label: 'AH',
                 display: {
                   type: 'numeric-input',
+                  visible: false,
                 },
               },
             }
@@ -285,7 +294,21 @@ export const GridComponent = {
           description: {
             marginTop: 0,
           }
-        }
+        },
+        displayRules: [
+          {
+            if: { name: 'media.widthType', value: 'fixed' },
+            then: { name: 'properties.media.properties.maxWidth.display.visible', value: true },
+          },
+          {
+            if: { name: 'media.aspectRatioMode', value: 'fixed' },
+            then: { name: 'properties.media.properties.aspectWidth.display.visible', value: true },
+          },
+          {
+            if: { name: 'media.aspectRatioMode', value: 'fixed' },
+            then: { name: 'properties.media.properties.aspectHeight.display.visible', value: true },
+          },
+        ],
       },
       content: {
         layoutBased: false,
