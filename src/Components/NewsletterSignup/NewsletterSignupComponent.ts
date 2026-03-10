@@ -44,35 +44,6 @@ const textStyleProperties = {
   },
 };
 
-const buttonBackgroundProperties = {
-  backgroundColor: {
-    display: {
-      type: 'style-panel-color-picker',
-    },
-    type: 'string',
-  },
-  borderColor: {
-    display: {
-      type: 'style-panel-color-picker',
-    },
-    type: 'string',
-  },
-  borderWidth: {
-    type: 'number',
-    label: 'BW',
-    display: {
-      type: 'scaling-number',
-    },
-  },
-  borderRadius: {
-    type: 'number',
-    label: 'BR',
-    display: {
-      type: 'scaling-number',
-    },
-  },
-};
-
 const textStyleDefault = (fontWeight: number, color: string) => ({
   fontSettings: {
     fontFamily: 'Arial',
@@ -159,22 +130,11 @@ export const NewsletterSignupComponent = {
             type: 'object',
             properties: textStyleProperties,
           },
-          buttonBackground: {
-            dataName: 'buttonBackground',
-            type: 'object',
-            properties: buttonBackgroundProperties,
-          },
         },
         default: {
           input: textStyleDefault(400, '#000000'),
           label: textStyleDefault(400, '#000000'),
           button: textStyleDefault(700, '#ffffff'),
-          buttonBackground: {
-            backgroundColor: '#000000',
-            borderColor: '#000000',
-            borderWidth: 0,
-            borderRadius: 0.003,
-          },
         },
       },
     },
