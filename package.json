@@ -24,6 +24,7 @@
     "dev": "vite development",
     "prebuild": "rimraf ./dist",
     "build": "vite build",
+    "build:watch": "vite build --watch",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build"
   },
   "files": [
