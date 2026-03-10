@@ -1,0 +1,142 @@
+@use '../mixins.scss' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  @include size(min-height, 48);
+}
+
+.form {
+  display: flex;
+  @include size(gap, 8);
+  width: 100%;
+}
+
+.formHorizontal {
+  flex-direction: row;
+  align-items: center;
+}
+
+.formHorizontalWithLabel {
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+.formVertical {
+  flex-direction: column;
+}
+
+.fields {
+  display: flex;
+  @include size(gap, 8);
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldsHorizontal {
+  flex-direction: row;
+}
+
+.fieldsVertical {
+  flex-direction: column;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  @include size(font-size, 12);
+  @include size(margin-bottom, 4);
+  line-height: 1.4;
+}
+
+.input {
+  width: 100%;
+  @include size(padding-top, 10);
+  @include size(padding-bottom, 10);
+  @include size(padding-left, 14);
+  @include size(padding-right, 14);
+  @include size(font-size, 14);
+  line-height: 1.4;
+  background: transparent;
+  border: none;
+  outline: none;
+
+  &:disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+  }
+}
+
+.inputBordered {
+  border: 1px solid #ccc;
+  @include size(border-radius, 4);
+
+  &:focus {
+    border-color: #333;
+  }
+}
+
+.inputUnderline {
+  border-bottom: 1px solid #ccc;
+  @include size(padding-left, 0);
+  @include size(padding-right, 0);
+  border-radius: 0;
+
+  &:focus {
+    border-bottom-color: #333;
+  }
+}
+
+.inputWithLabel {
+  border: 1px solid #ccc;
+  @include size(border-radius, 4);
+
+  &:focus {
+    border-color: #333;
+  }
+}
+
+.button {
+  @include size(padding-top, 10);
+  @include size(padding-bottom, 10);
+  @include size(padding-left, 20);
+  @include size(padding-right, 20);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.success {
+  @include size(margin-top, 8);
+  @include size(font-size, 14);
+  color: #22c55e;
+}
+
+.error {
+  @include size(margin-top, 8);
+  @include size(font-size, 14);
+  color: #ef4444;
+}
+
+.overlayAnchor {
+  position: relative;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.overlayAbove {
+  z-index: 2;
+}
