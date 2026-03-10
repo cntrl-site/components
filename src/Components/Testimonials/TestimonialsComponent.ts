@@ -12,7 +12,7 @@ export const TestimonialsComponent: Component = {
   },
   defaultSize: {
     width: 700,
-    height: 400
+    height: 300
   },
   schema: {
     type: 'object',
@@ -69,7 +69,7 @@ export const TestimonialsComponent: Component = {
                 display: {
                   type: 'step-selector',
                 },
-                enum: ['100ms', '250ms', '500ms', '1000ms', '1500ms', '2000ms'],
+                enum: ['1s', '2s', '3s', '4s', '5s', '6s', '7s', '8s', '9s', '10s'],
               },
               direction: {
                 type: 'string',
@@ -85,6 +85,78 @@ export const TestimonialsComponent: Component = {
                   type: 'ratio-group'
                 },
                 enum: ['hover', 'click', 'off']
+              },
+              controls: {
+                title: 'controls',
+                icon: 'controls',
+                tooltip: 'Controls',
+                type: 'object',
+                properties: {
+                  isActive: {
+                    type: 'boolean',
+                    display: {
+                      type: 'setting-toggle',
+                    }
+                  },
+                  arrowsImgUrl: {
+                    type: ['string', 'null'],
+                    display: {
+                      type: 'settings-image-input',
+                    },
+                  },
+                  offset: {
+                    type: 'object',
+                    title: 'Offset',
+                    display: {
+                      type: 'group',
+                    },
+                    properties: {
+                      x: {
+                        type: 'number',
+                        label: 'X',
+                        scalingEnabled: true,
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
+                      y: {
+                        type: 'number',
+                        label: 'Y',
+                        scalingEnabled: true,
+                        display: {
+                          type: 'numeric-input',
+                          visible: true,
+                        },
+                      },
+                    }
+                  },
+                  scale: {
+                    type: 'number',
+                    title: 'scale',
+                    min: 50,
+                    max: 600,
+                    display: {
+                      type: 'range-control',
+                    },
+                  },
+                  color: {
+                    title: 'color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                  hover: {
+                    title: 'hover',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    },
+                  },
+                },
               }
             }
           },
@@ -110,7 +182,7 @@ export const TestimonialsComponent: Component = {
                   },
                   height: {
                     type: 'number',
-                    label: 'H',
+                    label: 'minH',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -170,7 +242,80 @@ export const TestimonialsComponent: Component = {
                   type: 'settings-color-picker',
                   format: 'single'
                 }
-              }
+              },
+              padding: {
+                type: 'object',
+                title: 'Padding',
+                display: {
+                  type: 'padding-controls',
+                },
+              },
+              dropShadow: {
+                type: 'object',
+                title: 'Shadow',
+                display: {
+                  type: 'group',
+                },
+                properties: {
+                  active: {
+                    type: 'string',
+                    title: 'active',
+                    display: {
+                      type: 'ratio-group',
+                      direction: 'horizontal',
+                    },
+                    enum: ['on', 'off']
+                  },
+                  right: {
+                    type: 'number',
+                    title: 'Right',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  down: {
+                    type: 'number',
+                    title: 'Down',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  spread: {
+                    type: 'number',
+                    title: 'Spread',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  blur: { 
+                    type: 'number',
+                    title: 'Blur',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  color: {
+                    title: 'color',
+                    type: 'string',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  },
+                }
+              },
+              hasGradientCorners: {
+                title: 'Grad cor',
+                type: 'string',
+                display: {
+                  type: 'ratio-group'
+                },
+                enum: ['gradient', 'none']
+              },
             }
           },
           elements: {
@@ -179,11 +324,18 @@ export const TestimonialsComponent: Component = {
             type: 'object',
             properties: {
               elements: {
-                type: 'string',
+                type: 'array',
                 display: {
-                  type: 'ratio-group'
+                  type: 'order-selector'
                 },
-                enum: ['text', 'icon', 'caption']
+                items: {
+                  type: 'string',
+                  enum: ['text', 'icon', 'caption']
+                },
+                default: {
+                  order: ['text', 'icon', 'caption'],
+                  active: 'text',
+                },
               },
               text: {
                 type: 'object',
@@ -191,42 +343,33 @@ export const TestimonialsComponent: Component = {
                   type: 'group',
                 },
                 properties: {
-                  alignment: {
-                    type: 'string',
+                  minHeight: {
+                    type: 'number',
+                    title: 'Min Height',
+                    scalingEnabled: true,
                     display: {
-                      type: 'align-grid',
-                      visible: true,
+                      type: 'numeric-input',
                     },
-                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
                   },
-                  offset: {
+                  margin: {
                     type: 'object',
-                    title: 'Offset',
+                    title: 'Margin',
                     display: {
                       type: 'group',
-                      visible: true,
+                      visible: false,
                     },
                     properties: {
-                      x: {
+                      top: {
                         type: 'number',
-                        label: 'X',
+                        label: 'Top',
                         scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
-                          visible: true,
+                          visible: false,
                         },
                       },
-                      y: {
-                        type: 'number',
-                        label: 'Y',
-                        scalingEnabled: true,
-                        display: {
-                          type: 'numeric-input',
-                          visible: true,
-                        },
-                      },
-                    }
-                  }
+                    },
+                  },
                 }
               },
               icon: {
@@ -235,39 +378,24 @@ export const TestimonialsComponent: Component = {
                   type: 'group',
                 },
                 properties: {
-                  alignment: {
-                    type: 'string',
-                    display: {
-                      type: 'align-grid'
-                    },
-                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
-                  },
-                  offset: {
+                  margin: {
                     type: 'object',
-                    title: 'Offset',
+                    title: 'Margin',
                     display: {
                       type: 'group',
+                      visible: false,
                     },
                     properties: {
-                      x: {
+                      top: {
                         type: 'number',
-                        label: 'X',
+                        label: 'Top',
                         scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
-                          visible: true,
+                          visible: false,
                         },
                       },
-                      y: {
-                        type: 'number',
-                        label: 'Y',
-                        scalingEnabled: true,
-                        display: {
-                          type: 'numeric-input',
-                          visible: true,
-                        },
-                      },
-                    }
+                    },
                   },
                   scale: {
                     type: 'number',
@@ -281,132 +409,62 @@ export const TestimonialsComponent: Component = {
                   }
                 }
               },
-              creds: {
+              caption: {
                 type: 'object',
                 display: {
                   type: 'group',
                 },
                 properties: {
-                  alignment: {
-                    type: 'string',
+                  minHeight: {
+                    type: 'number',
+                    title: 'Min Height',
+                    scalingEnabled: true,
                     display: {
-                      type: 'align-grid'
+                      type: 'numeric-input',
                     },
-                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right']
                   },
-                  offset: {
+                  margin: {
                     type: 'object',
-                    title: 'Offset',
+                    title: 'Margin',
                     display: {
                       type: 'group',
+                      visible: false,
                     },
                     properties: {
-                      x: {
+                      top: {
                         type: 'number',
-                        label: 'X',
+                        label: 'Top',
                         scalingEnabled: true,
                         display: {
                           type: 'numeric-input',
-                          visible: true,
-                        },
-                      },
-                      y: {
-                        type: 'number',
-                        label: 'Y',
-                        scalingEnabled: true,
-                        display: {
-                          type: 'numeric-input',
-                          visible: true,
+                          visible: false,
                         },
                       },
                     }
-                  }
-                }
+                  },
+                },
               }
             }
-          },
-          controls: {
-            title: 'controls',
-            icon: 'controls',
-            tooltip: 'Controls',
-            type: 'object',
-            properties: {
-              isActive: {
-                type: 'boolean',
-                display: {
-                  type: 'setting-toggle',
-                }
-              },
-              arrowsImgUrl: {
-                type: ['string', 'null'],
-                display: {
-                  type: 'settings-image-input',
-                },
-              },
-              offset: {
-                type: 'object',
-                title: 'Offset',
-                display: {
-                  type: 'group',
-                },
-                properties: {
-                  x: {
-                    type: 'number',
-                    label: 'X',
-                    scalingEnabled: true,
-                    display: {
-                      type: 'numeric-input',
-                      visible: true,
-                    },
-                  },
-                  y: {
-                    type: 'number',
-                    label: 'Y',
-                    scalingEnabled: true,
-                    display: {
-                      type: 'numeric-input',
-                      visible: true,
-                    },
-                  },
-                }
-              },
-              scale: {
-                type: 'number',
-                title: 'scale',
-                min: 50,
-                max: 600,
-                display: {
-                  type: 'range-control',
-                },
-              },
-              color: {
-                title: 'color',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                }
-              },
-              hover: {
-                title: 'hover',
-                type: 'string',
-                display: {
-                  type: 'settings-color-picker',
-                  format: 'single'
-                },
-              },
-            },
           }
         },
         default: {
           general: {
             autoplay: 'off',
-            inView: 3,
-            alignment: 'center',
             move: 'one',
-            speed: '3s',
+            speed: '5s',
             direction: 'left',
-            pause: 'off'
+            pause: 'off',
+            controls: {
+              isActive: false,
+              arrowsImgUrl: null,
+              offset: {
+                x: 0,
+                y: 0
+              },
+              scale: 100,
+              color: '#000000',
+              hover: '#cccccc',
+            },
           },
           card: {
             dimensions: {
@@ -419,41 +477,42 @@ export const TestimonialsComponent: Component = {
               width: 0.001,
               color: '#000000',
             },
-            bgColor: 'rgba(255, 255, 255, 0.2)'
-          },
-          controls: {
-            isActive: false,
-            arrowsImgUrl: null,
-            offset: {
-              x: 0,
-              y: 0
+            bgColor: 'rgba(255, 255, 255, 0.2)',
+            padding: {
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0
             },
-            scale: 100,
-            color: '#000000',
-            hover: '#cccccc',
+            dropShadow: {
+              active: 'on',
+              right: 0,
+              down: 0,
+              spread: 0,
+              blur: 0,
+              color: '#000000',
+            },
+            hasGradientCorners: 'gradient',
           },
           elements: {
-            elements: 'text',
+            elements: ['text', 'icon', 'caption'],
+            active: 'text',
             text: {
-              alignment: 'middle-left',
-              offset: {
-                x: 0.005,
-                y: 0
+              minHeight: 0.01,
+              margin: {
+                top: 0,
               }
             },
             icon: {
-              alignment: 'top-left',
-              offset: {
-                x: 0,
-                y: 0
+              margin: {
+                top: 0,
               },
               scale: 100
             },
-            creds: {
-              alignment: 'bottom-left',
-              offset: {
-                x: 0.005,
-                y: -0.005
+            caption: {
+              minHeight: 0.01,
+              margin: {
+                top: 0,
               }
             }
           }
@@ -581,187 +640,67 @@ export const TestimonialsComponent: Component = {
           },
           {
             if: {
-              name: 'elements.elements',
+              name: 'elements.elements.active',
               value: 'text'
             },
             then: {
-              name: 'properties.elements.properties.text.properties.alignment.display.visible',
+              name: 'properties.elements.properties.text.properties.minHeight.display.visible',
               value: true
             }
           },
           {
             if: {
-              name: 'elements.elements',
+              name: 'elements.elements.active',
               value: 'text'
             },
             then: {
-              name: 'properties.elements.properties.text.properties.offset.display.visible',
+              name: 'properties.elements.properties.caption.properties.minHeight.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements.active',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.caption.properties.minHeight.display.visible',
               value: true
             }
           },
           {
             if: {
-              name: 'elements.elements',
-              value: 'text'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.alignment.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'text'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.offset.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'text'
-            },
-            then: {
-              name: 'properties.elements.properties.creds.properties.alignment.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'text'
-            },
-            then: {
-              name: 'properties.elements.properties.creds.properties.offset.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'icon'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.alignment.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'icon'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.offset.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'icon'
-            },
-            then: {
-              name: 'properties.elements.properties.text.properties.alignment.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'icon'
-            },
-            then: {
-              name: 'properties.elements.properties.text.properties.offset.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'icon'
-            },
-            then: {
-              name: 'properties.elements.properties.creds.properties.alignment.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'icon'
-            },
-            then: {
-              name: 'properties.elements.properties.creds.properties.offset.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
+              name: 'elements.elements.active',
               value: 'caption'
             },
             then: {
-              name: 'properties.elements.properties.creds.properties.alignment.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'caption'
-            },
-            then: {
-              name: 'properties.elements.properties.creds.properties.offset.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'caption'
-            },
-            then: {
-              name: 'properties.elements.properties.text.properties.alignment.display.visible',
+              name: 'properties.elements.properties.caption.properties.minHeight.display.visible',
               value: false
             }
           },
           {
             if: {
-              name: 'elements.elements',
-              value: 'caption'
+              name: 'elements.elements.active',
+              value: 'icon'
             },
             then: {
-              name: 'properties.elements.properties.text.properties.offset.display.visible',
+              name: 'properties.elements.properties.text.properties.minHeight.display.visible',
               value: false
             }
           },
           {
             if: {
-              name: 'elements.elements',
-              value: 'caption'
+              name: 'elements.elements.active',
+              value: 'icon'
             },
             then: {
-              name: 'properties.elements.properties.icon.properties.alignment.display.visible',
+              name: 'properties.elements.properties.caption.properties.minHeight.display.visible',
               value: false
             }
           },
           {
             if: {
-              name: 'elements.elements',
-              value: 'caption'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.offset.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
+              name: 'elements.elements.active',
               value: 'icon'
             },
             then: {
@@ -769,26 +708,6 @@ export const TestimonialsComponent: Component = {
               value: true
             }
           },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'text'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.scale.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'elements.elements',
-              value: 'caption'
-            },
-            then: {
-              name: 'properties.elements.properties.icon.properties.scale.display.visible',
-              value: false
-            }
-          }
         ]
       },
       content: {
@@ -854,7 +773,7 @@ export const TestimonialsComponent: Component = {
                 maxWidth: 550
               }
             },
-            creds: {
+            caption: {
               placeholder: 'Add Caption...',
               label: 'Caption',
               display: {
@@ -880,7 +799,7 @@ export const TestimonialsComponent: Component = {
                 children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }]
               }
             ],
-            creds: [
+            caption: [
               {
                 type: 'paragraph',
                 children: [{ text: 'CEO @ Company' }]
@@ -900,7 +819,7 @@ export const TestimonialsComponent: Component = {
                 children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }]
               }
             ],
-            creds: [
+            caption: [
               {
                 type: 'paragraph',
                 children: [{ text: 'CEO @ Company' }]
@@ -920,7 +839,7 @@ export const TestimonialsComponent: Component = {
                 children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }]
               }
             ],
-            creds: [
+            caption: [
               {
                 type: 'paragraph',
                 children: [{ text: 'CEO @ Company' }]
@@ -935,6 +854,102 @@ export const TestimonialsComponent: Component = {
         properties: {
           imageCaption: {
             dataName: 'imageCaption',
+            type: 'object',
+            properties: {
+              fontSettings: {
+                type: 'object',
+                display: {
+                  type: 'font-settings',
+                },
+                properties: {
+                  fontFamily: {
+                    type: 'string',
+                  },
+                  fontWeight: {
+                    type: 'number',
+                  },
+                  fontStyle: {
+                    type: 'string',
+                  }
+                }
+              },
+              widthSettings: {
+                display: {
+                  type: 'text-width-control',
+                },
+                type: 'object',
+                properties: {
+                  width: {
+                    type: 'number',
+                  },
+                  sizing: {
+                    type: 'string',
+                    enum: ['auto', 'manual'],
+                  }
+                }
+              },
+              fontSizeLineHeight: {
+                type: 'object',
+                display: {
+                  type: 'font-size-line-height',
+                },
+                properties: {
+                  fontSize: {
+                    type: 'number',
+                  },
+                  lineHeight: {
+                    type: 'number',
+                  }
+                }
+              },
+              letterSpacing: {
+                display: {
+                  type: 'letter-spacing-input',
+                },
+                type: 'number',
+              },
+              wordSpacing: {
+                display: {
+                  type: 'word-spacing-input',
+                },
+                type: 'number',
+              },
+              textAlign: {
+                display: {
+                  type: 'text-align-control',
+                },
+                type: 'string',
+                enum: ['left', 'center', 'right'],
+              },
+              textAppearance: {
+                display: {
+                  type: 'text-appearance',
+                },
+                properties: {
+                  textTransform: {
+                    type: 'string',
+                    enum: ['none', 'uppercase', 'lowercase'],
+                  },
+                  textDecoration: {
+                    type: 'string',
+                    enum: ['none', 'underline'],
+                  },
+                  fontVariant: {
+                    type: 'string',
+                    enum: ['normal', 'small-caps'],
+                  },
+                }
+              },
+              color: {
+                display: {
+                  type: 'style-panel-color-picker',
+                },
+                type: 'string',
+              }
+            },
+          },
+          caption: {
+            dataName: 'caption',
             type: 'object',
             properties: {
               fontSettings: {
@@ -1055,7 +1070,7 @@ export const TestimonialsComponent: Component = {
             },
             color: '#000000'
           },
-          creds: {
+          caption: {
             widthSettings: {
               width: 0.13,
               sizing: 'manual',
@@ -1083,5 +1098,5 @@ export const TestimonialsComponent: Component = {
       },
       required: ['settings', 'content', 'styles']
     }
-  }
+  },
 };

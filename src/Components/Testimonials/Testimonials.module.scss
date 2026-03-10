@@ -4,6 +4,24 @@
   overflow: hidden;
   display: flex;
   height: 100%;
+  width: 100%;
+}
+
+.gradientCorners {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
 }
 
 .wrapper {
@@ -12,15 +30,34 @@
   height: 100%;
   
   :global(.splide) {
-    overflow: hidden;
+    height: 100%;
   }
   
   :global(.splide__track) {
-    overflow: hidden;
+    height: 100%;
   }
   
   :global(.splide__list) {
     display: flex;
+  }
+
+  &.wrapperAutoplayOff {
+    :global(.splide) {
+      overflow: hidden;
+    }
+  }
+
+  &.wrapperDropShadow {
+    padding: var(--shadow-padding, 0);
+    box-sizing: border-box;
+
+    :global(.splide) {
+      overflow: visible;
+    }
+
+    :global(.splide__track) {
+      overflow: visible;
+    }
   }
   
   &.alignLeft {
@@ -51,21 +88,25 @@
   left: 0;
 }
 
-.caption {
-  position: absolute;
+.elementsOverlay {
+  position: relative;
+  inset: 0;
 }
 
-.creds {
-  position: absolute;
+.caption {
+  // position: absolute;
 }
 
 .image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
 
 .icon {
-  position: absolute;
+  // position: absolute;
   @include size(width, 30);
   @include size(height, 30);
 }
