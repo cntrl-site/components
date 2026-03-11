@@ -32,9 +32,6 @@ export function NewsletterSignup({ settings, styles: componentStyles, isEditor, 
   const inputCss = componentStyles ? textStylesToCss(componentStyles.input, isEditor) : undefined;
   const labelCss = componentStyles?.label ? textStylesToCss(componentStyles.label, isEditor) : undefined;
   const buttonTextCss = componentStyles ? textStylesToCss(componentStyles.button, isEditor) : undefined;
-  const buttonBgCss = componentStyles?.buttonBackground
-    ? buttonBackgroundToCss(componentStyles.buttonBackground, isEditor)
-    : undefined;
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -78,6 +75,10 @@ export function NewsletterSignup({ settings, styles: componentStyles, isEditor, 
       setStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
     }
+  };
+
+  const preventDefault = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   return (
@@ -144,14 +145,12 @@ export function NewsletterSignup({ settings, styles: componentStyles, isEditor, 
           <button
             type="submit"
             className={styles.button}
-            style={buttonBgCss}
           >
             <span className={styles.overlayAnchor} style={buttonTextCss}>
               {status === 'submitting' ? '...' : buttonLabel}
-              {isEditor && <div className={cn(styles.overlay, styles.overlayAbove)} data-styles="button" />}
+              {isEditor && <div className={cn(styles.overlay, styles.overlayAbove)} data-styles="button" onClick={preventDefault} />}
             </span>
           </button>
-          {isEditor && <div className={styles.overlay} data-styles="buttonBackground" />}
         </div>
       </form>
       {status === 'success' && <p className={styles.success}>Thanks for subscribing!</p>}
@@ -207,7 +206,6 @@ type NewsletterSignupStyles = {
   input: TextStyles;
   label: TextStyles;
   button: TextStyles;
-  buttonBackground: ButtonBackgroundStyles;
 };
 
 type NewsletterSignupSettings = {
