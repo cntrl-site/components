@@ -53,6 +53,7 @@ export function NewsletterSignup({ settings, styles: componentStyles, isEditor, 
     setErrorMessage(null);
 
     try {
+      // TODO: URL should be /projects/:projectId/forms/{configId}/submit
       const res = await fetch(`${apiBase}/projects/${projectId}/forms/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

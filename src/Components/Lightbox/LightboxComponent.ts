@@ -17,7 +17,6 @@ export const LightboxComponent: Component = {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         properties: {
           thumbnailBlock: {
@@ -851,7 +850,6 @@ export const LightboxComponent: Component = {
         ]
       },
       content: {
-        layoutBased: false,
         type: 'array',
         settings: {
           addItemFromFileExplorer: true,
@@ -937,7 +935,6 @@ export const LightboxComponent: Component = {
         ]
       },
       styles: {
-        layoutBased: true,
         type: 'object',
         properties: {
           imageCaption: {

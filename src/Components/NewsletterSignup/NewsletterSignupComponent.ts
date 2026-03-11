@@ -68,7 +68,6 @@ export const NewsletterSignupComponent = {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         display: {
           type: 'settings-block',
@@ -112,7 +111,6 @@ export const NewsletterSignupComponent = {
         },
       },
       styles: {
-        layoutBased: true,
         type: 'object',
         properties: {
           input: {

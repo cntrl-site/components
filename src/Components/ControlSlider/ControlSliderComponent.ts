@@ -16,7 +16,6 @@ export const ControlSliderComponent = {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         display: {
           type: 'settings-block',
@@ -386,7 +385,6 @@ export const ControlSliderComponent = {
         ]
       },
       content: {
-        layoutBased: false,
         type: 'array',
         settings: {
           addItemFromFileExplorer: true,
@@ -472,7 +470,6 @@ export const ControlSliderComponent = {
         ]
       },
       styles: {
-        layoutBased: true,
         type: 'object',
         properties: {
           imageCaption: {
