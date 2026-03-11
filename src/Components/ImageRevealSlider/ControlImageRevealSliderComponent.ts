@@ -1,6 +1,7 @@
 import { ImageRevealSlider } from './ImageRevealSlider';
+import { Component } from '../../types/Component';
 
-export const ControlImageRevealSliderComponent = {
+export const ControlImageRevealSliderComponent: Component = {
   element: ImageRevealSlider,
   id: 'control-image-reveal',
   name: 'Click Gallery',
@@ -11,6 +12,14 @@ export const ControlImageRevealSliderComponent = {
   defaultSize: {
     width: '100%',
     height: '100%'
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.cursor.defaultCursor' }, { path: 'settings.cursor.hoverCursor' }]
+  },
+  fontSettingsPath: {
+    content: [],
+    parameters: []
   },
   schema: {
     type: 'object',

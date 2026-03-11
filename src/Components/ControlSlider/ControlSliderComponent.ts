@@ -1,6 +1,7 @@
+import { Component } from '../../types/Component';
 import { ControlSlider } from './ControlSlider';
 
-export const ControlSliderComponent = {
+export const ControlSliderComponent: Component = {
   element: ControlSlider,
   id: 'control-slider',
   name: 'Slider',
@@ -11,6 +12,14 @@ export const ControlSliderComponent = {
   defaultSize: {
     width: 400,
     height: 400
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
+  },
+  fontSettingsPath: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
   },
   schema: {
     type: 'object',

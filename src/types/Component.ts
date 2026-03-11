@@ -13,4 +13,17 @@ export type Component = {
     type: 'image' | 'video';
     url: string;
   };
+  assetsPaths: {
+    content: Path[];
+    parameters: Path[];
+  };
+  fontSettingsPath: {
+    content: Path[];
+    parameters: Path[];
+  };
+};
+
+type Path = {
+  path: string;
+  placeholderEnabled?: boolean;
 };

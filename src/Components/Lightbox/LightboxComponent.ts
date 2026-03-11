@@ -13,6 +13,18 @@ export const LightboxComponent: Component = {
     width: 440,
     height: 550
   },
+  fontSettingsPath: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [
+      { path: 'settings.thumbnailBlock.cover.url', placeholderEnabled: true },
+      { path: 'settings.controls.arrowsImgUrl' },
+      { path: 'settings.area.closeIconUrl' }
+    ]
+  },
   schema: {
     type: 'object',
     properties: {
