@@ -37,23 +37,6 @@ export const TestimonialsComponent: Component = {
                 },
                 enum: ['on', 'off']
               },
-              inView: {
-                type: 'number',
-                title: 'In View',
-                min: 1,
-                display: {
-                  type: 'numeric-input',
-                },
-              },
-              alignment: {
-                type: 'string',
-                title: 'Alignment',
-                display: {
-                  type: 'align-group',
-                  direction: 'vertical',
-                },
-                enum: ['left', 'center', 'right']
-              },
               move: {
                 type: 'string',
                 title: 'Move',
@@ -88,15 +71,16 @@ export const TestimonialsComponent: Component = {
               },
               controls: {
                 title: 'controls',
-                icon: 'controls',
-                tooltip: 'Controls',
                 type: 'object',
                 properties: {
                   isActive: {
-                    type: 'boolean',
+                    type: 'string',
+                    title: 'Controls',
                     display: {
-                      type: 'setting-toggle',
-                    }
+                      type: 'ratio-group',
+                      direction: 'vertical',
+                    },
+                    enum: ['visible', 'hidden']
                   },
                   arrowsImgUrl: {
                     type: ['string', 'null'],
@@ -104,32 +88,21 @@ export const TestimonialsComponent: Component = {
                       type: 'settings-image-input',
                     },
                   },
-                  offset: {
-                    type: 'object',
-                    title: 'Offset',
+                  align: {
                     display: {
-                      type: 'group',
+                      type: 'align-grid',
+                      direction: 'horizontal',
                     },
-                    properties: {
-                      x: {
-                        type: 'number',
-                        label: 'X',
-                        scalingEnabled: true,
-                        display: {
-                          type: 'numeric-input',
-                          visible: true,
-                        },
-                      },
-                      y: {
-                        type: 'number',
-                        label: 'Y',
-                        scalingEnabled: true,
-                        display: {
-                          type: 'numeric-input',
-                          visible: true,
-                        },
-                      },
-                    }
+                    type: 'string',
+                    enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'],
+                  },
+                  gap: {
+                    type: 'number',
+                    title: 'Gap',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                    },
                   },
                   scale: {
                     type: 'number',
@@ -157,7 +130,33 @@ export const TestimonialsComponent: Component = {
                     },
                   },
                 },
-              }
+              },
+              gradientCorners: {
+                type: 'object',
+                title: '',
+                display: {
+                  type: 'group',
+                },
+                properties: {
+                  active: {
+                    type: 'string',
+                    title: 'Corners',
+                    display: {
+                      type: 'ratio-group',
+                      direction: 'vertical',
+                    },
+                    enum: ['gradient', 'none']
+                  },
+                  color: {
+                    type: 'string',
+                    title: 'Gradient',
+                    display: {
+                      type: 'settings-color-picker',
+                      format: 'single'
+                    }
+                  }
+                }
+              },
             }
           },
           card: {
@@ -182,7 +181,8 @@ export const TestimonialsComponent: Component = {
                   },
                   height: {
                     type: 'number',
-                    label: 'minH',
+                    title: 'Min Height',
+                    label: 'H',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -193,7 +193,7 @@ export const TestimonialsComponent: Component = {
               },
               gap: {
                 type: 'number',
-                title: 'Gap',
+                label: 'Gap',
                 scalingEnabled: true,
                 min: 0,
                 display: {
@@ -268,7 +268,7 @@ export const TestimonialsComponent: Component = {
                   },
                   right: {
                     type: 'number',
-                    title: 'Right',
+                    label: 'x',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -276,7 +276,15 @@ export const TestimonialsComponent: Component = {
                   },
                   down: {
                     type: 'number',
-                    title: 'Down',
+                    label: 'y',
+                    scalingEnabled: true,
+                    display: {
+                      type: 'numeric-input',
+                    },
+                  },
+                  blur: { 
+                    type: 'number',
+                    label: 'icon:blur',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -285,14 +293,6 @@ export const TestimonialsComponent: Component = {
                   spread: {
                     type: 'number',
                     title: 'Spread',
-                    scalingEnabled: true,
-                    display: {
-                      type: 'numeric-input',
-                    },
-                  },
-                  blur: { 
-                    type: 'number',
-                    title: 'Blur',
                     scalingEnabled: true,
                     display: {
                       type: 'numeric-input',
@@ -307,15 +307,7 @@ export const TestimonialsComponent: Component = {
                     }
                   },
                 }
-              },
-              hasGradientCorners: {
-                title: 'Grad cor',
-                type: 'string',
-                display: {
-                  type: 'ratio-group'
-                },
-                enum: ['gradient', 'none']
-              },
+              }
             }
           },
           elements: {
@@ -345,6 +337,7 @@ export const TestimonialsComponent: Component = {
                 properties: {
                   minHeight: {
                     type: 'number',
+                    label: 'H',
                     title: 'Min Height',
                     scalingEnabled: true,
                     display: {
@@ -363,6 +356,7 @@ export const TestimonialsComponent: Component = {
                         type: 'number',
                         label: 'Top',
                         scalingEnabled: true,
+                        min: 0,
                         display: {
                           type: 'numeric-input',
                           visible: false,
@@ -397,6 +391,16 @@ export const TestimonialsComponent: Component = {
                       },
                     },
                   },
+                  align: {
+                    type: 'string',
+                    title: 'Align',
+                    label: 'align',
+                    enum: ['left', 'center', 'right'],
+                    display: {
+                      type: 'align-group',
+                      direction: 'vertical',
+                    },
+                  },
                   scale: {
                     type: 'number',
                     title: 'scale',
@@ -417,6 +421,7 @@ export const TestimonialsComponent: Component = {
                 properties: {
                   minHeight: {
                     type: 'number',
+                    label: 'H',
                     title: 'Min Height',
                     scalingEnabled: true,
                     display: {
@@ -435,6 +440,7 @@ export const TestimonialsComponent: Component = {
                         type: 'number',
                         label: 'Top',
                         scalingEnabled: true,
+                        min: 0,
                         display: {
                           type: 'numeric-input',
                           visible: false,
@@ -452,18 +458,21 @@ export const TestimonialsComponent: Component = {
             autoplay: 'off',
             move: 'one',
             speed: '5s',
+            align: 'left',
             direction: 'left',
             pause: 'off',
             controls: {
-              isActive: false,
+              isActive: 'hidden',
               arrowsImgUrl: null,
-              offset: {
-                x: 0,
-                y: 0
-              },
+              align: 'top-center',
+              gap: 0.02,
               scale: 100,
               color: '#000000',
               hover: '#cccccc',
+            },
+            gradientCorners: {
+              active: 'none',
+              color: '#ffffff',
             },
           },
           card: {
@@ -491,8 +500,7 @@ export const TestimonialsComponent: Component = {
               spread: 0,
               blur: 0,
               color: '#000000',
-            },
-            hasGradientCorners: 'gradient',
+            }
           },
           elements: {
             elements: ['text', 'icon', 'caption'],
@@ -507,7 +515,8 @@ export const TestimonialsComponent: Component = {
               margin: {
                 top: 0,
               },
-              scale: 100
+              scale: 100,
+              align: 'left'
             },
             caption: {
               minHeight: 0.01,
@@ -524,26 +533,6 @@ export const TestimonialsComponent: Component = {
               value: 'off'
             },
             then: {
-              name: 'properties.general.properties.inView.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'general.autoplay',
-              value: 'off'
-            },
-            then: {
-              name: 'properties.general.properties.alignment.display.visible',
-              value: true
-            }
-          },
-          {
-            if: {
-              name: 'general.autoplay',
-              value: 'off'
-            },
-            then: {
               name: 'properties.general.properties.move.display.visible',
               value: true
             }
@@ -554,38 +543,8 @@ export const TestimonialsComponent: Component = {
               value: 'on'
             },
             then: {
-              name: 'properties.general.properties.inView.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'general.autoplay',
-              value: 'on'
-            },
-            then: {
-              name: 'properties.general.properties.alignment.display.visible',
-              value: false
-            }
-          },
-          {
-            if: {
-              name: 'general.autoplay',
-              value: 'on'
-            },
-            then: {
               name: 'properties.general.properties.move.display.visible',
               value: false
-            }
-          },
-          {
-            if: {
-              name: 'general.autoplay',
-              value: 'on'
-            },
-            then: {
-              name: 'properties.general.properties.speed.display.visible',
-              value: true
             }
           },
           {
@@ -611,10 +570,20 @@ export const TestimonialsComponent: Component = {
           {
             if: {
               name: 'general.autoplay',
-              value: 'off'
+              value: 'on'
             },
             then: {
-              name: 'properties.general.properties.speed.display.visible',
+              name: 'properties.general.properties.controls.properties.align.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.gap.display.visible',
               value: false
             }
           },
@@ -635,6 +604,66 @@ export const TestimonialsComponent: Component = {
             },
             then: {
               name: 'properties.general.properties.pause.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.isActive.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.arrowsImgUrl.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.offset.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.scale.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.color.display.visible',
+              value: false
+            }
+          },
+          {  
+            if: {
+              name: 'general.autoplay',
+              value: 'on'
+            },
+            then: {
+              name: 'properties.general.properties.controls.properties.hover.display.visible',
               value: false
             }
           },
@@ -675,6 +704,26 @@ export const TestimonialsComponent: Component = {
             },
             then: {
               name: 'properties.elements.properties.caption.properties.minHeight.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements.active',
+              value: 'caption'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.align.display.visible',
+              value: false
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements.active',
+              value: 'text'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.align.display.visible',
               value: false
             }
           },
@@ -705,6 +754,16 @@ export const TestimonialsComponent: Component = {
             },
             then: {
               name: 'properties.elements.properties.icon.properties.scale.display.visible',
+              value: true
+            }
+          },
+          {
+            if: {
+              name: 'elements.elements.active',
+              value: 'icon'
+            },
+            then: {
+              name: 'properties.elements.properties.icon.properties.align.display.visible',
               value: true
             }
           },

@@ -1,12 +1,11 @@
-import { Splide, SplideSlide } from "@splidejs/react-splide";
+import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import classes from './Testimonials.module.scss';
-import { FC, useRef, useEffect } from "react";
+import { FC, useRef, useEffect, useState } from "react";
 import cn from 'classnames';
-import { SvgImage } from "../helpers/SvgImage/SvgImage";
 import { scalingValue } from "../utils/scalingValue";
 import { RichTextRenderer } from "../helpers/RichTextRenderer/RichTextRenderer";
-import { getAlignPosition } from "./getAlignPosition";
+import { Arrows } from "./Arrows";
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
@@ -24,40 +23,29 @@ const parseSpeedToMs = (speed: string): number => {
 
 export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles, isEditor }) => {
   const sliderRef = useRef<Splide | null>(null);
+  const [visibleSlides, setVisibleSlides] = useState(1);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const slideRef = useRef<HTMLDivElement | null>(null);
   const { general, card } = settings;
   const { width } = card.dimensions;
   const isAutoplay = general.autoplay === 'on';
-  const inView = !isAutoplay ? (general.inView ?? content.length) : 1;
-  const perMove = general.move === 'one' ? 1 : inView;
-  const marqueePerMove = isAutoplay ? 1 : perMove;
-  const speedMs = isAutoplay ? (settings.general.speed ? parseSpeedToMs(settings.general.speed) : 0) : 5000;
+  const speedMs = settings.general.speed ? parseSpeedToMs(settings.general.speed) : 0;
   
   const shadowHorizontalExtent = settings.card.dropShadow.active === 'on'
-    ? 2 * (settings.card.dropShadow.blur + settings.card.dropShadow.spread) + settings.card.dropShadow.right
-    : 0;
+  ? settings.card.dropShadow.blur + settings.card.dropShadow.spread + Math.abs(settings.card.dropShadow.right)
+  : 0;
 
-  const wrapperWidth = !isAutoplay 
-    ? scalingValue(
-        (width * inView) +
-          (settings.card.gap * (inView - 1)) +
-          (card.borders.width * 2 * inView) +
-          shadowHorizontalExtent,
-        isEditor ?? false
-      )
-    : undefined;
-  const splideKey = `${general.autoplay}-${inView}`;
+  const wrapperWidth = scalingValue(
+      (width * content.length) + 
+      (settings.card.gap * (content.length)) +
+      (card.borders.width * 2 * content.length) +
+      shadowHorizontalExtent,
+      isEditor ?? false);
+  const splideKey = `${general.autoplay}-${content.length}`;
   const hasDropShadow = settings.card.dropShadow.active === 'on';
-  const shadowPadding = hasDropShadow
-    ? scalingValue(
-        Math.max(
-          settings.card.dropShadow.blur + settings.card.dropShadow.spread,
-          settings.card.dropShadow.right,
-          settings.card.dropShadow.down
-        ),
-        isEditor ?? false
-      )
-    : 0;
   const cardHeight = scalingValue(card.dimensions.height, isEditor ?? false);
+  const isRtl = settings.general.direction === 'right';
+  const step = general.move === 'one' ? 1 : visibleSlides;
 
   useEffect(() => {
     if (sliderRef.current?.splide) {
@@ -65,44 +53,73 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
       splide.options = {
         ...splide.options,
         autoplay: isAutoplay,
-        perMove: marqueePerMove,
+        perMove: 1,
+        perPage: isAutoplay ? (content.length || 3) : visibleSlides,
         interval: isAutoplay ? (speedMs || 5000) : 0,
         rewind: !isAutoplay,
-        inView: !isAutoplay ? content.length : undefined,
       };
       splide.refresh();
     }
-  }, [general.autoplay, isAutoplay, marqueePerMove, speedMs]);
-
+  }, [general.autoplay, speedMs, content.length]);
+  
+  useEffect(() => {
+    const updateVisibleSlides = () => {
+      if (!wrapperRef.current) return;
+      const trackWidth = wrapperRef.current.clientWidth;
+      const slideWidth = slideRef.current?.clientWidth;
+  
+      if (!slideWidth || !trackWidth) {
+        setVisibleSlides(1);
+        return;
+      }
+      const perView = Math.max(1, Math.floor(trackWidth / slideWidth));
+      setVisibleSlides(perView);
+    };
+    updateVisibleSlides();
+  }, [settings.card.gap, isEditor, settings.general.move]);
+  
   return (
     <>
-      <div className={cn(classes.container, settings.card.hasGradientCorners === 'gradient' && classes.gradientCorners)} style={{ justifyContent: 'center' }}>
-        <div 
+      <div
+        style={{ 
+          height: `calc(100% + ${scalingValue(Math.abs(card.dropShadow.down) + card.dropShadow.blur + card.dropShadow.spread, isEditor ?? false)} )`,
+          transform: card.dropShadow.down > 0 ? `translateY(-${scalingValue(card.dropShadow.down, isEditor ?? false)})`
+            : `translateY(${scalingValue(card.dropShadow.down, isEditor ?? false)})`,
+            ['--gradient-color' as string]: settings.general.gradientCorners.color,
+        }}
+        className={settings.general.gradientCorners.active === 'gradient' ? classes.gradientCorners : undefined}
+        ></div>
+      <div
+        className={classes.container}
+        style={{
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}
+      >
+        <div
           className={cn(classes.wrapper, !isAutoplay && classes.wrapperAutoplayOff, hasDropShadow && classes.wrapperDropShadow)}
           style={{
-            ...(wrapperWidth ? { width: wrapperWidth } : {}),
-            // ...(hasDropShadow && shadowPadding ? { ['--shadow-padding' as string]: typeof shadowPadding === 'number' ? `${shadowPadding}px` : shadowPadding } : {}),
+            ...(wrapperWidth ? { width: wrapperWidth } : {}), 
+            ['--card-gap' as string]: isAutoplay ? 0 : `${scalingValue(settings.card.gap, isEditor ?? false)}`,
           }}
+          ref={wrapperRef}
         >
           <Splide 
             key={splideKey}
             ref={sliderRef}
             options={{
-              type: 'loop',
+              type: isAutoplay || general.controls?.isActive === 'visible' ? 'loop' : 'slide',
               fixedWidth: scalingValue(width + card.borders.width * 2, isEditor ?? false),
-              height: '100%',
-              ...(settings.general.autoplay === 'off' && { 
-                // width: wrapperWidth,
-                height: '100%'
-              }),
+              height: 'auto',
               arrows: false,
-              perMove: isAutoplay ? marqueePerMove : perMove,
-              gap: scalingValue(settings.card.gap, isEditor ?? false),
+              perMove: 1,
+              perPage: visibleSlides,
+              gap: isAutoplay ? scalingValue(settings.card.gap, isEditor ?? false) : 0,
               padding: 0,
               drag: false,
               autoplay: isAutoplay,
               speed: speedMs,
-              interval: speedMs,
+              interval: speedMs || 5000,
               rewind: !isAutoplay,
               easing: 'linear',
               direction: settings.general.direction === 'left' ? 'ltr' : 'rtl',
@@ -114,22 +131,17 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
               return (
               <SplideSlide key={index}>
                 <div
+                  ref={slideRef}
                   style={{
                     padding: `${scalingValue(settings.card.padding.top, isEditor ?? false)} ${scalingValue(settings.card.padding.right, isEditor ?? false)} ${scalingValue(settings.card.padding.bottom, isEditor ?? false)} ${scalingValue(settings.card.padding.left, isEditor ?? false)}`,
                     width: scalingValue(width + card.borders.width * 2, isEditor ?? false),
                     minHeight: cardHeight,
-                    height: cardHeight,
+                    height: '100%',
                     borderRadius: scalingValue(settings.card.corner, isEditor ?? false),
                     border: `${scalingValue(settings.card.borders.width, isEditor ?? false)} solid ${settings.card.borders.color}`,
                     boxSizing: 'border-box',
                     position: 'relative',
                     boxShadow: settings.card.dropShadow.active === 'on' ? `${scalingValue(settings.card.dropShadow.right, isEditor ?? false)} ${scalingValue(settings.card.dropShadow.down, isEditor ?? false)} ${scalingValue(settings.card.dropShadow.blur, isEditor ?? false)} ${scalingValue(settings.card.dropShadow.spread, isEditor ?? false)} ${settings.card.dropShadow.color}` : 'none',
-                    ...(settings.card.dropShadow.active === 'on' && {
-                      marginTop: scalingValue(settings.card.dropShadow.blur + settings.card.dropShadow.spread, isEditor ?? false),
-                      marginBottom: scalingValue(settings.card.dropShadow.down + settings.card.dropShadow.blur + settings.card.dropShadow.spread, isEditor ?? false),
-                      marginLeft: scalingValue(settings.card.dropShadow.blur + settings.card.dropShadow.spread, isEditor ?? false),
-                      marginRight: scalingValue(settings.card.dropShadow.right + settings.card.dropShadow.blur + settings.card.dropShadow.spread, isEditor ?? false),
-                    }),
                     }}
                   >
                   {item.image?.url && (
@@ -149,7 +161,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                     style={{
                       background: settings.card.bgColor,
                       borderRadius: `${scalingValue(settings.card.corner, isEditor ?? false)}`,
-                      height: cardHeight,
+                      height: '100%',
                     }}
                   />
                   <div
@@ -170,83 +182,84 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                       return elementsWithOrder.map(({ key, order: orderIndex }: { key: ElementOrderKey, order: number }) => {
                         if (key === 'icon') {
                           return (
-                            <img
-                              key="icon"
-                              data-controls="elements.icon.margin.top"
-                              src={item.icon?.url}
-                              alt={item.icon?.name}
-                              className={classes.icon}
-                              style={{
-                                marginTop: scalingValue(settings.elements.icon.margin.top, isEditor ?? false),
-                                transform: `scale(${settings.elements.icon.scale / 100})`,
-                                order: orderIndex,
-                                zIndex: orderIndex,
-                                pointerEvents: 'auto'
-                              }}
-                            />
+                            <div key="icon" style={{ order: orderIndex, zIndex: orderIndex }}>
+                              <div data-controls="elements.icon.margin.top" className={classes.control} style={{ height: scalingValue(settings.elements.icon.margin.top, isEditor ?? false)}} />
+                              <div
+                                style={{
+                                  width: '100%',
+                                  textAlign: settings.elements.icon.align
+                                }}
+                              >
+                                <img
+                                  src={item.icon?.url}
+                                  alt={item.icon?.name}
+                                  className={classes.icon}
+                                  style={{
+                                    transform: `scale(${settings.elements.icon.scale / 100})`,
+                                    pointerEvents: 'auto'
+                                  }}
+                                />
+                              </div>
+                            </div>
                           );
                         }
                         if (key === 'text' && styles.imageCaption) {
                           const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = styles.imageCaption;
                           return (
-                            <div
-                              key="text"
-                              data-styles="imageCaption"
-                              data-controls="elements.text.margin.top"
-                              className={classes.caption}
-                              style={{
-                                marginTop: scalingValue(settings.elements.text.margin.top, isEditor ?? false),
-                                fontFamily: fontSettings.fontFamily,
-                                fontWeight: fontSettings.fontWeight,
-                                fontStyle: fontSettings.fontStyle,
-                                minHeight: scalingValue(settings.elements.text.minHeight, isEditor ?? false),
-                                letterSpacing: scalingValue(letterSpacing, isEditor),
-                                wordSpacing: scalingValue(wordSpacing, isEditor),
-                                textAlign,
-                                fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                                lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                                textTransform: textAppearance.textTransform ?? 'none',
-                                textDecoration: textAppearance.textDecoration ?? 'none',
-                                fontVariant: textAppearance.fontVariant ?? 'normal',
-                                color,
-                                order: orderIndex,
-                                zIndex: orderIndex,
-                                pointerEvents: 'auto'
-                              }}
-                            >
-                              <RichTextRenderer content={item.imageCaption} />
+                            <div key="text" style={{ order: orderIndex, zIndex: orderIndex }}>
+                              <div data-controls="elements.text.margin.top" className={classes.control} style={{ height: scalingValue(settings.elements.text.margin.top, isEditor ?? false)}} />
+                              <div
+                                data-styles="imageCaption"
+                                className={classes.caption}
+                                style={{
+                                  fontFamily: fontSettings.fontFamily,
+                                  fontWeight: fontSettings.fontWeight,
+                                  fontStyle: fontSettings.fontStyle,
+                                  minHeight: scalingValue(settings.elements.text.minHeight, isEditor ?? false),
+                                  letterSpacing: scalingValue(letterSpacing, isEditor),
+                                  wordSpacing: scalingValue(wordSpacing, isEditor),
+                                  textAlign,
+                                  fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                                  lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                                  textTransform: textAppearance.textTransform ?? 'none',
+                                  textDecoration: textAppearance.textDecoration ?? 'none',
+                                  fontVariant: textAppearance.fontVariant ?? 'normal',
+                                  color,
+                                  pointerEvents: 'auto'
+                                }}
+                              >
+                                <RichTextRenderer content={item.imageCaption} />
+                              </div>
                             </div>
                           );
                         }
                         if (key === 'caption' && styles.caption) {
                           const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = styles.caption;
                           return (
-                            <div
-                              key="caption"
-                              data-styles="caption"
-                              data-controls="elements.caption.margin.top"
-                              className={classes.caption}
-                              style={{
-                                marginTop: scalingValue(settings.elements.caption.margin.top, isEditor ?? false),
-                                fontFamily: fontSettings.fontFamily,
-                                fontWeight: fontSettings.fontWeight,
-                                fontStyle: fontSettings.fontStyle,
-                                minHeight: scalingValue(settings.elements.caption.minHeight, isEditor ?? false),
-                                letterSpacing: scalingValue(letterSpacing, isEditor),
-                                wordSpacing: scalingValue(wordSpacing, isEditor),
-                                textAlign,
-                                fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                                lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                                textTransform: textAppearance.textTransform ?? 'none',
-                                textDecoration: textAppearance.textDecoration ?? 'none',
-                                fontVariant: textAppearance.fontVariant ?? 'normal',
-                                color,
-                                order: orderIndex,
-                                zIndex: orderIndex,
-                                pointerEvents: 'auto'
-                              }}
-                            >
-                              <RichTextRenderer content={item.caption} />
+                            <div key="caption" style={{ order: orderIndex, zIndex: orderIndex }}>
+                              <div data-controls="elements.caption.margin.top" className={classes.control} style={{ height: scalingValue(settings.elements.caption.margin.top, isEditor ?? false)}}/>
+                              <div
+                                data-styles="caption"
+                                className={classes.caption}
+                                style={{
+                                  fontFamily: fontSettings.fontFamily,
+                                  fontWeight: fontSettings.fontWeight,
+                                  fontStyle: fontSettings.fontStyle,
+                                  minHeight: scalingValue(settings.elements.caption.minHeight, isEditor ?? false),
+                                  letterSpacing: scalingValue(letterSpacing, isEditor),
+                                  wordSpacing: scalingValue(wordSpacing, isEditor),
+                                  textAlign,
+                                  fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+                                  lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+                                  textTransform: textAppearance.textTransform ?? 'none',
+                                  textDecoration: textAppearance.textDecoration ?? 'none',
+                                  fontVariant: textAppearance.fontVariant ?? 'normal',
+                                  color,
+                                  pointerEvents: 'auto'
+                                }}
+                              >
+                                <RichTextRenderer content={item.caption} />
+                              </div>
                             </div>
                           );
                         }
@@ -260,70 +273,19 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
             })} 
           </Splide>
         </div>
+        {settings.general.controls?.isActive === 'visible' && general.autoplay === 'off' && (
+          <Arrows
+            isRtl={isRtl}
+            step={step}
+            controls={settings.general.controls}
+            isEditor={isEditor ?? false}
+            sliderRef={sliderRef}
+          />
+        )}
       </div>
-      {settings.general.controls?.isActive && (
-        <>
-          <div 
-            className={classes.arrow}
-            style={{color: settings.general.controls?.color,['--arrow-hover-color' as string]: settings.general.controls?.hover}}
-          >
-            <button
-              className={classes.arrowInner}
-              style={{transform: `translate(${scalingValue(settings.general.controls?.offset.x, isEditor ?? false)}, ${scalingValue(settings.general.controls?.offset.y, isEditor ?? false)}) scale(${settings.general.controls?.scale / 100})`}}
-              onClick={() => sliderRef.current?.go(isAutoplay ? '+1' : `+${perMove}`)}
-              aria-label='Previous'
-              >
-                {settings.general.controls?.arrowsImgUrl && (
-                  <SvgImage
-                    url={settings.general.controls?.arrowsImgUrl}
-                    fill={settings.general.controls?.color}
-                    hoverFill={settings.general.controls?.hover}
-                    className={cn(classes.arrowImg, classes.mirror)}
-                  />
-                )}
-                {!settings.general.controls?.arrowsImgUrl && (
-                  <ArrowIcon color={settings.general.controls?.color} className={cn(classes.arrowIcon, classes.arrowImg, classes.mirror)} />
-                )}
-              </button>
-          </div>
-          <div
-            className={cn(classes.arrow, classes.nextArrow)}
-            style={{color: settings.general.controls?.color,['--arrow-hover-color' as string]: settings.general.controls?.hover}}
-          >              
-            <button
-              className={classes.arrowInner}
-              style={{ transform: `translate(${scalingValue(settings.general.controls?.offset.x * -1, isEditor ?? false)}, ${scalingValue(settings.general.controls?.offset.y, isEditor ?? false)}) scale(${settings.general.controls?.scale / 100})`}}
-              onClick={() => sliderRef.current?.go(isAutoplay ? '-1' : `-${perMove}`)}
-              aria-label='Next'
-            >
-              {settings.general.controls?.arrowsImgUrl && (
-                <SvgImage
-                  url={settings.general.controls?.arrowsImgUrl}
-                  fill={settings.general.controls?.color}
-                  hoverFill={settings.general.controls?.hover}
-                  className={classes.arrowImg}
-                />
-              )}
-              {!settings.general.controls?.arrowsImgUrl && (
-                <ArrowIcon color={settings.general.controls?.color} className={cn(classes.arrowIcon, classes.arrowImg)} />
-              )}
-            </button>
-          </div>
-        </>
-      )}
     </>
   );
 };
-
-function ArrowIcon({ color, className }: { color: string, className: string }) {
-  return (
-    <svg viewBox="0 0 10 18" className={className}>
-      <g id="Symbols" stroke="none" strokeWidth="1" fillRule="evenodd">
-          <path d="M-3.70710678,4.29289322 C-3.34662282,3.93240926 -2.77939176,3.90467972 -2.38710056,4.20970461 L-2.29289322,4.29289322 L5,11.585 L12.2928932,4.29289322 C12.6533772,3.93240926 13.2206082,3.90467972 13.6128994,4.20970461 L13.7071068,4.29289322 C14.0675907,4.65337718 14.0953203,5.22060824 13.7902954,5.61289944 L13.7071068,5.70710678 L5.70710678,13.7071068 C5.34662282,14.0675907 4.77939176,14.0953203 4.38710056,13.7902954 L4.29289322,13.7071068 L-3.70710678,5.70710678 C-4.09763107,5.31658249 -4.09763107,4.68341751 -3.70710678,4.29289322 Z" id="Shape-Copy" fill={color} transform="translate(5, 9) rotate(-90) translate(-5, -9)"></path>
-      </g>
-    </svg>
-  );
-}
 
 type TestimonialsImage = {
   image?: {
@@ -349,21 +311,25 @@ export type Offset = {
 
 type TestimonialsGeneral = {
   autoplay: 'on' | 'off';
-  inView?: number;
-  alignment?: 'left' | 'center' | 'right';
   move: 'one' | 'view';
   speed: string;
   direction: 'left' | 'right';
   pause: 'hover' | 'click' | 'off';
   controls?: TestimonialsControls;
+  gradientCorners: {
+    active: 'gradient' | 'none';
+    color: string;
+  };
 };
 
-type TestimonialsControls = {
+export type TestimonialsControls = {
   arrowsImgUrl: string | null;
-  isActive: boolean;
+  isActive: 'visible' | 'hidden';
   color: string;
   hover: string;
-  offset: Offset;
+  align: Alignment;
+  gap: number;
+  // offset: Offset;
   scale: number;
 };
 
@@ -395,7 +361,6 @@ type TestimonialsCard = {
     blur: number;
     color: string;
   },
-  hasGradientCorners: 'gradient' | 'none';
 };
 
 type ElementOrderKey = 'text' | 'icon' | 'caption';
@@ -415,6 +380,7 @@ type TestimonialsElements = {
     margin: {
       top: number;
     };
+    align: 'left' | 'center' | 'right';
     scale: number;
   };
   caption: {
