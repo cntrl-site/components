@@ -17,7 +17,7 @@ export const ControlImageRevealSliderComponent: Component = {
     content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [{ path: 'settings.cursor.defaultCursor' }, { path: 'settings.cursor.hoverCursor' }]
   },
-  fontSettingsPath: {
+  fontSettingsPaths: {
     content: [],
     parameters: []
   },

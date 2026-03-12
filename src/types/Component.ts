@@ -17,7 +17,7 @@ export type Component = {
     content: Path[];
     parameters: Path[];
   };
-  fontSettingsPath: {
+  fontSettingsPaths: {
     content: Path[];
     parameters: Path[];
   };

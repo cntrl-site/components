@@ -17,7 +17,7 @@ export const ControlSliderComponent: Component = {
     content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
   },
-  fontSettingsPath: {
+  fontSettingsPaths: {
     content: [],
     parameters: [{ path: 'styles.imageCaption.fontSettings' }]
   },

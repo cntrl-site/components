@@ -13,7 +13,7 @@ export const LightboxComponent: Component = {
     width: 440,
     height: 550
   },
-  fontSettingsPath: {
+  fontSettingsPaths: {
     content: [],
     parameters: [{ path: 'styles.imageCaption.fontSettings' }]
   },
