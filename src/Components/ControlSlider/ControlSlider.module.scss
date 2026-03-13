@@ -100,12 +100,12 @@
 }
 
 .mirror {
-  transform: translate3d(-50%, -50%, 0) scaleX(-1) !important;
+  transform: translate(-50%, -50%) scaleX(-1) !important;
 }
 
 .arrowVertical {
   &.mirror {
-    transform: translate3d(-50%, -50%, 0) scaleY(-1) !important;
+    transform: translate(-50%, -50%) scaleY(-1) !important;
   }
 }
 
