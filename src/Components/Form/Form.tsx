@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import cn from 'classnames';
 import styles from './Form.module.scss';
 import { CommonComponentProps } from '../props';
-
+import { scalingValue } from '../utils/scalingValue';
 
 const FIELD_TYPES: FormFieldType[] = ['text', 'textarea', 'phone', 'email'];
 
@@ -13,22 +13,22 @@ type FormProps = {
   onUpdateSettings?: (settings: FormSettings) => void;
 } & CommonComponentProps;
 
-const inputStyleClassName: Record<FormSettings['inputStyle'], string> = {
-  bordered: styles.inputBordered,
-  underline: styles.inputUnderline,
-  with_label: styles.inputWithLabel,
-};
-
 export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormProps) {
   const {
     type = 'A',
     fields = { fieldsToShow: 2, items: [] },
-    inputStyle = 'bordered',
     buttonLabel = 'Sign up',
+    input: inputTextStyle,
+    label: labelTextStyle,
+    button: buttonTextStyle,
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
   const visibleFields = fields.items.slice(0, Math.min(fields.fieldsToShow, fields.items.length));
+
+  const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
+  const labelCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
+  const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
@@ -36,8 +36,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
-
-  const hasLabels = inputStyle === 'with_label';
 
   const apiBase = metadata?.apiBase as string | undefined;
   const projectId = metadata?.projectId as string | undefined;
@@ -104,8 +102,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
       <form
         onSubmit={handleSubmit}
         className={cn(styles.form, {
-          [styles.formHorizontal]: layout === 'horizontal' && !hasLabels,
-          [styles.formHorizontalWithLabel]: layout === 'horizontal' && hasLabels,
+          [styles.formHorizontal]: layout === 'horizontal',
           [styles.formVertical]: layout === 'vertical',
         })}
       >
@@ -115,11 +112,9 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
         })}>
           {visibleFields.map((field, index) => (
             <div key={field.name} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
-              {hasLabels && (
-                <span className={cn(styles.label, styles.overlayAnchor)}>
-                  {field.label}
-                </span>
-              )}
+              <span className={cn(styles.label, styles.overlayAnchor)} style={labelCss}>
+                {field.label}
+              </span>
               <div className={styles.fieldInputRow}>
                 <div className={styles.overlayAnchor}>
                   {field.type === 'textarea' ? (
@@ -128,8 +123,9 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                       autoComplete="off"
                       value={fieldValues[field.name] ?? ''}
                       onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      placeholder={hasLabels ? undefined : field.placeholder}
-                      className={cn(styles.input, inputStyleClassName[inputStyle])}
+                      placeholder={field.placeholder}
+                      className={styles.input}
+                      style={inputCss}
                       rows={3}
                       data-field-type="textarea"
                     />
@@ -140,9 +136,10 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                       autoComplete="off"
                       value={fieldValues[field.name] ?? ''}
                       onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      placeholder={hasLabels ? undefined : field.placeholder}
+                      placeholder={field.placeholder}
                       required={field.type === 'email'}
-                      className={cn(styles.input, inputStyleClassName[inputStyle])}
+                      className={styles.input}
+                      style={inputCss}
                     />
                   )}
                 </div>
@@ -203,7 +200,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
             type="submit"
             className={styles.button}
           >
-            <span className={styles.overlayAnchor}>
+            <span className={styles.overlayAnchor} style={buttonTextCss}>
               {status === 'submitting' ? '...' : buttonLabel}
             </span>
           </button>
@@ -231,9 +228,35 @@ export type FormFields = {
   items: FormFieldItem[];
 };
 
+type TextStyles = {
+  fontSettings: {
+    fontFamily: string;
+    fontWeight: number;
+    fontStyle: string;
+  };
+  letterSpacing: number;
+  wordSpacing: number;
+  fontSize: number;
+  color: string;
+};
+
 type FormSettings = {
   type: 'A' | 'B';
   fields: FormFields;
-  inputStyle: 'bordered' | 'underline' | 'with_label';
   buttonLabel?: string;
+  input?: TextStyles;
+  label?: TextStyles;
+  button?: TextStyles;
 };
+
+function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
+  return {
+    fontFamily: textStyles.fontSettings.fontFamily,
+    fontWeight: textStyles.fontSettings.fontWeight,
+    fontStyle: textStyles.fontSettings.fontStyle,
+    letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
+    wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
+    fontSize: scalingValue(textStyles.fontSize, isEditor),
+    color: textStyles.color,
+  };
+}

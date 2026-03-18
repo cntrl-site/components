@@ -19,11 +19,6 @@
   align-items: center;
 }
 
-.formHorizontalWithLabel {
-  flex-direction: row;
-  align-items: flex-end;
-}
-
 .formVertical {
   flex-direction: column;
 }
@@ -114,8 +109,13 @@
   @include size(font-size, 14);
   line-height: 1.4;
   background: transparent;
-  border: none;
+  border: 1px solid #ccc;
+  @include size(border-radius, 4);
   outline: none;
+
+  &:focus {
+    border-color: #333;
+  }
 
   &[data-field-type='textarea'] {
     resize: vertical;
@@ -125,35 +125,6 @@
   &:disabled {
     background: #f5f5f5;
     cursor: not-allowed;
-  }
-}
-
-.inputBordered {
-  border: 1px solid #ccc;
-  @include size(border-radius, 4);
-
-  &:focus {
-    border-color: #333;
-  }
-}
-
-.inputUnderline {
-  border-bottom: 1px solid #ccc;
-  @include size(padding-left, 0);
-  @include size(padding-right, 0);
-  border-radius: 0;
-
-  &:focus {
-    border-bottom-color: #333;
-  }
-}
-
-.inputWithLabel {
-  border: 1px solid #ccc;
-  @include size(border-radius, 4);
-
-  &:focus {
-    border-color: #333;
   }
 }
 

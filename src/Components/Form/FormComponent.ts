@@ -11,6 +11,46 @@ const defaultFieldsItems = [
   { name: 'message3', type: 'textarea' as const, label: 'Message 3', placeholder: 'Enter your message 3' },
 ];
 
+const textStyleProperties = {
+  fontSettings: {
+    type: 'object' as const,
+    display: { type: 'font-settings' },
+    properties: {
+      fontFamily: { type: 'string' as const },
+      fontWeight: { type: 'number' as const },
+      fontStyle: { type: 'string' as const },
+    },
+  },
+  fontSize: {
+    type: 'number' as const,
+    display: { type: 'font-size' },
+  },
+  letterSpacing: {
+    type: 'number' as const,
+    display: { type: 'letter-spacing-input' },
+  },
+  wordSpacing: {
+    type: 'number' as const,
+    display: { type: 'word-spacing-input' },
+  },
+  color: {
+    type: 'string' as const,
+    display: { type: 'style-panel-color-picker' },
+  },
+};
+
+const textStyleDefault = (fontWeight: number, color: string) => ({
+  fontSettings: {
+    fontFamily: 'Arial',
+    fontWeight,
+    fontStyle: 'normal',
+  },
+  letterSpacing: 0,
+  wordSpacing: 0,
+  fontSize: 0.01,
+  color,
+});
+
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
@@ -49,13 +89,6 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'switch-toggle' },
         enum: ['A', 'B'],
       },
-      inputStyle: {
-        type: 'string',
-        scope: 'common',
-        title: 'Input',
-        display: { type: 'radio-group' },
-        enum: ['input_bordered', 'input_underline', 'input_with_label'],
-      },
       buttonWidth: {
         type: 'number',
         scope: 'layout',
@@ -90,56 +123,88 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 100,
       },
-      buttonAlignment: {
-        type: 'string',
+      input: {
+        type: 'object',
         scope: 'layout',
-        title: 'Alignment',
-        display: { type: 'radio-group' },
-        enum: ['button_start', 'button_center', 'button_end', 'button_stretch'],
+        properties: textStyleProperties,
+      },
+      label: {
+        type: 'object',
+        scope: 'layout',
+        properties: textStyleProperties,
+      },
+      button: {
+        type: 'object',
+        scope: 'layout',
+        properties: textStyleProperties,
       },
     },
-    layout: [
-      { type: 'row', items: ['fields', 'type'] },
-      'inputStyle',
-      {
-        type: 'group',
-        title: 'BUTTON',
-        items: [
-          {
-            type: 'row',
-            items: [
-              'buttonWidth',
-              {
-                type: 'switcher',
-                title: 'Padding',
-                options: {
-                  'Button': ['buttonPadding'],
-                  'Input': ['inputPadding'],
-                },
-              },
-            ],
-          },
-          'buttonStroke',
-          'buttonCorners',
-          'buttonAlignment',
-        ],
-      },
-    ],
     defaults: {
       fields: {
         fieldsToShow: 2,
         items: defaultFieldsItems,
       },
       type: 'A',
-      inputStyle: 'bordered',
       buttonWidth: 300,
       buttonStroke: 2,
       buttonCorners: 8,
-      buttonAlignment: 'start',
       buttonPadding: { top: 25, right: 25, bottom: 25, left: 25 },
       inputPadding: { top: 10, right: 14, bottom: 10, left: 14 },
+      input: textStyleDefault(400, '#000000'),
+      label: textStyleDefault(400, '#000000'),
+      button: textStyleDefault(700, '#000000'),
     },
   },
+  panels: [
+    {
+      id: 'general',
+      icon: 'cursor',
+      title: 'General',
+      tooltip: 'General Settings',
+      layout: [
+        { type: 'row', items: ['fields', 'type'] },
+        {
+          type: 'group',
+          title: 'BUTTON',
+          items: [
+            {
+              type: 'row',
+              items: [
+                'buttonWidth',
+                {
+                  type: 'switcher',
+                  title: 'Padding',
+                  options: {
+                    'Button': ['buttonPadding'],
+                    'Input': ['inputPadding'],
+                  },
+                },
+              ],
+            },
+            'buttonStroke',
+            'buttonCorners',
+          ],
+        },
+      ],
+    },
+    {
+      id: 'typeStyle',
+      icon: 'text-icon',
+      title: 'Type Style',
+      tooltip: 'Typography',
+      layout: [
+        {
+          type: 'switcher',
+          title: 'Element',
+          options: {
+            'Input': ['input'],
+            'Label': ['label'],
+            'Button': ['button'],
+          },
+        },
+      ],
+    },
+  ],
 };
 
 export const FormComponent = {

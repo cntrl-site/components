@@ -45,9 +45,18 @@ export type SchemaSection = {
   defaults: Record<string, unknown>;
 };
 
+export type SchemaPanel = {
+  id: string;
+  icon: string;
+  title: string;
+  tooltip?: string;
+  layout: LayoutItem[];
+};
+
 export type ComponentSchemaV1 = {
   type: 'object';
   version: 1;
   settings: SchemaSection;
+  panels?: SchemaPanel[];
   content?: SchemaSection;
 };
