@@ -49,6 +49,5 @@ export type ComponentSchemaV1 = {
   type: 'object';
   version: 1;
   settings: SchemaSection;
-  styles: SchemaSection;
   content?: SchemaSection;
 };

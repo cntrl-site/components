@@ -2,14 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import cn from 'classnames';
 import styles from './Form.module.scss';
 import { CommonComponentProps } from '../props';
-import { scalingValue } from '../utils/scalingValue';
+
 
 const FIELD_TYPES: FormFieldType[] = ['text', 'textarea', 'phone', 'email'];
 
 type FormProps = {
   settings: FormSettings;
   content?: unknown;
-  styles: FormStyles;
   isEditor?: boolean;
   onUpdateSettings?: (settings: FormSettings) => void;
 } & CommonComponentProps;
@@ -20,7 +19,7 @@ const inputStyleClassName: Record<FormSettings['inputStyle'], string> = {
   with_label: styles.inputWithLabel,
 };
 
-export function Form({ settings, styles: componentStyles, isEditor, metadata, onUpdateSettings }: FormProps) {
+export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormProps) {
   const {
     type = 'A',
     fields = { fieldsToShow: 2, items: [] },
@@ -30,10 +29,6 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
   const visibleFields = fields.items.slice(0, Math.min(fields.fieldsToShow, fields.items.length));
-
-  const inputCss = componentStyles ? textStylesToCss(componentStyles.input, isEditor) : undefined;
-  const labelCss = componentStyles?.label ? textStylesToCss(componentStyles.label, isEditor) : undefined;
-  const buttonTextCss = componentStyles ? textStylesToCss(componentStyles.button, isEditor) : undefined;
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
@@ -104,10 +99,6 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
     }
   };
 
-  const preventDefault = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
   return (
     <div className={styles.wrapper}>
       <form
@@ -125,9 +116,8 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
           {visibleFields.map((field, index) => (
             <div key={field.name} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
               {hasLabels && (
-                <span className={cn(styles.label, styles.overlayAnchor)} style={labelCss}>
+                <span className={cn(styles.label, styles.overlayAnchor)}>
                   {field.label}
-                  {isEditor && <div className={styles.overlay} data-styles="label" />}
                 </span>
               )}
               <div className={styles.fieldInputRow}>
@@ -140,7 +130,6 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
                       onChange={(e) => handleFieldChange(field.name, e.target.value)}
                       placeholder={hasLabels ? undefined : field.placeholder}
                       className={cn(styles.input, inputStyleClassName[inputStyle])}
-                      style={inputCss}
                       rows={3}
                       data-field-type="textarea"
                     />
@@ -154,10 +143,8 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
                       placeholder={hasLabels ? undefined : field.placeholder}
                       required={field.type === 'email'}
                       className={cn(styles.input, inputStyleClassName[inputStyle])}
-                      style={inputCss}
                     />
                   )}
-                  {isEditor && <div className={styles.overlay} data-styles="input" />}
                 </div>
                 {isEditor && (
                   <button
@@ -216,9 +203,8 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
             type="submit"
             className={styles.button}
           >
-            <span className={styles.overlayAnchor} style={buttonTextCss}>
+            <span className={styles.overlayAnchor}>
               {status === 'submitting' ? '...' : buttonLabel}
-              {isEditor && <div className={cn(styles.overlay, styles.overlayAbove)} data-styles="button" onClick={preventDefault} />}
             </span>
           </button>
         </div>
@@ -230,53 +216,6 @@ export function Form({ settings, styles: componentStyles, isEditor, metadata, on
     </div>
   );
 }
-
-function buttonBackgroundToCss(bg: ButtonBackgroundStyles, isEditor?: boolean): React.CSSProperties {
-  return {
-    backgroundColor: bg.backgroundColor,
-    borderColor: bg.borderColor,
-    borderWidth: scalingValue(bg.borderWidth, isEditor),
-    borderRadius: scalingValue(bg.borderRadius, isEditor),
-    borderStyle: bg.borderWidth ? 'solid' : 'none',
-  };
-}
-
-function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
-  return {
-    fontFamily: textStyles.fontSettings.fontFamily,
-    fontWeight: textStyles.fontSettings.fontWeight,
-    fontStyle: textStyles.fontSettings.fontStyle,
-    letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
-    wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
-    fontSize: scalingValue(textStyles.fontSize, isEditor),
-    color: textStyles.color,
-  };
-}
-
-type TextStyles = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  letterSpacing: number;
-  wordSpacing: number;
-  fontSize: number;
-  color: string;
-};
-
-type ButtonBackgroundStyles = {
-  backgroundColor: string;
-  borderColor: string;
-  borderWidth: number;
-  borderRadius: number;
-};
-
-type FormStyles = {
-  input: TextStyles;
-  label: TextStyles;
-  button: TextStyles;
-};
 
 export type FormFieldType = 'text' | 'textarea' | 'phone' | 'email';
 

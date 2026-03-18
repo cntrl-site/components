@@ -1,46 +1,6 @@
 import { Form } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 
-const textStyleProperties = {
-  fontSettings: {
-    type: 'object' as const,
-    display: { type: 'font-settings' },
-    properties: {
-      fontFamily: { type: 'string' as const },
-      fontWeight: { type: 'number' as const },
-      fontStyle: { type: 'string' as const },
-    },
-  },
-  fontSize: {
-    type: 'number' as const,
-    display: { type: 'font-size' },
-  },
-  letterSpacing: {
-    type: 'number' as const,
-    display: { type: 'letter-spacing-input' },
-  },
-  wordSpacing: {
-    type: 'number' as const,
-    display: { type: 'word-spacing-input' },
-  },
-  color: {
-    type: 'string' as const,
-    display: { type: 'style-panel-color-picker' },
-  },
-};
-
-const textStyleDefault = (fontWeight: number, color: string) => ({
-  fontSettings: {
-    fontFamily: 'Arial',
-    fontWeight,
-    fontStyle: 'normal',
-  },
-  letterSpacing: 0,
-  wordSpacing: 0,
-  fontSize: 0.01,
-  color,
-});
-
 const defaultFieldsItems = [
   { name: 'email', type: 'email' as const, label: 'Email', placeholder: 'Enter your email' },
   { name: 'name', type: 'text' as const, label: 'Name', placeholder: 'Enter your name' },
@@ -178,27 +138,6 @@ const schema: ComponentSchemaV1 = {
       buttonAlignment: 'start',
       buttonPadding: { top: 25, right: 25, bottom: 25, left: 25 },
       inputPadding: { top: 10, right: 14, bottom: 10, left: 14 },
-    },
-  },
-  styles: {
-    properties: {
-      input: {
-        type: 'object',
-        properties: textStyleProperties,
-      },
-      label: {
-        type: 'object',
-        properties: textStyleProperties,
-      },
-      button: {
-        type: 'object',
-        properties: textStyleProperties,
-      },
-    },
-    defaults: {
-      input: textStyleDefault(400, '#000000'),
-      label: textStyleDefault(400, '#000000'),
-      button: textStyleDefault(700, '#ffffff'),
     },
   },
 };

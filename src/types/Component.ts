@@ -1,4 +1,5 @@
 import React from 'react';
+import { ComponentSchemaV1 } from './SchemaV1';
 
 export type Component = {
   element: (props: any) => React.ReactElement;
@@ -15,3 +16,7 @@ export type Component = {
     url: string;
   };
 };
+
+export function isSchemaV1(schema: any): schema is ComponentSchemaV1 {
+  return schema.type === 'object' && schema.version === 1;
+}
