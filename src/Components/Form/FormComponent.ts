@@ -47,6 +47,8 @@ const defaultFieldsItems = [
   { name: 'company', type: 'text' as const, label: 'Company', placeholder: 'Enter company' },
   { name: 'phone', type: 'phone' as const, label: 'Phone', placeholder: 'Enter your phone' },
   { name: 'message', type: 'textarea' as const, label: 'Message', placeholder: 'Enter your message' },
+  { name: 'message2', type: 'textarea' as const, label: 'Message 2', placeholder: 'Enter your message 2' },
+  { name: 'message3', type: 'textarea' as const, label: 'Message 3', placeholder: 'Enter your message 3' },
 ];
 
 const schema: ComponentSchemaV1 = {
@@ -63,8 +65,8 @@ const schema: ComponentSchemaV1 = {
           fieldsToShow: {
             type: 'number',
             title: 'Visible',
-            min: 0,
-            max: 8,
+            min: 1,
+            max: 5,
           },
           items: {
             type: 'array',
@@ -83,16 +85,16 @@ const schema: ComponentSchemaV1 = {
       type: {
         type: 'string',
         scope: 'layout',
-        title: 'Type',
-        display: { type: 'ratio-group' },
+        title: 'Alignment',
+        display: { type: 'switch-toggle' },
         enum: ['A', 'B'],
       },
       inputStyle: {
         type: 'string',
         scope: 'common',
         title: 'Input',
-        display: { type: 'ratio-group' },
-        enum: ['bordered', 'underline', 'with_label'],
+        display: { type: 'radio-group' },
+        enum: ['input_bordered', 'input_underline', 'input_with_label'],
       },
       buttonWidth: {
         type: 'number',
@@ -100,7 +102,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Width',
         display: { type: 'range-control' },
         min: 0,
-        max: 1000,
+        max: 10,
       },
       buttonPadding: {
         type: 'object',
@@ -132,8 +134,8 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'layout',
         title: 'Alignment',
-        display: { type: 'align-group', direction: 'horizontal' },
-        enum: ['start', 'center', 'end'],
+        display: { type: 'radio-group' },
+        enum: ['button_start', 'button_center', 'button_end', 'button_stretch'],
       },
     },
     layout: [
