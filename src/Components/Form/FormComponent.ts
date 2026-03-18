@@ -162,7 +162,8 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['fields', 'type'] },
+        { type: 'row', items: ['__template__', 'fields'] },
+        'type',
         {
           type: 'group',
           title: 'BUTTON',
