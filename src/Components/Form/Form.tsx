@@ -21,13 +21,16 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     buttonLabel = 'Sign up',
     input: inputTextStyle,
     button: buttonTextStyle,
+    label: labelTextStyle,
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
+  const showLabels = type === 'C';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
 
   const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
   const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
+  const labelTextCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
@@ -110,7 +113,14 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
           [styles.fieldsVertical]: layout === 'vertical',
         })}>
           {visibleFields.map((field, index) => (
-            <div key={index} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
+            <div key={index} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover, {
+              [styles.fieldGroupLabeled]: showLabels,
+            })}>
+              {showLabels && (
+                <span className={styles.fieldLabel} style={labelTextCss}>
+                  {field.label || field.name}
+                </span>
+              )}
               <div className={styles.fieldInputWrapper}>
                 {field.type === 'textarea' ? (
                   <textarea
@@ -180,6 +190,13 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                       onChange={(e) => handleFieldEditorChange(index, { placeholder: e.target.value })}
                     />
                   </div>
+                  <div className={styles.fieldPopoverRow}>
+                    <label>Label</label>
+                    <input
+                      value={field.label ?? ''}
+                      onChange={(e) => handleFieldEditorChange(index, { label: e.target.value })}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -210,6 +227,7 @@ export type FormFieldItem = {
   name: string;
   type: FormFieldType;
   placeholder: string;
+  label?: string;
 };
 
 type TextStyles = {
@@ -225,12 +243,13 @@ type TextStyles = {
 };
 
 type FormSettings = {
-  type: 'A' | 'B';
+  type: 'A' | 'B' | 'C';
   fieldsToShow: number;
   fields: FormFieldItem[];
   buttonLabel?: string;
   input?: TextStyles;
   button?: TextStyles;
+  label?: TextStyles;
 };
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {

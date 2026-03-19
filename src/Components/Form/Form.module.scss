@@ -49,6 +49,14 @@
   position: relative;
 }
 
+.fieldGroupLabeled {
+  @include size(gap, 4);
+}
+
+.fieldLabel {
+  white-space: nowrap;
+}
+
 .fieldPopover {
   position: absolute;
   top: 100%;

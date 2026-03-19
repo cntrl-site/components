@@ -2,13 +2,13 @@ import { Form } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 
 const defaultFieldsItems = [
-  { name: 'email', type: 'email' as const, placeholder: 'Enter your email' },
-  { name: 'name', type: 'text' as const, placeholder: 'Enter your name' },
-  { name: 'company', type: 'text' as const, placeholder: 'Enter company' },
-  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone' },
-  { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message' },
-  { name: 'message2', type: 'textarea' as const, placeholder: 'Enter your message 2' },
-  { name: 'message3', type: 'textarea' as const, placeholder: 'Enter your message 3' },
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email' },
+  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name' },
+  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company' },
+  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone' },
+  { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message', label: 'Message' },
+  { name: 'message2', type: 'textarea' as const, placeholder: 'Enter your message 2', label: 'Message 2' },
+  { name: 'message3', type: 'textarea' as const, placeholder: 'Enter your message 3', label: 'Message 3' },
 ];
 
 const textStyleProperties = {
@@ -73,6 +73,7 @@ const schema: ComponentSchemaV1 = {
             name: { type: 'string' },
             type: { type: 'string', enum: ['text', 'textarea', 'phone', 'email'] },
             placeholder: { type: 'string' },
+            label: { type: 'string' },
           },
         },
       },
@@ -80,8 +81,8 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'layout',
         title: 'Alignment',
-        display: { type: 'switch-toggle' },
-        enum: ['A', 'B'],
+        display: { type: 'radio-group' },
+        enum: ['A', 'B', 'C'],
       },
       buttonWidth: {
         type: 'number',
@@ -127,6 +128,11 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         properties: textStyleProperties,
       },
+      label: {
+        type: 'object',
+        scope: 'layout',
+        properties: textStyleProperties,
+      },
     },
     defaults: {
       fieldsToShow: 2,
@@ -139,6 +145,7 @@ const schema: ComponentSchemaV1 = {
       inputPadding: { top: 10, right: 14, bottom: 10, left: 14 },
       input: textStyleDefault(400, '#000000'),
       button: textStyleDefault(700, '#000000'),
+      label: textStyleDefault(400, '#000000'),
     },
   },
   panels: [
@@ -186,6 +193,7 @@ const schema: ComponentSchemaV1 = {
           options: {
             'Input': ['input'],
             'Button': ['button'],
+            'Label': ['label'],
           },
         },
       ],
