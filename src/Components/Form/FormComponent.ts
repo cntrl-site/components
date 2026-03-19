@@ -131,6 +131,8 @@ const schema: ComponentSchemaV1 = {
       fieldsToShow: 2,
       fields: defaultFieldsItems,
       type: 'A',
+      gap: 0.008,
+      fieldsGap: 0.008,
       buttonWidth: 300,
       buttonStroke: 2,
       buttonCorners: 8,

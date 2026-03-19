@@ -21,11 +21,12 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     buttonLabel = 'Sign up',
     input: inputTextStyle,
     button: buttonTextStyle,
+    gap = 0.008,
+    fieldsGap = 0.008,
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
-
   const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
   const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
 
@@ -182,6 +183,12 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
             </div>
           ))}
         </div>
+        <div
+          data-axis={layout === 'horizontal' ? 'x' : 'y'}
+          className={cn(styles.overlayAnchor, styles.gapSpacer)}
+          data-controls="settings.gap"
+          style={layout === 'horizontal' ? ({ width: scalingValue(gap, isEditor), height: '100%' } as React.CSSProperties) : ({ height: scalingValue(gap, isEditor), width: '100%' } as React.CSSProperties)}
+        />
         <div className={styles.overlayAnchor}>
           <button
             type="submit"
@@ -228,6 +235,8 @@ type FormSettings = {
   buttonLabel?: string;
   input?: TextStyles;
   button?: TextStyles;
+  gap?: number;
+  fieldsGap?: number;
 };
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
