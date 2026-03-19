@@ -94,12 +94,6 @@
   }
 }
 
-.label {
-  @include size(font-size, 12);
-  @include size(margin-bottom, 4);
-  line-height: 1.4;
-}
-
 .input {
   width: 100%;
   @include size(padding-top, 10);

@@ -16,18 +16,17 @@ type FormProps = {
 export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormProps) {
   const {
     type = 'A',
-    fields = { fieldsToShow: 2, items: [] },
+    fieldsToShow = 2,
+    fields = [],
     buttonLabel = 'Sign up',
     input: inputTextStyle,
-    label: labelTextStyle,
     button: buttonTextStyle,
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
-  const visibleFields = fields.items.slice(0, Math.min(fields.fieldsToShow, fields.items.length));
+  const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
 
   const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
-  const labelCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
   const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
@@ -47,9 +46,9 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
 
   const handleFieldEditorChange = (index: number, updates: Partial<FormFieldItem>) => {
     if (!onUpdateSettings) return;
-    const items = [...fields.items];
-    items[index] = { ...items[index], ...updates };
-    onUpdateSettings({ ...settings, fields: { ...fields, items } });
+    const updated = [...fields];
+    updated[index] = { ...updated[index], ...updates };
+    onUpdateSettings({ ...settings, fields: updated });
   };
 
   useEffect(() => {
@@ -112,9 +111,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
         })}>
           {visibleFields.map((field, index) => (
             <div key={field.name} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
-              <span className={cn(styles.label, styles.overlayAnchor)} style={labelCss}>
-                {field.label}
-              </span>
               <div className={styles.fieldInputRow}>
                 <div className={styles.overlayAnchor}>
                   {field.type === 'textarea' ? (
@@ -177,13 +173,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                     />
                   </div>
                   <div className={styles.fieldPopoverRow}>
-                    <label>Label</label>
-                    <input
-                      value={field.label}
-                      onChange={(e) => handleFieldEditorChange(index, { label: e.target.value })}
-                    />
-                  </div>
-                  <div className={styles.fieldPopoverRow}>
                     <label>Placeholder</label>
                     <input
                       value={field.placeholder}
@@ -219,13 +208,7 @@ export type FormFieldType = 'text' | 'textarea' | 'phone' | 'email';
 export type FormFieldItem = {
   name: string;
   type: FormFieldType;
-  label: string;
   placeholder: string;
-};
-
-export type FormFields = {
-  fieldsToShow: number;
-  items: FormFieldItem[];
 };
 
 type TextStyles = {
@@ -242,10 +225,10 @@ type TextStyles = {
 
 type FormSettings = {
   type: 'A' | 'B';
-  fields: FormFields;
+  fieldsToShow: number;
+  fields: FormFieldItem[];
   buttonLabel?: string;
   input?: TextStyles;
-  label?: TextStyles;
   button?: TextStyles;
 };
 

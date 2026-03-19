@@ -2,13 +2,13 @@ import { Form } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 
 const defaultFieldsItems = [
-  { name: 'email', type: 'email' as const, label: 'Email', placeholder: 'Enter your email' },
-  { name: 'name', type: 'text' as const, label: 'Name', placeholder: 'Enter your name' },
-  { name: 'company', type: 'text' as const, label: 'Company', placeholder: 'Enter company' },
-  { name: 'phone', type: 'phone' as const, label: 'Phone', placeholder: 'Enter your phone' },
-  { name: 'message', type: 'textarea' as const, label: 'Message', placeholder: 'Enter your message' },
-  { name: 'message2', type: 'textarea' as const, label: 'Message 2', placeholder: 'Enter your message 2' },
-  { name: 'message3', type: 'textarea' as const, label: 'Message 3', placeholder: 'Enter your message 3' },
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email' },
+  { name: 'name', type: 'text' as const, placeholder: 'Enter your name' },
+  { name: 'company', type: 'text' as const, placeholder: 'Enter company' },
+  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone' },
+  { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message' },
+  { name: 'message2', type: 'textarea' as const, placeholder: 'Enter your message 2' },
+  { name: 'message3', type: 'textarea' as const, placeholder: 'Enter your message 3' },
 ];
 
 const textStyleProperties = {
@@ -56,29 +56,22 @@ const schema: ComponentSchemaV1 = {
   version: 1,
   settings: {
     properties: {
-      fields: {
-        type: 'fields',
-        scope: 'common',
+      fieldsToShow: {
+        type: 'number',
+        scope: 'layout',
         title: 'Fields',
-        display: { type: 'fields' },
-        properties: {
-          fieldsToShow: {
-            type: 'number',
-            title: 'Visible',
-            min: 1,
-            max: 5,
-          },
-          items: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                type: { type: 'string', enum: ['text', 'textarea', 'phone', 'email'] },
-                label: { type: 'string' },
-                placeholder: { type: 'string' },
-              },
-            },
+        display: { type: 'select' },
+        enum: [1, 2, 3, 4, 5, 6, 7],
+      },
+      fields: {
+        type: 'array',
+        scope: 'common',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['text', 'textarea', 'phone', 'email'] },
+            placeholder: { type: 'string' },
           },
         },
       },
@@ -128,11 +121,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         properties: textStyleProperties,
       },
-      label: {
-        type: 'object',
-        scope: 'layout',
-        properties: textStyleProperties,
-      },
       button: {
         type: 'object',
         scope: 'layout',
@@ -140,10 +128,8 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      fields: {
-        fieldsToShow: 2,
-        items: defaultFieldsItems,
-      },
+      fieldsToShow: 2,
+      fields: defaultFieldsItems,
       type: 'A',
       buttonWidth: 300,
       buttonStroke: 2,
@@ -151,7 +137,6 @@ const schema: ComponentSchemaV1 = {
       buttonPadding: { top: 25, right: 25, bottom: 25, left: 25 },
       inputPadding: { top: 10, right: 14, bottom: 10, left: 14 },
       input: textStyleDefault(400, '#000000'),
-      label: textStyleDefault(400, '#000000'),
       button: textStyleDefault(700, '#000000'),
     },
   },
@@ -162,7 +147,7 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__template__', 'fields'] },
+        { type: 'row', items: ['__template__', 'fieldsToShow'] },
         'type',
         {
           type: 'group',
@@ -199,7 +184,6 @@ const schema: ComponentSchemaV1 = {
           title: 'Element',
           options: {
             'Input': ['input'],
-            'Label': ['label'],
             'Button': ['button'],
           },
         },
