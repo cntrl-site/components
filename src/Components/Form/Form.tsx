@@ -111,34 +111,32 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
         })}>
           {visibleFields.map((field, index) => (
             <div key={field.name} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
-              <div className={styles.fieldInputRow}>
-                <div className={styles.overlayAnchor}>
-                  {field.type === 'textarea' ? (
-                    <textarea
-                      name={field.name}
-                      autoComplete="off"
-                      value={fieldValues[field.name] ?? ''}
-                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      placeholder={field.placeholder}
-                      className={styles.input}
-                      style={inputCss}
-                      rows={3}
-                      data-field-type="textarea"
-                    />
-                  ) : (
-                    <input
-                      type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
-                      name={field.name}
-                      autoComplete="off"
-                      value={fieldValues[field.name] ?? ''}
-                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      placeholder={field.placeholder}
-                      required={field.type === 'email'}
-                      className={styles.input}
-                      style={inputCss}
-                    />
-                  )}
-                </div>
+              <div className={styles.fieldInputWrapper}>
+                {field.type === 'textarea' ? (
+                  <textarea
+                    name={field.name}
+                    autoComplete="off"
+                    value={fieldValues[field.name] ?? ''}
+                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    className={styles.input}
+                    style={inputCss}
+                    rows={3}
+                    data-field-type="textarea"
+                  />
+                ) : (
+                  <input
+                    type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
+                    name={field.name}
+                    autoComplete="off"
+                    value={fieldValues[field.name] ?? ''}
+                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    required={field.type === 'email'}
+                    className={styles.input}
+                    style={inputCss}
+                  />
+                )}
                 {isEditor && (
                   <button
                     type="button"
