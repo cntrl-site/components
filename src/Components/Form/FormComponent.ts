@@ -60,8 +60,9 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Fields',
-        display: { type: 'select' },
-        enum: [1, 2, 3, 4, 5, 6, 7],
+        display: { type: 'number' },
+        min: 1,
+        max: 8,
       },
       fields: {
         type: 'array',
