@@ -10,7 +10,6 @@
 
 .form {
   display: flex;
-  @include size(gap, 8);
   width: 100%;
 }
 
@@ -25,7 +24,6 @@
 
 .fields {
   display: flex;
-  @include size(gap, 8);
   flex: 1;
   min-width: 0;
 }
@@ -154,6 +152,14 @@
 
 .overlayAnchor {
   position: relative;
+}
+
+.gapSpacer {
+  flex: 0 0 auto;
+}
+
+.fieldsGapSpacer {
+  flex: 0 0 auto;
 }
 
 .overlay {
