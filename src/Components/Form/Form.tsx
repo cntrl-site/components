@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import cn from 'classnames';
 import styles from './Form.module.scss';
 import { CommonComponentProps } from '../props';
@@ -110,7 +110,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
           [styles.fieldsVertical]: layout === 'vertical',
         })}>
           {visibleFields.map((field, index) => (
-            <div key={field.name} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
+            <div key={index} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover)}>
               <div className={styles.fieldInputWrapper}>
                 {field.type === 'textarea' ? (
                   <textarea
@@ -167,7 +167,10 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                     <label>Name</label>
                     <input
                       value={field.name}
-                      onChange={(e) => handleFieldEditorChange(index, { name: e.target.value })}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        handleFieldEditorChange(index, { name: nextValue });
+                      }}
                     />
                   </div>
                   <div className={styles.fieldPopoverRow}>
