@@ -114,93 +114,105 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
           [styles.fieldsVertical]: layout === 'vertical',
         })}>
           {visibleFields.map((field, index) => (
-            <div key={index} className={cn(styles.fieldGroup, styles.fieldGroupWithPopover, {
-              [styles.fieldGroupLabeled]: showLabels,
-            })}>
-              {showLabels && (
-                <span className={styles.fieldLabel} style={labelTextCss}>
-                  {field.label || field.name}
-                </span>
-              )}
-              <div className={styles.fieldInputWrapper}>
-                {field.type === 'textarea' ? (
-                  <textarea
-                    name={field.name}
-                    autoComplete="off"
-                    value={fieldValues[field.name] ?? ''}
-                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                    placeholder={field.placeholder}
-                    className={styles.input}
-                    style={inputCss}
-                    rows={3}
-                    data-field-type="textarea"
-                  />
-                ) : (
-                  <input
-                    type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
-                    name={field.name}
-                    autoComplete="off"
-                    value={fieldValues[field.name] ?? ''}
-                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                    placeholder={field.placeholder}
-                    required={field.type === 'email'}
-                    className={styles.input}
-                    style={inputCss}
-                  />
+            <React.Fragment key={index}>
+              <div className={cn(styles.fieldGroup, styles.fieldGroupWithPopover, {
+                [styles.fieldGroupLabeled]: showLabels,
+              })}>
+                {showLabels && (
+                  <span className={styles.fieldLabel} style={labelTextCss}>
+                    {field.label || field.name}
+                  </span>
                 )}
-                {isEditor && (
-                  <button
-                    type="button"
-                    className={styles.fieldEditBtn}
-                    data-form-field-edit-btn
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setEditingFieldIndex(editingFieldIndex === index ? null : index);
-                    }}
-                    title="Edit field"
-                  />
+                <div className={styles.fieldInputWrapper}>
+                  {field.type === 'textarea' ? (
+                    <textarea
+                      name={field.name}
+                      autoComplete="off"
+                      value={fieldValues[field.name] ?? ''}
+                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                      className={styles.input}
+                      style={inputCss}
+                      rows={3}
+                      data-field-type="textarea"
+                    />
+                  ) : (
+                    <input
+                      type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
+                      name={field.name}
+                      autoComplete="off"
+                      value={fieldValues[field.name] ?? ''}
+                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                      placeholder={field.placeholder}
+                      required={field.type === 'email'}
+                      className={styles.input}
+                      style={inputCss}
+                    />
+                  )}
+                  {isEditor && (
+                    <button
+                      type="button"
+                      className={styles.fieldEditBtn}
+                      data-form-field-edit-btn
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setEditingFieldIndex(editingFieldIndex === index ? null : index);
+                      }}
+                      title="Edit field"
+                    />
+                  )}
+                </div>
+                {isEditor && editingFieldIndex === index && onUpdateSettings && (
+                  <div data-form-field-popover className={styles.fieldPopover}>
+                    <div className={styles.fieldPopoverRow}>
+                      <label>Type</label>
+                      <select
+                        value={field.type}
+                        onChange={(e) => handleFieldEditorChange(index, { type: e.target.value as FormFieldType })}
+                      >
+                        {FIELD_TYPES.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.fieldPopoverRow}>
+                      <label>Name</label>
+                      <input
+                        value={field.name}
+                        onChange={(e) => {
+                          const nextValue = e.target.value;
+                          handleFieldEditorChange(index, { name: nextValue });
+                        }}
+                      />
+                    </div>
+                    <div className={styles.fieldPopoverRow}>
+                      <label>Placeholder</label>
+                      <input
+                        value={field.placeholder}
+                        onChange={(e) => handleFieldEditorChange(index, { placeholder: e.target.value })}
+                      />
+                    </div>
+                    <div className={styles.fieldPopoverRow}>
+                      <label>Label</label>
+                      <input
+                        value={field.label ?? ''}
+                        onChange={(e) => handleFieldEditorChange(index, { label: e.target.value })}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
-              {isEditor && editingFieldIndex === index && onUpdateSettings && (
-                <div data-form-field-popover className={styles.fieldPopover}>
-                  <div className={styles.fieldPopoverRow}>
-                    <label>Type</label>
-                    <select
-                      value={field.type}
-                      onChange={(e) => handleFieldEditorChange(index, { type: e.target.value as FormFieldType })}
-                    >
-                      {FIELD_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className={styles.fieldPopoverRow}>
-                    <label>Name</label>
-                    <input
-                      value={field.name}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        handleFieldEditorChange(index, { name: nextValue });
-                      }}
-                    />
-                  </div>
-                  <div className={styles.fieldPopoverRow}>
-                    <label>Placeholder</label>
-                    <input
-                      value={field.placeholder}
-                      onChange={(e) => handleFieldEditorChange(index, { placeholder: e.target.value })}
-                    />
-                  </div>
-                  <div className={styles.fieldPopoverRow}>
-                    <label>Label</label>
-                    <input
-                      value={field.label ?? ''}
-                      onChange={(e) => handleFieldEditorChange(index, { label: e.target.value })}
-                    />
-                  </div>
-                </div>
+              {index < visibleFields.length - 1 && (
+                <div
+                  data-axis={layout === 'horizontal' ? 'x' : 'y'}
+                  className={cn(styles.overlayAnchor, styles.fieldsGapSpacer)}
+                  data-controls="settings.fieldsGap"
+                  style={layout === 'horizontal'
+                    ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' } as React.CSSProperties)
+                    : ({ height: scalingValue(fieldsGap, isEditor), width: '100%' } as React.CSSProperties)}
+                />
               )}
-            </div>
+            </React.Fragment>
           ))}
         </div>
         <div
