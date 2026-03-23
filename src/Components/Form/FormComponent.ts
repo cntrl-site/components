@@ -55,7 +55,7 @@ const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
-    sizing: 'auto',
+    sizing: 'auto', // TODO think where to place this non-editable property
     properties: {
       fieldsToShow: {
         type: 'number',

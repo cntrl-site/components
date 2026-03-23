@@ -34,10 +34,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
   const labelTextCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const fieldsContainerRef = useRef<HTMLDivElement | null>(null);
-  const buttonContainerRef = useRef<HTMLButtonElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
-  const [computedMinHeight, setComputedMinHeight] = useState<number | null>(null);
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
@@ -71,57 +68,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [editingFieldIndex]);
-
-  useEffect(() => {
-    let rafId: number | undefined;
-    const scheduleCompute = () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      rafId = window.requestAnimationFrame(() => {
-        if (layout === 'horizontal') {
-          const fieldsEl = fieldsContainerRef.current;
-          const buttonEl = buttonContainerRef.current;
-          if (!fieldsEl || !buttonEl) return;
-          const fieldsHeight = fieldsEl.getBoundingClientRect().height;
-          const buttonHeight = buttonEl.getBoundingClientRect().height;
-          const nextMinHeight = Math.ceil(Math.max(fieldsHeight, buttonHeight));
-          setComputedMinHeight((prev) => {
-            if (!Number.isFinite(nextMinHeight)) return null;
-            return prev === nextMinHeight ? prev : nextMinHeight;
-          });
-          return;
-        }
-
-        const formEl = formRef.current;
-        if (!formEl) return;
-        const nextMinHeight = Math.ceil(formEl.getBoundingClientRect().height);
-        setComputedMinHeight((prev) => {
-          if (!Number.isFinite(nextMinHeight)) return null;
-          return prev === nextMinHeight ? prev : nextMinHeight;
-        });
-      });
-    };
-
-    scheduleCompute();
-
-    const observer = new ResizeObserver(() => {
-      scheduleCompute();
-    });
-
-    if (layout === 'horizontal') {
-      const fieldsEl = fieldsContainerRef.current;
-      const buttonEl = buttonContainerRef.current;
-      if (fieldsEl) observer.observe(fieldsEl);
-      if (buttonEl) observer.observe(buttonEl);
-    } else {
-      const formEl = formRef.current;
-      if (formEl) observer.observe(formEl);
-    }
-
-    return () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      observer.disconnect();
-    };
-  }, [layout, settings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +107,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     <div
       ref={wrapperRef}
       className={styles.wrapper}
-      style={computedMinHeight !== null ? { minHeight: computedMinHeight } : undefined}
+      
     >
       <form
         ref={formRef}
@@ -172,7 +118,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
         })}
       >
         <div
-          ref={fieldsContainerRef}
           className={cn(styles.fields, {
           [styles.fieldsHorizontal]: layout === 'horizontal',
           [styles.fieldsVertical]: layout === 'vertical',
@@ -290,7 +235,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
           <button
             type="submit"
             className={styles.button}
-            ref={buttonContainerRef}
           >
             <span className={styles.overlayAnchor} style={buttonTextCss}>
               {status === 'submitting' ? '...' : buttonLabel}
