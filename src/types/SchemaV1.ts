@@ -40,6 +40,7 @@ export type LayoutSwitcher = {
 export type LayoutItem = string | LayoutRow | LayoutGroup | LayoutSwitcher;
 
 export type SchemaSection = {
+  sizing?: string;
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;

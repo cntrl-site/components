@@ -55,6 +55,7 @@ const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
+    sizing: 'auto',
     properties: {
       fieldsToShow: {
         type: 'number',
@@ -143,7 +144,7 @@ const schema: ComponentSchemaV1 = {
       buttonWidth: 300,
       buttonStroke: 2,
       buttonCorners: 8,
-      buttonPadding: { top: 25, right: 25, bottom: 25, left: 25 },
+      buttonPadding: { top: 24, right: 24, bottom: 24, left: 24 },
       inputPadding: { top: 10, right: 14, bottom: 10, left: 14 },
       input: textStyleDefault(400, '#000000'),
       button: textStyleDefault(700, '#000000'),
@@ -210,7 +211,7 @@ export const FormComponent = {
   version: 1,
   defaultSize: {
     width: 400,
-    height: 80,
+    height: 42,
   },
   schema,
 };

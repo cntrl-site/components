@@ -4,7 +4,6 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: 100%;
   @include size(min-height, 48);
 }
 
@@ -152,6 +151,7 @@
 
 .overlayAnchor {
   position: relative;
+  height: auto;
 }
 
 .gapSpacer {
