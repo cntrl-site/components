@@ -273,8 +273,8 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                   className={cn(styles.overlayAnchor, styles.fieldsGapSpacer)}
                   data-controls="settings.fieldsGap"
                   style={layout === 'horizontal'
-                    ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' } as React.CSSProperties)
-                    : ({ height: scalingValue(fieldsGap, isEditor), width: '100%' } as React.CSSProperties)}
+                    ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' })
+                    : ({ height: scalingValue(fieldsGap, isEditor), width: '100%' })}
                 />
               )}
             </React.Fragment>
@@ -284,7 +284,9 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
           data-axis={layout === 'horizontal' ? 'x' : 'y'}
           className={cn(styles.overlayAnchor, styles.gapSpacer)}
           data-controls="settings.gap"
-          style={layout === 'horizontal' ? ({ width: scalingValue(gap, isEditor), height: '100%' } as React.CSSProperties) : ({ height: scalingValue(gap, isEditor), width: '100%' } as React.CSSProperties)}
+          style={layout === 'horizontal'
+            ? ({ width: scalingValue(gap, isEditor) })
+            : ({ height: scalingValue(gap, isEditor), width: '100%' })}
         />
         <div className={styles.overlayAnchor}>
           <button
