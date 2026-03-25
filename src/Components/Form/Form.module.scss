@@ -113,6 +113,11 @@
   @include size(border-radius, 4);
   outline: none;
 
+  &::placeholder {
+    color: var(--placeholder-color);
+    opacity: 1;
+  }
+
   &:focus {
     border-color: #333;
   }

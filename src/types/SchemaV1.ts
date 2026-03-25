@@ -14,6 +14,7 @@ export type SchemaProperty = {
   display?: SchemaDisplay;
   enum?: Array<string | number>;
   properties?: Record<string, SchemaProperty>;
+  layout?: LayoutItem[];
   items?: SchemaProperty;
   default?: unknown;
   min?: number;

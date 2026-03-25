@@ -24,20 +24,46 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     gap = 0.008,
     fieldsGap = 0.008,
     label: labelTextStyle,
+    buttonCorners,
+    buttonStroke,
+    inputCorners,
+    inputStroke,
+    buttonPadding,
+    inputPadding,
+    inputColor,
+    inputTextColor,
+    inputBorderColor,
+    placeholderColor,
+    buttonColor,
+    buttonTextColor,
+    buttonBorderColor,
+    labelTextColor
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
   const showLabels = type === 'C';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
   const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
+  const inputFieldCss = {
+    ...inputCss,
+    borderStyle: 'solid',
+    borderRadius: scalingValue(inputCorners ?? 0, isEditor),
+    borderWidth: scalingValue(inputStroke ?? 0, isEditor),
+    paddingTop: scalingValue(inputPadding?.top ?? 0, isEditor),
+    paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
+    paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
+    paddingLeft: scalingValue(inputPadding?.left ?? 0, isEditor),
+    backgroundColor: inputColor,
+    color: inputTextColor,
+    borderColor: inputBorderColor,
+    '--placeholder-color': placeholderColor,
+  } as React.CSSProperties;
   const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
   const labelTextCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
-
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const fieldsContainerRef = useRef<HTMLDivElement | null>(null);
   const buttonContainerRef = useRef<HTMLButtonElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
-  const [computedMinHeight, setComputedMinHeight] = useState<number | null>(null);
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
@@ -71,57 +97,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [editingFieldIndex]);
-
-  useEffect(() => {
-    let rafId: number | undefined;
-    const scheduleCompute = () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      rafId = window.requestAnimationFrame(() => {
-        if (layout === 'horizontal') {
-          const fieldsEl = fieldsContainerRef.current;
-          const buttonEl = buttonContainerRef.current;
-          if (!fieldsEl || !buttonEl) return;
-          const fieldsHeight = fieldsEl.getBoundingClientRect().height;
-          const buttonHeight = buttonEl.getBoundingClientRect().height;
-          const nextMinHeight = Math.ceil(Math.max(fieldsHeight, buttonHeight));
-          setComputedMinHeight((prev) => {
-            if (!Number.isFinite(nextMinHeight)) return null;
-            return prev === nextMinHeight ? prev : nextMinHeight;
-          });
-          return;
-        }
-
-        const formEl = formRef.current;
-        if (!formEl) return;
-        const nextMinHeight = Math.ceil(formEl.getBoundingClientRect().height);
-        setComputedMinHeight((prev) => {
-          if (!Number.isFinite(nextMinHeight)) return null;
-          return prev === nextMinHeight ? prev : nextMinHeight;
-        });
-      });
-    };
-
-    scheduleCompute();
-
-    const observer = new ResizeObserver(() => {
-      scheduleCompute();
-    });
-
-    if (layout === 'horizontal') {
-      const fieldsEl = fieldsContainerRef.current;
-      const buttonEl = buttonContainerRef.current;
-      if (fieldsEl) observer.observe(fieldsEl);
-      if (buttonEl) observer.observe(buttonEl);
-    } else {
-      const formEl = formRef.current;
-      if (formEl) observer.observe(formEl);
-    }
-
-    return () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      observer.disconnect();
-    };
-  }, [layout, settings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +136,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     <div
       ref={wrapperRef}
       className={styles.wrapper}
-      style={computedMinHeight !== null ? { minHeight: computedMinHeight } : undefined}
     >
       <form
         ref={formRef}
@@ -184,7 +158,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                 [styles.fieldGroupLabeled]: showLabels,
               })}>
                 {showLabels && (
-                  <span className={styles.fieldLabel} style={labelTextCss}>
+                  <span className={styles.fieldLabel} style={{...labelTextCss, color: labelTextColor}}>
                     {field.label || field.name}
                   </span>
                 )}
@@ -197,7 +171,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                       onChange={(e) => handleFieldChange(field.name, e.target.value)}
                       placeholder={field.placeholder}
                       className={styles.input}
-                      style={inputCss}
+                      style={inputFieldCss}
                       rows={3}
                       data-field-type="textarea"
                     />
@@ -211,7 +185,7 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
                       placeholder={field.placeholder}
                       required={field.type === 'email'}
                       className={styles.input}
-                      style={inputCss}
+                      style={inputFieldCss}
                     />
                   )}
                   {isEditor && (
@@ -293,6 +267,18 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
             type="submit"
             className={styles.button}
             ref={buttonContainerRef}
+            style={{
+              borderStyle: 'solid',
+              borderRadius: scalingValue(buttonCorners ?? 0, isEditor),
+              borderWidth: scalingValue(buttonStroke ?? 0, isEditor),
+              paddingTop: scalingValue(buttonPadding?.top ?? 0, isEditor),
+              paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
+              paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
+              paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
+              backgroundColor: buttonColor,
+              color: buttonTextColor,
+              borderColor: buttonBorderColor,
+            }}
           >
             <span className={styles.overlayAnchor} style={buttonTextCss}>
               {status === 'submitting' ? '...' : buttonLabel}
@@ -326,7 +312,20 @@ type TextStyles = {
   letterSpacing: number;
   wordSpacing: number;
   fontSize: number;
+  lineHeight?: number;
+  textAppearance?: {
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    textDecoration?: 'none' | 'underline';
+    fontVariant?: 'normal' | 'small-caps';
+  };
   color: string;
+};
+
+type Padding = {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
 };
 
 type FormSettings = {
@@ -339,6 +338,20 @@ type FormSettings = {
   gap?: number;
   fieldsGap?: number;
   label?: TextStyles;
+  buttonCorners?: number;
+  buttonStroke?: number;
+  inputCorners?: number;
+  inputStroke?: number;
+  buttonPadding?: Padding;
+  inputPadding?: Padding;
+  inputColor: string,
+  inputTextColor: string,
+  inputBorderColor: string,
+  placeholderColor: string,
+  buttonColor: string,
+  buttonTextColor: string,
+  buttonBorderColor: string,
+  labelTextColor: string,
 };
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
@@ -349,6 +362,9 @@ function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSP
     letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
     wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
     fontSize: scalingValue(textStyles.fontSize, isEditor),
-    color: textStyles.color,
+    lineHeight: textStyles.lineHeight !== undefined ? scalingValue(textStyles.lineHeight, isEditor) : undefined,
+    textTransform: textStyles.textAppearance?.textTransform,
+    textDecoration: textStyles.textAppearance?.textDecoration,
+    fontVariant: textStyles.textAppearance?.fontVariant
   };
 }
