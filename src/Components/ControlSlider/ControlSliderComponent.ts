@@ -398,8 +398,7 @@ export const ControlSliderComponent: Component = {
         layoutBased: false,
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -408,8 +407,6 @@ export const ControlSliderComponent: Component = {
               type: 'object',
               label: 'Image',
               display: {
-                minWidth: 58,
-                maxWidth: 108,
                 type: 'media-input',
               },
               properties: {
@@ -431,8 +428,6 @@ export const ControlSliderComponent: Component = {
               label: 'Description',
               display: {
                 type: 'rich-text',
-                minWidth: 300,
-                maxWidth: 550
               }
             },
           },
