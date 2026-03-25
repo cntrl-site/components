@@ -26,6 +26,10 @@ const textStyleProperties = {
     type: 'number' as const,
     display: { type: 'font-size' },
   },
+  lineHeight: {
+    type: 'number' as const,
+    display: { type: 'line-height-input' },
+  },
   letterSpacing: {
     type: 'number' as const,
     display: { type: 'letter-spacing-input' },
@@ -34,22 +38,32 @@ const textStyleProperties = {
     type: 'number' as const,
     display: { type: 'word-spacing-input' },
   },
-  color: {
-    type: 'string' as const,
-    display: { type: 'style-panel-color-picker' },
-  },
+  textAppearance: {
+    type: 'object' as const,
+    display: { type: 'text-appearance' },
+    properties: {
+      textTransform: { type: 'string' as const, enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
+      textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
+      fontVariant: { type: 'string' as const, enum: ['normal', 'small-caps'] },
+    },
+  }
 };
 
-const textStyleDefault = (fontWeight: number, color: string) => ({
+const textStyleDefault = (fontWeight: number) => ({
   fontSettings: {
     fontFamily: 'Arial',
     fontWeight,
     fontStyle: 'normal',
   },
+  lineHeight: 0,
   letterSpacing: 0,
   wordSpacing: 0,
   fontSize: 0.01,
-  color,
+  textAppearance: {
+    textTransform: 'none',
+    textDecoration: 'none',
+    fontVariant: 'normal',
+  }
 });
 
 const schema: ComponentSchemaV1 = {
@@ -82,26 +96,36 @@ const schema: ComponentSchemaV1 = {
       type: {
         type: 'string',
         scope: 'layout',
-        title: 'Alignment',
+        title: '',
         display: { type: 'radio-group' },
         enum: ['A', 'B', 'C'],
       },
-      buttonWidth: {
+      gap: {
         type: 'number',
         scope: 'layout',
-        title: 'Width',
+        title: 'Gap',
         display: { type: 'range-control' },
         min: 0,
-        max: 10,
+        max: 100,
+      },
+      fieldsGap: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Gap',
+        display: { type: 'range-control' },
+        min: 0,
+        max: 100,
       },
       buttonPadding: {
         type: 'object',
         scope: 'layout',
+        title: 'Padding',
         display: { type: 'padding-controls' },
       },
       inputPadding: {
         type: 'object',
         scope: 'layout',
+        title: 'Padding',
         display: { type: 'padding-controls' },
       },
       buttonStroke: {
@@ -120,20 +144,114 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 100,
       },
+      inputStroke: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Stroke',
+        display: { type: 'range-control' },
+        min: 0,
+        max: 20,
+      },
+      inputCorners: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Corners',
+        display: { type: 'range-control' },
+        min: 0,
+        max: 100,
+      },
+      inputColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Color',
+        display: { type: 'palette-color-picker' },
+      },
+      inputTextColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Text Color',
+        display: { type:'palette-color-picker' },
+      },
+      inputBorderColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Border Color',
+        display: { type: 'palette-color-picker' },
+      },
+      placeholderColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Placeholder Color',
+        display: { type: 'palette-color-picker' },
+      },
+      buttonColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Color',
+        display: { type: 'palette-color-picker' },
+      },
+      buttonTextColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Text Color',
+        display: { type: 'palette-color-picker' },
+      },
+      buttonBorderColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Border Color',
+        display: { type: 'palette-color-picker' },
+      },
+      labelTextColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Text Color',
+        display: { type: 'palette-color-picker' },
+      },
+      labelBorderColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Border Color',
+        display: { type: 'palette-color-picker' },
+      },
       input: {
         type: 'object',
         scope: 'layout',
         properties: textStyleProperties,
+        layout: [
+          'fontSettings',
+          {
+            type: 'row',
+            items: ['letterSpacing', 'wordSpacing', 'fontSize', 'lineHeight'],
+          },
+          'textAppearance'
+        ],
       },
       button: {
         type: 'object',
         scope: 'layout',
         properties: textStyleProperties,
+        layout: [
+          'fontSettings',
+          {
+            type: 'row',
+            items: ['letterSpacing', 'wordSpacing','fontSize', 'lineHeight'],
+          },
+          'textAppearance'
+        ],
       },
       label: {
         type: 'object',
         scope: 'layout',
         properties: textStyleProperties,
+        layout: [
+          'fontSettings',
+          {
+            type: 'row',
+            items: ['letterSpacing', 'wordSpacing', 'fontSize', 'lineHeight'],
+          },
+          'textAppearance'
+        ],
       },
     },
     defaults: {
@@ -142,14 +260,22 @@ const schema: ComponentSchemaV1 = {
       type: 'A',
       gap: 0.008,
       fieldsGap: 0.008,
-      buttonWidth: 300,
-      buttonStroke: 2,
-      buttonCorners: 8,
-      buttonPadding: { top: 24, right: 24, bottom: 24, left: 24 },
-      inputPadding: { top: 10, right: 14, bottom: 10, left: 14 },
-      input: textStyleDefault(400, '#000000'),
-      button: textStyleDefault(700, '#000000'),
-      label: textStyleDefault(400, '#000000'),
+      buttonStroke: 0.001,
+      buttonCorners: 0,
+      inputStroke: 0.001,
+      inputCorners: 0,
+      buttonPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+      inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+      inputColor: '#000000',
+      inputTextColor: '#999999',
+      inputBorderColor: '#cccccc',
+      buttonColor: '#666666',
+      buttonTextColor: '#ffffff',
+      buttonBorderColor: '#cccccc',
+      labelTextColor: '#999999',
+      input: textStyleDefault(400),
+      button: textStyleDefault(700),
+      label: textStyleDefault(400),
     },
   },
   panels: [
@@ -168,20 +294,43 @@ const schema: ComponentSchemaV1 = {
             {
               type: 'row',
               items: [
-                'buttonWidth',
                 {
                   type: 'switcher',
-                  title: 'Padding',
+                  title: '',
                   options: {
-                    'Button': ['buttonPadding'],
-                    'Input': ['inputPadding'],
+                    'Button': [
+                      {
+                        type: 'group',
+                        title: '',
+                        items: ['gap', 'buttonStroke', 'buttonCorners'],
+                      },
+                      {
+                        type: 'group',
+                        title: 'Padding',
+                        items: ['buttonPadding'],
+                      },
+                    ],
+                    'Input': [
+                      {
+                        type: 'group',
+                        title: '',
+                        items: ['fieldsGap', 'inputStroke', 'inputCorners'],
+                      },
+                      {
+                        type: 'group',
+                        title: 'Padding',
+                        items: ['inputPadding'],
+                      },
+                    ],
                   },
                 },
               ],
             },
-            'buttonStroke',
-            'buttonCorners',
           ],
+        },
+        {
+          type: 'row',
+          items: ['inputColor', 'inputTextColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
         },
       ],
     },
@@ -193,7 +342,7 @@ const schema: ComponentSchemaV1 = {
       layout: [
         {
           type: 'switcher',
-          title: 'Element',
+          title: '',
           options: {
             'Input': ['input'],
             'Button': ['button'],

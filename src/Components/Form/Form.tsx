@@ -50,16 +50,13 @@ function getCSS(P: string): string {
 }
 .${P}-input {
   width: 100%;
-  padding-top: ${sv(10)};
-  padding-bottom: ${sv(10)};
-  padding-left: ${sv(14)};
-  padding-right: ${sv(14)};
-  font-size: ${sv(14)};
   line-height: 1.4;
   background: transparent;
-  border: 1px solid #ccc;
-  border-radius: ${sv(4)};
   outline: none;
+}
+.${P}-input::placeholder {
+  color: var(--placeholder-color);
+  opacity: 1;
 }
 .${P}-input:focus {
   border-color: #333;
@@ -73,10 +70,6 @@ function getCSS(P: string): string {
   cursor: not-allowed;
 }
 .${P}-button {
-  padding-top: ${sv(10)};
-  padding-bottom: ${sv(10)};
-  padding-left: ${sv(20)};
-  padding-right: ${sv(20)};
   cursor: pointer;
   white-space: nowrap;
 }
@@ -96,6 +89,7 @@ function getCSS(P: string): string {
 }
 .${P}-gap-spacer {
   flex: 0 0 auto;
+  align-self: stretch;
 }
 .${P}-fields-gap-spacer {
   flex: 0 0 auto;
@@ -122,12 +116,40 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
     gap = 0.008,
     fieldsGap = 0.008,
     label: labelTextStyle,
+    buttonCorners,
+    buttonStroke,
+    inputCorners,
+    inputStroke,
+    buttonPadding,
+    inputPadding,
+    inputColor,
+    inputTextColor,
+    inputBorderColor,
+    placeholderColor,
+    buttonColor,
+    buttonTextColor,
+    buttonBorderColor,
+    labelTextColor
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
   const showLabels = type === 'C';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
   const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
+  const inputFieldCss = {
+    ...inputCss,
+    borderStyle: 'solid',
+    borderRadius: scalingValue(inputCorners ?? 0, isEditor),
+    borderWidth: scalingValue(inputStroke ?? 0, isEditor),
+    paddingTop: scalingValue(inputPadding?.top ?? 0, isEditor),
+    paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
+    paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
+    paddingLeft: scalingValue(inputPadding?.left ?? 0, isEditor),
+    backgroundColor: inputColor,
+    color: inputTextColor,
+    borderColor: inputBorderColor,
+    '--placeholder-color': placeholderColor,
+  } as React.CSSProperties;
   const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
   const labelTextCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
 
@@ -191,7 +213,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
             <React.Fragment key={index}>
               <div className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
                 {showLabels && (
-                  <span className={`${P}-field-label`} style={labelTextCss}>
+                  <span className={`${P}-field-label`} style={{ ...labelTextCss, color: labelTextColor }}>
                     {field.label || field.name}
                   </span>
                 )}
@@ -203,7 +225,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
                     onChange={(e) => handleFieldChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     className={`${P}-input`}
-                    style={inputCss}
+                    style={inputFieldCss}
                     rows={3}
                     data-field-type="textarea"
                   />
@@ -217,7 +239,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
                     placeholder={field.placeholder}
                     required={field.type === 'email'}
                     className={`${P}-input`}
-                    style={inputCss}
+                    style={inputFieldCss}
                   />
                 )}
               </div>
@@ -227,8 +249,8 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
                   className={`${P}-overlay-anchor ${P}-fields-gap-spacer`}
                   data-controls="settings.fieldsGap"
                   style={layout === 'horizontal'
-                    ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' } as React.CSSProperties)
-                    : ({ height: scalingValue(fieldsGap, isEditor), width: '100%' } as React.CSSProperties)}
+                    ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' })
+                    : ({ height: scalingValue(fieldsGap, isEditor), width: '100%' })}
                 />
               )}
             </React.Fragment>
@@ -239,11 +261,26 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
           className={`${P}-overlay-anchor ${P}-gap-spacer`}
           data-controls="settings.gap"
           style={layout === 'horizontal'
-            ? ({ width: scalingValue(gap, isEditor), height: '100%' } as React.CSSProperties)
-            : ({ height: scalingValue(gap, isEditor), width: '100%' } as React.CSSProperties)}
+            ? ({ width: scalingValue(gap, isEditor) })
+            : ({ height: scalingValue(gap, isEditor), width: '100%' })}
         />
         <div className={`${P}-overlay-anchor`}>
-          <button type="submit" className={`${P}-button`}>
+          <button
+            type="submit"
+            className={`${P}-button`}
+            style={{
+              borderStyle: 'solid',
+              borderRadius: scalingValue(buttonCorners ?? 0, isEditor),
+              borderWidth: scalingValue(buttonStroke ?? 0, isEditor),
+              paddingTop: scalingValue(buttonPadding?.top ?? 0, isEditor),
+              paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
+              paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
+              paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
+              backgroundColor: buttonColor,
+              color: buttonTextColor,
+              borderColor: buttonBorderColor,
+            }}
+          >
             <span className={`${P}-overlay-anchor`} style={buttonTextCss}>
               {status === 'submitting' ? '...' : buttonLabel}
             </span>
@@ -276,7 +313,20 @@ type TextStyles = {
   letterSpacing: number;
   wordSpacing: number;
   fontSize: number;
+  lineHeight?: number;
+  textAppearance?: {
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    textDecoration?: 'none' | 'underline';
+    fontVariant?: 'normal' | 'small-caps';
+  };
   color: string;
+};
+
+type Padding = {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
 };
 
 type FormSettings = {
@@ -289,6 +339,20 @@ type FormSettings = {
   gap?: number;
   fieldsGap?: number;
   label?: TextStyles;
+  buttonCorners?: number;
+  buttonStroke?: number;
+  inputCorners?: number;
+  inputStroke?: number;
+  buttonPadding?: Padding;
+  inputPadding?: Padding;
+  inputColor: string;
+  inputTextColor: string;
+  inputBorderColor: string;
+  placeholderColor: string;
+  buttonColor: string;
+  buttonTextColor: string;
+  buttonBorderColor: string;
+  labelTextColor: string;
 };
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
@@ -299,6 +363,9 @@ function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSP
     letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
     wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
     fontSize: scalingValue(textStyles.fontSize, isEditor),
-    color: textStyles.color,
+    lineHeight: textStyles.lineHeight !== undefined ? scalingValue(textStyles.lineHeight, isEditor) : undefined,
+    textTransform: textStyles.textAppearance?.textTransform,
+    textDecoration: textStyles.textAppearance?.textDecoration,
+    fontVariant: textStyles.textAppearance?.fontVariant
   };
 }
