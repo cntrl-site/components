@@ -1,5 +1,6 @@
 import { Form } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
+import formSourceRaw from './Form.tsx?raw';
 
 const defaultFieldsItems = [
   { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email' },
@@ -214,4 +215,5 @@ export const FormComponent = {
     height: 42,
   },
   schema,
+  sourceCode: formSourceRaw,
 };

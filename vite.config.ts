@@ -7,9 +7,10 @@ export default defineConfig({
   plugins: [react(), dts()],
   build: {
     lib: {
-      entry: path.resolve(__dirname, "src/index.ts"),
-      name: "CntrlComponents",
-      fileName: (format) => (format === "es" ? "index.mjs" : "index.js"),
+      entry: {
+        index: path.resolve(__dirname, "src/index.ts"),
+        utils: path.resolve(__dirname, "src/Components/utils/index.ts"),
+      },
       formats: ["es", "cjs"],
     },
     rollupOptions: {

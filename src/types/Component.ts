@@ -15,6 +15,7 @@ export type Component = {
     type: 'image' | 'video';
     url: string;
   };
+  sourceCode?: string;
 };
 
 export function isSchemaV1(schema: any): schema is ComponentSchemaV1 {
