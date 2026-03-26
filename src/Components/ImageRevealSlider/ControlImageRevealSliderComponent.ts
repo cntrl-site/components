@@ -244,8 +244,7 @@ export const ControlImageRevealSliderComponent: Component = {
         layoutBased: false,
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -255,8 +254,6 @@ export const ControlImageRevealSliderComponent: Component = {
               label: 'Image',
               display: {
                 isObjectFitEditable: false,
-                minWidth: 58,
-                maxWidth: 108,
                 type: 'media-input',
               },
               properties: {
@@ -278,8 +275,6 @@ export const ControlImageRevealSliderComponent: Component = {
               placeholder: 'Enter link...',
               display: {
                 type: 'text-input',
-                minWidth: 300,
-                maxWidth: 550
               }
             }
           },
