@@ -1,10 +1,101 @@
-import React, { useState, useEffect, useRef } from 'react';
-import cn from 'classnames';
-import styles from './Form.module.scss';
+import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
-import { scalingValue } from '../utils/scalingValue';
+import { scalingValue, useScopedStyles } from '../utils/index';
 
-const FIELD_TYPES: FormFieldType[] = ['text', 'textarea', 'phone', 'email'];
+function sv(px: number): string {
+  return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
+}
+
+function getCSS(P: string): string {
+  return `
+.${P}-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: ${sv(48)};
+}
+.${P}-form {
+  display: flex;
+  width: 100%;
+}
+.${P}-form.${P}-horizontal {
+  flex-direction: row;
+  align-items: center;
+}
+.${P}-form.${P}-vertical {
+  flex-direction: column;
+}
+.${P}-fields {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.${P}-fields.${P}-horizontal {
+  flex-direction: row;
+}
+.${P}-fields.${P}-vertical {
+  flex-direction: column;
+}
+.${P}-field-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.${P}-field-group.${P}-labeled {
+  gap: ${sv(4)};
+}
+.${P}-field-label {
+  white-space: nowrap;
+}
+.${P}-input {
+  width: 100%;
+  line-height: 1.4;
+  background: transparent;
+  outline: none;
+}
+.${P}-input::placeholder {
+  color: var(--placeholder-color);
+  opacity: 1;
+}
+.${P}-input:focus {
+  border-color: #333;
+}
+.${P}-input[data-field-type="textarea"] {
+  resize: vertical;
+  min-height: 60px;
+}
+.${P}-input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+.${P}-button {
+  cursor: pointer;
+  white-space: nowrap;
+}
+.${P}-success {
+  margin-top: ${sv(8)};
+  font-size: ${sv(14)};
+  color: #22c55e;
+}
+.${P}-error {
+  margin-top: ${sv(8)};
+  font-size: ${sv(14)};
+  color: #ef4444;
+}
+.${P}-overlay-anchor {
+  position: relative;
+  height: auto;
+}
+.${P}-gap-spacer {
+  flex: 0 0 auto;
+  align-self: stretch;
+}
+.${P}-fields-gap-spacer {
+  flex: 0 0 auto;
+}
+`;
+}
 
 type FormProps = {
   settings: FormSettings;
@@ -13,7 +104,8 @@ type FormProps = {
   onUpdateSettings?: (settings: FormSettings) => void;
 } & CommonComponentProps;
 
-export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormProps) {
+export function Form({ settings, isEditor, metadata }: FormProps) {
+  const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
     fieldsToShow = 2,
@@ -60,17 +152,12 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
   } as React.CSSProperties;
   const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
   const labelTextCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const fieldsContainerRef = useRef<HTMLDivElement | null>(null);
-  const buttonContainerRef = useRef<HTMLButtonElement | null>(null);
-  const formRef = useRef<HTMLFormElement | null>(null);
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
   );
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [editingFieldIndex, setEditingFieldIndex] = useState<number | null>(null);
 
   const apiBase = metadata?.apiBase as string | undefined;
   const projectId = metadata?.projectId as string | undefined;
@@ -80,24 +167,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
   const handleFieldChange = (name: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [name]: value }));
   };
-
-  const handleFieldEditorChange = (index: number, updates: Partial<FormFieldItem>) => {
-    if (!onUpdateSettings) return;
-    const updated = [...fields];
-    updated[index] = { ...updated[index], ...updates };
-    onUpdateSettings({ ...settings, fields: updated });
-  };
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (editingFieldIndex === null) return;
-      const target = e.target as HTMLElement;
-      if (target.closest('[data-form-field-popover]') || target.closest('[data-form-field-edit-btn]')) return;
-      setEditingFieldIndex(null);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [editingFieldIndex]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,118 +202,51 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
   };
 
   return (
-    <div
-      ref={wrapperRef}
-      className={styles.wrapper}
-    >
+    <div className={`${P}-wrapper`}>
+      <style>{getCSS(P)}</style>
       <form
-        ref={formRef}
         onSubmit={handleSubmit}
-        className={cn(styles.form, {
-          [styles.formHorizontal]: layout === 'horizontal',
-          [styles.formVertical]: layout === 'vertical',
-        })}
+        className={`${P}-form ${P}-${layout}`}
       >
-        <div
-          ref={fieldsContainerRef}
-          className={cn(styles.fields, {
-          [styles.fieldsHorizontal]: layout === 'horizontal',
-          [styles.fieldsVertical]: layout === 'vertical',
-        })}
-        >
+        <div className={`${P}-fields ${P}-${layout}`}>
           {visibleFields.map((field, index) => (
             <React.Fragment key={index}>
-              <div className={cn(styles.fieldGroup, styles.fieldGroupWithPopover, {
-                [styles.fieldGroupLabeled]: showLabels,
-              })}>
+              <div className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
                 {showLabels && (
-                  <span className={styles.fieldLabel} style={{...labelTextCss, color: labelTextColor}}>
+                  <span className={`${P}-field-label`} style={{ ...labelTextCss, color: labelTextColor }}>
                     {field.label || field.name}
                   </span>
                 )}
-                <div className={styles.fieldInputWrapper}>
-                  {field.type === 'textarea' ? (
-                    <textarea
-                      name={field.name}
-                      autoComplete="off"
-                      value={fieldValues[field.name] ?? ''}
-                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      placeholder={field.placeholder}
-                      className={styles.input}
-                      style={inputFieldCss}
-                      rows={3}
-                      data-field-type="textarea"
-                    />
-                  ) : (
-                    <input
-                      type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
-                      name={field.name}
-                      autoComplete="off"
-                      value={fieldValues[field.name] ?? ''}
-                      onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                      placeholder={field.placeholder}
-                      required={field.type === 'email'}
-                      className={styles.input}
-                      style={inputFieldCss}
-                    />
-                  )}
-                  {isEditor && (
-                    <button
-                      type="button"
-                      className={styles.fieldEditBtn}
-                      data-form-field-edit-btn
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setEditingFieldIndex(editingFieldIndex === index ? null : index);
-                      }}
-                      title="Edit field"
-                    />
-                  )}
-                </div>
-                {isEditor && editingFieldIndex === index && onUpdateSettings && (
-                  <div data-form-field-popover className={styles.fieldPopover}>
-                    <div className={styles.fieldPopoverRow}>
-                      <label>Type</label>
-                      <select
-                        value={field.type}
-                        onChange={(e) => handleFieldEditorChange(index, { type: e.target.value as FormFieldType })}
-                      >
-                        {FIELD_TYPES.map((t) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className={styles.fieldPopoverRow}>
-                      <label>Name</label>
-                      <input
-                        value={field.name}
-                        onChange={(e) => {
-                          const nextValue = e.target.value;
-                          handleFieldEditorChange(index, { name: nextValue });
-                        }}
-                      />
-                    </div>
-                    <div className={styles.fieldPopoverRow}>
-                      <label>Placeholder</label>
-                      <input
-                        value={field.placeholder}
-                        onChange={(e) => handleFieldEditorChange(index, { placeholder: e.target.value })}
-                      />
-                    </div>
-                    <div className={styles.fieldPopoverRow}>
-                      <label>Label</label>
-                      <input
-                        value={field.label ?? ''}
-                        onChange={(e) => handleFieldEditorChange(index, { label: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                {field.type === 'textarea' ? (
+                  <textarea
+                    name={field.name}
+                    autoComplete="off"
+                    value={fieldValues[field.name] ?? ''}
+                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    className={`${P}-input`}
+                    style={inputFieldCss}
+                    rows={3}
+                    data-field-type="textarea"
+                  />
+                ) : (
+                  <input
+                    type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
+                    name={field.name}
+                    autoComplete="off"
+                    value={fieldValues[field.name] ?? ''}
+                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    required={field.type === 'email'}
+                    className={`${P}-input`}
+                    style={inputFieldCss}
+                  />
                 )}
               </div>
               {index < visibleFields.length - 1 && (
                 <div
                   data-axis={layout === 'horizontal' ? 'x' : 'y'}
-                  className={cn(styles.overlayAnchor, styles.fieldsGapSpacer)}
+                  className={`${P}-overlay-anchor ${P}-fields-gap-spacer`}
                   data-controls="settings.fieldsGap"
                   style={layout === 'horizontal'
                     ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' })
@@ -256,17 +258,16 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
         </div>
         <div
           data-axis={layout === 'horizontal' ? 'x' : 'y'}
-          className={cn(styles.overlayAnchor, styles.gapSpacer)}
+          className={`${P}-overlay-anchor ${P}-gap-spacer`}
           data-controls="settings.gap"
           style={layout === 'horizontal'
             ? ({ width: scalingValue(gap, isEditor) })
             : ({ height: scalingValue(gap, isEditor), width: '100%' })}
         />
-        <div className={styles.overlayAnchor}>
+        <div className={`${P}-overlay-anchor`}>
           <button
             type="submit"
-            className={styles.button}
-            ref={buttonContainerRef}
+            className={`${P}-button`}
             style={{
               borderStyle: 'solid',
               borderRadius: scalingValue(buttonCorners ?? 0, isEditor),
@@ -280,15 +281,15 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
               borderColor: buttonBorderColor,
             }}
           >
-            <span className={styles.overlayAnchor} style={buttonTextCss}>
+            <span className={`${P}-overlay-anchor`} style={buttonTextCss}>
               {status === 'submitting' ? '...' : buttonLabel}
             </span>
           </button>
         </div>
       </form>
-      {status === 'success' && <p className={styles.success}>Thanks for subscribing!</p>}
+      {status === 'success' && <p className={`${P}-success`}>Thanks for subscribing!</p>}
       {status === 'error' && errorMessage && (
-        <p className={styles.error} role="alert">{errorMessage}</p>
+        <p className={`${P}-error`} role="alert">{errorMessage}</p>
       )}
     </div>
   );
@@ -344,14 +345,14 @@ type FormSettings = {
   inputStroke?: number;
   buttonPadding?: Padding;
   inputPadding?: Padding;
-  inputColor: string,
-  inputTextColor: string,
-  inputBorderColor: string,
-  placeholderColor: string,
-  buttonColor: string,
-  buttonTextColor: string,
-  buttonBorderColor: string,
-  labelTextColor: string,
+  inputColor: string;
+  inputTextColor: string;
+  inputBorderColor: string;
+  placeholderColor: string;
+  buttonColor: string;
+  buttonTextColor: string;
+  buttonBorderColor: string;
+  labelTextColor: string;
 };
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {

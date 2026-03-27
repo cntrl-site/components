@@ -15,8 +15,18 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./utils": {
+      "types": "./dist/Components/utils/index.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.js"
+    },
     "./style/components.css": {
       "default": "./dist/components.css"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "utils": ["./dist/Components/utils/index.d.ts"]
     }
   },
   "scripts": {
