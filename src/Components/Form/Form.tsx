@@ -61,7 +61,7 @@ function getCSS(P: string): string {
 .${P}-input:focus {
   border-color: #333;
 }
-.${P}-input[data-field-type='textarea'] {
+.${P}-input[data-field-type="textarea"] {
   resize: vertical;
   min-height: 60px;
 }
