@@ -74,7 +74,8 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
 
   const apiBase = metadata?.apiBase as string | undefined;
   const projectId = metadata?.projectId as string | undefined;
-  const canSubmit = Boolean(apiBase && projectId);
+  const configId = metadata?.pluginConfigId as string | undefined;
+  const canSubmit = Boolean(apiBase && projectId && configId);
 
   const handleFieldChange = (name: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [name]: value }));
@@ -109,8 +110,8 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
     setErrorMessage(null);
 
     try {
-      // TODO: URL should be /projects/:projectId/forms/{configId}/submit
-      const res = await fetch(`${apiBase}/projects/${projectId}/forms/submit`, {
+      const url = `${apiBase}/projects/${projectId}/forms/${configId}/submit`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,7 +119,6 @@ export function Form({ settings, isEditor, metadata, onUpdateSettings }: FormPro
           pageUrl: typeof window !== 'undefined' ? window.location.href : '',
         }),
       });
-
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || `Request failed: ${res.status}`);

@@ -349,8 +349,9 @@ const schema: ComponentSchemaV1 = {
           },
         },
       ],
-    },
+    }
   ],
+  allowedPlugins: 'newsletter',
 };
 
 export const FormComponent = {

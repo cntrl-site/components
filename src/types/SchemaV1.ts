@@ -61,4 +61,7 @@ export type ComponentSchemaV1 = {
   settings: SchemaSection;
   panels?: SchemaPanel[];
   content?: SchemaSection;
+  allowedPlugins?: AllowedPlugin;
 };
+
+type AllowedPlugin = 'newsletter';
