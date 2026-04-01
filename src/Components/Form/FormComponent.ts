@@ -3,21 +3,20 @@ import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Form.tsx?raw';
 
 const defaultFieldsItems = [
-  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email' },
-  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name' },
-  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company' },
-  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone' },
-  { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message', label: 'Message' },
-  { name: 'message2', type: 'textarea' as const, placeholder: 'Enter your message 2', label: 'Message 2' },
-  { name: 'message3', type: 'textarea' as const, placeholder: 'Enter your message 3', label: 'Message 3' },
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Email is required' },
+  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Name is required' },
+  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Company is required' },
+  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Phone is required' },
+  { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message', label: 'Message', isRequired: false, error: 'Message is required' },
+  { name: 'message2', type: 'textarea' as const, placeholder: 'Enter your message 2', label: 'Message 2', isRequired: false, error: 'Message 2 is required' },
+  { name: 'message3', type: 'textarea' as const, placeholder: 'Enter your message 3', label: 'Message 3', isRequired: false, error: 'Message 3 is required' },
 ];
 
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
-    display: { type: 'font-settings' },
+    display: { type: 'font-settings-weight' },
     properties: {
-      fontFamily: { type: 'string' as const },
       fontWeight: { type: 'number' as const },
       fontStyle: { type: 'string' as const },
     },
@@ -49,9 +48,21 @@ const textStyleProperties = {
   }
 };
 
+const paletteBookmarkItems = [
+  'inputColor',
+  'inputTextColor',
+  'inputBorderColor',
+  'placeholderColor',
+  'buttonColor',
+  'buttonTextColor',
+  'buttonBorderColor',
+  'labelTextColor',
+  'successColor',
+  'errorColor',
+] as const;
+
 const textStyleDefault = (fontWeight: number) => ({
   fontSettings: {
-    fontFamily: 'Arial',
     fontWeight,
     fontStyle: 'normal',
   },
@@ -65,7 +76,6 @@ const textStyleDefault = (fontWeight: number) => ({
     fontVariant: 'normal',
   }
 });
-
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
@@ -83,6 +93,7 @@ const schema: ComponentSchemaV1 = {
       fields: {
         type: 'array',
         scope: 'common',
+        display: { type: 'fields-group' },
         items: {
           type: 'object',
           properties: {
@@ -90,8 +101,22 @@ const schema: ComponentSchemaV1 = {
             type: { type: 'string', enum: ['text', 'textarea', 'phone', 'email'] },
             placeholder: { type: 'string' },
             label: { type: 'string' },
+            isRequired: { type: 'boolean' },
+            error: { type: 'string' },
           },
         },
+      },
+      successMessage: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Success Message',
+        display: { type: 'text-input' },
+      },
+      errorMessage: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Error Message',
+        display: { type: 'text-input' },
       },
       type: {
         type: 'string',
@@ -163,19 +188,19 @@ const schema: ComponentSchemaV1 = {
       inputColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Color',
+        title: 'Input Color',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Text Color',
+        title: 'Input Text Color',
         display: { type:'palette-color-picker' },
       },
       inputBorderColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Border Color',
+        title: 'Input Border Color',
         display: { type: 'palette-color-picker' },
       },
       placeholderColor: {
@@ -187,32 +212,48 @@ const schema: ComponentSchemaV1 = {
       buttonColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Color',
+        title: 'Button Color',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Text Color',
+        title: 'Button Text Color',
         display: { type: 'palette-color-picker' },
       },
       buttonBorderColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Border Color',
+        title: 'Button Border Color',
         display: { type: 'palette-color-picker' },
       },
       labelTextColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Text Color',
+        title: 'Label Color',
         display: { type: 'palette-color-picker' },
       },
-      labelBorderColor: {
+      successColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Border Color',
+        title: 'Success Message Color',
         display: { type: 'palette-color-picker' },
+      },
+      errorColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Error Message Color',
+        display: { type: 'palette-color-picker' },
+      },
+      stateOverrides: {
+        type: 'object',
+        scope: 'layout',
+      },
+      fontFamily: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
       },
       input: {
         type: 'object',
@@ -222,7 +263,7 @@ const schema: ComponentSchemaV1 = {
           'fontSettings',
           {
             type: 'row',
-            items: ['letterSpacing', 'wordSpacing', 'fontSize', 'lineHeight'],
+            items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'],
           },
           'textAppearance'
         ],
@@ -235,7 +276,7 @@ const schema: ComponentSchemaV1 = {
           'fontSettings',
           {
             type: 'row',
-            items: ['letterSpacing', 'wordSpacing','fontSize', 'lineHeight'],
+            items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'],
           },
           'textAppearance'
         ],
@@ -248,7 +289,7 @@ const schema: ComponentSchemaV1 = {
           'fontSettings',
           {
             type: 'row',
-            items: ['letterSpacing', 'wordSpacing', 'fontSize', 'lineHeight'],
+            items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'],
           },
           'textAppearance'
         ],
@@ -273,9 +314,15 @@ const schema: ComponentSchemaV1 = {
       buttonTextColor: '#ffffff',
       buttonBorderColor: '#cccccc',
       labelTextColor: '#999999',
+      successColor: '#22c55e',
+      errorColor: '#ef4444',
+      stateOverrides: {},
+      fontFamily: 'Arial',
       input: textStyleDefault(400),
       button: textStyleDefault(700),
       label: textStyleDefault(400),
+      successMessage: 'Thanks for subscribing!',
+      errorMessage: 'Please, fill all required fields.',
     },
   },
   panels: [
@@ -295,7 +342,7 @@ const schema: ComponentSchemaV1 = {
               type: 'row',
               items: [
                 {
-                  type: 'switcher',
+                  type: 'accordion',
                   title: '',
                   options: {
                     'Button': [
@@ -328,10 +375,6 @@ const schema: ComponentSchemaV1 = {
             },
           ],
         },
-        {
-          type: 'row',
-          items: ['inputColor', 'inputTextColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
-        },
       ],
     },
     {
@@ -340,19 +383,43 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        'fontFamily',
         {
-          type: 'switcher',
+          type: 'accordion',
           title: '',
           options: {
             'Input': ['input'],
             'Button': ['button'],
-            'Label': ['label'],
           },
         },
       ],
-    }
+    },
+    { 
+      id: 'fields',
+      icon: 'layers',
+      title: 'Fields',
+      tooltip: 'Fields',
+      layout: [
+        'fields',
+        'successMessage',
+        'errorMessage',
+      ],
+    },
   ],
-  allowedPlugins: 'newsletter',
+  paletteBookmark: {
+    items: [...paletteBookmarkItems],
+    panelIds: ['general', 'typeStyle'],
+    stateItems: {
+      default: ['inputColor', 'inputTextColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
+      hover: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
+      focus: ['inputColor', 'inputTextColor', 'inputBorderColor'],
+      filled: ['inputColor', 'inputTextColor', 'inputBorderColor'],
+      success: ['successColor'],
+      error: ['errorColor'],
+    },
+  },
+  allowedPlugins: ['newsletter'],
+  states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
 };
 
 export const FormComponent = {

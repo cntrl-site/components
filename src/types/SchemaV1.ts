@@ -38,7 +38,24 @@ export type LayoutSwitcher = {
   options: Record<string, LayoutItem[]>;
 };
 
-export type LayoutItem = string | LayoutRow | LayoutGroup | LayoutSwitcher;
+export type LayoutAccordion = {
+  type: 'accordion';
+  title: string;
+  options: Record<string, LayoutItem[]>;
+};
+
+export type LayoutPaletteBookmark = {
+  type: 'palette-bookmark';
+  items: string[];
+};
+
+export type LayoutItem =
+  | string
+  | LayoutRow
+  | LayoutGroup
+  | LayoutSwitcher
+  | LayoutAccordion
+  | LayoutPaletteBookmark;
 
 export type SchemaSection = {
   sizing?: string;
@@ -55,13 +72,19 @@ export type SchemaPanel = {
   layout: LayoutItem[];
 };
 
+export type SchemaPaletteBookmark = {
+  items: string[];
+  panelIds: string[];
+  stateItems?: Record<string, string[]>;
+};
+
 export type ComponentSchemaV1 = {
   type: 'object';
   version: 1;
   settings: SchemaSection;
   panels?: SchemaPanel[];
+  paletteBookmark?: SchemaPaletteBookmark;
   content?: SchemaSection;
-  allowedPlugins?: AllowedPlugin;
+  allowedPlugins?: string[];
+  states?: string[];
 };
-
-type AllowedPlugin = 'newsletter';

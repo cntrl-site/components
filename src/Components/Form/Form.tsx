@@ -47,19 +47,46 @@ function getCSS(P: string): string {
 }
 .${P}-field-label {
   white-space: nowrap;
+  color: var(--${P}-label-text-color);
 }
 .${P}-input {
   width: 100%;
   line-height: 1.4;
-  background: transparent;
   outline: none;
+  background-color: var(--${P}-input-color);
+  color: var(--${P}-input-text-color);
+  border-color: var(--${P}-input-border-color);
 }
 .${P}-input::placeholder {
-  color: var(--placeholder-color);
+  color: var(--${P}-placeholder-color);
   opacity: 1;
 }
-.${P}-input:focus {
-  border-color: #333;
+.${P}-input:hover {
+  background-color: var(--${P}-hover-input-color, var(--${P}-input-color));
+  color: var(--${P}-hover-input-text-color, var(--${P}-input-text-color));
+  border-color: var(--${P}-hover-input-border-color, var(--${P}-input-border-color));
+}
+.${P}-wrapper.${P}-state-hover .${P}-input {
+  background-color: var(--${P}-hover-input-color, var(--${P}-input-color));
+  color: var(--${P}-hover-input-text-color, var(--${P}-input-text-color));
+  border-color: var(--${P}-hover-input-border-color, var(--${P}-input-border-color));
+}
+.${P}-input:focus,
+.${P}-wrapper.${P}-state-focus .${P}-input {
+  background-color: var(--${P}-focus-input-color, var(--${P}-input-color));
+  color: var(--${P}-focus-input-text-color, var(--${P}-input-text-color));
+  border-color: var(--${P}-focus-input-border-color, var(--${P}-input-border-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-input {
+  background-color: var(--${P}-filled-input-color, var(--${P}-input-color));
+  color: var(--${P}-filled-input-text-color, var(--${P}-input-text-color));
+  border-color: var(--${P}-filled-input-border-color, var(--${P}-input-border-color));
+}
+.${P}-wrapper.${P}-state-success .${P}-input,
+.${P}-wrapper.${P}-state-success .${P}-button {
+  pointer-events: none;
+}
+.${P}-wrapper.${P}-state-error .${P}-input {
 }
 .${P}-input[data-field-type="textarea"] {
   resize: vertical;
@@ -72,16 +99,29 @@ function getCSS(P: string): string {
 .${P}-button {
   cursor: pointer;
   white-space: nowrap;
+  background-color: var(--${P}-button-color);
+  color: var(--${P}-button-text-color);
+  border-color: var(--${P}-button-border-color);
+}
+.${P}-button:hover {
+  background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
+  color: var(--${P}-hover-button-text-color, var(--${P}-button-text-color));
+  border-color: var(--${P}-hover-button-border-color, var(--${P}-button-border-color));
+}
+.${P}-wrapper.${P}-state-hover .${P}-button {
+  background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
+  color: var(--${P}-hover-button-text-color, var(--${P}-button-text-color));
+  border-color: var(--${P}-hover-button-border-color, var(--${P}-button-border-color));
 }
 .${P}-success {
   margin-top: ${sv(8)};
   font-size: ${sv(14)};
-  color: #22c55e;
+  color: var(--${P}-success-success-color, var(--${P}-success-color));
 }
 .${P}-error {
   margin-top: ${sv(8)};
   font-size: ${sv(14)};
-  color: #ef4444;
+  color: var(--${P}-error-error-color, var(--${P}-error-color));
 }
 .${P}-overlay-anchor {
   position: relative;
@@ -101,10 +141,11 @@ type FormProps = {
   settings: FormSettings;
   content?: unknown;
   isEditor?: boolean;
+  activeEvent: string | undefined;
   onUpdateSettings?: (settings: FormSettings) => void;
 } & CommonComponentProps;
 
-export function Form({ settings, isEditor, metadata }: FormProps) {
+export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
@@ -129,13 +170,27 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
     buttonColor,
     buttonTextColor,
     buttonBorderColor,
-    labelTextColor
+    labelTextColor,
+    successColor,
+    errorColor,
+    fontFamily,
+    successMessage,
+    errorMessage: errorMessageText,
+    stateOverrides,
   } = settings;
 
   const layout = type === 'A' ? 'horizontal' : 'vertical';
   const showLabels = type === 'C';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
-  const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
+  const inputCss = inputTextStyle
+    ? textStylesToCss(
+        {
+          ...inputTextStyle,
+          fontSettings: { ...inputTextStyle.fontSettings, fontFamily },
+        },
+        isEditor,
+      )
+    : undefined;
   const inputFieldCss = {
     ...inputCss,
     borderStyle: 'solid',
@@ -145,19 +200,46 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
     paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
     paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
     paddingLeft: scalingValue(inputPadding?.left ?? 0, isEditor),
-    backgroundColor: inputColor,
-    color: inputTextColor,
-    borderColor: inputBorderColor,
-    '--placeholder-color': placeholderColor,
   } as React.CSSProperties;
-  const buttonTextCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
-  const labelTextCss = labelTextStyle ? textStylesToCss(labelTextStyle, isEditor) : undefined;
+  const buttonTextCss = buttonTextStyle
+    ? textStylesToCss(
+        {
+          ...buttonTextStyle,
+          fontSettings: { ...buttonTextStyle.fontSettings, fontFamily },
+        },
+        isEditor,
+      )
+    : undefined;
+  const labelTextCss = labelTextStyle
+    ? textStylesToCss(
+        {
+          ...labelTextStyle,
+          fontSettings: { ...labelTextStyle.fontSettings, fontFamily },
+        },
+        isEditor,
+      )
+    : undefined;
+
+  const colorVars = buildColorVars(P, {
+    inputColor, inputTextColor, inputBorderColor, placeholderColor,
+    buttonColor, buttonTextColor, buttonBorderColor,
+    labelTextColor, successColor, errorColor,
+  }, stateOverrides);
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
   );
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const displayStatus = activeEvent === 'success' ? 'success'
+    : activeEvent === 'error' ? 'error'
+    : status;
+  const displayError = activeEvent === 'error' ? errorMessageText : errorMessage;
+  const displayValues = activeEvent === 'filled'
+    ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
+    : fieldValues;
+  const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
 
   const apiBase = metadata?.apiBase as string | undefined;
   const projectId = metadata?.projectId as string | undefined;
@@ -202,7 +284,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
   };
 
   return (
-    <div className={`${P}-wrapper`}>
+    <div className={`${P}-wrapper ${stateClass}`.trim()} style={colorVars}>
       <style>{getCSS(P)}</style>
       <form
         onSubmit={handleSubmit}
@@ -213,7 +295,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
             <React.Fragment key={index}>
               <div className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
                 {showLabels && (
-                  <span className={`${P}-field-label`} style={{ ...labelTextCss, color: labelTextColor }}>
+                  <span className={`${P}-field-label`} style={labelTextCss}>
                     {field.label || field.name}
                   </span>
                 )}
@@ -221,7 +303,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
                   <textarea
                     name={field.name}
                     autoComplete="off"
-                    value={fieldValues[field.name] ?? ''}
+                    value={displayValues[field.name] ?? ''}
                     onChange={(e) => handleFieldChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     className={`${P}-input`}
@@ -234,7 +316,7 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
                     type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
                     name={field.name}
                     autoComplete="off"
-                    value={fieldValues[field.name] ?? ''}
+                    value={displayValues[field.name] ?? ''}
                     onChange={(e) => handleFieldChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.type === 'email'}
@@ -276,20 +358,31 @@ export function Form({ settings, isEditor, metadata }: FormProps) {
               paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
               paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
-              backgroundColor: buttonColor,
-              color: buttonTextColor,
-              borderColor: buttonBorderColor,
+              ...buttonTextCss,
             }}
           >
-            <span className={`${P}-overlay-anchor`} style={buttonTextCss}>
+            <span className={`${P}-overlay-anchor`}>
               {status === 'submitting' ? '...' : buttonLabel}
             </span>
           </button>
         </div>
       </form>
-      {status === 'success' && <p className={`${P}-success`}>Thanks for subscribing!</p>}
-      {status === 'error' && errorMessage && (
-        <p className={`${P}-error`} role="alert">{errorMessage}</p>
+      {displayStatus === 'success' && (
+        <p
+          className={`${P}-success`}
+          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+        >
+          {successMessage}
+        </p>
+      )}
+      {displayStatus === 'error' && (
+        <p
+          className={`${P}-error`}
+          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+          role="alert"
+        >
+          {displayError ?? errorMessageText}
+        </p>
       )}
     </div>
   );
@@ -306,7 +399,7 @@ export type FormFieldItem = {
 
 type TextStyles = {
   fontSettings: {
-    fontFamily: string;
+    fontFamily?: string;
     fontWeight: number;
     fontStyle: string;
   };
@@ -329,8 +422,23 @@ type Padding = {
   left?: number;
 };
 
+type ColorKeys =
+  | 'inputColor'
+  | 'inputTextColor'
+  | 'inputBorderColor'
+  | 'placeholderColor'
+  | 'buttonColor'
+  | 'buttonTextColor'
+  | 'buttonBorderColor'
+  | 'labelTextColor'
+  | 'successColor'
+  | 'errorColor';
+
+type StateColorOverrides = Partial<Record<ColorKeys, string>>;
+
 type FormSettings = {
   type: 'A' | 'B' | 'C';
+  fontFamily: string;
   fieldsToShow: number;
   fields: FormFieldItem[];
   buttonLabel?: string;
@@ -353,7 +461,51 @@ type FormSettings = {
   buttonTextColor: string;
   buttonBorderColor: string;
   labelTextColor: string;
+  successColor: string;
+  errorColor: string;
+  successMessage: string;
+  errorMessage: string;
+  stateOverrides?: Record<string, StateColorOverrides>;
 };
+
+const COLOR_VAR_MAP: Record<ColorKeys, string> = {
+  inputColor: 'input-color',
+  inputTextColor: 'input-text-color',
+  inputBorderColor: 'input-border-color',
+  placeholderColor: 'placeholder-color',
+  buttonColor: 'button-color',
+  buttonTextColor: 'button-text-color',
+  buttonBorderColor: 'button-border-color',
+  labelTextColor: 'label-text-color',
+  successColor: 'success-color',
+  errorColor: 'error-color',
+};
+
+const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
+
+function buildColorVars(
+  P: string,
+  defaults: Record<ColorKeys, string>,
+  stateOverrides?: Record<string, StateColorOverrides>,
+): React.CSSProperties {
+  const vars: Record<string, string> = {};
+  for (const [key, varSuffix] of Object.entries(COLOR_VAR_MAP)) {
+    vars[`--${P}-${varSuffix}`] = defaults[key as ColorKeys];
+  }
+  if (stateOverrides) {
+    for (const state of STATE_KEYS) {
+      const overrides = stateOverrides[state];
+      if (!overrides) continue;
+      for (const [key, varSuffix] of Object.entries(COLOR_VAR_MAP)) {
+        const val = overrides[key as ColorKeys];
+        if (val !== undefined) {
+          vars[`--${P}-${state}-${varSuffix}`] = val;
+        }
+      }
+    }
+  }
+  return vars as unknown as React.CSSProperties;
+}
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
   return {
