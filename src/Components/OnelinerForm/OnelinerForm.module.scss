@@ -11,8 +11,6 @@
   display: flex;
   width: 100%;
   align-items: stretch;
-  @include size(border-radius, 40);
-  border: 1px solid #ccc;
   overflow: hidden;
 }
 
@@ -22,50 +20,29 @@
   background: transparent;
   border: none;
   outline: none;
-  @include size(padding-top, 12);
-  @include size(padding-bottom, 12);
-  @include size(padding-left, 20);
-  @include size(padding-right, 12);
-  @include size(font-size, 14);
-  line-height: 1.4;
 
   &::placeholder {
-    color: #999;
+    color: var(--placeholder-color, #999);
   }
 }
 
 .submitBtn {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
   border: none;
-  border-left: 1px solid #ccc;
   cursor: pointer;
   white-space: nowrap;
-  @include size(padding-top, 12);
-  @include size(padding-bottom, 12);
-  @include size(padding-left, 20);
-  @include size(padding-right, 20);
-  @include size(font-size, 14);
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.03);
-  }
 }
 
-.success {
-  @include size(margin-top, 8);
-  @include size(font-size, 14);
-  color: #22c55e;
-}
-
+.success,
 .error {
-  @include size(margin-top, 8);
-  @include size(font-size, 14);
-  color: #ef4444;
+  margin: 0;
 }
 
 .overlayAnchor {
   position: relative;
+  display: flex;
+  align-items: center;
 }

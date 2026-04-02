@@ -16,25 +16,14 @@ function getCSS(P: string): string {
 }
 .${P}-form {
   display: flex;
-  width: 100%;
-}
-.${P}-form.${P}-horizontal {
-  flex-direction: row;
-  align-items: center;
-}
-.${P}-form.${P}-vertical {
   flex-direction: column;
+  width: 100%;
 }
 .${P}-fields {
   display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
-}
-.${P}-fields.${P}-horizontal {
-  flex-direction: row;
-}
-.${P}-fields.${P}-vertical {
-  flex-direction: column;
 }
 .${P}-field-group {
   display: flex;
@@ -51,6 +40,7 @@ function getCSS(P: string): string {
 }
 .${P}-input {
   width: 100%;
+  box-sizing: border-box;
   line-height: 1.4;
   outline: none;
   background-color: var(--${P}-input-color);
@@ -179,8 +169,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     stateOverrides,
   } = settings;
 
-  const layout = type === 'A' ? 'horizontal' : 'vertical';
-  const showLabels = type === 'C';
+  const showLabels = type === 'B';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
   const inputCss = inputTextStyle
     ? textStylesToCss(
@@ -288,14 +277,14 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       <style>{getCSS(P)}</style>
       <form
         onSubmit={handleSubmit}
-        className={`${P}-form ${P}-${layout}`}
+        className={`${P}-form`}
       >
-        <div className={`${P}-fields ${P}-${layout}`}>
+        <div className={`${P}-fields`}>
           {visibleFields.map((field, index) => (
             <React.Fragment key={index}>
               <div className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
                 {showLabels && (
-                  <span className={`${P}-field-label`} style={labelTextCss}>
+                  <span className={`${P}-field-label`} style={labelTextCss ? { ...labelTextCss, lineHeight: labelTextCss.fontSize } : undefined}>
                     {field.label || field.name}
                   </span>
                 )}
@@ -308,7 +297,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
                     placeholder={field.placeholder}
                     className={`${P}-input`}
                     style={inputFieldCss}
-                    rows={3}
+                    rows={1}
                     data-field-type="textarea"
                   />
                 ) : (
@@ -327,24 +316,20 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
               </div>
               {index < visibleFields.length - 1 && (
                 <div
-                  data-axis={layout === 'horizontal' ? 'x' : 'y'}
+                  data-axis="y"
                   className={`${P}-overlay-anchor ${P}-fields-gap-spacer`}
                   data-controls="settings.fieldsGap"
-                  style={layout === 'horizontal'
-                    ? ({ width: scalingValue(fieldsGap, isEditor), height: 'auto' })
-                    : ({ height: scalingValue(fieldsGap, isEditor), width: '100%' })}
+                  style={{ height: scalingValue(fieldsGap, isEditor), width: '100%' }}
                 />
               )}
             </React.Fragment>
           ))}
         </div>
         <div
-          data-axis={layout === 'horizontal' ? 'x' : 'y'}
+          data-axis="y"
           className={`${P}-overlay-anchor ${P}-gap-spacer`}
           data-controls="settings.gap"
-          style={layout === 'horizontal'
-            ? ({ width: scalingValue(gap, isEditor) })
-            : ({ height: scalingValue(gap, isEditor), width: '100%' })}
+          style={{ height: scalingValue(gap, isEditor), width: '100%' }}
         />
         <div className={`${P}-overlay-anchor`}>
           <button
@@ -437,7 +422,7 @@ type ColorKeys =
 type StateColorOverrides = Partial<Record<ColorKeys, string>>;
 
 type FormSettings = {
-  type: 'A' | 'B' | 'C';
+  type: 'A' | 'B';
   fontFamily: string;
   fieldsToShow: number;
   fields: FormFieldItem[];

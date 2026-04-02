@@ -1,12 +1,18 @@
 import { OnelinerForm } from './OnelinerForm';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 
+const defaultFields = [
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Email is required' },
+  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Name is required' },
+  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Company is required' },
+  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Phone is required' },
+];
+
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
-    display: { type: 'font-settings' },
+    display: { type: 'font-settings-weight' },
     properties: {
-      fontFamily: { type: 'string' as const },
       fontWeight: { type: 'number' as const },
       fontStyle: { type: 'string' as const },
     },
@@ -14,6 +20,10 @@ const textStyleProperties = {
   fontSize: {
     type: 'number' as const,
     display: { type: 'font-size' },
+  },
+  lineHeight: {
+    type: 'number' as const,
+    display: { type: 'line-height-input' },
   },
   letterSpacing: {
     type: 'number' as const,
@@ -25,20 +35,28 @@ const textStyleProperties = {
   },
   color: {
     type: 'string' as const,
-    display: { type: 'style-panel-color-picker' },
+    title: 'Text Color',
+    display: { type: 'palette-color-picker' },
   },
 };
 
-const textStyleDefault = (fontWeight: number, color: string) => ({
+const paletteBookmarkItems = [
+  'strokeColor',
+  'inputColor',
+  'placeholderColor',
+  'buttonColor',
+] as const;
+
+const textStyleDefault = (fontWeight: number) => ({
   fontSettings: {
-    fontFamily: 'Arial',
     fontWeight,
     fontStyle: 'normal',
   },
   letterSpacing: 0,
   wordSpacing: 0,
   fontSize: 0.01,
-  color,
+  lineHeight: 0.01,
+  color: '#111111',
 });
 
 const schema: ComponentSchemaV1 = {
@@ -46,20 +64,87 @@ const schema: ComponentSchemaV1 = {
   version: 1,
   settings: {
     properties: {
-      field: {
-        type: 'object',
+      fieldsToShow: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Fields',
+        display: { type: 'number' },
+        min: 1,
+        max: 3,
+      },
+      fields: {
+        type: 'array',
         scope: 'common',
-        title: 'Field',
-        properties: {
-          name: { type: 'string' },
-          type: { type: 'string', enum: ['text', 'phone', 'email'] },
-          placeholder: { type: 'string' },
+        display: { type: 'fields-group' },
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['text', 'textarea', 'phone', 'email'] },
+            placeholder: { type: 'string' },
+            label: { type: 'string' },
+            isRequired: { type: 'boolean' },
+            error: { type: 'string' },
+          },
         },
       },
       buttonLabel: {
         type: 'string',
         scope: 'common',
         title: 'Button Label',
+        display: { type: 'text-input' },
+      },
+      fontFamily: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      inputPadding: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Input Padding',
+        properties: {
+          right: { 
+            type: 'number', 
+            display: { type: 'range-control' },
+            min: 0,
+            max: 100,
+          },
+          left: { 
+            type: 'number', 
+            display: { type: 'range-control' },
+            min: 0,
+            max: 100,
+          },
+        },
+      },
+      buttonPadding: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Button Padding',
+        properties: {
+          right: { 
+            type: 'number', 
+            display: { type: 'range-control' },
+            min: 0,
+            max: 100,
+          },
+          left: { 
+            type: 'number', 
+            display: { type: 'range-control' },
+            min: 0,
+            max: 100,
+          },
+        },
+      },
+      height: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Height',
+        display: { type: 'range-control' },
+        min: 0,
+        max: 100,
       },
       corners: {
         type: 'number',
@@ -75,37 +160,83 @@ const schema: ComponentSchemaV1 = {
         title: 'Stroke',
         display: { type: 'range-control' },
         min: 0,
-        max: 10,
+        max: 20,
       },
       strokeColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Border',
-        display: { type: 'style-panel-color-picker' },
+        title: 'Border Color',
+        display: { type: 'palette-color-picker' },
+      },
+      inputColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Input Color',
+        display: { type: 'palette-color-picker' },
+      },
+      placeholderColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Placeholder Color',
+        display: { type: 'palette-color-picker' },
+      },
+      buttonColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Button Color',
+        display: { type: 'palette-color-picker' },
+      },
+      successColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Success Message Color',
+        display: { type: 'palette-color-picker' },
+      },
+      errorColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Error Message Color',
+        display: { type: 'palette-color-picker' },
       },
       input: {
         type: 'object',
         scope: 'layout',
+        title: 'Input',
         properties: textStyleProperties,
+        layout: ['fontSettings', { type: 'row', items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'] }],
       },
       button: {
         type: 'object',
         scope: 'layout',
+        title: 'Button',
         properties: textStyleProperties,
+        layout: ['fontSettings', { type: 'row', items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'] }],
       },
     },
     defaults: {
-      field: {
-        name: 'email',
-        type: 'email',
-        placeholder: 'Your email',
-      },
+      fields: defaultFields,
+      fieldsToShow: 1,
       buttonLabel: 'Submit',
-      corners: 40,
-      stroke: 1,
+      fontFamily: 'Arial',
+      inputPadding: {
+        right: 0.01,
+        left: 0.01,
+      },
+      buttonPadding: {
+        right: 0.01,
+        left: 0.01,
+      },
+      height: 0.028,
+      corners: 0.05,
+      stroke: 0.001,
       strokeColor: '#cccccc',
-      input: textStyleDefault(400, '#999999'),
-      button: textStyleDefault(400, '#666666'),
+      inputColor: '#ffffff',
+      placeholderColor: '#cccccc',
+      buttonColor: '#cccccc',
+      errorColor: '#ef4444',
+      successColor: '#22c55e',
+      input: textStyleDefault(400),
+      button: textStyleDefault(400),
     },
   },
   panels: [
@@ -115,9 +246,35 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__template__', 'corners'] },
-        'stroke',
-        'strokeColor',
+        { type: 'row', items: ['__template__', 'fieldsToShow'] },
+        {
+          type: 'group',
+          title: 'BUTTON',
+          items: [
+            {
+              type: 'row',
+              items: [
+                {
+                  type: 'group',
+                  title: '',
+                  items: [
+                    'height',
+                    'corners',
+                    'stroke',
+                    {
+                      type: 'accordion',
+                      title: '',
+                      options: {
+                        'Input Padding': ['inputPadding'],
+                        'Button Padding': ['buttonPadding'],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
       ],
     },
     {
@@ -126,9 +283,10 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        'fontFamily',
         {
-          type: 'switcher',
-          title: 'Element',
+          type: 'accordion',
+          title: '',
           options: {
             'Input': ['input'],
             'Button': ['button'],
@@ -136,7 +294,30 @@ const schema: ComponentSchemaV1 = {
         },
       ],
     },
+    { 
+      id: 'fields',
+      icon: 'layers',
+      title: 'Fields',
+      tooltip: 'Fields',
+      layout: [
+        'fields',
+        'successMessage',
+        'errorMessage',
+      ],
+    },
   ],
+  paletteBookmark: {
+    items: [...paletteBookmarkItems],
+    panelIds: ['general', 'typeStyle'],
+    stateItems: {
+      default: ['strokeColor', 'inputColor', 'placeholderColor', 'buttonColor'],
+      hover: ['strokeColor', 'inputColor', 'buttonColor'],
+      focus: ['strokeColor', 'inputColor', 'buttonColor'],
+      filled: ['strokeColor', 'inputColor', 'buttonColor'],
+      success: ['strokeColor', 'inputColor', 'buttonColor'],
+      error: ['strokeColor', 'inputColor', 'buttonColor'],
+    },
+  },
 };
 
 export const OnelinerFormComponent = {

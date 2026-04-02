@@ -66,7 +66,7 @@ const textStyleDefault = (fontWeight: number) => ({
     fontWeight,
     fontStyle: 'normal',
   },
-  lineHeight: 0,
+  lineHeight: 0.01,
   letterSpacing: 0,
   wordSpacing: 0,
   fontSize: 0.01,
@@ -123,7 +123,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['A', 'B', 'C'],
+        enum: ['A', 'B'],
       },
       gap: {
         type: 'number',
@@ -345,18 +345,6 @@ const schema: ComponentSchemaV1 = {
                   type: 'accordion',
                   title: '',
                   options: {
-                    'Button': [
-                      {
-                        type: 'group',
-                        title: '',
-                        items: ['gap', 'buttonStroke', 'buttonCorners'],
-                      },
-                      {
-                        type: 'group',
-                        title: 'Padding',
-                        items: ['buttonPadding'],
-                      },
-                    ],
                     'Input': [
                       {
                         type: 'group',
@@ -367,6 +355,18 @@ const schema: ComponentSchemaV1 = {
                         type: 'group',
                         title: 'Padding',
                         items: ['inputPadding'],
+                      },
+                    ],
+                    'Button': [
+                      {
+                        type: 'group',
+                        title: '',
+                        items: ['gap', 'buttonStroke', 'buttonCorners'],
+                      },
+                      {
+                        type: 'group',
+                        title: 'Padding',
+                        items: ['buttonPadding'],
                       },
                     ],
                   },
