@@ -1,61 +1,222 @@
 import React, { useState } from 'react';
-import styles from './OnelinerForm.module.scss';
 import { CommonComponentProps } from '../props';
-import { scalingValue } from '../utils/scalingValue';
+import { scalingValue, useScopedStyles } from '../utils/index';
+
+function sv(px: number): string {
+  return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
+}
+
+function getCSS(P: string): string {
+  return `
+.${P}-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  align-items: stretch;
+  justify-content: center;
+}
+.${P}-form {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  overflow: hidden;
+}
+.${P}-inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  background-color: var(--${P}-input-color);
+}
+.${P}-inputWrap:hover,
+.${P}-wrapper.${P}-state-hover .${P}-inputWrap {
+  background-color: var(--${P}-hover-input-color, var(--${P}-input-color));
+}
+.${P}-inputWrap:focus-within,
+.${P}-wrapper.${P}-state-focus .${P}-inputWrap {
+  background-color: var(--${P}-focus-input-color, var(--${P}-input-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-inputWrap {
+  background-color: var(--${P}-filled-input-color, var(--${P}-input-color));
+}
+.${P}-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--${P}-input-text-color);
+}
+.${P}-input:hover {
+  color: var(--${P}-hover-input-text-color, var(--${P}-input-text-color));
+}
+.${P}-inputWrap:hover .${P}-input,
+.${P}-wrapper.${P}-state-hover .${P}-input {
+  color: var(--${P}-hover-input-text-color, var(--${P}-input-text-color));
+}
+.${P}-input:focus,
+.${P}-wrapper.${P}-state-focus .${P}-input {
+  color: var(--${P}-focus-input-text-color, var(--${P}-input-text-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-input {
+  color: var(--${P}-filled-input-text-color, var(--${P}-input-text-color));
+}
+.${P}-input::placeholder {
+  color: var(--${P}-placeholder-color);
+  opacity: 1;
+}
+.${P}-inputWrap:hover .${P}-input::placeholder,
+.${P}-wrapper.${P}-state-hover .${P}-input::placeholder {
+  color: var(--${P}-hover-placeholder-color, var(--${P}-placeholder-color));
+}
+.${P}-submitBtn {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  background-color: var(--${P}-button-color);
+  color: var(--${P}-button-text-color);
+  border-left-style: solid;
+  border-left-color: var(--${P}-stroke-color);
+}
+.${P}-submitBtn:hover,
+.${P}-wrapper.${P}-state-hover .${P}-submitBtn {
+  background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
+  color: var(--${P}-hover-button-text-color, var(--${P}-button-text-color));
+  border-left-color: var(--${P}-hover-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-submitBtn:focus,
+.${P}-wrapper.${P}-state-focus .${P}-submitBtn {
+  background-color: var(--${P}-focus-button-color, var(--${P}-button-color));
+  color: var(--${P}-focus-button-text-color, var(--${P}-button-text-color));
+  border-left-color: var(--${P}-focus-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-submitBtn {
+  background-color: var(--${P}-filled-button-color, var(--${P}-button-color));
+  color: var(--${P}-filled-button-text-color, var(--${P}-button-text-color));
+  border-left-color: var(--${P}-filled-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-wrapper.${P}-state-success .${P}-input,
+.${P}-wrapper.${P}-state-success .${P}-submitBtn {
+  pointer-events: none;
+}
+.${P}-overlayAnchor {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.${P}-success {
+  margin-top: ${sv(8)};
+  font-size: ${sv(14)};
+  color: var(--${P}-success-success-color, var(--${P}-success-color));
+}
+.${P}-error {
+  margin-top: ${sv(8)};
+  font-size: ${sv(14)};
+  color: var(--${P}-error-error-color, var(--${P}-error-color));
+}
+`;
+}
 
 type OnelinerFormProps = {
   settings: OnelinerFormSettings;
   content?: unknown;
   isEditor?: boolean;
+  activeEvent?: string;
 } & CommonComponentProps;
 
-export function OnelinerForm({ settings, isEditor, metadata }: OnelinerFormProps) {
+export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: OnelinerFormProps) => {
+  const { prefix: P } = useScopedStyles();
   const {
     fields = [{ name: 'email', type: 'email', placeholder: 'Your email' }],
     buttonLabel = 'Submit',
+    fieldsToShow = 1,
+    fontFamily,
     input: inputTextStyle,
     button: buttonTextStyle,
     height,
     corners,
     stroke,
-    strokeColor,
-    inputColor,
-    placeholderColor,
-    buttonColor,
-    successColor,
-    errorColor,
-    fieldsToShow,
+    stateOverrides,
     inputPadding,
     buttonPadding,
+    successMessage = 'Thanks for subscribing!',
+    errorMessage: errorMessageText = 'Please, fill all required fields.',
   } = settings;
 
-  const [values, setValues] = useState<Record<string, string>>({});
+  const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(visibleFields.map((f) => [f.name, '']))
+  );
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const displayStatus = activeEvent === 'success' ? 'success'
+    : activeEvent === 'error' ? 'error'
+    : status;
+  const displayError = activeEvent === 'error' ? errorMessageText : errorMessage;
+  const displayValues = activeEvent === 'filled'
+    ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
+    : values;
+  const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
 
   const apiBase = metadata?.apiBase as string | undefined;
   const projectId = metadata?.projectId as string | undefined;
   const canSubmit = Boolean(apiBase && projectId);
 
-  const inputCss = inputTextStyle ? textStylesToCss(inputTextStyle, isEditor) : undefined;
-  const buttonCss = buttonTextStyle ? textStylesToCss(buttonTextStyle, isEditor) : undefined;
+  const inputCss = inputTextStyle
+    ? textStylesToCss(
+        {
+          ...inputTextStyle,
+          fontSettings: {
+            ...inputTextStyle.fontSettings,
+            fontFamily: fontFamily ?? inputTextStyle.fontSettings.fontFamily,
+          },
+        },
+        isEditor,
+      )
+    : undefined;
+  const buttonCss = buttonTextStyle
+    ? textStylesToCss(
+        {
+          ...buttonTextStyle,
+          fontSettings: {
+            ...buttonTextStyle.fontSettings,
+            fontFamily: fontFamily ?? buttonTextStyle.fontSettings.fontFamily,
+          },
+        },
+        isEditor,
+      )
+    : undefined;
+
+  const colorVars = buildColorVars(P, {
+    strokeColor: settings.strokeColor,
+    inputColor: settings.inputColor,
+    placeholderColor: settings.placeholderColor,
+    buttonColor: settings.buttonColor,
+    successColor: settings.successColor,
+    errorColor: settings.errorColor,
+    inputTextColor: settings.inputTextColor ?? inputTextStyle?.color ?? '#111111',
+    buttonTextColor: settings.buttonTextColor ?? buttonTextStyle?.color ?? '#ffffff',
+  }, stateOverrides);
 
   const formStyle: React.CSSProperties = {
-    borderRadius: scalingValue(corners, isEditor), // TODO remake when settings arrive
-    borderWidth: scalingValue(stroke, isEditor), // TODO remake when settings arrive
+    borderRadius: scalingValue(corners, isEditor),
+    borderWidth: scalingValue(stroke, isEditor),
     borderStyle: 'solid',
-    borderColor: strokeColor,
+    borderColor: `var(--${P}-stroke-color)`
   };
 
-  const dividerStyle: React.CSSProperties = {
-    borderLeftWidth: scalingValue(stroke, isEditor), // TODO remake when settings arrive
-    borderLeftStyle: 'solid',
-    borderLeftColor: strokeColor,
-  };
+  const dividerWidthStyle = { borderLeftWidth: scalingValue(stroke, isEditor) };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = Object.values(values).join('').trim();
+    const trimmed = visibleFields.map((f) => values[f.name]?.trim() ?? '').join('');
     if (!canSubmit || !trimmed) return;
 
     setStatus('submitting');
@@ -85,41 +246,67 @@ export function OnelinerForm({ settings, isEditor, metadata }: OnelinerFormProps
   };
 
   return (
-    <div className={styles.wrapper}>
-      <form onSubmit={handleSubmit} className={styles.form} style={{ ...formStyle, height: scalingValue(height, isEditor)}}>
-        <div className={styles.overlayAnchor} style={{ flex: 1, minWidth: 0, backgroundColor: inputColor }}>
-          {fields.slice(0, fieldsToShow).map((field) => (
+    <div className={`${P}-wrapper ${stateClass}`.trim()} style={colorVars}>
+      <style>{getCSS(P)}</style>
+      <form onSubmit={handleSubmit} className={`${P}-form`} style={{ ...formStyle, height: scalingValue(height, isEditor) }}>
+        <div
+          className={`${P}-inputWrap ${P}-overlayAnchor`}
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          {visibleFields.map((field) => (
             <input
               key={field.name}
               type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
               name={field.name}
               autoComplete="off"
-              value={values[field.name] || ''}
+              value={displayValues[field.name] ?? ''}
               onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
               placeholder={field.placeholder}
               required={field.type === 'email'}
-              className={styles.input}
-              style={{ ...inputCss, paddingRight: scalingValue(inputPadding.right, isEditor), paddingLeft: scalingValue(inputPadding.left, isEditor), '--placeholder-color': placeholderColor } as React.CSSProperties}
+              className={`${P}-input`}
+              style={{
+                ...inputCss,
+                paddingRight: scalingValue(inputPadding.right, isEditor),
+                paddingLeft: scalingValue(inputPadding.left, isEditor),
+              }}
             />
           ))}
         </div>
-        <div className={styles.overlayAnchor}>
+        <div className={`${P}-overlayAnchor`}>
           <button
             type="submit"
-            className={styles.submitBtn}
-            style={{ ...buttonCss, ...dividerStyle, backgroundColor: buttonColor, paddingRight: scalingValue(buttonPadding.right, isEditor), paddingLeft: scalingValue(buttonPadding.left, isEditor) }}
+            className={`${P}-submitBtn`}
+            style={{
+              ...buttonCss,
+              ...dividerWidthStyle,
+              paddingRight: scalingValue(buttonPadding.right, isEditor),
+              paddingLeft: scalingValue(buttonPadding.left, isEditor),
+            }}
           >
             {status === 'submitting' ? '...' : buttonLabel}
           </button>
         </div>
       </form>
-      {status === 'success' && <p className={styles.success} style={{ color: successColor }}>Thanks for subscribing!</p>}
-      {status === 'error' && errorMessage && (
-        <p className={styles.error} style={{ color: errorColor }} role="alert">{errorMessage}</p>
+      {displayStatus === 'success' && (
+        <p
+          className={`${P}-success`}
+          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+        >
+          {successMessage}
+        </p>
+      )}
+      {displayStatus === 'error' && (
+        <p
+          className={`${P}-error`}
+          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+          role="alert"
+        >
+          {displayError ?? errorMessageText}
+        </p>
       )}
     </div>
   );
-}
+};
 
 type FieldConfig = {
   name: string;
@@ -129,7 +316,7 @@ type FieldConfig = {
 
 type TextStyles = {
   fontSettings: {
-    fontFamily: string;
+    fontFamily?: string;
     fontWeight: number;
     fontStyle: string;
   };
@@ -139,10 +326,23 @@ type TextStyles = {
   color: string;
 };
 
+type OnelinerColorKeys =
+  | 'strokeColor'
+  | 'inputColor'
+  | 'placeholderColor'
+  | 'buttonColor'
+  | 'inputTextColor'
+  | 'buttonTextColor'
+  | 'successColor'
+  | 'errorColor';
+
+type StateColorOverrides = Partial<Record<OnelinerColorKeys, string>>;
+
 export type OnelinerFormSettings = {
   fields: FieldConfig[];
   fieldsToShow: number;
   buttonLabel: string;
+  fontFamily?: string;
   input?: TextStyles;
   button?: TextStyles;
   height: number;
@@ -162,7 +362,49 @@ export type OnelinerFormSettings = {
   buttonColor: string;
   successColor: string;
   errorColor: string;
+  inputTextColor?: string;
+  buttonTextColor?: string;
+  stateOverrides?: Record<string, StateColorOverrides>;
+  successMessage?: string;
+  errorMessage?: string;
 };
+
+const COLOR_VAR_MAP: Record<OnelinerColorKeys, string> = {
+  strokeColor: 'stroke-color',
+  inputColor: 'input-color',
+  placeholderColor: 'placeholder-color',
+  buttonColor: 'button-color',
+  inputTextColor: 'input-text-color',
+  buttonTextColor: 'button-text-color',
+  successColor: 'success-color',
+  errorColor: 'error-color',
+};
+
+const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
+
+function buildColorVars(
+  P: string,
+  defaults: Record<OnelinerColorKeys, string>,
+  stateOverrides?: Record<string, StateColorOverrides>,
+): React.CSSProperties {
+  const vars: Record<string, string> = {};
+  for (const [key, varSuffix] of Object.entries(COLOR_VAR_MAP)) {
+    vars[`--${P}-${varSuffix}`] = defaults[key as OnelinerColorKeys];
+  }
+  if (stateOverrides) {
+    for (const state of STATE_KEYS) {
+      const overrides = stateOverrides[state];
+      if (!overrides) continue;
+      for (const [key, varSuffix] of Object.entries(COLOR_VAR_MAP)) {
+        const val = overrides[key as OnelinerColorKeys];
+        if (val !== undefined) {
+          vars[`--${P}-${state}-${varSuffix}`] = val;
+        }
+      }
+    }
+  }
+  return vars as unknown as React.CSSProperties;
+}
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
   return {
@@ -172,6 +414,5 @@ function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSP
     letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
     wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
     fontSize: scalingValue(textStyles.fontSize, isEditor),
-    color: textStyles.color,
   };
 }

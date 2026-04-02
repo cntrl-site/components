@@ -43,8 +43,12 @@ const textStyleProperties = {
 const paletteBookmarkItems = [
   'strokeColor',
   'inputColor',
+  'inputTextColor',
   'placeholderColor',
   'buttonColor',
+  'buttonTextColor',
+  'successColor',
+  'errorColor',
 ] as const;
 
 const textStyleDefault = (fontWeight: number) => ({
@@ -174,6 +178,12 @@ const schema: ComponentSchemaV1 = {
         title: 'Input Color',
         display: { type: 'palette-color-picker' },
       },
+      inputTextColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Input Text Color',
+        display: { type: 'palette-color-picker' },
+      },
       placeholderColor: {
         type: 'string',
         scope: 'layout',
@@ -184,6 +194,12 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'layout',
         title: 'Button Color',
+        display: { type: 'palette-color-picker' },
+      },
+      buttonTextColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Button Text Color',
         display: { type: 'palette-color-picker' },
       },
       successColor: {
@@ -197,6 +213,22 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Error Message Color',
         display: { type: 'palette-color-picker' },
+      },
+      successMessage: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Success Message',
+        display: { type: 'text-input' },
+      },
+      errorMessage: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Error Message',
+        display: { type: 'text-input' },
+      },
+      stateOverrides: {
+        type: 'object',
+        scope: 'layout',
       },
       input: {
         type: 'object',
@@ -231,10 +263,15 @@ const schema: ComponentSchemaV1 = {
       stroke: 0.001,
       strokeColor: '#cccccc',
       inputColor: '#ffffff',
+      inputTextColor: '#999999',
       placeholderColor: '#cccccc',
       buttonColor: '#cccccc',
+      buttonTextColor: '#ffffff',
       errorColor: '#ef4444',
       successColor: '#22c55e',
+      successMessage: 'Thanks for subscribing!',
+      errorMessage: 'Please, fill all required fields.',
+      stateOverrides: {},
       input: textStyleDefault(400),
       button: textStyleDefault(400),
     },
@@ -310,14 +347,15 @@ const schema: ComponentSchemaV1 = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['strokeColor', 'inputColor', 'placeholderColor', 'buttonColor'],
-      hover: ['strokeColor', 'inputColor', 'buttonColor'],
-      focus: ['strokeColor', 'inputColor', 'buttonColor'],
-      filled: ['strokeColor', 'inputColor', 'buttonColor'],
-      success: ['strokeColor', 'inputColor', 'buttonColor'],
-      error: ['strokeColor', 'inputColor', 'buttonColor'],
+      default: ['strokeColor', 'inputColor', 'inputTextColor', 'placeholderColor', 'buttonColor', 'buttonTextColor'],
+      hover: ['strokeColor', 'inputColor', 'inputTextColor', 'buttonColor', 'buttonTextColor'],
+      focus: ['strokeColor', 'inputColor', 'inputTextColor', 'buttonColor', 'buttonTextColor'],
+      filled: ['strokeColor', 'inputColor', 'inputTextColor', 'buttonColor', 'buttonTextColor'],
+      success: ['successColor'],
+      error: ['errorColor'],
     },
   },
+  states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
 };
 
 export const OnelinerFormComponent = {
