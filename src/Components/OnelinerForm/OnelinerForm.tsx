@@ -72,6 +72,7 @@ function getCSS(P: string): string {
   color: var(--${P}-hover-placeholder-color, var(--${P}-placeholder-color));
 }
 .${P}-submitBtn {
+  box-sizing: border-box;
   height: 100%;
   display: flex;
   align-items: center;
@@ -83,6 +84,17 @@ function getCSS(P: string): string {
   color: var(--${P}-button-text-color);
   border-left-style: solid;
   border-left-color: var(--${P}-stroke-color);
+}
+.${P}-submitBtn img {
+  display: block;
+  box-sizing: border-box;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 .${P}-submitBtn:hover,
 .${P}-wrapper.${P}-state-hover .${P}-submitBtn {
@@ -134,7 +146,10 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const { prefix: P } = useScopedStyles();
   const {
     fields = [{ name: 'email', type: 'email', placeholder: 'Your email' }],
-    buttonLabel = 'Submit',
+    buttonContent: buttonContentFromSettings,
+    submitButtonContent: submitButtonContentLegacy,
+    buttonLabel: buttonLabelLegacy,
+    buttonIcon: buttonIconLegacy,
     fieldsToShow = 1,
     fontFamily,
     input: inputTextStyle,
@@ -168,6 +183,21 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const apiBase = metadata?.apiBase as string | undefined;
   const projectId = metadata?.projectId as string | undefined;
   const canSubmit = Boolean(apiBase && projectId);
+  const bc = buttonContentFromSettings;
+  const submitButtonContent: 'Label' | 'Icon' =
+    bc?.mode === 'Icon' || bc?.mode === 'Label'
+      ? bc.mode
+      : submitButtonContentLegacy === 'Icon'
+        ? 'Icon'
+        : 'Label';
+  const buttonLabel =
+    bc === undefined ? buttonLabelLegacy : bc.label !== undefined ? bc.label : buttonLabelLegacy;
+  const buttonIcon =
+    bc === undefined ? buttonIconLegacy : bc.icon !== undefined ? bc.icon : buttonIconLegacy;
+  const labelText = buttonLabel ?? '';
+  const iconSrc = buttonIcon ?? '';
+  const useIconButton = submitButtonContent === 'Icon';
+  const submitAriaLabel = labelText || 'Submit';
 
   const inputCss = inputTextStyle
     ? textStylesToCss(
@@ -268,6 +298,8 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
                 ...inputCss,
                 paddingRight: scalingValue(inputPadding.right, isEditor),
                 paddingLeft: scalingValue(inputPadding.left, isEditor),
+                paddingTop: scalingValue(inputPadding.top, isEditor),
+                paddingBottom: scalingValue(inputPadding.bottom, isEditor),
               }}
             />
           ))}
@@ -276,14 +308,21 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
           <button
             type="submit"
             className={`${P}-submitBtn`}
+            aria-label={submitAriaLabel}
             style={{
               ...buttonCss,
               ...dividerWidthStyle,
               paddingRight: scalingValue(buttonPadding.right, isEditor),
               paddingLeft: scalingValue(buttonPadding.left, isEditor),
+              paddingTop: scalingValue(buttonPadding.top, isEditor),
+              paddingBottom: scalingValue(buttonPadding.bottom, isEditor),
             }}
           >
-            {status === 'submitting' ? '...' : buttonLabel}
+            {status === 'submitting'
+              ? '...'
+              : useIconButton
+                ? (iconSrc ? <img src={iconSrc} alt="" draggable={false} /> : null)
+                : labelText}
           </button>
         </div>
       </form>
@@ -338,10 +377,19 @@ type OnelinerColorKeys =
 
 type StateColorOverrides = Partial<Record<OnelinerColorKeys, string>>;
 
+export type OnelinerFormButtonContent = {
+  mode?: 'Label' | 'Icon';
+  label?: string | null;
+  icon?: string | null;
+};
+
 export type OnelinerFormSettings = {
   fields: FieldConfig[];
   fieldsToShow: number;
-  buttonLabel: string;
+  buttonContent?: OnelinerFormButtonContent;
+  submitButtonContent?: 'Label' | 'Icon';
+  buttonLabel?: string | null;
+  buttonIcon?: string | null;
   fontFamily?: string;
   input?: TextStyles;
   button?: TextStyles;
@@ -351,10 +399,14 @@ export type OnelinerFormSettings = {
   inputPadding: {
     left: number;
     right: number;
+    top: number;
+    bottom: number;
   };
   buttonPadding: {
     left: number;
     right: number;
+    top: number;
+    bottom: number;
   };
   strokeColor: string;
   inputColor: string;

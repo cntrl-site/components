@@ -6,9 +6,11 @@ export type SchemaDisplay = {
 };
 
 export type SchemaProperty = {
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields';
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'];
   scope?: PropertyScope;
   title?: string;
+  /** Hint / placeholder for text-style controls */
+  message?: string;
   icon?: string;
   tooltip?: string;
   display?: SchemaDisplay;

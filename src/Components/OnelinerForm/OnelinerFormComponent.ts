@@ -92,11 +92,27 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
-      buttonLabel: {
-        type: 'string',
+      buttonContent: {
+        type: 'object',
         scope: 'common',
-        title: 'Button Label',
-        display: { type: 'text-input' },
+        display: { type: 'button-content-switch' },
+        properties: {
+          mode: {
+            type: 'string',
+            enum: ['Label', 'Icon'],
+          },
+          label: {
+            type: ['string', 'null'] as const,
+            title: 'Label',
+            message: 'Subscribe',
+            display: { type: 'text-input' },
+          },
+          icon: {
+            type: ['string', 'null'] as const,
+            title: 'Icon',
+            display: { type: 'settings-image-input' },
+          },
+        },
       },
       fontFamily: {
         type: 'string',
@@ -107,45 +123,19 @@ const schema: ComponentSchemaV1 = {
       inputPadding: {
         type: 'object',
         scope: 'layout',
-        title: 'Input Padding',
-        properties: {
-          right: { 
-            type: 'number', 
-            display: { type: 'range-control' },
-            min: 0,
-            max: 100,
-          },
-          left: { 
-            type: 'number', 
-            display: { type: 'range-control' },
-            min: 0,
-            max: 100,
-          },
-        },
+        title: '',
+        display: { type: 'padding-controls' },
       },
       buttonPadding: {
         type: 'object',
         scope: 'layout',
-        title: 'Button Padding',
-        properties: {
-          right: { 
-            type: 'number', 
-            display: { type: 'range-control' },
-            min: 0,
-            max: 100,
-          },
-          left: { 
-            type: 'number', 
-            display: { type: 'range-control' },
-            min: 0,
-            max: 100,
-          },
-        },
+        title: '',
+        display: { type: 'padding-controls' },
       },
       height: {
         type: 'number',
         scope: 'layout',
-        title: 'Height',
+        title: 'minHeight',
         display: { type: 'range-control' },
         min: 0,
         max: 100,
@@ -248,15 +238,23 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       fields: defaultFields,
       fieldsToShow: 1,
-      buttonLabel: 'Submit',
+      buttonContent: {
+        mode: 'Label',
+        label: 'Submit',
+        icon: null,
+      },
       fontFamily: 'Arial',
       inputPadding: {
         right: 0.01,
         left: 0.01,
+        top: 0.01,
+        bottom: 0.01,
       },
       buttonPadding: {
         right: 0.01,
         left: 0.01,
+        top: 0.01,
+        bottom: 0.01,
       },
       height: 0.028,
       corners: 0.05,
@@ -284,34 +282,19 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__template__', 'fieldsToShow'] },
-        {
-          type: 'group',
-          title: 'BUTTON',
-          items: [
-            {
-              type: 'row',
-              items: [
-                {
-                  type: 'group',
-                  title: '',
-                  items: [
-                    'height',
-                    'corners',
-                    'stroke',
-                    {
-                      type: 'accordion',
-                      title: '',
-                      options: {
-                        'Input Padding': ['inputPadding'],
-                        'Button Padding': ['buttonPadding'],
-                      },
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
+        {type: 'row', items: ['height', 'corners']},
+        {type: 'row', items: [
+          {type: 'group', title: '', items: ['stroke', 'buttonContent']},
+          {
+          type: 'switcher',
+          title: 'Padding',
+          options: {
+            'Input': ['inputPadding'],
+            'Button': ['buttonPadding'],
+          },
         },
+      ]},
+        // {type: 'row', items: ['buttonContent']},
       ],
     },
     {
