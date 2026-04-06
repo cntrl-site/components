@@ -137,13 +137,6 @@ function getCSS(P: string): string {
   position: relative;
   height: auto;
 }
-.${P}-gap-spacer {
-  flex: 0 0 auto;
-  align-self: stretch;
-}
-.${P}-fields-gap-spacer {
-  flex: 0 0 auto;
-}
 `;
 }
 
@@ -230,9 +223,16 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     : undefined;
 
   const colorVars = buildColorVars(P, {
-    inputColor, inputTextColor, inputBorderColor, placeholderColor,
-    buttonColor, buttonTextColor, buttonBorderColor,
-    labelTextColor, successColor, errorColor,
+    inputColor,
+    inputTextColor,
+    inputBorderColor,
+    placeholderColor: placeholderColor?.trim() ? placeholderColor : '#cccccc',
+    buttonColor,
+    buttonTextColor,
+    buttonBorderColor,
+    labelTextColor,
+    successColor,
+    errorColor,
   }, stateOverrides);
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
@@ -309,59 +309,47 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       <form
         onSubmit={handleSubmit}
         className={`${P}-form`}
+        style={{ gap: scalingValue(gap, isEditor) }}
       >
-        <div className={`${P}-fields`}>
+        <div
+          className={`${P}-fields`}
+          style={{ gap: scalingValue(fieldsGap, isEditor) }}
+        >
           {visibleFields.map((field, index) => (
-            <React.Fragment key={index}>
-              <div className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
-                {showLabels && (
-                  <span className={`${P}-field-label`} style={labelTextCss ? { ...labelTextCss, lineHeight: labelTextCss.fontSize } : undefined}>
-                    {field.label || field.name}
-                  </span>
-                )}
-                {field.type === 'textarea' ? (
-                  <textarea
-                    name={field.name}
-                    autoComplete="off"
-                    value={displayValues[field.name] ?? ''}
-                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                    placeholder={field.placeholder}
-                    className={`${P}-input`}
-                    style={inputFieldCss}
-                    rows={1}
-                    data-field-type="textarea"
-                  />
-                ) : (
-                  <input
-                    type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
-                    name={field.name}
-                    autoComplete="off"
-                    value={displayValues[field.name] ?? ''}
-                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                    placeholder={field.placeholder}
-                    required={field.type === 'email'}
-                    className={`${P}-input`}
-                    style={inputFieldCss}
-                  />
-                )}
-              </div>
-              {index < visibleFields.length - 1 && (
-                <div
-                  data-axis="y"
-                  className={`${P}-overlay-anchor ${P}-fields-gap-spacer`}
-                  data-controls="settings.fieldsGap"
-                  style={{ height: scalingValue(fieldsGap, isEditor), width: '100%' }}
+            <div key={index} className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
+              {showLabels && (
+                <span className={`${P}-field-label`} style={labelTextCss ? { ...labelTextCss, lineHeight: labelTextCss.fontSize } : undefined}>
+                  {field.label || field.name}
+                </span>
+              )}
+              {field.type === 'textarea' ? (
+                <textarea
+                  name={field.name}
+                  autoComplete="off"
+                  value={displayValues[field.name] ?? ''}
+                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  className={`${P}-input`}
+                  style={inputFieldCss}
+                  rows={1}
+                  data-field-type="textarea"
+                />
+              ) : (
+                <input
+                  type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
+                  name={field.name}
+                  autoComplete="off"
+                  value={displayValues[field.name] ?? ''}
+                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                  placeholder={field.placeholder}
+                  required={field.type === 'email'}
+                  className={`${P}-input`}
+                  style={inputFieldCss}
                 />
               )}
-            </React.Fragment>
+            </div>
           ))}
         </div>
-        <div
-          data-axis="y"
-          className={`${P}-overlay-anchor ${P}-gap-spacer`}
-          data-controls="settings.gap"
-          style={{ height: scalingValue(gap, isEditor), width: '100%' }}
-        />
         <div className={`${P}-overlay-anchor`}>
           <button
             type="submit"

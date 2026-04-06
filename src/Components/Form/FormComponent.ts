@@ -310,6 +310,7 @@ const schema: ComponentSchemaV1 = {
       inputColor: '#000000',
       inputTextColor: '#999999',
       inputBorderColor: '#cccccc',
+      placeholderColor: '#cccccc',
       buttonColor: '#666666',
       buttonTextColor: '#ffffff',
       buttonBorderColor: '#cccccc',
