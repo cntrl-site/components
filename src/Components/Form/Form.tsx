@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
-import { scalingValue, useScopedStyles } from '../utils/index';
+import { getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -46,10 +46,12 @@ function getCSS(P: string): string {
   background-color: var(--${P}-input-color);
   color: var(--${P}-input-text-color);
   border-color: var(--${P}-input-border-color);
+  transition: all 250ms;
 }
 .${P}-input::placeholder {
   color: var(--${P}-placeholder-color);
   opacity: 1;
+  transition: all 250ms;
 }
 .${P}-input:hover {
   background-color: var(--${P}-hover-input-color, var(--${P}-input-color));
@@ -62,6 +64,7 @@ function getCSS(P: string): string {
   border-color: var(--${P}-hover-input-border-color, var(--${P}-input-border-color));
 }
 .${P}-input:focus,
+.${P}-input:focus-visible,
 .${P}-wrapper.${P}-state-focus .${P}-input {
   background-color: var(--${P}-focus-input-color, var(--${P}-input-color));
   color: var(--${P}-focus-input-text-color, var(--${P}-input-text-color));
@@ -89,9 +92,11 @@ function getCSS(P: string): string {
 .${P}-button {
   cursor: pointer;
   white-space: nowrap;
+  outline: none;
   background-color: var(--${P}-button-color);
   color: var(--${P}-button-text-color);
   border-color: var(--${P}-button-border-color);
+  transition: all 250ms;
 }
 .${P}-button:hover {
   background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
@@ -102,6 +107,21 @@ function getCSS(P: string): string {
   background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
   color: var(--${P}-hover-button-text-color, var(--${P}-button-text-color));
   border-color: var(--${P}-hover-button-border-color, var(--${P}-button-border-color));
+}
+.${P}-button:focus,
+.${P}-button:focus-visible,
+.${P}-wrapper.${P}-state-focus .${P}-button {
+  background-color: var(--${P}-focus-button-color, var(--${P}-button-color));
+  color: var(--${P}-focus-button-text-color, var(--${P}-button-text-color));
+  border-color: var(--${P}-focus-button-border-color, var(--${P}-button-border-color));
+}
+.${P}-input:focus-visible,
+.${P}-wrapper.${P}-state-focus .${P}-input {
+  outline: 1px solid var(--${P}-focus-input-border-color, var(--${P}-input-border-color));
+}
+.${P}-button:focus-visible,
+.${P}-wrapper.${P}-state-focus .${P}-button {
+  outline: 1px solid var(--${P}-focus-button-border-color, var(--${P}-button-border-color));
 }
 .${P}-success {
   margin-top: ${sv(8)};
@@ -228,6 +248,10 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
   const displayValues = activeEvent === 'filled'
     ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
     : fieldValues;
+  const validationErrorMessage =
+    displayStatus === 'error'
+      ? getFormFieldValidationError(visibleFields, displayValues)
+      : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
 
   const apiBase = metadata?.apiBase as string | undefined;
@@ -245,6 +269,13 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       visibleFields.map((f) => [f.name, fieldValues[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
     if (!canSubmit || Object.keys(payload).length === 0) return;
+
+    const validationError = getFormFieldValidationError(visibleFields, fieldValues);
+    if (validationError) {
+      setStatus('error');
+      setErrorMessage(validationError);
+      return;
+    }
 
     setStatus('submitting');
     setErrorMessage(null);
@@ -366,7 +397,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
           style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
           role="alert"
         >
-          {displayError ?? errorMessageText}
+          {validationErrorMessage ?? displayError ?? errorMessageText}
         </p>
       )}
     </div>

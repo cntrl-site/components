@@ -25,6 +25,7 @@ export type SchemaProperty = {
 
 export type LayoutRow = {
   type: 'row';
+  title?: string;
   items: LayoutItem[];
 };
 

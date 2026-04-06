@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
-import { scalingValue, useScopedStyles } from '../utils/index';
+import { getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -29,6 +29,7 @@ function getCSS(P: string): string {
   flex: 1;
   min-width: 0;
   background-color: var(--${P}-input-color);
+  transition: all 250ms;
 }
 .${P}-inputWrap:hover,
 .${P}-wrapper.${P}-state-hover .${P}-inputWrap {
@@ -48,6 +49,7 @@ function getCSS(P: string): string {
   border: none;
   outline: none;
   color: var(--${P}-input-text-color);
+  transition: all 250ms;
 }
 .${P}-input:hover {
   color: var(--${P}-hover-input-text-color, var(--${P}-input-text-color));
@@ -66,6 +68,7 @@ function getCSS(P: string): string {
 .${P}-input::placeholder {
   color: var(--${P}-placeholder-color);
   opacity: 1;
+  transition: all 250ms;
 }
 .${P}-inputWrap:hover .${P}-input::placeholder,
 .${P}-wrapper.${P}-state-hover .${P}-input::placeholder {
@@ -84,6 +87,7 @@ function getCSS(P: string): string {
   color: var(--${P}-button-text-color);
   border-left-style: solid;
   border-left-color: var(--${P}-stroke-color);
+  transition: all 250ms;
 }
 .${P}-submitBtn img {
   display: block;
@@ -178,6 +182,10 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const displayValues = activeEvent === 'filled'
     ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
     : values;
+  const validationErrorMessage =
+    displayStatus === 'error'
+      ? getFormFieldValidationError(visibleFields, displayValues)
+      : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
 
   const apiBase = metadata?.apiBase as string | undefined;
@@ -248,6 +256,13 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     e.preventDefault();
     const trimmed = visibleFields.map((f) => values[f.name]?.trim() ?? '').join('');
     if (!canSubmit || !trimmed) return;
+
+    const validationError = getFormFieldValidationError(visibleFields, values);
+    if (validationError) {
+      setStatus('error');
+      setErrorMessage(validationError);
+      return;
+    }
 
     setStatus('submitting');
     setErrorMessage(null);
@@ -340,7 +355,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
           style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
           role="alert"
         >
-          {displayError ?? errorMessageText}
+          {validationErrorMessage ?? displayError ?? errorMessageText}
         </p>
       )}
     </div>

@@ -2,10 +2,10 @@ import { OnelinerForm } from './OnelinerForm';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 
 const defaultFields = [
-  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Email is required' },
-  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Name is required' },
-  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Company is required' },
-  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Phone is required' },
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
+  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
+  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Please, enter your company name.' },
+  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Please, enter a valid phone number.' },
 ];
 
 const textStyleProperties = {
@@ -294,7 +294,6 @@ const schema: ComponentSchemaV1 = {
           },
         },
       ]},
-        // {type: 'row', items: ['buttonContent']},
       ],
     },
     {
@@ -305,12 +304,14 @@ const schema: ComponentSchemaV1 = {
       layout: [
         'fontFamily',
         {
-          type: 'accordion',
-          title: '',
-          options: {
-            'Input': ['input'],
-            'Button': ['button'],
-          },
+          type: 'row',
+          title: 'Input',
+          items: ['input'],
+        },
+        {
+          type: 'row',
+          title: 'Button',
+          items: ['button'],
         },
       ],
     },

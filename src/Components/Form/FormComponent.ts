@@ -3,10 +3,10 @@ import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Form.tsx?raw';
 
 const defaultFieldsItems = [
-  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Email is required' },
-  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Name is required' },
-  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Company is required' },
-  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Phone is required' },
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
+  { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
+  { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Please, enter your company name.' },
+  { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Please, enter a valid phone number.' },
   { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message', label: 'Message', isRequired: false, error: 'Message is required' },
   { name: 'message2', type: 'textarea' as const, placeholder: 'Enter your message 2', label: 'Message 2', isRequired: false, error: 'Message 2 is required' },
   { name: 'message3', type: 'textarea' as const, placeholder: 'Enter your message 3', label: 'Message 3', isRequired: false, error: 'Message 3 is required' },
@@ -336,40 +336,37 @@ const schema: ComponentSchemaV1 = {
         'type',
         {
           type: 'group',
-          title: 'BUTTON',
+          title: '',
           items: [
             {
               type: 'row',
+              title: 'Input',
+              items: [
+                  {
+                    type: 'group',
+                    title: '',
+                    items: ['fieldsGap', 'inputStroke', 'inputCorners'],
+                  },
+                  {
+                    type: 'group',
+                    title: 'Padding',
+                    items: ['inputPadding'],
+                  },
+              ],
+            },
+            {
+              type: 'row',
+              title: 'Button',
               items: [
                 {
-                  type: 'accordion',
-                  title: '',
-                  options: {
-                    'Input': [
-                      {
-                        type: 'group',
-                        title: '',
-                        items: ['fieldsGap', 'inputStroke', 'inputCorners'],
-                      },
-                      {
-                        type: 'group',
-                        title: 'Padding',
-                        items: ['inputPadding'],
-                      },
-                    ],
-                    'Button': [
-                      {
-                        type: 'group',
-                        title: '',
-                        items: ['gap', 'buttonStroke', 'buttonCorners'],
-                      },
-                      {
-                        type: 'group',
-                        title: 'Padding',
-                        items: ['buttonPadding'],
-                      },
-                    ],
+                    type: 'group',
+                    title: '',
+                    items: ['gap', 'buttonStroke', 'buttonCorners'],
                   },
+                {
+                  type: 'group',
+                    title: 'Padding',
+                    items: ['buttonPadding'],
                 },
               ],
             },
@@ -385,12 +382,14 @@ const schema: ComponentSchemaV1 = {
       layout: [
         'fontFamily',
         {
-          type: 'accordion',
-          title: '',
-          options: {
-            'Input': ['input'],
-            'Button': ['button'],
-          },
+          type: 'row',
+          title: 'Input',
+          items: ['input'],
+        },
+        {
+          type: 'row',
+          title: 'Button',
+          items: ['button'],
         },
       ],
     },
@@ -412,7 +411,7 @@ const schema: ComponentSchemaV1 = {
     stateItems: {
       default: ['inputColor', 'inputTextColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
       hover: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
-      focus: ['inputColor', 'inputTextColor', 'inputBorderColor'],
+      focus: ['inputColor', 'inputTextColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
       filled: ['inputColor', 'inputTextColor', 'inputBorderColor'],
       success: ['successColor'],
       error: ['errorColor'],
