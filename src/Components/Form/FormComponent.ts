@@ -432,6 +432,10 @@ export const FormComponent = {
   element: Form,
   id: 'form',
   name: 'Form',
+  preview: {
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/clickGalleryPreview.png',
+  },
   version: 1,
   defaultSize: {
     width: 400,

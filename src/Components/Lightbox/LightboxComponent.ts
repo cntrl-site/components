@@ -6,8 +6,8 @@ export const LightboxComponent: Component = {
   id: 'lightbox',
   name: 'Lightbox',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/component-assets/lightbox.mp4',
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/lightboxPreview.png',
   },
   defaultSize: {
     width: 440,

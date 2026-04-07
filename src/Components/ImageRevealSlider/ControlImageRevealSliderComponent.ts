@@ -5,8 +5,8 @@ export const ControlImageRevealSliderComponent = {
   id: 'control-image-reveal',
   name: 'Click Gallery',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7EQ3WSW43JG5YMC8B2HTPKT.mp4'
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/clickGalleryPreview.png',
   },
   defaultSize: {
     width: '100%',

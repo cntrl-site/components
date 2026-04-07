@@ -5,8 +5,8 @@ export const ControlSliderComponent = {
   id: 'control-slider',
   name: 'Slider',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Control-slider-preview.mp4',
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/sliderPreview.png',
   },
   defaultSize: {
     width: 400,
