@@ -188,9 +188,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
 
-  const apiBase = metadata?.apiBase as string | undefined;
-  const projectId = metadata?.projectId as string | undefined;
-  const canSubmit = Boolean(apiBase && projectId);
+  const submitUrl = metadata?.submitUrl as string | undefined;
   const bc = buttonContentFromSettings;
   const submitButtonContent: 'Label' | 'Icon' =
     bc?.mode === 'Icon' || bc?.mode === 'Label'
@@ -254,8 +252,10 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = visibleFields.map((f) => values[f.name]?.trim() ?? '').join('');
-    if (!canSubmit || !trimmed) return;
+    const payload = Object.fromEntries(
+      visibleFields.map((f) => [f.name, values[f.name]?.trim() ?? '']).filter(([, v]) => v)
+    );
+    if (!submitUrl || Object.keys(payload).length === 0) return;
 
     const validationError = getFormFieldValidationError(visibleFields, values);
     if (validationError) {
@@ -268,13 +268,10 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     setErrorMessage(null);
 
     try {
-      const res = await fetch(`${apiBase}/projects/${projectId}/forms/submit`, {
+      const res = await fetch(submitUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...fields.map((field) => ({ [field.name]: trimmed })),
-          pageUrl: typeof window !== 'undefined' ? window.location.href : '',
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -283,7 +280,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       }
 
       setStatus('success');
-      setValues({});
+      setValues(Object.fromEntries(visibleFields.map((f) => [f.name, ''])));
     } catch (err) {
       setStatus('error');
       setErrorMessage(err instanceof Error ? err.message : 'Something went wrong');
