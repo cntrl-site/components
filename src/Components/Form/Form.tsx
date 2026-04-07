@@ -254,11 +254,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
 
-  const apiBase = metadata?.apiBase as string | undefined;
-  const projectId = metadata?.projectId as string | undefined;
-  const configId = metadata?.pluginConfigId as string | undefined;
-  const canSubmit = Boolean(apiBase && projectId && configId);
-
+  const submitUrl = metadata?.submitUrl as string | undefined;
   const handleFieldChange = (name: string, value: string) => {
     setFieldValues((prev) => ({ ...prev, [name]: value }));
   };
@@ -268,7 +264,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     const payload = Object.fromEntries(
       visibleFields.map((f) => [f.name, fieldValues[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
-    if (!canSubmit || Object.keys(payload).length === 0) return;
+    if (!submitUrl || Object.keys(payload).length === 0) return;
 
     const validationError = getFormFieldValidationError(visibleFields, fieldValues);
     if (validationError) {
@@ -281,14 +277,10 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     setErrorMessage(null);
 
     try {
-      const url = `${apiBase}/projects/${projectId}/forms/${configId}/submit`;
-      const res = await fetch(url, {
+      const res = await fetch(submitUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...payload,
-          pageUrl: typeof window !== 'undefined' ? window.location.href : '',
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const text = await res.text();
