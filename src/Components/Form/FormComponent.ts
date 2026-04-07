@@ -231,7 +231,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'layout',
         title: 'Label Color',
-        display: { type: 'palette-color-picker' },
+        display: { type: 'palette-color-picker', visible: false },
       },
       successColor: {
         type: 'string',
@@ -325,6 +325,12 @@ const schema: ComponentSchemaV1 = {
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
     },
+    displayRules: [
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelTextColor.display.visible', value: true },
+      },
+    ],
   },
   panels: [
     {
@@ -410,9 +416,9 @@ const schema: ComponentSchemaV1 = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['inputColor', 'inputTextColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
-      hover: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
-      focus: ['inputColor', 'inputTextColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
+      default: ['inputColor', 'inputBorderColor', 'placeholderColor','placeholderTextColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
+      hover: ['inputColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
+      focus: ['inputColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
       filled: ['inputColor', 'inputTextColor', 'inputBorderColor'],
       success: ['successColor'],
       error: ['errorColor'],

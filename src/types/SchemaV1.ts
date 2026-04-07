@@ -59,11 +59,30 @@ export type LayoutItem =
   | LayoutAccordion
   | LayoutPaletteBookmark;
 
+export type SchemaDisplayRule = {
+  if:
+    | {
+        name: string;
+        value: unknown;
+        isNotEqual?: boolean;
+      }
+    | Array<{
+        name: string;
+        value: unknown;
+        isNotEqual?: boolean;
+      }>;
+  then: {
+    name: string;
+    value: unknown;
+  };
+};
+
 export type SchemaSection = {
   sizing?: string;
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;
+  displayRules?: SchemaDisplayRule[];
 };
 
 export type SchemaPanel = {
