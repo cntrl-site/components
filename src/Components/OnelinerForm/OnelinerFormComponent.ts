@@ -281,7 +281,7 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__template__', 'fieldsToShow'] },
+        { type: 'row', items: ['__componentName__', 'fieldsToShow'] },
         {type: 'row', items: ['height', 'corners']},
         {type: 'row', items: [
           {type: 'group', title: '', items: ['stroke', 'buttonContent']},
@@ -345,8 +345,12 @@ const schema: ComponentSchemaV1 = {
 export const OnelinerFormComponent = {
   element: OnelinerForm,
   id: 'oneliner-form',
-  name: 'Oneliner',
+  name: 'Oneliner Form',
   version: 1,
+  preview: {
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/onelinerImg.png',
+  },
   defaultSize: {
     width: '50%',
     height: 60,

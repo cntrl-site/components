@@ -83,7 +83,6 @@ function getCSS(P: string): string {
 }
 .${P}-input[data-field-type="textarea"] {
   resize: vertical;
-  min-height: 60px;
 }
 .${P}-input:disabled {
   background: #f5f5f5;

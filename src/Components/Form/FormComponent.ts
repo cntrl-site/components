@@ -339,7 +339,7 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__template__', 'fieldsToShow'] },
+        { type: 'row', items: ['__componentName__', 'name', 'fieldsToShow'] },
         'type',
         {
           type: 'group',
@@ -434,7 +434,7 @@ export const FormComponent = {
   name: 'Form',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/clickGalleryPreview.png',
+    url: 'https://cdn.cntrl.site/component-assets/formImg.png',
   },
   version: 1,
   defaultSize: {
