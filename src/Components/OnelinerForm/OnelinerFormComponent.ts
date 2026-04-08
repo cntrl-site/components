@@ -135,7 +135,7 @@ const schema: ComponentSchemaV1 = {
       height: {
         type: 'number',
         scope: 'layout',
-        title: 'minHeight',
+        title: 'min Height',
         display: { type: 'range-control' },
         min: 0,
         max: 100,
@@ -345,14 +345,14 @@ const schema: ComponentSchemaV1 = {
 export const OnelinerFormComponent = {
   element: OnelinerForm,
   id: 'oneliner-form',
-  name: 'Oneliner Form',
+  name: 'Newsletter Single Line',
   version: 1,
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/onelinerImg.png',
   },
   defaultSize: {
-    width: '50%',
+    width: '30%',
     height: 60,
   },
   schema,

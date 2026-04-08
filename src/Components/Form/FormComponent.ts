@@ -431,7 +431,7 @@ const schema: ComponentSchemaV1 = {
 export const FormComponent = {
   element: Form,
   id: 'form',
-  name: 'Form',
+  name: 'Newsletter Stacked',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/formImg.png',
