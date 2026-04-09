@@ -67,6 +67,7 @@ const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
+    sizing: 'auto manual',
     properties: {
       fieldsToShow: {
         type: 'number',
@@ -132,13 +133,13 @@ const schema: ComponentSchemaV1 = {
         title: '',
         display: { type: 'padding-controls' },
       },
-      height: {
+      minHeight: {
         type: 'number',
         scope: 'layout',
         title: 'min Height',
         display: { type: 'range-control' },
         min: 0,
-        max: 100,
+        max: 200,
       },
       corners: {
         type: 'number',
@@ -256,7 +257,7 @@ const schema: ComponentSchemaV1 = {
         top: 0.01,
         bottom: 0.01,
       },
-      height: 0.028,
+      minHeight: 0.028,
       corners: 0.05,
       stroke: 0.001,
       strokeColor: '#cccccc',
@@ -282,7 +283,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'fieldsToShow'] },
-        {type: 'row', items: ['height', 'corners']},
+        {type: 'row', items: ['minHeight', 'corners']},
         {type: 'row', items: [
           {type: 'group', title: '', items: ['stroke', 'buttonContent']},
           {

@@ -158,7 +158,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     fontFamily,
     input: inputTextStyle,
     button: buttonTextStyle,
-    height,
+    minHeight,
     corners,
     stroke,
     stateOverrides,
@@ -290,7 +290,11 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   return (
     <div className={`${P}-wrapper ${stateClass}`.trim()} style={colorVars}>
       <style>{getCSS(P)}</style>
-      <form onSubmit={handleSubmit} className={`${P}-form`} style={{ ...formStyle, height: scalingValue(height, isEditor) }}>
+      <form
+        onSubmit={handleSubmit}
+        className={`${P}-form`}
+        style={{ ...formStyle, minHeight: scalingValue(minHeight, isEditor) }}
+      >
         <div
           className={`${P}-inputWrap ${P}-overlayAnchor`}
           style={{ flex: 1, minWidth: 0 }}
@@ -405,7 +409,7 @@ export type OnelinerFormSettings = {
   fontFamily?: string;
   input?: TextStyles;
   button?: TextStyles;
-  height: number;
+  minHeight: number;
   corners: number;
   stroke: number;
   inputPadding: {
