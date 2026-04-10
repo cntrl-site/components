@@ -156,8 +156,20 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     buttonIcon: buttonIconLegacy,
     fieldsToShow = 1,
     fontFamily,
-    input: inputTextStyle,
-    button: buttonTextStyle,
+    input: inputTextStyleLegacy,
+    button: buttonTextStyleLegacy,
+    inputFontSettings,
+    inputFontSize,
+    inputLineHeight,
+    inputLetterSpacing,
+    inputWordSpacing,
+    inputTextAppearance,
+    buttonFontSettings,
+    buttonFontSize,
+    buttonLineHeight,
+    buttonLetterSpacing,
+    buttonWordSpacing,
+    buttonTextAppearance,
     minHeight,
     corners,
     stroke,
@@ -205,30 +217,70 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const useIconButton = submitButtonContent === 'Icon';
   const submitAriaLabel = labelText || 'Submit';
 
-  const inputCss = inputTextStyle
-    ? textStylesToCss(
-        {
-          ...inputTextStyle,
+  const resolvedInputTextStyle: TextStyles | undefined =
+    inputFontSettings ||
+    inputFontSize !== undefined ||
+    inputLineHeight !== undefined ||
+    inputLetterSpacing !== undefined ||
+    inputWordSpacing !== undefined ||
+    inputTextAppearance !== undefined
+      ? {
           fontSettings: {
-            ...inputTextStyle.fontSettings,
-            fontFamily: fontFamily ?? inputTextStyle.fontSettings.fontFamily,
+            fontFamily,
+            fontWeight: inputFontSettings?.fontWeight ?? 400,
+            fontStyle: inputFontSettings?.fontStyle ?? 'normal',
           },
-        },
-        isEditor,
-      )
-    : undefined;
-  const buttonCss = buttonTextStyle
-    ? textStylesToCss(
-        {
-          ...buttonTextStyle,
+          fontSize: inputFontSize ?? 0.01,
+          lineHeight: inputLineHeight,
+          letterSpacing: inputLetterSpacing ?? 0,
+          wordSpacing: inputWordSpacing ?? 0,
+          textAppearance: inputTextAppearance,
+          color: settings.inputTextColor ?? '#111111',
+        }
+      : inputTextStyleLegacy
+        ? {
+            ...inputTextStyleLegacy,
+            fontSettings: {
+              ...inputTextStyleLegacy.fontSettings,
+              fontFamily: fontFamily ?? inputTextStyleLegacy.fontSettings.fontFamily,
+            },
+            color: settings.inputTextColor ?? inputTextStyleLegacy.color ?? '#111111',
+          }
+        : undefined;
+
+  const resolvedButtonTextStyle: TextStyles | undefined =
+    buttonFontSettings ||
+    buttonFontSize !== undefined ||
+    buttonLineHeight !== undefined ||
+    buttonLetterSpacing !== undefined ||
+    buttonWordSpacing !== undefined ||
+    buttonTextAppearance !== undefined
+      ? {
           fontSettings: {
-            ...buttonTextStyle.fontSettings,
-            fontFamily: fontFamily ?? buttonTextStyle.fontSettings.fontFamily,
+            fontFamily,
+            fontWeight: buttonFontSettings?.fontWeight ?? 400,
+            fontStyle: buttonFontSettings?.fontStyle ?? 'normal',
           },
-        },
-        isEditor,
-      )
-    : undefined;
+          fontSize: buttonFontSize ?? 0.01,
+          lineHeight: buttonLineHeight,
+          letterSpacing: buttonLetterSpacing ?? 0,
+          wordSpacing: buttonWordSpacing ?? 0,
+          textAppearance: buttonTextAppearance,
+          color: settings.buttonTextColor ?? '#ffffff',
+        }
+      : buttonTextStyleLegacy
+        ? {
+            ...buttonTextStyleLegacy,
+            fontSettings: {
+              ...buttonTextStyleLegacy.fontSettings,
+              fontFamily: fontFamily ?? buttonTextStyleLegacy.fontSettings.fontFamily,
+            },
+            color: settings.buttonTextColor ?? buttonTextStyleLegacy.color ?? '#ffffff',
+          }
+        : undefined;
+
+  const inputCss = resolvedInputTextStyle ? textStylesToCss(resolvedInputTextStyle, isEditor) : undefined;
+  const buttonCss = resolvedButtonTextStyle ? textStylesToCss(resolvedButtonTextStyle, isEditor) : undefined;
 
   const colorVars = buildColorVars(P, {
     strokeColor: settings.strokeColor,
@@ -237,8 +289,8 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     buttonColor: settings.buttonColor,
     successColor: settings.successColor,
     errorColor: settings.errorColor,
-    inputTextColor: settings.inputTextColor ?? inputTextStyle?.color ?? '#111111',
-    buttonTextColor: settings.buttonTextColor ?? buttonTextStyle?.color ?? '#ffffff',
+    inputTextColor: settings.inputTextColor ?? resolvedInputTextStyle?.color ?? '#111111',
+    buttonTextColor: settings.buttonTextColor ?? resolvedButtonTextStyle?.color ?? '#ffffff',
   }, stateOverrides);
 
   const formStyle: React.CSSProperties = {
@@ -378,6 +430,12 @@ type TextStyles = {
   letterSpacing: number;
   wordSpacing: number;
   fontSize: number;
+  lineHeight?: number;
+  textAppearance?: {
+    textTransform?: string;
+    textDecoration?: string;
+    fontVariant?: string;
+  };
   color: string;
 };
 
@@ -409,6 +467,18 @@ export type OnelinerFormSettings = {
   fontFamily?: string;
   input?: TextStyles;
   button?: TextStyles;
+  inputFontSettings?: { fontWeight: number; fontStyle: string };
+  inputFontSize?: number;
+  inputLineHeight?: number;
+  inputLetterSpacing?: number;
+  inputWordSpacing?: number;
+  inputTextAppearance?: TextStyles['textAppearance'];
+  buttonFontSettings?: { fontWeight: number; fontStyle: string };
+  buttonFontSize?: number;
+  buttonLineHeight?: number;
+  buttonLetterSpacing?: number;
+  buttonWordSpacing?: number;
+  buttonTextAppearance?: TextStyles['textAppearance'];
   minHeight: number;
   corners: number;
   stroke: number;
@@ -482,5 +552,9 @@ function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSP
     letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
     wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
     fontSize: scalingValue(textStyles.fontSize, isEditor),
+    lineHeight: textStyles.lineHeight !== undefined ? scalingValue(textStyles.lineHeight, isEditor) : undefined,
+    textTransform: textStyles.textAppearance?.textTransform,
+    textDecoration: textStyles.textAppearance?.textDecoration,
+    fontVariant: textStyles.textAppearance?.fontVariant,
   };
 }

@@ -84,7 +84,7 @@ const schema: ComponentSchemaV1 = {
     properties: {
       fieldsToShow: {
         type: 'number',
-        scope: 'layout',
+        scope: 'common',
         title: 'Fields',
         display: { type: 'number' },
         min: 1,
@@ -108,19 +108,19 @@ const schema: ComponentSchemaV1 = {
       },
       successMessage: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Success Message',
         display: { type: 'text-input' },
       },
       errorMessage: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Error Message',
         display: { type: 'text-input' },
       },
       type: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: '',
         display: { type: 'radio-group' },
         enum: ['A', 'B'],
@@ -255,44 +255,113 @@ const schema: ComponentSchemaV1 = {
         title: 'Font family',
         display: { type: 'font-family-select' },
       },
-      input: {
-        type: 'object',
+      inputFontSettings: {
+        ...textStyleProperties.fontSettings,
         scope: 'layout',
-        properties: textStyleProperties,
-        layout: [
-          'fontSettings',
-          {
-            type: 'row',
-            items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'],
-          },
-          'textAppearance'
-        ],
+        title: 'Input',
+        display : { type: 'font-settings-weight'},
       },
-      button: {
-        type: 'object',
+      inputFontSize: {
+        type: 'number',
         scope: 'layout',
-        properties: textStyleProperties,
-        layout: [
-          'fontSettings',
-          {
-            type: 'row',
-            items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'],
-          },
-          'textAppearance'
-        ],
+        title: 'Input Font Size',
+        display: { type: 'font-size' },
       },
-      label: {
+      inputLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Line Height',
+        display: { type: 'line-height-input' },
+      },
+      inputLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      inputWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      inputTextAppearance: {
         type: 'object',
         scope: 'layout',
-        properties: textStyleProperties,
-        layout: [
-          'fontSettings',
-          {
-            type: 'row',
-            items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'],
-          },
-          'textAppearance'
-        ],
+        title: 'Input Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      buttonFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'layout',
+        title: 'Button',
+        display : { type: 'font-settings-weight' },
+      },
+      buttonFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Button Font Size',
+        display: { type: 'font-size' },
+      },
+      buttonLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Button Line Height',
+        display: { type: 'line-height-input' },
+      },
+      buttonLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Button Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      buttonWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Button Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      buttonTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Button Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      labelFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'layout',
+        title: 'Label',
+        display : { type: 'font-settings-weight', visible: false },
+      },
+      labelFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Label Font Size',
+        display: { type: 'font-size', visible: false },
+      },
+      labelLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Label Line Height',
+        display: { type: 'line-height-input', visible: false },
+      },
+      labelLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Label Letter Spacing',
+        display: { type: 'letter-spacing-input', visible: false },
+      },
+      labelWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Label Word Spacing',
+        display: { type: 'word-spacing-input', visible: false },
+      },
+      labelTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Label Text Appearance',
+        display: { type: 'text-appearance', visible: false },
       },
     },
     defaults: {
@@ -302,16 +371,16 @@ const schema: ComponentSchemaV1 = {
       gap: 0.008,
       fieldsGap: 0.008,
       buttonStroke: 0.001,
-      buttonCorners: 0,
+      buttonCorners: 0.05,
       inputStroke: 0.001,
-      inputCorners: 0,
-      buttonPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+      inputCorners: 0.05,
+      buttonPadding: { top: 0.01, right: 0.15, bottom: 0.01, left: 0.15 },
       inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-      inputColor: '#000000',
+      inputColor: '#FFFFFF',
       inputTextColor: '#999999',
-      inputBorderColor: '#cccccc',
-      placeholderColor: '#cccccc',
-      buttonColor: '#666666',
+      inputBorderColor: '#0A00F8',
+      placeholderColor: '#0A00F8',
+      buttonColor: '#0A00F8',
       buttonTextColor: '#ffffff',
       buttonBorderColor: '#cccccc',
       labelTextColor: '#999999',
@@ -319,9 +388,45 @@ const schema: ComponentSchemaV1 = {
       errorColor: '#ef4444',
       stateOverrides: {},
       fontFamily: 'Arial',
-      input: textStyleDefault(400),
-      button: textStyleDefault(700),
-      label: textStyleDefault(400),
+      inputFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      inputFontSize: 0.01,
+      inputLineHeight: 0.01,
+      inputLetterSpacing: 0,
+      inputWordSpacing: 0,
+      inputTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      buttonFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      buttonFontSize: 0.01,
+      buttonLineHeight: 0.01,
+      buttonLetterSpacing: 0,
+      buttonWordSpacing: 0,
+      buttonTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      labelFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      labelFontSize: 0.01,
+      labelLineHeight: 0.01,
+      labelLetterSpacing: 0,
+      labelWordSpacing: 0,
+      labelTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
     },
@@ -329,6 +434,30 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'type', value: 'B' },
         then: { name: 'properties.labelTextColor.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelFontSettings.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelFontSize.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelLineHeight.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelLetterSpacing.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelWordSpacing.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.labelTextAppearance.display.visible', value: true },
       },
     ],
   },
@@ -356,7 +485,7 @@ const schema: ComponentSchemaV1 = {
                   },
                   {
                     type: 'group',
-                    title: 'Padding',
+                    title: '',
                     items: ['inputPadding'],
                   },
               ],
@@ -372,7 +501,7 @@ const schema: ComponentSchemaV1 = {
                   },
                 {
                   type: 'group',
-                    title: 'Padding',
+                    title: '',
                     items: ['buttonPadding'],
                 },
               ],
@@ -389,14 +518,19 @@ const schema: ComponentSchemaV1 = {
       layout: [
         'fontFamily',
         {
-          type: 'row',
+          type: 'group',
           title: 'Input',
-          items: ['input'],
+          items: [ 'inputFontSettings', {type: 'row', items: ['inputFontSize', 'inputLineHeight', 'inputLetterSpacing', 'inputWordSpacing']}, 'inputTextAppearance'],
         },
         {
-          type: 'row',
+          type: 'group',
           title: 'Button',
-          items: ['button'],
+          items: [ 'buttonFontSettings', {type: 'row', items: ['buttonFontSize', 'buttonLineHeight', 'buttonLetterSpacing', 'buttonWordSpacing']}, 'buttonTextAppearance'],
+        },
+        {
+          type: 'group',
+          title: 'Label',
+          items: [ 'labelFontSettings', {type: 'row', items: ['labelFontSize', 'labelLineHeight', 'labelLetterSpacing', 'labelWordSpacing']}, 'labelTextAppearance'],
         },
       ],
     },

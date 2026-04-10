@@ -46,12 +46,12 @@ function getCSS(P: string): string {
   background-color: var(--${P}-input-color);
   color: var(--${P}-input-text-color);
   border-color: var(--${P}-input-border-color);
-  transition: all 250ms;
+  transition: color 250, border-color 250ms, background-color 250ms, outline 250ms;
 }
 .${P}-input::placeholder {
   color: var(--${P}-placeholder-color);
   opacity: 1;
-  transition: all 250ms;
+  transition: color 250ms, opacity 250ms;
 }
 .${P}-input:hover {
   background-color: var(--${P}-hover-input-color, var(--${P}-input-color));
@@ -95,7 +95,7 @@ function getCSS(P: string): string {
   background-color: var(--${P}-button-color);
   color: var(--${P}-button-text-color);
   border-color: var(--${P}-button-border-color);
-  transition: all 250ms;
+  transition: color 250ms;
 }
 .${P}-button:hover {
   background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
@@ -154,11 +154,8 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     fieldsToShow = 2,
     fields = [],
     buttonLabel = 'Sign up',
-    input: inputTextStyle,
-    button: buttonTextStyle,
     gap = 0.008,
     fieldsGap = 0.008,
-    label: labelTextStyle,
     buttonCorners,
     buttonStroke,
     inputCorners,
@@ -176,6 +173,24 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     successColor,
     errorColor,
     fontFamily,
+    inputFontSettings,
+    inputFontSize,
+    inputLineHeight,
+    inputLetterSpacing,
+    inputWordSpacing,
+    inputTextAppearance,
+    buttonFontSettings,
+    buttonFontSize,
+    buttonLineHeight,
+    buttonLetterSpacing,
+    buttonWordSpacing,
+    buttonTextAppearance,
+    labelFontSettings,
+    labelFontSize,
+    labelLineHeight,
+    labelLetterSpacing,
+    labelWordSpacing,
+    labelTextAppearance,
     successMessage,
     errorMessage: errorMessageText,
     stateOverrides,
@@ -183,15 +198,21 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
 
   const showLabels = type === 'B';
   const visibleFields = fields.slice(0, Math.min(fieldsToShow, fields.length));
-  const inputCss = inputTextStyle
-    ? textStylesToCss(
-        {
-          ...inputTextStyle,
-          fontSettings: { ...inputTextStyle.fontSettings, fontFamily },
-        },
-        isEditor,
-      )
-    : undefined;
+
+  const resolvedInputTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: inputFontSettings?.fontWeight ?? 400,
+      fontStyle: inputFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: inputFontSize ?? 0.01,
+    lineHeight: inputLineHeight,
+    letterSpacing: inputLetterSpacing ?? 0,
+    wordSpacing: inputWordSpacing ?? 0,
+    textAppearance: inputTextAppearance,
+    color: inputTextColor,
+  };
+  const inputCss = textStylesToCss(resolvedInputTextStyle, isEditor);
   const inputFieldCss = {
     ...inputCss,
     borderStyle: 'solid',
@@ -202,24 +223,36 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
     paddingLeft: scalingValue(inputPadding?.left ?? 0, isEditor),
   } as React.CSSProperties;
-  const buttonTextCss = buttonTextStyle
-    ? textStylesToCss(
-        {
-          ...buttonTextStyle,
-          fontSettings: { ...buttonTextStyle.fontSettings, fontFamily },
-        },
-        isEditor,
-      )
-    : undefined;
-  const labelTextCss = labelTextStyle
-    ? textStylesToCss(
-        {
-          ...labelTextStyle,
-          fontSettings: { ...labelTextStyle.fontSettings, fontFamily },
-        },
-        isEditor,
-      )
-    : undefined;
+
+  const resolvedButtonTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: buttonFontSettings?.fontWeight ?? 400,
+      fontStyle: buttonFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: buttonFontSize ?? 0.01,
+    lineHeight: buttonLineHeight,
+    letterSpacing: buttonLetterSpacing ?? 0,
+    wordSpacing: buttonWordSpacing ?? 0,
+    textAppearance: buttonTextAppearance,
+    color: buttonTextColor,
+  };
+  const buttonTextCss = textStylesToCss(resolvedButtonTextStyle, isEditor);
+
+  const resolvedLabelTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: labelFontSettings?.fontWeight ?? 400,
+      fontStyle: labelFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: labelFontSize ?? 0.01,
+    lineHeight: labelLineHeight,
+    letterSpacing: labelLetterSpacing ?? 0,
+    wordSpacing: labelWordSpacing ?? 0,
+    textAppearance: labelTextAppearance,
+    color: labelTextColor,
+  };
+  const labelTextCss = textStylesToCss(resolvedLabelTextStyle, isEditor);
 
   const colorVars = buildColorVars(P, {
     inputColor,
@@ -437,11 +470,26 @@ type FormSettings = {
   fieldsToShow: number;
   fields: FormFieldItem[];
   buttonLabel?: string;
-  input?: TextStyles;
-  button?: TextStyles;
   gap?: number;
   fieldsGap?: number;
-  label?: TextStyles;
+  inputFontSettings?: { fontWeight: number; fontStyle: string };
+  inputFontSize?: number;
+  inputLineHeight?: number;
+  inputLetterSpacing?: number;
+  inputWordSpacing?: number;
+  inputTextAppearance?: TextStyles['textAppearance'];
+  buttonFontSettings?: { fontWeight: number; fontStyle: string };
+  buttonFontSize?: number;
+  buttonLineHeight?: number;
+  buttonLetterSpacing?: number;
+  buttonWordSpacing?: number;
+  buttonTextAppearance?: TextStyles['textAppearance'];
+  labelFontSettings?: { fontWeight: number; fontStyle: string };
+  labelFontSize?: number;
+  labelLineHeight?: number;
+  labelLetterSpacing?: number;
+  labelWordSpacing?: number;
+  labelTextAppearance?: TextStyles['textAppearance'];
   buttonCorners?: number;
   buttonStroke?: number;
   inputCorners?: number;
