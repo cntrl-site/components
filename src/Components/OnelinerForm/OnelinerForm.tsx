@@ -100,6 +100,16 @@ function getCSS(P: string): string {
   max-height: 100%;
   object-fit: contain;
 }
+.${P}-submitBtn svg {
+  display: block;
+  box-sizing: border-box;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
 .${P}-submitBtn:hover,
 .${P}-wrapper.${P}-state-hover .${P}-submitBtn {
   background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
@@ -345,7 +355,11 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       <form
         onSubmit={handleSubmit}
         className={`${P}-form`}
-        style={{ ...formStyle, minHeight: scalingValue(minHeight, isEditor) }}
+        style={{
+          ...formStyle,
+          height: scalingValue(minHeight, isEditor),
+          minHeight: scalingValue(minHeight, isEditor),
+        }}
       >
         <div
           className={`${P}-inputWrap ${P}-overlayAnchor`}

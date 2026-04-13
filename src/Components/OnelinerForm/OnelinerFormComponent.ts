@@ -51,18 +51,6 @@ const paletteBookmarkItems = [
   'errorColor',
 ] as const;
 
-const textStyleDefault = (fontWeight: number) => ({
-  fontSettings: {
-    fontWeight,
-    fontStyle: 'normal',
-  },
-  letterSpacing: 0,
-  wordSpacing: 0,
-  fontSize: 0.01,
-  lineHeight: 0.01,
-  color: '#111111',
-});
-
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
@@ -296,9 +284,9 @@ const schema: ComponentSchemaV1 = {
       fields: defaultFields,
       fieldsToShow: 1,
       buttonContent: {
-        mode: 'Label',
+        mode: 'Icon',
         label: 'Submit',
-        icon: null,
+        icon: 'https://cdn.cntrl.site/component-assets/arrow.svg',
       },
       fontFamily: 'Arial',
       inputPadding: {
@@ -310,8 +298,8 @@ const schema: ComponentSchemaV1 = {
       buttonPadding: {
         right: 0.01,
         left: 0.01,
-        top: 0.01,
-        bottom: 0.01,
+        top: 0.005,
+        bottom: 0.005,
       },
       minHeight: 0.028,
       corners: 0.05,
