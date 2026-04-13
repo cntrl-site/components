@@ -420,6 +420,7 @@ const schema: ComponentSchemaV1 = {
       error: ['errorColor'],
     },
   },
+  allowedPlugins: ['newsletter'],
   states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
 };
 

@@ -382,7 +382,7 @@ const schema: ComponentSchemaV1 = {
       placeholderColor: '#0A00F8',
       buttonColor: '#0A00F8',
       buttonTextColor: '#ffffff',
-      buttonBorderColor: '#cccccc',
+      buttonBorderColor: '#0A00F8',
       labelTextColor: '#999999',
       successColor: '#22c55e',
       errorColor: '#ef4444',
