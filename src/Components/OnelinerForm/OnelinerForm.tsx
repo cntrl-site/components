@@ -21,6 +21,23 @@ function getCSS(P: string): string {
   width: 100%;
   align-items: stretch;
   overflow: hidden;
+  border-color: var(--${P}-stroke-color);
+  transition: border-color 250ms;
+}
+.${P}-form:hover {
+  border-color: var(--${P}-hover-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-form:focus-within {
+  border-color: var(--${P}-focus-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-wrapper.${P}-state-hover .${P}-form {
+  border-color: var(--${P}-hover-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-wrapper.${P}-state-focus .${P}-form {
+  border-color: var(--${P}-focus-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-form {
+  border-color: var(--${P}-filled-stroke-color, var(--${P}-stroke-color));
 }
 .${P}-inputWrap {
   position: relative;
@@ -29,7 +46,7 @@ function getCSS(P: string): string {
   flex: 1;
   min-width: 0;
   background-color: var(--${P}-input-color);
-  transition: all 250ms;
+  transition: background-color 250ms;
 }
 .${P}-inputWrap:hover,
 .${P}-wrapper.${P}-state-hover .${P}-inputWrap {
@@ -49,7 +66,7 @@ function getCSS(P: string): string {
   border: none;
   outline: none;
   color: var(--${P}-input-text-color);
-  transition: all 250ms;
+  transition: color 250ms, background-color 250ms, border-color 250ms;
 }
 .${P}-input:hover {
   color: var(--${P}-hover-input-text-color, var(--${P}-input-text-color));
@@ -68,11 +85,18 @@ function getCSS(P: string): string {
 .${P}-input::placeholder {
   color: var(--${P}-placeholder-color);
   opacity: 1;
-  transition: all 250ms;
+  transition: color 250ms, opacity 250ms;
 }
 .${P}-inputWrap:hover .${P}-input::placeholder,
 .${P}-wrapper.${P}-state-hover .${P}-input::placeholder {
   color: var(--${P}-hover-placeholder-color, var(--${P}-placeholder-color));
+}
+.${P}-inputWrap:focus-within .${P}-input::placeholder,
+.${P}-wrapper.${P}-state-focus .${P}-input::placeholder {
+  color: var(--${P}-focus-placeholder-color, var(--${P}-placeholder-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-input::placeholder {
+  color: var(--${P}-filled-placeholder-color, var(--${P}-placeholder-color));
 }
 .${P}-submitBtn {
   box-sizing: border-box;
@@ -87,7 +111,7 @@ function getCSS(P: string): string {
   color: var(--${P}-button-text-color);
   border-left-style: solid;
   border-left-color: var(--${P}-stroke-color);
-  transition: all 250ms;
+  transition: color 250ms, background-color 250ms, border-color 250ms;
 }
 .${P}-submitBtn img {
   display: block;
@@ -307,7 +331,6 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     borderRadius: scalingValue(corners, isEditor),
     borderWidth: scalingValue(stroke, isEditor),
     borderStyle: 'solid',
-    borderColor: `var(--${P}-stroke-color)`
   };
 
   const dividerWidthStyle = { borderLeftWidth: scalingValue(stroke, isEditor) };

@@ -95,7 +95,7 @@ function getCSS(P: string): string {
   background-color: var(--${P}-button-color);
   color: var(--${P}-button-text-color);
   border-color: var(--${P}-button-border-color);
-  transition: color 250ms;
+  transition: color 250ms, background-color 250ms, border-color 250ms;
 }
 .${P}-button:hover {
   background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
