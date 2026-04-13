@@ -80,7 +80,7 @@ const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
-    sizing: 'auto', // TODO think where to place this non-editable property
+    sizing: 'auto manual', // TODO think where to place this non-editable property
     properties: {
       fieldsToShow: {
         type: 'number',
@@ -368,14 +368,6 @@ const schema: ComponentSchemaV1 = {
       fieldsToShow: 2,
       fields: defaultFieldsItems,
       type: 'A',
-      gap: 0.008,
-      fieldsGap: 0.008,
-      buttonStroke: 0.001,
-      buttonCorners: 0.05,
-      inputStroke: 0.001,
-      inputCorners: 0.05,
-      buttonPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-      inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
       inputColor: '#FFFFFF',
       inputTextColor: '#999999',
       inputBorderColor: '#0A00F8',
@@ -392,8 +384,6 @@ const schema: ComponentSchemaV1 = {
         fontWeight: 400,
         fontStyle: 'normal',
       },
-      inputFontSize: 0.01,
-      inputLineHeight: 0.01,
       inputLetterSpacing: 0,
       inputWordSpacing: 0,
       inputTextAppearance: {
@@ -405,8 +395,6 @@ const schema: ComponentSchemaV1 = {
         fontWeight: 400,
         fontStyle: 'normal',
       },
-      buttonFontSize: 0.01,
-      buttonLineHeight: 0.01,
       buttonLetterSpacing: 0,
       buttonWordSpacing: 0,
       buttonTextAppearance: {
@@ -418,8 +406,6 @@ const schema: ComponentSchemaV1 = {
         fontWeight: 400,
         fontStyle: 'normal',
       },
-      labelFontSize: 0.01,
-      labelLineHeight: 0.01,
       labelLetterSpacing: 0,
       labelWordSpacing: 0,
       labelTextAppearance: {
@@ -429,6 +415,40 @@ const schema: ComponentSchemaV1 = {
       },
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
+    },
+    layoutDefaults: {
+      m: {
+        gap: 0.032,
+        fieldsGap: 0.032,
+        buttonStroke: 0.0026,
+        buttonCorners: 0.192,
+        inputStroke: 0.0026,
+        inputCorners: 0.192,
+        buttonPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
+        inputPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
+        inputFontSize: 0.0373,
+        inputLineHeight: 0.0373,
+        buttonFontSize: 0.0373,
+        buttonLineHeight: 0.0373,
+        labelFontSize: 0.0373,
+        labelLineHeight: 0.0373,
+      },
+      d: {
+        gap: 0.0083,
+        fieldsGap: 0.0083,
+        buttonStroke: 0.001,
+        buttonCorners: 0.05,
+        inputStroke: 0.001,
+        inputCorners: 0.05,
+        buttonPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+        inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+        inputFontSize: 0.01,
+        inputLineHeight: 0.01,
+        buttonFontSize: 0.01,
+        buttonLineHeight: 0.01,
+        labelFontSize: 0.01,
+        labelLineHeight: 0.01,
+      }
     },
     displayRules: [
       {

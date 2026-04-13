@@ -82,6 +82,7 @@ export type SchemaSection = {
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;
+  layoutDefaults?: Record<string, Record<string, unknown>>;
   displayRules?: SchemaDisplayRule[];
 };
 
