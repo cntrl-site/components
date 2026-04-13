@@ -153,7 +153,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     type = 'A',
     fieldsToShow = 2,
     fields = [],
-    buttonLabel = 'Sign up',
+    buttonLabel,
     gap = 0.008,
     fieldsGap = 0.008,
     buttonCorners,

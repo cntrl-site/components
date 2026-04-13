@@ -91,6 +91,12 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      buttonLabel: {
+        type: 'string',
+        scope: 'common',
+        title: 'Button Label',
+        display: { type: 'text-input' },
+      },
       successMessage: {
         type: 'string',
         scope: 'common',
@@ -398,6 +404,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
+      buttonLabel: 'Sign up',
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
     },
@@ -546,6 +553,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'Fields',
       layout: [
         'fields',
+        'buttonLabel',
         'successMessage',
         'errorMessage',
       ],
