@@ -61,26 +61,11 @@ const paletteBookmarkItems = [
   'errorColor',
 ] as const;
 
-const textStyleDefault = (fontWeight: number) => ({
-  fontSettings: {
-    fontWeight,
-    fontStyle: 'normal',
-  },
-  lineHeight: 0.01,
-  letterSpacing: 0,
-  wordSpacing: 0,
-  fontSize: 0.01,
-  textAppearance: {
-    textTransform: 'none',
-    textDecoration: 'none',
-    fontVariant: 'normal',
-  }
-});
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
-    sizing: 'auto', // TODO think where to place this non-editable property
+    sizing: 'auto manual', // TODO think where to place this non-editable property
     properties: {
       fieldsToShow: {
         type: 'number',
