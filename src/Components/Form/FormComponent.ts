@@ -374,7 +374,7 @@ const schema: ComponentSchemaV1 = {
       buttonCorners: 0.05,
       inputStroke: 0.001,
       inputCorners: 0.05,
-      buttonPadding: { top: 0.01, right: 0.15, bottom: 0.01, left: 0.15 },
+      buttonPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
       inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
       inputColor: '#FFFFFF',
       inputTextColor: '#999999',
