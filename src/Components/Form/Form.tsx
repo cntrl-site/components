@@ -95,6 +95,7 @@ function getCSS(P: string): string {
 .${P}-button {
   cursor: pointer;
   white-space: nowrap;
+  box-sizing: border-box;
   outline: none;
   background-color: var(--${P}-button-color);
   color: var(--${P}-button-text-color);
@@ -158,13 +159,14 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     fieldsToShow = 2,
     fields = [],
     buttonLabel,
-    gap = 0.008,
-    fieldsGap = 0.008,
+    gap,
+    fieldsGap,
     buttonCorners,
     buttonStroke,
+    buttonPadding,
+    isButtonFullWidth,
     inputCorners,
     inputStroke,
-    buttonPadding,
     inputPadding,
     inputColor,
     inputTextColor,
@@ -343,11 +345,11 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       <form
         onSubmit={handleSubmit}
         className={`${P}-form`}
-        style={{ gap: scalingValue(gap, isEditor) }}
+        style={{ gap: scalingValue(gap ?? 0, isEditor) }}
       >
         <div
           className={`${P}-fields`}
-          style={{ gap: scalingValue(fieldsGap, isEditor) }}
+          style={{ gap: scalingValue(fieldsGap ?? 0, isEditor) }}
         >
           {visibleFields.map((field, index) => (
             <div key={index} className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
@@ -401,6 +403,15 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
               paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
               ...buttonTextCss,
+              ...(isButtonFullWidth
+                ? {
+                  width: '100%',
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  alignItems: 'center',
+                }
+                : {}),
             }}
           >
             <span className={`${P}-overlay-anchor`}>
@@ -506,17 +517,18 @@ type FormSettings = {
   labelTextAppearance?: TextStyles['textAppearance'];
   buttonCorners?: number;
   buttonStroke?: number;
+  buttonPadding?: Padding;
+  isButtonFullWidth?: boolean;
   inputCorners?: number;
   inputStroke?: number;
-  buttonPadding?: Padding;
   inputPadding?: Padding;
   inputColor: string;
   inputTextColor: string;
   inputBorderColor: string;
-  placeholderColor: string;
   buttonColor: string;
   buttonTextColor: string;
   buttonBorderColor: string;
+  placeholderColor: string;
   labelTextColor: string;
   successColor: string;
   errorColor: string;

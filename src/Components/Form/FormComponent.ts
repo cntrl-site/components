@@ -212,6 +212,12 @@ const schema: ComponentSchemaV1 = {
         title: 'Button Text Color',
         display: { type: 'palette-color-picker' },
       },
+      isButtonFullWidth: {
+        type: 'boolean',
+        scope: 'layout',
+        title: 'Full Width',
+        display: { type:'toggle', enum: ['Full Width', 'Off'] },
+      },
       buttonBorderColor: {
         type: 'string',
         scope: 'layout',
@@ -404,6 +410,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
+      isButtonFullWidth: false,
       buttonLabel: 'Sign up',
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
@@ -511,18 +518,16 @@ const schema: ComponentSchemaV1 = {
               ],
             },
             {
-              type: 'row',
+              type: 'group',
               title: 'Button',
               items: [
+                {type: 'row', items: ['isButtonFullWidth']},
                 {
-                    type: 'group',
-                    title: '',
-                    items: ['gap', 'buttonStroke', 'buttonCorners'],
-                  },
-                {
-                  type: 'group',
-                    title: '',
-                    items: ['buttonPadding'],
+                  type: 'row',
+                  items: [
+                    { type: 'group', title: '', items: ['gap', 'buttonStroke', 'buttonCorners']},
+                    { type: 'group', title: '', items: ['buttonPadding']}
+                  ]
                 },
               ],
             },
