@@ -14,6 +14,10 @@ function getCSS(P: string): string {
   width: 100%;
   min-height: ${sv(48)};
 }
+.${P}-wrapper.${P}-type-C .${P}-input:focus-visible,
+.${P}-wrapper.${P}-type-C .${P}-button:focus-visible {
+  outline: none;
+}
 .${P}-form {
   display: flex;
   flex-direction: column;
@@ -213,11 +217,16 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     color: inputTextColor,
   };
   const inputCss = textStylesToCss(resolvedInputTextStyle, isEditor);
+  const strokeForInput = scalingValue(inputStroke ?? 0, isEditor);
   const inputFieldCss = {
     ...inputCss,
     borderStyle: 'solid',
-    borderRadius: scalingValue(inputCorners ?? 0, isEditor),
-    borderWidth: scalingValue(inputStroke ?? 0, isEditor),
+    borderRadius: type === 'C' ? 0 : scalingValue(inputCorners ?? 0, isEditor),
+    borderWidth: type === 'C' ? undefined : strokeForInput,
+    borderTopWidth: type === 'C' ? 0 : undefined,
+    borderRightWidth: type === 'C' ? 0 : undefined,
+    borderBottomWidth: type === 'C' ? strokeForInput : undefined,
+    borderLeftWidth: type === 'C' ? 0 : undefined,
     paddingTop: scalingValue(inputPadding?.top ?? 0, isEditor),
     paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
     paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
@@ -238,6 +247,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     color: buttonTextColor,
   };
   const buttonTextCss = textStylesToCss(resolvedButtonTextStyle, isEditor);
+  const strokeForButton = scalingValue(buttonStroke ?? 0, isEditor);
 
   const resolvedLabelTextStyle: TextStyles = {
     fontSettings: {
@@ -328,7 +338,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
   };
 
   return (
-    <div className={`${P}-wrapper ${stateClass}`.trim()} style={colorVars}>
+    <div className={`${P}-wrapper ${P}-type-${type} ${stateClass}`.trim()} style={colorVars}>
       <style>{getCSS(P)}</style>
       <form
         onSubmit={handleSubmit}
@@ -380,8 +390,12 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
             className={`${P}-button`}
             style={{
               borderStyle: 'solid',
-              borderRadius: scalingValue(buttonCorners ?? 0, isEditor),
-              borderWidth: scalingValue(buttonStroke ?? 0, isEditor),
+              borderRadius: type === 'C' ? 0 : scalingValue(buttonCorners ?? 0, isEditor),
+              borderWidth: type === 'C' ? undefined : strokeForButton,
+              borderTopWidth: type === 'C' ? 0 : undefined,
+              borderRightWidth: type === 'C' ? 0 : undefined,
+              borderBottomWidth: type === 'C' ? strokeForButton : undefined,
+              borderLeftWidth: type === 'C' ? 0 : undefined,
               paddingTop: scalingValue(buttonPadding?.top ?? 0, isEditor),
               paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
@@ -465,7 +479,7 @@ type ColorKeys =
 type StateColorOverrides = Partial<Record<ColorKeys, string>>;
 
 type FormSettings = {
-  type: 'A' | 'B';
+  type: 'A' | 'B' | 'C';
   fontFamily: string;
   fieldsToShow: number;
   fields: FormFieldItem[];

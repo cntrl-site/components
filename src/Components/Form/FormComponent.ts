@@ -114,7 +114,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'common',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['A', 'B'],
+        enum: ['A', 'B', 'C'],
       },
       gap: {
         type: 'number',
@@ -470,6 +470,14 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'type', value: 'B' },
         then: { name: 'properties.labelTextAppearance.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'C' },
+        then: { name: 'properties.buttonCorners.display.visible', value: false },
+      },
+      {
+        if: { name: 'type', value: 'C' },
+        then: { name: 'properties.inputCorners.display.visible', value: false },
       },
     ],
   },
