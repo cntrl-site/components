@@ -406,15 +406,23 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
               ...(isButtonFullWidth
                 ? {
                   width: '100%',
-                  textAlign: 'left',
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  alignItems: 'center',
+                  textAlign: 'center',
+                  whiteSpace: 'normal',
                 }
                 : {}),
             }}
           >
-            <span className={`${P}-overlay-anchor`}>
+            <span
+              className={`${P}-overlay-anchor`}
+              style={isButtonFullWidth
+                ? {
+                  display: 'inline-block',
+                  maxWidth: '100%',
+                  whiteSpace: 'normal',
+                  textAlign: 'center',
+                }
+                : undefined}
+            >
               {status === 'submitting' ? '...' : buttonLabel}
             </span>
           </button>
