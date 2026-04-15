@@ -577,8 +577,8 @@ const schema: ComponentSchemaV1 = {
     panelIds: ['general', 'typeStyle'],
     stateItems: {
       default: ['inputColor', 'inputBorderColor', 'placeholderColor','placeholderTextColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
-      hover: ['inputColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
-      focus: ['inputColor', 'inputBorderColor', 'placeholderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
+      hover: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
+      focus: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
       filled: ['inputColor', 'inputTextColor', 'inputBorderColor', 'buttonTextColor'],
       success: ['successColor'],
       error: ['errorColor'],

@@ -233,6 +233,10 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       ? getFormFieldValidationError(visibleFields, displayValues)
       : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
+  const hasFilledFieldValue = visibleFields.some((f) => (displayValues[f.name] ?? '').trim().length > 0);
+  const filledStateClass =
+    stateClass !== `${P}-state-filled` && hasFilledFieldValue ? `${P}-state-filled` : '';
+  const wrapperStateClasses = `${stateClass} ${filledStateClass}`.trim();
 
   const submitUrl = metadata?.submitUrl as string | undefined;
   const bc = buttonContentFromSettings;
@@ -373,7 +377,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   };
 
   return (
-    <div className={`${P}-wrapper ${stateClass}`.trim()} style={colorVars}>
+    <div className={`${P}-wrapper ${wrapperStateClasses}`.trim()} style={colorVars}>
       <style>{getCSS(P)}</style>
       <form
         onSubmit={handleSubmit}

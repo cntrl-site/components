@@ -73,7 +73,7 @@ function getCSS(P: string): string {
   color: var(--${P}-focus-input-text-color, var(--${P}-input-text-color));
   border-color: var(--${P}-focus-input-border-color, var(--${P}-input-border-color));
 }
-.${P}-wrapper.${P}-state-filled .${P}-input {
+.${P}-input[data-filled="true"] {
   background-color: var(--${P}-filled-input-color, var(--${P}-input-color));
   color: var(--${P}-filled-input-text-color, var(--${P}-input-text-color));
   border-color: var(--${P}-filled-input-border-color, var(--${P}-input-border-color));
@@ -296,6 +296,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       ? getFormFieldValidationError(visibleFields, displayValues)
       : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
+  const wrapperStateClasses = `${stateClass}`.trim();
 
   const submitUrl = metadata?.submitUrl as string | undefined;
   const handleFieldChange = (name: string, value: string) => {
@@ -339,7 +340,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
   };
 
   return (
-    <div className={`${P}-wrapper ${P}-type-${type} ${stateClass}`.trim()} style={colorVars}>
+    <div className={`${P}-wrapper ${P}-type-${type} ${wrapperStateClasses}`.trim()} style={colorVars}>
       <style>{getCSS(P)}</style>
       <form
         onSubmit={handleSubmit}
@@ -367,6 +368,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
                   className={`${P}-input`}
                   style={inputFieldCss}
                   rows={1}
+                  data-filled={((displayValues[field.name] ?? '') as string).trim().length > 0}
                   data-field-type="textarea"
                 />
               ) : (
@@ -380,6 +382,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
                   required={field.type === 'email'}
                   className={`${P}-input`}
                   style={inputFieldCss}
+                  data-filled={((displayValues[field.name] ?? '') as string).trim().length > 0}
                 />
               )}
             </div>
