@@ -45,12 +45,11 @@ function getCSS(P: string): string {
 .${P}-input {
   width: 100%;
   box-sizing: border-box;
-  line-height: 1.4;
   outline: none;
   background-color: var(--${P}-input-color);
   color: var(--${P}-input-text-color);
   border-color: var(--${P}-input-border-color);
-  transition: color 250, border-color 250ms, background-color 250ms, outline 250ms;
+  transition: color 250ms, border-color 250ms, background-color 250ms, outline 250ms;
 }
 .${P}-input::placeholder {
   color: var(--${P}-placeholder-color);
@@ -392,12 +391,8 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
             className={`${P}-button`}
             style={{
               borderStyle: 'solid',
-              borderRadius: type === 'C' ? 0 : scalingValue(buttonCorners ?? 0, isEditor),
-              borderWidth: type === 'C' ? undefined : strokeForButton,
-              borderTopWidth: type === 'C' ? 0 : undefined,
-              borderRightWidth: type === 'C' ? 0 : undefined,
-              borderBottomWidth: type === 'C' ? strokeForButton : undefined,
-              borderLeftWidth: type === 'C' ? 0 : undefined,
+              borderRadius: scalingValue(buttonCorners ?? 0, isEditor),
+              borderWidth: strokeForButton,
               paddingTop: scalingValue(buttonPadding?.top ?? 0, isEditor),
               paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
