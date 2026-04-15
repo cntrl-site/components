@@ -88,7 +88,6 @@ function getCSS(P: string): string {
   resize: vertical;
 }
 .${P}-input:disabled {
-  background: #f5f5f5;
   cursor: not-allowed;
 }
 .${P}-button {
