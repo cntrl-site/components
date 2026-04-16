@@ -1,4 +1,5 @@
 export { scalingValue } from './scalingValue';
+export { buildColorVars } from './buildColorVars';
 export {
   getFormFieldValidationError,
   isValidEmailFormat,

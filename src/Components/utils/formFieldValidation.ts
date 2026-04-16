@@ -8,13 +8,11 @@ const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const isValidEmailFormat = (value: string): boolean =>
   SIMPLE_EMAIL_RE.test(value.trim());
 
-/** Allows typical user input; requires at least 7 and at most 15 digits (E.164 max). */
 export const isValidPhoneFormat = (value: string): boolean => {
   const digits = value.replace(/\D/g, '');
   return digits.length >= 7 && digits.length <= 15;
 };
 
-/** First invalid non-empty email/phone in field order, or null. */
 export const getFormFieldValidationError = (
   visibleFields: ValidatableFormField[],
   values: Record<string, string>,

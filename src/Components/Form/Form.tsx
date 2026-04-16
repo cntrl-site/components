@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
-import { getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
+import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -275,7 +275,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     labelTextColor,
     successColor,
     errorColor,
-  }, stateOverrides);
+  }, COLOR_VAR_MAP, STATE_KEYS, stateOverrides);
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(visibleFields.map((f) => [f.name, '']))
@@ -556,30 +556,6 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
 };
 
 const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
-
-function buildColorVars(
-  P: string,
-  defaults: Record<ColorKeys, string>,
-  stateOverrides?: Record<string, StateColorOverrides>,
-): React.CSSProperties {
-  const vars: Record<string, string> = {};
-  for (const [key, varSuffix] of Object.entries(COLOR_VAR_MAP)) {
-    vars[`--${P}-${varSuffix}`] = defaults[key as ColorKeys];
-  }
-  if (stateOverrides) {
-    for (const state of STATE_KEYS) {
-      const overrides = stateOverrides[state];
-      if (!overrides) continue;
-      for (const [key, varSuffix] of Object.entries(COLOR_VAR_MAP)) {
-        const val = overrides[key as ColorKeys];
-        if (val !== undefined) {
-          vars[`--${P}-${state}-${varSuffix}`] = val;
-        }
-      }
-    }
-  }
-  return vars as unknown as React.CSSProperties;
-}
 
 function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
   return {
