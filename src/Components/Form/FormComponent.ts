@@ -216,7 +216,7 @@ const schema: ComponentSchemaV1 = {
         type: 'boolean',
         scope: 'layout',
         title: 'Full Width',
-        display: { type:'toggle', enum: ['Full Width', 'Off'] },
+        display: { type:'toggle', enum: ['On', 'Off'] },
       },
       buttonBorderColor: {
         type: 'string',
