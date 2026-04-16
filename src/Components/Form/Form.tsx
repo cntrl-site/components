@@ -49,7 +49,7 @@ function getCSS(P: string): string {
   background-color: var(--${P}-input-color);
   color: var(--${P}-input-text-color);
   border-color: var(--${P}-input-border-color);
-  transition: color 250ms, border-color 250ms, background-color 250ms, outline 250ms;
+  transition: color 250ms, border-color 250ms, background-color 250ms;
 }
 .${P}-input::placeholder {
   color: var(--${P}-placeholder-color);
@@ -119,11 +119,11 @@ function getCSS(P: string): string {
 }
 .${P}-input:focus-visible,
 .${P}-wrapper.${P}-state-focus .${P}-input {
-  outline: 1px solid var(--${P}-focus-input-border-color, var(--${P}-input-border-color));
+  outline: none;
 }
 .${P}-button:focus-visible,
 .${P}-wrapper.${P}-state-focus .${P}-button {
-  outline: 1px solid var(--${P}-focus-button-border-color, var(--${P}-button-border-color));
+  outline: none;
 }
 .${P}-success {
   margin-top: ${sv(8)};
