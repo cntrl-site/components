@@ -60,7 +60,7 @@ const schema: ComponentSchemaV1 = {
     properties: {
       fieldsToShow: {
         type: 'number',
-        scope: 'layout',
+        scope: 'common',
         title: 'Fields',
         display: { type: 'number' },
         min: 1,
@@ -106,7 +106,7 @@ const schema: ComponentSchemaV1 = {
       },
       fontFamily: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Font family',
         display: { type: 'font-family-select' },
       },
@@ -148,71 +148,71 @@ const schema: ComponentSchemaV1 = {
       },
       strokeColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Stroke',
         display: { type: 'palette-color-picker' },
       },
       inputColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Input Fill',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Input Label',
         display: { type: 'palette-color-picker' },
       },
       placeholderColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Filler Text',
         display: { type: 'palette-color-picker' },
       },
       buttonColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Button Fill',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Button Label',
         display: { type: 'palette-color-picker' },
       },
       successColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Success Message Color',
         display: { type: 'palette-color-picker' },
       },
       errorColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Error Message Color',
         display: { type: 'palette-color-picker' },
       },
       successMessage: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Success Message',
         display: { type: 'text-input' },
       },
       errorMessage: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'Error Message',
         display: { type: 'text-input' },
       },
       stateOverrides: {
         type: 'object',
-        scope: 'layout',
+        scope: 'common',
       },
       inputFontSettings: {
         ...textStyleProperties.fontSettings,
-        scope: 'layout',
+        scope: 'common',
         title: 'Input',
       },
       inputFontSize: {
@@ -247,7 +247,7 @@ const schema: ComponentSchemaV1 = {
       },
       buttonFontSettings: {
         ...textStyleProperties.fontSettings,
-        scope: 'layout',
+        scope: 'common',
         title: 'Button',
       },
       buttonFontSize: {
@@ -386,12 +386,12 @@ const schema: ComponentSchemaV1 = {
         'fontFamily',
         {
           type: 'group',
-          title: 'Input',
+          title: '',
           items: ['inputFontSettings', { type: 'row', items: ['inputFontSize', 'inputLineHeight', 'inputLetterSpacing', 'inputWordSpacing'] }, 'inputTextAppearance'],
         },
         {
           type: 'group',
-          title: 'Button',
+          title: '',
           items: ['buttonFontSettings', { type: 'row', items: ['buttonFontSize', 'buttonLineHeight', 'buttonLetterSpacing', 'buttonWordSpacing'] }, 'buttonTextAppearance'],
         },
       ],
