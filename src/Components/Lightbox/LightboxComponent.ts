@@ -13,6 +13,18 @@ export const LightboxComponent: Component = {
     width: 440,
     height: 550
   },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [
+      { path: 'settings.thumbnailBlock.cover.url', placeholderEnabled: true },
+      { path: 'settings.controls.arrowsImgUrl' },
+      { path: 'settings.area.closeIconUrl' }
+    ]
+  },
   schema: {
     type: 'object',
     properties: {
@@ -852,8 +864,7 @@ export const LightboxComponent: Component = {
       content: {
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -862,9 +873,7 @@ export const LightboxComponent: Component = {
               type: 'object',
               label: 'Image',
               display: {
-                type: 'media-input',
-                minWidth: 58,
-                maxWidth: 108
+                type: 'media-input'
               },
               properties: {
                 url: {
@@ -884,9 +893,7 @@ export const LightboxComponent: Component = {
               label: 'Description',
               placeholder: 'Add Caption...',
               display: {
-                type: 'rich-text',
-                minWidth: 300,
-                maxWidth: 550
+                type: 'rich-text'
               }
             },
           },

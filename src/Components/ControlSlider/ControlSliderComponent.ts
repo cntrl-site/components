@@ -1,6 +1,7 @@
+import { Component } from '../../types/Component';
 import { ControlSlider } from './ControlSlider';
 
-export const ControlSliderComponent = {
+export const ControlSliderComponent: Component = {
   element: ControlSlider,
   id: 'control-slider',
   name: 'Slider',
@@ -11,6 +12,14 @@ export const ControlSliderComponent = {
   defaultSize: {
     width: 400,
     height: 400
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
   },
   schema: {
     type: 'object',
@@ -387,8 +396,7 @@ export const ControlSliderComponent = {
       content: {
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -397,8 +405,6 @@ export const ControlSliderComponent = {
               type: 'object',
               label: 'Image',
               display: {
-                minWidth: 58,
-                maxWidth: 108,
                 type: 'media-input',
               },
               properties: {
@@ -420,8 +426,6 @@ export const ControlSliderComponent = {
               label: 'Description',
               display: {
                 type: 'rich-text',
-                minWidth: 300,
-                maxWidth: 550
               }
             },
           },

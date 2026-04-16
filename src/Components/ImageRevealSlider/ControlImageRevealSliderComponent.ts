@@ -1,6 +1,7 @@
 import { ImageRevealSlider } from './ImageRevealSlider';
+import { Component } from '../../types/Component';
 
-export const ControlImageRevealSliderComponent = {
+export const ControlImageRevealSliderComponent: Component = {
   element: ImageRevealSlider,
   id: 'control-image-reveal',
   name: 'Click Gallery',
@@ -11,6 +12,14 @@ export const ControlImageRevealSliderComponent = {
   defaultSize: {
     width: '100%',
     height: '100%'
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.cursor.defaultCursor' }, { path: 'settings.cursor.hoverCursor' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: []
   },
   schema: {
     type: 'object',
@@ -233,8 +242,7 @@ export const ControlImageRevealSliderComponent = {
       content: {
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -244,8 +252,6 @@ export const ControlImageRevealSliderComponent = {
               label: 'Image',
               display: {
                 isObjectFitEditable: false,
-                minWidth: 58,
-                maxWidth: 108,
                 type: 'media-input',
               },
               properties: {
@@ -267,8 +273,6 @@ export const ControlImageRevealSliderComponent = {
               placeholder: 'Enter link...',
               display: {
                 type: 'text-input',
-                minWidth: 300,
-                maxWidth: 550
               }
             }
           },
