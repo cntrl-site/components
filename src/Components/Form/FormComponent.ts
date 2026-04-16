@@ -179,37 +179,37 @@ const schema: ComponentSchemaV1 = {
       inputColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Input Color',
+        title: 'Input Fill',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Input Text Color',
+        title: 'Input Label',
         display: { type:'palette-color-picker' },
       },
       inputBorderColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Input Border Color',
+        title: 'Input Stroke',
         display: { type: 'palette-color-picker' },
       },
       placeholderColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Placeholder Color',
+        title: 'Filler text',
         display: { type: 'palette-color-picker' },
       },
       buttonColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Button Color',
+        title: 'Button Fill',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Button Text Color',
+        title: 'Button Label',
         display: { type: 'palette-color-picker' },
       },
       isButtonFullWidth: {
@@ -221,7 +221,7 @@ const schema: ComponentSchemaV1 = {
       buttonBorderColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Button Border Color',
+        title: 'Button Stroke',
         display: { type: 'palette-color-picker' },
       },
       labelTextColor: {
@@ -576,10 +576,10 @@ const schema: ComponentSchemaV1 = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['inputColor', 'inputBorderColor', 'placeholderColor','placeholderTextColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor', 'labelTextColor'],
-      hover: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
-      focus: ['inputColor', 'inputBorderColor', 'buttonColor', 'buttonTextColor', 'buttonBorderColor'],
-      filled: ['inputColor', 'inputTextColor', 'inputBorderColor', 'buttonTextColor'],
+      default: ['placeholderColor', 'inputColor', 'inputBorderColor', 'buttonTextColor', 'buttonColor', 'buttonBorderColor', 'labelTextColor'],
+      hover: ['inputColor', 'inputBorderColor','buttonTextColor', 'buttonColor', 'buttonBorderColor'],
+      focus: ['inputColor', 'inputBorderColor', 'buttonTextColor', 'buttonColor', 'buttonBorderColor'],
+      filled: ['inputTextColor', 'inputColor', 'inputBorderColor', 'buttonTextColor'],
       success: ['successColor'],
       error: ['errorColor'],
     },
