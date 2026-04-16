@@ -16,6 +16,19 @@ export type Component = {
     url: string;
   };
   sourceCode?: string;
+  assetsPaths?: {
+    content: Path[];
+    parameters: Path[];
+  };
+  fontSettingsPaths?: {
+    content: Path[];
+    parameters: Path[];
+  };
+};
+
+type Path = {
+  path: string;
+  placeholderEnabled?: boolean;
 };
 
 export function isSchemaV1(schema: any): schema is ComponentSchemaV1 {

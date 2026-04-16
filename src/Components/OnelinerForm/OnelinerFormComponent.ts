@@ -348,6 +348,12 @@ const schema: ComponentSchemaV1 = {
         buttonLineHeight: 0.01,
       },
     },
+    displayRules: [
+      {
+        if: { name: 'stroke', value: 0 },
+        then: { name: 'properties.strokeColor.display.visible', value: false },
+      },
+    ],
   },
   panels: [
     {

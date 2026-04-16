@@ -486,6 +486,14 @@ const schema: ComponentSchemaV1 = {
         if: { name: 'type', value: 'C' },
         then: { name: 'properties.inputCorners.display.visible', value: false },
       },
+      {
+        if: { name: 'buttonStroke', value: 0 },
+        then: { name: 'properties.buttonBorderColor.display.visible', value: false },
+      },
+      {
+        if: { name: 'inputStroke', value: 0 },
+        then: { name: 'properties.inputBorderColor.display.visible', value: false },
+      },
     ],
   },
   panels: [
