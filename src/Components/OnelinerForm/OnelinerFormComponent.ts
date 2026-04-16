@@ -326,11 +326,11 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        minHeight: 0.028,
+        minHeight: 0.1,
         stroke: 0.0026,
         corners: 0.192,
-        buttonPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
-        inputPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
+        buttonPadding: { top: 0.02, right: 0.04, bottom: 0.02, left: 0.04 },
+        inputPadding: { top: 0.01, right: 0.03, bottom: 0.01, left: 0.03 },
         inputFontSize: 0.0373,
         inputLineHeight: 0.0373,
         buttonFontSize: 0.0373,
@@ -428,7 +428,7 @@ export const OnelinerFormComponent = {
     url: 'https://cdn.cntrl.site/component-assets/onelinerImg.png',
   },
   defaultSize: {
-    width: '30%',
+    width: 300,
     height: 60,
   },
   schema,
