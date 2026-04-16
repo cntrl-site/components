@@ -328,7 +328,12 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     const payload = Object.fromEntries(
       visibleFields.map((f) => [f.name, values[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
-    if (!submitUrl || Object.keys(payload).length === 0) return;
+    if (!submitUrl) {
+      setStatus('error');
+      setErrorMessage('No integrations were found for this form.');
+      return;
+    }
+    if (Object.keys(payload).length === 0) return;
 
     const validationError = getFormFieldValidationError(visibleFields, values);
     if (validationError) {

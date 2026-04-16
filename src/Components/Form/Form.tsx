@@ -330,7 +330,12 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     const payload = Object.fromEntries(
       visibleFields.map((f) => [f.name, fieldValues[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
-    if (!submitUrl || Object.keys(payload).length === 0) return;
+    if (!submitUrl) {
+      setStatus('error');
+      setErrorMessage('No integrations were found for this form.');
+      return;
+    }
+    if (Object.keys(payload).length === 0) return;
 
     const validationError = getFormFieldValidationError(visibleFields, fieldValues);
     if (validationError) {
