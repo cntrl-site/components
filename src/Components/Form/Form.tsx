@@ -340,7 +340,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
 
   return (
     <div className={`${P}-wrapper ${P}-type-${type} ${wrapperStateClasses}`.trim()} style={colorVars}>
-      <style>{getCSS(P)}</style>
+      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <form
         onSubmit={handleSubmit}
         className={`${P}-form`}

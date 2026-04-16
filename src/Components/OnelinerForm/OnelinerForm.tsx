@@ -378,7 +378,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
 
   return (
     <div className={`${P}-wrapper ${wrapperStateClasses}`.trim()} style={colorVars}>
-      <style>{getCSS(P)}</style>
+      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <form
         onSubmit={handleSubmit}
         className={`${P}-form`}
