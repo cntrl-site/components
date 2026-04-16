@@ -227,11 +227,14 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     ...inputCss,
     borderStyle: 'solid',
     borderRadius: type === 'C' ? 0 : scalingValue(inputCorners ?? 0, isEditor),
-    borderWidth: type === 'C' ? undefined : strokeForInput,
-    borderTopWidth: type === 'C' ? 0 : undefined,
-    borderRightWidth: type === 'C' ? 0 : undefined,
-    borderBottomWidth: type === 'C' ? strokeForInput : undefined,
-    borderLeftWidth: type === 'C' ? 0 : undefined,
+    ...(type === 'C'
+      ? {
+          borderTopWidth: 0,
+          borderRightWidth: 0,
+          borderBottomWidth: strokeForInput,
+          borderLeftWidth: 0,
+        }
+      : { borderWidth: strokeForInput }),
     paddingTop: scalingValue(inputPadding?.top ?? 0, isEditor),
     paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
     paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
