@@ -360,6 +360,41 @@ const schema: ComponentSchemaV1 = {
         title: 'Label Text Appearance',
         display: { type: 'text-appearance', visible: false },
       },
+      statusFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: 'Success/Error',
+      },
+      statusFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Font Size',
+        display: { type: 'font-size' },
+      },
+      statusLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Line Height',
+        display: { type: 'line-height-input' },
+      },
+      statusLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      statusWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      statusTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Success/Error Text Appearance',
+        display: { type: 'text-appearance' },
+      },
     },
     defaults: {
       fieldsToShow: 2,
@@ -410,6 +445,17 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
+      statusFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      statusLetterSpacing: 0,
+      statusWordSpacing: 0,
+      statusTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
       isButtonFullWidth: false,
       buttonLabel: 'Sign up',
       successMessage: 'Thanks for subscribing!',
@@ -431,6 +477,8 @@ const schema: ComponentSchemaV1 = {
         buttonLineHeight: 0.0373,
         labelFontSize: 0.0373,
         labelLineHeight: 0.0373,
+        statusFontSize: 0.0373,
+        statusLineHeight: 0.0373,
       },
       d: {
         gap: 0.0083,
@@ -447,6 +495,8 @@ const schema: ComponentSchemaV1 = {
         buttonLineHeight: 0.01,
         labelFontSize: 0.01,
         labelLineHeight: 0.01,
+        statusFontSize: 0.01,
+        statusLineHeight: 0.01,
       }
     },
     displayRules: [
@@ -564,6 +614,11 @@ const schema: ComponentSchemaV1 = {
           type: 'group',
           title: '',
           items: [ 'labelFontSettings', {type: 'row', items: ['labelFontSize', 'labelLineHeight', 'labelLetterSpacing', 'labelWordSpacing']}, 'labelTextAppearance'],
+        },
+        {
+          type: 'group',
+          title: '',
+          items: ['statusFontSettings', { type: 'row', items: ['statusFontSize', 'statusLineHeight', 'statusLetterSpacing', 'statusWordSpacing'] }, 'statusTextAppearance'],
         },
       ],
     },

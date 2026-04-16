@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -127,12 +128,10 @@ function getCSS(P: string): string {
 }
 .${P}-success {
   margin-top: ${sv(8)};
-  font-size: ${sv(14)};
   color: var(--${P}-success-success-color, var(--${P}-success-color));
 }
 .${P}-error {
   margin-top: ${sv(8)};
-  font-size: ${sv(14)};
   color: var(--${P}-error-error-color, var(--${P}-error-color));
 }
 .${P}-overlay-anchor {
@@ -195,6 +194,12 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     labelLetterSpacing,
     labelWordSpacing,
     labelTextAppearance,
+    statusFontSettings,
+    statusFontSize,
+    statusLineHeight,
+    statusLetterSpacing,
+    statusWordSpacing,
+    statusTextAppearance,
     successMessage,
     errorMessage: errorMessageText,
     stateOverrides,
@@ -263,6 +268,21 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     color: labelTextColor,
   };
   const labelTextCss = textStylesToCss(resolvedLabelTextStyle, isEditor);
+
+  const resolvedStatusTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: statusFontSettings?.fontWeight ?? 400,
+      fontStyle: statusFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: statusFontSize ?? 0.01,
+    lineHeight: statusLineHeight,
+    letterSpacing: statusLetterSpacing ?? 0,
+    wordSpacing: statusWordSpacing ?? 0,
+    textAppearance: statusTextAppearance,
+    color: successColor,
+  };
+  const statusTextCss = textStylesToCss(resolvedStatusTextStyle, isEditor);
 
   const colorVars = buildColorVars(P, {
     inputColor,
@@ -378,7 +398,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
                   value={displayValues[field.name] ?? ''}
                   onChange={(e) => handleFieldChange(field.name, e.target.value)}
                   placeholder={field.placeholder}
-                  required={field.type === 'email'}
+                  required={field.isRequired ?? field.type === 'email'}
                   className={`${P}-input`}
                   style={inputFieldCss}
                   data-filled={((displayValues[field.name] ?? '') as string).trim().length > 0}
@@ -428,7 +448,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       {displayStatus === 'success' && (
         <p
           className={`${P}-success`}
-          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+          style={{ ...statusTextCss }}
         >
           {successMessage}
         </p>
@@ -436,7 +456,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       {displayStatus === 'error' && (
         <p
           className={`${P}-error`}
-          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+          style={{ ...statusTextCss}}
           role="alert"
         >
           {validationErrorMessage ?? displayError ?? errorMessageText}
@@ -453,24 +473,8 @@ export type FormFieldItem = {
   type: FormFieldType;
   placeholder: string;
   label?: string;
-};
-
-type TextStyles = {
-  fontSettings: {
-    fontFamily?: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  letterSpacing: number;
-  wordSpacing: number;
-  fontSize: number;
-  lineHeight?: number;
-  textAppearance?: {
-    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-    textDecoration?: 'none' | 'underline';
-    fontVariant?: 'normal' | 'small-caps';
-  };
-  color: string;
+  isRequired?: boolean;
+  error?: string;
 };
 
 type Padding = {
@@ -520,6 +524,12 @@ type FormSettings = {
   labelLetterSpacing?: number;
   labelWordSpacing?: number;
   labelTextAppearance?: TextStyles['textAppearance'];
+  statusFontSettings?: { fontWeight: number; fontStyle: string };
+  statusFontSize?: number;
+  statusLineHeight?: number;
+  statusLetterSpacing?: number;
+  statusWordSpacing?: number;
+  statusTextAppearance?: TextStyles['textAppearance'];
   buttonCorners?: number;
   buttonStroke?: number;
   buttonPadding?: Padding;
@@ -556,18 +566,3 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
 };
 
 const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
-
-function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
-  return {
-    fontFamily: textStyles.fontSettings.fontFamily,
-    fontWeight: textStyles.fontSettings.fontWeight,
-    fontStyle: textStyles.fontSettings.fontStyle,
-    letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
-    wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
-    fontSize: scalingValue(textStyles.fontSize, isEditor),
-    lineHeight: textStyles.lineHeight !== undefined ? scalingValue(textStyles.lineHeight, isEditor) : undefined,
-    textTransform: textStyles.textAppearance?.textTransform,
-    textDecoration: textStyles.textAppearance?.textDecoration,
-    fontVariant: textStyles.textAppearance?.fontVariant
-  };
-}

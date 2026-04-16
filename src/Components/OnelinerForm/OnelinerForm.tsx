@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -190,8 +191,6 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     buttonIcon: buttonIconLegacy,
     fieldsToShow = 1,
     fontFamily,
-    input: inputTextStyleLegacy,
-    button: buttonTextStyleLegacy,
     inputFontSettings,
     inputFontSize,
     inputLineHeight,
@@ -204,6 +203,12 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     buttonLetterSpacing,
     buttonWordSpacing,
     buttonTextAppearance,
+    statusFontSettings,
+    statusFontSize,
+    statusLineHeight,
+    statusLetterSpacing,
+    statusWordSpacing,
+    statusTextAppearance,
     minHeight,
     corners,
     stroke,
@@ -228,10 +233,9 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const displayValues = activeEvent === 'filled'
     ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
     : values;
-  const validationErrorMessage =
-    displayStatus === 'error'
-      ? getFormFieldValidationError(visibleFields, displayValues)
-      : null;
+  const validationErrorMessage = displayStatus === 'error'
+    ? getFormFieldValidationError(visibleFields, displayValues)
+    : null;
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
   const hasFilledFieldValue = visibleFields.some((f) => (displayValues[f.name] ?? '').trim().length > 0);
   const filledStateClass =
@@ -255,71 +259,51 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const useIconButton = submitButtonContent === 'Icon';
   const submitAriaLabel = labelText || 'Submit';
 
-  const resolvedInputTextStyle: TextStyles | undefined =
-    inputFontSettings ||
-    inputFontSize !== undefined ||
-    inputLineHeight !== undefined ||
-    inputLetterSpacing !== undefined ||
-    inputWordSpacing !== undefined ||
-    inputTextAppearance !== undefined
-      ? {
-          fontSettings: {
-            fontFamily,
-            fontWeight: inputFontSettings?.fontWeight ?? 400,
-            fontStyle: inputFontSettings?.fontStyle ?? 'normal',
-          },
-          fontSize: inputFontSize ?? 0.01,
-          lineHeight: inputLineHeight,
-          letterSpacing: inputLetterSpacing ?? 0,
-          wordSpacing: inputWordSpacing ?? 0,
-          textAppearance: inputTextAppearance,
-          color: settings.inputTextColor ?? '#111111',
-        }
-      : inputTextStyleLegacy
-        ? {
-            ...inputTextStyleLegacy,
-            fontSettings: {
-              ...inputTextStyleLegacy.fontSettings,
-              fontFamily: fontFamily ?? inputTextStyleLegacy.fontSettings.fontFamily,
-            },
-            color: settings.inputTextColor ?? inputTextStyleLegacy.color ?? '#111111',
-          }
-        : undefined;
+  const resolvedInputTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: inputFontSettings?.fontWeight ?? 400,
+      fontStyle: inputFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: inputFontSize ?? 0.01,
+    lineHeight: inputLineHeight,
+    letterSpacing: inputLetterSpacing ?? 0,
+    wordSpacing: inputWordSpacing ?? 0,
+    textAppearance: inputTextAppearance,
+    color: settings.inputTextColor ?? '#111111',
+  };
 
-  const resolvedButtonTextStyle: TextStyles | undefined =
-    buttonFontSettings ||
-    buttonFontSize !== undefined ||
-    buttonLineHeight !== undefined ||
-    buttonLetterSpacing !== undefined ||
-    buttonWordSpacing !== undefined ||
-    buttonTextAppearance !== undefined
-      ? {
-          fontSettings: {
-            fontFamily,
-            fontWeight: buttonFontSettings?.fontWeight ?? 400,
-            fontStyle: buttonFontSettings?.fontStyle ?? 'normal',
-          },
-          fontSize: buttonFontSize ?? 0.01,
-          lineHeight: buttonLineHeight,
-          letterSpacing: buttonLetterSpacing ?? 0,
-          wordSpacing: buttonWordSpacing ?? 0,
-          textAppearance: buttonTextAppearance,
-          color: settings.buttonTextColor ?? '#ffffff',
-        }
-      : buttonTextStyleLegacy
-        ? {
-            ...buttonTextStyleLegacy,
-            fontSettings: {
-              ...buttonTextStyleLegacy.fontSettings,
-              fontFamily: fontFamily ?? buttonTextStyleLegacy.fontSettings.fontFamily,
-            },
-            color: settings.buttonTextColor ?? buttonTextStyleLegacy.color ?? '#ffffff',
-          }
-        : undefined;
+  const resolvedButtonTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: buttonFontSettings?.fontWeight ?? 400,
+      fontStyle: buttonFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: buttonFontSize ?? 0.01,
+    lineHeight: buttonLineHeight,
+    letterSpacing: buttonLetterSpacing ?? 0,
+    wordSpacing: buttonWordSpacing ?? 0,
+    textAppearance: buttonTextAppearance,
+    color: settings.buttonTextColor ?? '#ffffff',
+  };
 
-  const inputCss = resolvedInputTextStyle ? textStylesToCss(resolvedInputTextStyle, isEditor) : undefined;
-  const buttonCss = resolvedButtonTextStyle ? textStylesToCss(resolvedButtonTextStyle, isEditor) : undefined;
+  const resolvedStatusTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily,
+      fontWeight: statusFontSettings?.fontWeight ?? 400,
+      fontStyle: statusFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: statusFontSize ?? 0.01,
+    lineHeight: statusLineHeight,
+    letterSpacing: statusLetterSpacing ?? 0,
+    wordSpacing: statusWordSpacing ?? 0,
+    textAppearance: statusTextAppearance,
+    color: settings.successColor ?? '#22c55e',
+  };
 
+  const inputCss = textStylesToCss(resolvedInputTextStyle, isEditor);
+  const buttonCss = textStylesToCss(resolvedButtonTextStyle, isEditor);
+  const statusCss = textStylesToCss(resolvedStatusTextStyle, isEditor);
   const colorVars = buildColorVars(P, {
     strokeColor: settings.strokeColor,
     inputColor: settings.inputColor,
@@ -401,7 +385,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
               value={displayValues[field.name] ?? ''}
               onChange={(e) => setValues((prev) => ({ ...prev, [field.name]: e.target.value }))}
               placeholder={field.placeholder}
-              required={field.type === 'email'}
+              required={field.isRequired ?? field.type === 'email'}
               className={`${P}-input`}
               style={{
                 ...inputCss,
@@ -438,7 +422,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       {displayStatus === 'success' && (
         <p
           className={`${P}-success`}
-          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+          style={{ ...statusCss }}
         >
           {successMessage}
         </p>
@@ -446,7 +430,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       {displayStatus === 'error' && (
         <p
           className={`${P}-error`}
-          style={{ ...inputCss, lineHeight: inputCss?.fontSize }}
+          style={{ ...statusCss }}
           role="alert"
         >
           {validationErrorMessage ?? displayError ?? errorMessageText}
@@ -460,24 +444,8 @@ type FieldConfig = {
   name: string;
   type: 'text' | 'phone' | 'email';
   placeholder: string;
-};
-
-type TextStyles = {
-  fontSettings: {
-    fontFamily?: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  letterSpacing: number;
-  wordSpacing: number;
-  fontSize: number;
-  lineHeight?: number;
-  textAppearance?: {
-    textTransform?: string;
-    textDecoration?: string;
-    fontVariant?: string;
-  };
-  color: string;
+  isRequired?: boolean;
+  error?: string;
 };
 
 type OnelinerColorKeys =
@@ -506,8 +474,6 @@ export type OnelinerFormSettings = {
   buttonLabel?: string | null;
   buttonIcon?: string | null;
   fontFamily?: string;
-  input?: TextStyles;
-  button?: TextStyles;
   inputFontSettings?: { fontWeight: number; fontStyle: string };
   inputFontSize?: number;
   inputLineHeight?: number;
@@ -520,6 +486,12 @@ export type OnelinerFormSettings = {
   buttonLetterSpacing?: number;
   buttonWordSpacing?: number;
   buttonTextAppearance?: TextStyles['textAppearance'];
+  statusFontSettings?: { fontWeight: number; fontStyle: string };
+  statusFontSize?: number;
+  statusLineHeight?: number;
+  statusLetterSpacing?: number;
+  statusWordSpacing?: number;
+  statusTextAppearance?: TextStyles['textAppearance'];
   minHeight: number;
   corners: number;
   stroke: number;
@@ -560,18 +532,3 @@ const COLOR_VAR_MAP: Record<OnelinerColorKeys, string> = {
 };
 
 const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
-
-function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
-  return {
-    fontFamily: textStyles.fontSettings.fontFamily,
-    fontWeight: textStyles.fontSettings.fontWeight,
-    fontStyle: textStyles.fontSettings.fontStyle,
-    letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
-    wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
-    fontSize: scalingValue(textStyles.fontSize, isEditor),
-    lineHeight: textStyles.lineHeight !== undefined ? scalingValue(textStyles.lineHeight, isEditor) : undefined,
-    textTransform: textStyles.textAppearance?.textTransform,
-    textDecoration: textStyles.textAppearance?.textDecoration,
-    fontVariant: textStyles.textAppearance?.fontVariant,
-  };
-}

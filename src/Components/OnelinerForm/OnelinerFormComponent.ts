@@ -12,7 +12,7 @@ const defaultFields = [
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
-    display: { type: 'font-settings-weight' },
+    display: { type: 'font-settings-weight', visible: true },
     properties: {
       fontWeight: { type: 'number' as const },
       fontStyle: { type: 'string' as const },
@@ -74,7 +74,7 @@ const schema: ComponentSchemaV1 = {
           type: 'object',
           properties: {
             name: { type: 'string' },
-            type: { type: 'string', enum: ['text', 'textarea', 'phone', 'email'] },
+            type: { type: 'string', enum: ['text', 'phone', 'email'] },
             placeholder: { type: 'string' },
             label: { type: 'string' },
             isRequired: { type: 'boolean' },
@@ -280,6 +280,41 @@ const schema: ComponentSchemaV1 = {
         title: 'Button Text Appearance',
         display: { type: 'text-appearance' },
       },
+      statusFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: 'Success/Error',
+      },
+      statusFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Font Size',
+        display: { type: 'font-size' },
+      },
+      statusLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Line Height',
+        display: { type: 'line-height-input' },
+      },
+      statusLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      statusWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Success/Error Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      statusTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Success/Error Text Appearance',
+        display: { type: 'text-appearance' },
+      },
     },
     defaults: {
       fields: defaultFields,
@@ -323,6 +358,17 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
+      statusFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      statusLetterSpacing: 0,
+      statusWordSpacing: 0,
+      statusTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
     },
     layoutDefaults: {
       m: {
@@ -335,6 +381,8 @@ const schema: ComponentSchemaV1 = {
         inputLineHeight: 0.0373,
         buttonFontSize: 0.0373,
         buttonLineHeight: 0.0373,
+        statusFontSize: 0.0373,
+        statusLineHeight: 0.0373,
       },
       d: {
         minHeight: 0.028,
@@ -346,12 +394,38 @@ const schema: ComponentSchemaV1 = {
         inputLineHeight: 0.01,
         buttonFontSize: 0.01,
         buttonLineHeight: 0.01,
+        statusFontSize: 0.01,
+        statusLineHeight: 0.01,
       },
     },
     displayRules: [
       {
         if: { name: 'stroke', value: 0 },
         then: { name: 'properties.strokeColor.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonContent.mode', value: 'Icon' },
+        then: { name: 'properties.buttonFontSettings.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonContent.mode', value: 'Icon' },
+        then: { name: 'properties.buttonFontSize.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonContent.mode', value: 'Icon' },
+        then: { name: 'properties.buttonLineHeight.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonContent.mode', value: 'Icon' },
+        then: { name: 'properties.buttonLetterSpacing.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonContent.mode', value: 'Icon' },
+        then: { name: 'properties.buttonWordSpacing.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonContent.mode', value: 'Icon' },
+        then: { name: 'properties.buttonTextAppearance.display.visible', value: false },
       },
     ],
   },
@@ -393,6 +467,11 @@ const schema: ComponentSchemaV1 = {
           type: 'group',
           title: '',
           items: ['buttonFontSettings', { type: 'row', items: ['buttonFontSize', 'buttonLineHeight', 'buttonLetterSpacing', 'buttonWordSpacing'] }, 'buttonTextAppearance'],
+        },
+        {
+          type: 'group',
+          title: '',
+          items: ['statusFontSettings', { type: 'row', items: ['statusFontSize', 'statusLineHeight', 'statusLetterSpacing', 'statusWordSpacing'] }, 'statusTextAppearance'],
         },
       ],
     },
