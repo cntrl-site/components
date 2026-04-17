@@ -67,6 +67,7 @@ function getCSS(P: string): string {
   background: transparent;
   border: none;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
   color: var(--${P}-input-text-color);
   transition: color 250ms, background-color 250ms, border-color 250ms;
 }

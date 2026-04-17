@@ -47,6 +47,7 @@ function getCSS(P: string): string {
   width: 100%;
   box-sizing: border-box;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
   background-color: var(--${P}-input-color);
   color: var(--${P}-input-text-color);
   border-color: var(--${P}-input-border-color);
