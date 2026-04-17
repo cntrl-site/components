@@ -401,16 +401,20 @@ const schema: ComponentSchemaV1 = {
       fields: defaultFieldsItems,
       type: 'A',
       inputColor: '#FFFFFF',
-      inputTextColor: '#999999',
+      inputTextColor: '#0A00F8',
       inputBorderColor: '#0A00F8',
-      placeholderColor: '#0A00F8',
+      placeholderColor: '#808080',
       buttonColor: '#0A00F8',
       buttonTextColor: '#ffffff',
       buttonBorderColor: '#0A00F8',
       labelTextColor: '#999999',
       successColor: '#22c55e',
       errorColor: '#ef4444',
-      stateOverrides: {},
+      stateOverrides: {
+        hover: {
+          buttonColor: '#194EFF',
+        }
+      },
       fontFamily: 'Arial',
       inputFontSettings: {
         fontWeight: 400,
@@ -465,9 +469,9 @@ const schema: ComponentSchemaV1 = {
       m: {
         gap: 0.032,
         fieldsGap: 0.032,
-        buttonStroke: 0.0026,
+        buttonStroke: 0,
         buttonCorners: 0.192,
-        inputStroke: 0.0026,
+        inputStroke: 0,
         inputCorners: 0.192,
         buttonPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         inputPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
@@ -483,9 +487,9 @@ const schema: ComponentSchemaV1 = {
       d: {
         gap: 0.0083,
         fieldsGap: 0.0083,
-        buttonStroke: 0.0015,
+        buttonStroke: 0,
         buttonCorners: 0.05,
-        inputStroke: 0.0015,
+        inputStroke: 0,
         inputCorners: 0.05,
         buttonPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
@@ -661,7 +665,7 @@ export const FormComponent = {
   },
   version: 1,
   defaultSize: {
-    width: 400,
+    width: 300,
     height: 42,
   },
   schema,

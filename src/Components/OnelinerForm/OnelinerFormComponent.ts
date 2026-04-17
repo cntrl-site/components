@@ -328,23 +328,27 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       fields: defaultFields,
       fieldsToShow: 1,
-      buttonLabel: 'Submit',
+      buttonLabel: 'Subscribe',
       buttonContent: {
-        mode: 'On',
+        mode: 'Off',
         icon: onelinerDefaultSubmitIconUrl,
       },
       fontFamily: 'Arial',
       strokeColor: '#0A00F8',
       inputColor: '#ffffff',
       inputTextColor: '#0A00F8',
-      placeholderColor: '#0A00F8',
-      buttonColor: '#0A00F8',
+      placeholderColor: '#000000',
+      buttonColor: '#0088D7',
       buttonTextColor: '#ffffff',
       errorColor: '#ef4444',
       successColor: '#22c55e',
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
-      stateOverrides: {},
+      stateOverrides: {
+        hover: {
+          buttonColor: '#33A2F2',
+        }
+      },
       inputFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -363,7 +367,7 @@ const schema: ComponentSchemaV1 = {
       buttonLetterSpacing: 0,
       buttonWordSpacing: 0,
       buttonTextAppearance: {
-        textTransform: 'none',
+        textTransform: 'uppercase',
         textDecoration: 'none',
         fontVariant: 'normal',
       },
@@ -382,8 +386,8 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         minHeight: 0.1,
-        stroke: 0.0026,
-        corners: 0.192,
+        stroke: 0,
+        corners: 0,
         buttonPadding: { top: 0.02, right: 0.04, bottom: 0.02, left: 0.04 },
         inputPadding: { top: 0.01, right: 0.03, bottom: 0.01, left: 0.03 },
         inputFontSize: 0.0373,
@@ -395,13 +399,13 @@ const schema: ComponentSchemaV1 = {
       },
       d: {
         minHeight: 0.028,
-        stroke: 0.0015,
-        corners: 0.05,
-        buttonPadding: { right: 0.01, left: 0.01, top: 0.005, bottom: 0.005,},
+        stroke: 0,
+        corners: 0,
+        buttonPadding: { right: 0.0175, left: 0.0175, top: 0.005, bottom: 0.004,},
         inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         inputFontSize: 0.01,
         inputLineHeight: 0.01,
-        buttonFontSize: 0.01,
+        buttonFontSize: 0.009,
         buttonLineHeight: 0.01,
         statusFontSize: 0.01,
         statusLineHeight: 0.01,
@@ -523,7 +527,7 @@ export const OnelinerFormComponent = {
     url: 'https://cdn.cntrl.site/component-assets/onelinerImg.png',
   },
   defaultSize: {
-    width: 300,
+    width: 400,
     height: 60,
   },
   schema,
