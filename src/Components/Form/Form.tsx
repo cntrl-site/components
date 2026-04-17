@@ -287,6 +287,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     color: successColor,
   };
   const statusTextCss = textStylesToCss(resolvedStatusTextStyle, isEditor);
+  const { color: _statusMessageColor, ...statusTypographyCss } = statusTextCss;
 
   const colorVars = buildColorVars(P, {
     inputColor,
@@ -465,7 +466,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       {displayStatus === 'error' && (
         <p
           className={`${P}-error`}
-          style={{ ...statusTextCss}}
+          style={{ ...statusTypographyCss }}
           role="alert"
         >
           {validationErrorMessage ?? displayError ?? errorMessageText}

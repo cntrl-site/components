@@ -320,6 +320,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const inputCss = textStylesToCss(resolvedInputTextStyle, isEditor);
   const buttonCss = textStylesToCss(resolvedButtonTextStyle, isEditor);
   const statusCss = textStylesToCss(resolvedStatusTextStyle, isEditor);
+  const { color: _statusMessageColor, ...statusTypographyCss } = statusCss;
   const colorVars = buildColorVars(P, {
     strokeColor: settings.strokeColor,
     inputColor: settings.inputColor,
@@ -458,7 +459,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       {displayStatus === 'error' && (
         <p
           className={`${P}-error`}
-          style={{ ...statusCss }}
+          style={{ ...statusTypographyCss }}
           role="alert"
         >
           {validationErrorMessage ?? displayError ?? errorMessageText}
