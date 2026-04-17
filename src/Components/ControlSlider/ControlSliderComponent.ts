@@ -6,8 +6,8 @@ export const ControlSliderComponent: Component = {
   id: 'control-slider',
   name: 'Slider',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Control-slider-preview.mp4',
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/sliderImg.png',
   },
   defaultSize: {
     width: 400,
@@ -25,7 +25,6 @@ export const ControlSliderComponent: Component = {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         display: {
           type: 'settings-block',
@@ -395,7 +394,6 @@ export const ControlSliderComponent: Component = {
         ]
       },
       content: {
-        layoutBased: false,
         type: 'array',
         settings: {
           addItemFromFileExplorer: true
@@ -476,7 +474,6 @@ export const ControlSliderComponent: Component = {
         ]
       },
       styles: {
-        layoutBased: true,
         type: 'object',
         properties: {
           imageCaption: {
