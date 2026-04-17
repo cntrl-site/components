@@ -2,6 +2,14 @@ import { OnelinerForm } from './OnelinerForm';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import onelinerFormSourceRaw from './OnelinerForm.tsx?raw';
 
+const onelinerDefaultSubmitIconUrl =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="6" height="9">' +
+      '<path fill="white" transform="translate(0.0625 0.0595703)" d="M0.18305826 0.18305826C0.40836075 -0.042244215 0.76288015 -0.059575174 1.0080621 0.13106538L1.0669417 0.18305826L4.8169417 3.9330583C5.0422444 4.158361 5.0595751 4.5128803 4.8689346 4.7580624L4.8169417 4.8169417L1.0669417 8.5669422C0.82286406 8.8110189 0.42713594 8.8110189 0.18305826 8.5669422C-0.042244215 8.3416395 -0.059575174 7.9871197 0.13106538 7.7419376L0.18305826 7.6830583L3.4906249 4.375L0.18305826 1.0669417C-0.042244215 0.84163928 -0.059575174 0.48711985 0.13106538 0.24193785L0.18305826 0.18305826Z" fill-rule="evenodd"/>' +
+      '</svg>',
+  );
+
 const defaultFields = [
   { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
   { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
@@ -322,7 +330,7 @@ const schema: ComponentSchemaV1 = {
       buttonContent: {
         mode: 'Icon',
         label: 'Submit',
-        icon: 'https://cdn.cntrl.site/component-assets/arrow.svg',
+        icon: onelinerDefaultSubmitIconUrl,
       },
       fontFamily: 'Arial',
       strokeColor: '#0A00F8',

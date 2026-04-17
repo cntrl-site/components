@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { SvgImage } from '../helpers/SvgImage/SvgImage';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -135,6 +136,22 @@ function getCSS(P: string): string {
   max-width: 100%;
   max-height: 100%;
 }
+.${P}-submitBtn .${P}-submitBtnIcon {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  display: block;
+  box-sizing: border-box;
+  flex: 0 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+  max-width: 100%;
+  max-height: 100%;
+}
 .${P}-submitBtn:hover,
 .${P}-wrapper.${P}-state-hover .${P}-submitBtn {
   background-color: var(--${P}-hover-button-color, var(--${P}-button-color));
@@ -151,6 +168,17 @@ function getCSS(P: string): string {
   background-color: var(--${P}-filled-button-color, var(--${P}-button-color));
   color: var(--${P}-filled-button-text-color, var(--${P}-button-text-color));
   border-left-color: var(--${P}-filled-stroke-color, var(--${P}-stroke-color));
+}
+.${P}-submitBtn:hover .${P}-submitBtnIcon,
+.${P}-wrapper.${P}-state-hover .${P}-submitBtn .${P}-submitBtnIcon {
+  background-color: var(--${P}-hover-button-text-color, var(--${P}-button-text-color));
+}
+.${P}-submitBtn:focus .${P}-submitBtnIcon,
+.${P}-wrapper.${P}-state-focus .${P}-submitBtn .${P}-submitBtnIcon {
+  background-color: var(--${P}-focus-button-text-color, var(--${P}-button-text-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-submitBtn .${P}-submitBtnIcon {
+  background-color: var(--${P}-filled-button-text-color, var(--${P}-button-text-color));
 }
 .${P}-wrapper.${P}-state-success .${P}-input,
 .${P}-wrapper.${P}-state-success .${P}-submitBtn {
@@ -419,7 +447,14 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
             {status === 'submitting'
               ? '...'
               : useIconButton
-                ? (iconSrc ? <img src={iconSrc} alt="" draggable={false} /> : null)
+                ? (iconSrc && (
+                    <SvgImage
+                      url={iconSrc}
+                      className={`${P}-submitBtnIcon`}
+                      fill={`var(--${P}-button-text-color)`}
+                      hoverFill={`var(--${P}-button-text-color)`}
+                    />
+                  ))
                 : labelText}
           </button>
         </div>
