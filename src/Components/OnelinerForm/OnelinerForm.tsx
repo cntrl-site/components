@@ -213,10 +213,8 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const { prefix: P } = useScopedStyles();
   const {
     fields = [{ name: 'email', type: 'email', placeholder: 'Your email' }],
-    buttonContent: buttonContentFromSettings,
-    submitButtonContent: submitButtonContentLegacy,
-    buttonLabel: buttonLabelLegacy,
-    buttonIcon: buttonIconLegacy,
+    buttonContent,
+    buttonLabel,
     fieldsToShow = 1,
     fontFamily,
     inputFontSettings,
@@ -271,20 +269,9 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const wrapperStateClasses = `${stateClass} ${filledStateClass}`.trim();
 
   const submitUrl = metadata?.submitUrl as string | undefined;
-  const bc = buttonContentFromSettings;
-  const submitButtonContent: 'Label' | 'Icon' =
-    bc?.mode === 'Icon' || bc?.mode === 'Label'
-      ? bc.mode
-      : submitButtonContentLegacy === 'Icon'
-        ? 'Icon'
-        : 'Label';
-  const buttonLabel =
-    bc === undefined ? buttonLabelLegacy : bc.label !== undefined ? bc.label : buttonLabelLegacy;
-  const buttonIcon =
-    bc === undefined ? buttonIconLegacy : bc.icon !== undefined ? bc.icon : buttonIconLegacy;
   const labelText = buttonLabel ?? '';
-  const iconSrc = buttonIcon ?? '';
-  const useIconButton = submitButtonContent === 'Icon';
+  const iconSrc = buttonContent?.icon ?? '';
+  const useIconButton = buttonContent?.mode === 'On';
   const submitAriaLabel = labelText || 'Submit';
 
   const resolvedInputTextStyle: TextStyles = {
@@ -501,18 +488,15 @@ type OnelinerColorKeys =
 type StateColorOverrides = Partial<Record<OnelinerColorKeys, string>>;
 
 export type OnelinerFormButtonContent = {
-  mode?: 'Label' | 'Icon';
-  label?: string | null;
+  mode?: 'On' | 'Off';
   icon?: string | null;
 };
 
 export type OnelinerFormSettings = {
   fields: FieldConfig[];
   fieldsToShow: number;
-  buttonContent?: OnelinerFormButtonContent;
-  submitButtonContent?: 'Label' | 'Icon';
   buttonLabel?: string | null;
-  buttonIcon?: string | null;
+  buttonContent?: OnelinerFormButtonContent | null;
   fontFamily?: string;
   inputFontSettings?: { fontWeight: number; fontStyle: string };
   inputFontSize?: number;

@@ -90,20 +90,21 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      buttonLabel: {
+        type: 'string',
+        scope: 'common',
+        title: 'Button Label',
+        display: { type: 'text-input' },
+      },
       buttonContent: {
         type: 'object',
         scope: 'common',
+        title: 'Button Icon',
         display: { type: 'button-content-switch' },
         properties: {
           mode: {
             type: 'string',
-            enum: ['Label', 'Icon'],
-          },
-          label: {
-            type: ['string', 'null'] as const,
-            title: 'Label',
-            message: 'Subscribe',
-            display: { type: 'text-input' },
+            enum: ['On', 'Off'],
           },
           icon: {
             type: ['string', 'null'] as const,
@@ -327,9 +328,9 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       fields: defaultFields,
       fieldsToShow: 1,
+      buttonLabel: 'Submit',
       buttonContent: {
-        mode: 'Icon',
-        label: 'Submit',
+        mode: 'On',
         icon: onelinerDefaultSubmitIconUrl,
       },
       fontFamily: 'Arial',
@@ -412,27 +413,27 @@ const schema: ComponentSchemaV1 = {
         then: { name: 'properties.strokeColor.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'Icon' },
+        if: { name: 'buttonContent.mode', value: 'On' },
         then: { name: 'properties.buttonFontSettings.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'Icon' },
+        if: { name: 'buttonContent.mode', value: 'On' },
         then: { name: 'properties.buttonFontSize.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'Icon' },
+        if: { name: 'buttonContent.mode', value: 'On' },
         then: { name: 'properties.buttonLineHeight.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'Icon' },
+        if: { name: 'buttonContent.mode', value: 'On' },
         then: { name: 'properties.buttonLetterSpacing.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'Icon' },
+        if: { name: 'buttonContent.mode', value: 'On' },
         then: { name: 'properties.buttonWordSpacing.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'Icon' },
+        if: { name: 'buttonContent.mode', value: 'On' },
         then: { name: 'properties.buttonTextAppearance.display.visible', value: false },
       },
     ],
@@ -490,6 +491,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'Fields',
       layout: [
         'fields',
+        'buttonLabel',
         'successMessage',
         'errorMessage',
       ],
