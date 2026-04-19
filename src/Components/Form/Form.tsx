@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
-import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -79,6 +79,11 @@ function getCSS(P: string): string {
   background-color: var(--${P}-filled-input-color, var(--${P}-input-color));
   color: var(--${P}-filled-input-text-color, var(--${P}-input-text-color));
   border-color: var(--${P}-filled-input-border-color, var(--${P}-input-border-color));
+}
+.${P}-wrapper.${P}-state-filled .${P}-button {
+  background-color: var(--${P}-filled-button-color, var(--${P}-button-color));
+  color: var(--${P}-filled-button-text-color, var(--${P}-button-text-color));
+  border-color: var(--${P}-filled-button-border-color, var(--${P}-button-border-color));
 }
 .${P}-wrapper.${P}-state-success .${P}-input,
 .${P}-wrapper.${P}-state-success .${P}-button {
@@ -222,10 +227,10 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     textAppearance: inputTextAppearance,
     color: inputTextColor,
   };
-  const inputCss = textStylesToCss(resolvedInputTextStyle, isEditor);
+  const inputTypographyCss = omitTextColors(textStylesToCss(resolvedInputTextStyle, isEditor));
   const strokeForInput = scalingValue(inputStroke ?? 0, isEditor);
   const inputFieldCss = {
-    ...inputCss,
+    ...inputTypographyCss,
     borderStyle: 'solid',
     borderRadius: type === 'C' ? 0 : scalingValue(inputCorners ?? 0, isEditor),
     ...(type === 'C'
@@ -255,7 +260,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     textAppearance: buttonTextAppearance,
     color: buttonTextColor,
   };
-  const buttonTextCss = textStylesToCss(resolvedButtonTextStyle, isEditor);
+  const buttonTypographyCss = omitTextColors(textStylesToCss(resolvedButtonTextStyle, isEditor));
   const strokeForButton = scalingValue(buttonStroke ?? 0, isEditor);
 
   const resolvedLabelTextStyle: TextStyles = {
@@ -286,8 +291,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     textAppearance: statusTextAppearance,
     color: successColor,
   };
-  const statusTextCss = textStylesToCss(resolvedStatusTextStyle, isEditor);
-  const { color: _statusMessageColor, ...statusTypographyCss } = statusTextCss;
+  const statusTypographyCss = omitTextColors(textStylesToCss(resolvedStatusTextStyle, isEditor));
 
   const colorVars = buildColorVars(P, {
     inputColor,
@@ -429,7 +433,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
               paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
               paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
-              ...buttonTextCss,
+              ...buttonTypographyCss,
               ...(isButtonFullWidth
                 ? {
                   width: '100%',
@@ -458,7 +462,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       {displayStatus === 'success' && (
         <p
           className={`${P}-success`}
-          style={{ ...statusTextCss }}
+          style={{ ...statusTypographyCss }}
         >
           {successMessage}
         </p>

@@ -19,6 +19,11 @@ export type TextStyles = {
   color: string;
 };
 
+export function omitTextColors(styles: React.CSSProperties): React.CSSProperties {
+  const { color, ...rest } = styles;
+  return rest;
+}
+
 export function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
   return {
     fontFamily: textStyles.fontSettings.fontFamily,

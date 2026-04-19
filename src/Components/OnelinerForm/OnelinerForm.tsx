@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
-import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 
 function sv(px: number): string {
@@ -317,10 +317,9 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     color: settings.successColor ?? '#22c55e',
   };
 
-  const inputCss = textStylesToCss(resolvedInputTextStyle, isEditor);
-  const buttonCss = textStylesToCss(resolvedButtonTextStyle, isEditor);
-  const statusCss = textStylesToCss(resolvedStatusTextStyle, isEditor);
-  const { color: _statusMessageColor, ...statusTypographyCss } = statusCss;
+  const inputTypographyCss = omitTextColors(textStylesToCss(resolvedInputTextStyle, isEditor));
+  const buttonTypographyCss = omitTextColors(textStylesToCss(resolvedButtonTextStyle, isEditor));
+  const statusTypographyCss = omitTextColors(textStylesToCss(resolvedStatusTextStyle, isEditor));
   const colorVars = buildColorVars(P, {
     strokeColor: settings.strokeColor,
     inputColor: settings.inputColor,
@@ -410,7 +409,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
               required={field.isRequired ?? field.type === 'email'}
               className={`${P}-input`}
               style={{
-                ...inputCss,
+                ...inputTypographyCss,
                 paddingRight: scalingValue(inputPadding.right, isEditor),
                 paddingLeft: scalingValue(inputPadding.left, isEditor),
                 paddingTop: scalingValue(inputPadding.top, isEditor),
@@ -425,7 +424,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
             className={`${P}-submitBtn`}
             aria-label={submitAriaLabel}
             style={{
-              ...buttonCss,
+              ...buttonTypographyCss,
               ...dividerWidthStyle,
               paddingRight: scalingValue(buttonPadding.right, isEditor),
               paddingLeft: scalingValue(buttonPadding.left, isEditor),
@@ -451,7 +450,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
       {displayStatus === 'success' && (
         <p
           className={`${P}-success`}
-          style={{ ...statusCss }}
+          style={{ ...statusTypographyCss }}
         >
           {successMessage}
         </p>
