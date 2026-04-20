@@ -6,18 +6,29 @@ export const LightboxComponent: Component = {
   id: 'lightbox',
   name: 'Lightbox',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/component-assets/lightbox.mp4',
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/lightboxImg.png',
   },
   defaultSize: {
     width: 440,
     height: 550
   },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [
+      { path: 'settings.thumbnailBlock.cover.url', placeholderEnabled: true },
+      { path: 'settings.controls.arrowsImgUrl' },
+      { path: 'settings.area.closeIconUrl' }
+    ]
+  },
   schema: {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         properties: {
           thumbnailBlock: {
@@ -656,146 +667,146 @@ export const LightboxComponent: Component = {
               }
             }
           }, 
-        'm': {
-          thumbnailBlock: {
-            cover: {
-              url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
-            },
-          },
-          lightboxBlock: {
-            appear: {
-              type: 'fade in',
-              duration: '500ms',
-              direction: 'bottom',
-            },
-            triggers: {
-              type: 'click',
-              switch: 'image',
-              repeat: 'loop'
-            },
-            slider: {
-              type: 'slide',
-              direction: 'horiz',
-              duration: '1000ms'
-            },
-            thumbnail: {
-              isActive: true,
-              position: 'bottom-center',
-              fit: 'fit',
-              align: 'start',
-              triggers: 'hov',
-              grid: {
-                size: 0.1,
-                gap: 0.05
+          'm': {
+            thumbnailBlock: {
+              cover: {
+                url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
               },
-              offset: { x: 0.01, y: -0.05 },
-              opacity: 50,
-              activeState: {
+            },
+            lightboxBlock: {
+              appear: {
+                type: 'fade in',
+                duration: '500ms',
+                direction: 'bottom',
+              },
+              triggers: {
+                type: 'click',
+                switch: 'image',
+                repeat: 'loop'
+              },
+              slider: {
+                type: 'slide',
+                direction: 'horiz',
+                duration: '1000ms'
+              },
+              thumbnail: {
+                isActive: true,
+                position: 'bottom-center',
+                fit: 'fit',
+                align: 'start',
+                triggers: 'hov',
+                grid: {
+                  size: 0.1,
+                  gap: 0.05
+                },
+                offset: { x: 0.01, y: -0.05 },
+                opacity: 50,
+                activeState: {
+                  scale: 1,
+                  opacity: 100
+                }
+              },
+              layout: {
+                position: 'middle-center',
+                offset: { x: 0, y: 0 },
+                padding: { top: 0.06, right: 0.05, bottom: 0.06, left: 0.05 }
+              },
+              controls: {
+                isActive: false,
+                arrowsImgUrl: null,
+                offset: { x: 0, y: 0 },
                 scale: 1,
-                opacity: 100
+                color: '#000000',
+                hover: '#cccccc'
+              },
+              area: {
+                color: 'rgba(28,31,34,0.9)',
+                blur: 0,
+                closeIconUrl: null,
+                closeIconColor: '#000000',
+                closeIconHover: '#cccccc',
+                closeIconAlign: 'top-right',
+                closeIconOffset: { x: 0, y: 0 },
+                closeIconScale: 1
+              },
+              caption: {
+                isActive: true,
+                alignment: 'middle-center',
+                offset: { x: 0, y: 0 },
+                hover: '#cccccc'
               }
+            }
+          },
+          't': {
+            thumbnailBlock: {
+              cover: {
+                url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
+              },
             },
-            layout: {
-              position: 'middle-center',
-              offset: { x: 0, y: 0 },
-              padding: { top: 0.06, right: 0.05, bottom: 0.06, left: 0.05 }
-            },
-            controls: {
-              isActive: false,
-              arrowsImgUrl: null,
-              offset: { x: 0, y: 0 },
-              scale: 1,
-              color: '#000000',
-              hover: '#cccccc'
-            },
-            area: {
-              color: 'rgba(28,31,34,0.9)',
-              blur: 0,
-              closeIconUrl: null,
-              closeIconColor: '#000000',
-              closeIconHover: '#cccccc',
-              closeIconAlign: 'top-right',
-              closeIconOffset: { x: 0, y: 0 },
-              closeIconScale: 1
-            },
-            caption: {
-              isActive: true,
-              alignment: 'middle-center',
-              offset: { x: 0, y: 0 },
-              hover: '#cccccc'
+            lightboxBlock: {
+              appear: {
+                type: 'fade in',
+                duration: '500ms',
+                direction: 'bottom',
+              },
+              triggers: {
+                type: 'click',
+                switch: 'image',
+                repeat: 'loop'
+              },
+              slider: {
+                type: 'slide',
+                direction: 'vert',
+                duration: '1000ms'
+              },
+              thumbnail: {
+                isActive: true,
+                position: 'middle-left',
+                fit: 'fit',
+                align: 'start',
+                triggers: 'hov',
+                grid: {
+                  size: 0.05,
+                  gap: 0.01
+                },
+                offset: { x: 0.03, y: 0 },
+                opacity: 50,
+                activeState: {
+                  scale: 1,
+                  opacity: 100
+                }
+              },
+              layout: {
+                position: 'middle-center',
+                offset: { x: 0, y: 0 },
+                padding: { top: 0.06, right: 0.1, bottom: 0.06, left: 0.1 }
+              },
+              controls: {
+                isActive: false,
+                arrowsImgUrl: null,
+                offset: { x: 0, y: 0 },
+                scale: 1,
+                color: '#000000',
+                hover: '#cccccc'
+              },
+              area: {
+                color: 'rgba(28,31,34,0.9)',
+                blur: 0,
+                closeIconUrl: null,
+                closeIconColor: '#000000',
+                closeIconHover: '#cccccc',
+                closeIconAlign: 'top-right',
+                closeIconOffset: { x: 0, y: 0 },
+                closeIconScale: 1
+              },
+              caption: {
+                isActive: true,
+                alignment: 'middle-center',
+                offset: { x: 0, y: 0 },
+                hover: '#cccccc'
+              }
             }
           }
-        },
-        't': {
-          thumbnailBlock: {
-            cover: {
-              url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
-            },
-          },
-          lightboxBlock: {
-            appear: {
-              type: 'fade in',
-              duration: '500ms',
-              direction: 'bottom',
-            },
-            triggers: {
-              type: 'click',
-              switch: 'image',
-              repeat: 'loop'
-            },
-            slider: {
-              type: 'slide',
-              direction: 'vert',
-              duration: '1000ms'
-            },
-            thumbnail: {
-              isActive: true,
-              position: 'middle-left',
-              fit: 'fit',
-              align: 'start',
-              triggers: 'hov',
-              grid: {
-                size: 0.05,
-                gap: 0.01
-              },
-              offset: { x: 0.03, y: 0 },
-              opacity: 50,
-              activeState: {
-                scale: 1,
-                opacity: 100
-              }
-            },
-            layout: {
-              position: 'middle-center',
-              offset: { x: 0, y: 0 },
-              padding: { top: 0.06, right: 0.1, bottom: 0.06, left: 0.1 }
-            },
-            controls: {
-              isActive: false,
-              arrowsImgUrl: null,
-              offset: { x: 0, y: 0 },
-              scale: 1,
-              color: '#000000',
-              hover: '#cccccc'
-            },
-            area: {
-              color: 'rgba(28,31,34,0.9)',
-              blur: 0,
-              closeIconUrl: null,
-              closeIconColor: '#000000',
-              closeIconHover: '#cccccc',
-              closeIconAlign: 'top-right',
-              closeIconOffset: { x: 0, y: 0 },
-              closeIconScale: 1
-            },
-            caption: {
-              isActive: true,
-              alignment: 'middle-center',
-              offset: { x: 0, y: 0 },
-              hover: '#cccccc'
-            }
-          }
-        }
       },
         displayRules: [
           {
@@ -851,11 +862,9 @@ export const LightboxComponent: Component = {
         ]
       },
       content: {
-        layoutBased: false,
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -864,9 +873,7 @@ export const LightboxComponent: Component = {
               type: 'object',
               label: 'Image',
               display: {
-                type: 'media-input',
-                minWidth: 58,
-                maxWidth: 108
+                type: 'media-input'
               },
               properties: {
                 url: {
@@ -886,9 +893,7 @@ export const LightboxComponent: Component = {
               label: 'Description',
               placeholder: 'Add Caption...',
               display: {
-                type: 'rich-text',
-                minWidth: 300,
-                maxWidth: 550
+                type: 'rich-text'
               }
             },
           },
@@ -937,7 +942,6 @@ export const LightboxComponent: Component = {
         ]
       },
       styles: {
-        layoutBased: true,
         type: 'object',
         properties: {
           imageCaption: {

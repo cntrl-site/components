@@ -1,22 +1,30 @@
+import { Component } from '../../types/Component';
 import { ControlSlider } from './ControlSlider';
 
-export const ControlSliderComponent = {
+export const ControlSliderComponent: Component = {
   element: ControlSlider,
   id: 'control-slider',
   name: 'Slider',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Control-slider-preview.mp4',
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/sliderImg.png',
   },
   defaultSize: {
     width: 400,
     height: 400
   },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
+  },
   schema: {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         display: {
           type: 'settings-block',
@@ -386,11 +394,9 @@ export const ControlSliderComponent = {
         ]
       },
       content: {
-        layoutBased: false,
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -399,8 +405,6 @@ export const ControlSliderComponent = {
               type: 'object',
               label: 'Image',
               display: {
-                minWidth: 58,
-                maxWidth: 108,
                 type: 'media-input',
               },
               properties: {
@@ -422,8 +426,6 @@ export const ControlSliderComponent = {
               label: 'Description',
               display: {
                 type: 'rich-text',
-                minWidth: 300,
-                maxWidth: 550
               }
             },
           },
@@ -472,7 +474,6 @@ export const ControlSliderComponent = {
         ]
       },
       styles: {
-        layoutBased: true,
         type: 'object',
         properties: {
           imageCaption: {

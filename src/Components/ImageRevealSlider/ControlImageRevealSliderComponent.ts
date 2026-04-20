@@ -1,22 +1,30 @@
 import { ImageRevealSlider } from './ImageRevealSlider';
+import { Component } from '../../types/Component';
 
-export const ControlImageRevealSliderComponent = {
+export const ControlImageRevealSliderComponent: Component = {
   element: ImageRevealSlider,
   id: 'control-image-reveal',
   name: 'Click Gallery',
   preview: {
-    type: 'video' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7EQ3WSW43JG5YMC8B2HTPKT.mp4'
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/clickGalleryImg.png',
   },
   defaultSize: {
     width: '100%',
     height: '100%'
   },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.cursor.defaultCursor' }, { path: 'settings.cursor.hoverCursor' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: []
+  },
   schema: {
     type: 'object',
     properties: {
       settings: {
-        layoutBased: true,
         type: 'object',
         display: {
           type: 'settings-block',
@@ -232,11 +240,9 @@ export const ControlImageRevealSliderComponent = {
         ]
       },
       content: {
-        layoutBased: false,
         type: 'array',
         settings: {
-          addItemFromFileExplorer: true,
-          defaultWidth: 500
+          addItemFromFileExplorer: true
         },
         items: {
           type: 'object',
@@ -246,8 +252,6 @@ export const ControlImageRevealSliderComponent = {
               label: 'Image',
               display: {
                 isObjectFitEditable: false,
-                minWidth: 58,
-                maxWidth: 108,
                 type: 'media-input',
               },
               properties: {
@@ -269,8 +273,6 @@ export const ControlImageRevealSliderComponent = {
               placeholder: 'Enter link...',
               display: {
                 type: 'text-input',
-                minWidth: 300,
-                maxWidth: 550
               }
             }
           },
