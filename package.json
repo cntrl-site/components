@@ -1,6 +1,6 @@
 {
   "name": "@cntrl-site/components",
-  "version": "0.1.30-grid.1",
+  "version": "1.0.5",
   "description": "Custom components for control editor and public websites.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -15,8 +15,20 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./utils": {
+      "types": "./dist/Components/utils/index.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.js"
+    },
     "./style/components.css": {
       "default": "./dist/components.css"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "utils": [
+        "./dist/Components/utils/index.d.ts"
+      ]
     }
   },
   "scripts": {
@@ -24,6 +36,7 @@
     "dev": "vite development",
     "prebuild": "rimraf ./dist",
     "build": "vite build",
+    "build:watch": "vite build --watch",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build"
   },
   "files": [

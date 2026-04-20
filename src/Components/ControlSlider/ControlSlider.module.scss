@@ -47,27 +47,27 @@
   top: 50%;
   @include size(left, -20);
   z-index: 1;
-  transform: translate(-50%, -50%);
+  transform: translate3d(-50%, -50%, 0);
   padding: 0;
   @include size(width, 30);
   @include size(height, 30);
   &.arrowVertical {
     left: 50%;
     @include size(top, -20);
-    transform: translate(-50%, -50%);
+    transform: translate3d(-50%, -50%, 0);
   }
 }
 
 .nextArrow {
   left: unset;
   @include size(right, -20);
-  transform: translate(50%, -50%);
+  transform: translate3d(50%, -50%, 0);
   &.arrowVertical {
     left: 50%;
     right: unset;
     top: unset;
     @include size(bottom, -20);
-    transform: translate(-50%, 50%);
+    transform: translate3d(-50%, 50%, 0);
   }
 }
 
@@ -164,48 +164,48 @@
 .paginationInsideBottom {
   bottom: 0;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
 }
 
 .paginationInsideTop {
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   top: 0;
 }
 
 .paginationOutsideBottom {
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   @include size(bottom, -35);
 }
 
 .paginationOutsideTop {
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   @include size(top, -35);
 }
 
 .paginationInsideLeft {
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(0, -50%, 0);
   @include size(left, -35);
 }
 
 .paginationInsideRight {
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(0, -50%, 0);
   @include size(right, -35);
 }
 
 .paginationOutsideLeft {
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(0, -50%, 0);
   @include size(left, -79);
 }
 
 .paginationOutsideRight {
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(0, -50%, 0);
   @include size(right, -79);
 }
 

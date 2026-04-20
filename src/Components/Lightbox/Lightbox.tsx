@@ -482,7 +482,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
     animationFillMode: 'both'
   };
   
-  if (!document.getElementById(portalId)) return null;
+  if (typeof document === 'undefined' || !document.getElementById(portalId)) return null;
 
   return createPortal(
     <>
