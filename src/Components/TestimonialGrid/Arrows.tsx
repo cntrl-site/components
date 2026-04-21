@@ -5,7 +5,7 @@ import cn from 'classnames';
 import { Alignment } from '../utils/getPositionStyles';
 import { Splide } from '@splidejs/react-splide';
 import { scalingValue } from '../utils/scalingValue';
-import { TestimonialsControls } from './Testimonials';
+import { TestimonialsControls } from './TestimonialGrid';
 
 type ArrowsProps = {
   isRtl: boolean;

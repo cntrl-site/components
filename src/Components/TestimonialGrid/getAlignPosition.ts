@@ -1,5 +1,5 @@
 import { CSSProperties } from 'react';
-import { Alignment, Offset } from "./Testimonials";
+import { Alignment, Offset } from "./TestimonialGrid";
 import { scalingValue } from "../utils/scalingValue";
 
 export function getAlignPosition(alignment: Alignment, offset: Offset, isEditor?: boolean): CSSProperties {

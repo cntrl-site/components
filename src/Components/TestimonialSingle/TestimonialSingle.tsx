@@ -1,18 +1,18 @@
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
-import classes from './Testimonials.module.scss';
-import { FC, useRef, useEffect, useState } from "react";
 import cn from 'classnames';
-import { scalingValue } from "../utils/scalingValue";
-import { RichTextRenderer } from "../helpers/RichTextRenderer/RichTextRenderer";
-import { Arrows } from "./Arrows";
+import { useEffect, useRef, useState } from 'react';
+import classes from './Testimonials.module.scss';
+import { CommonComponentProps } from '../props';
+import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
+import { scalingValue } from '../utils/scalingValue';
+import { Arrows } from '../TestimonialGrid/Arrows';
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
-  content: TestimonialsImage[];
-  styles: TestimonialsStyles;
+  content?: { items: TestimonialsItem[] };
   isEditor?: boolean;
-};
+} & CommonComponentProps;
 
 const parseSpeedToMs = (speed: string): number => {
   if (!speed) return 0;
@@ -21,31 +21,17 @@ const parseSpeedToMs = (speed: string): number => {
   return parseInt(match[1], 10) * 1000;
 };
 
-export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles, isEditor }) => {
+export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps) => {
+  const items = content?.items ?? [];
   const sliderRef = useRef<Splide | null>(null);
   const [visibleSlides, setVisibleSlides] = useState(1);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const slideRef = useRef<HTMLDivElement | null>(null);
-  const { general, card } = settings;
-  const { width } = card.dimensions;
-  const isAutoplay = general.autoplay === 'on';
-  const speedMs = settings.general.speed ? parseSpeedToMs(settings.general.speed) : 0;
+  const { autoplay, speed, direction, pause, cardWidth, cardHeight, corners, stroke, strokeColor, padding, controls } = settings;
+  const isAutoplay = autoplay === 'on';
+  const speedMs = speed ? parseSpeedToMs(speed) : 0;
   
-  const shadowHorizontalExtent = settings.card.dropShadow.active === 'on'
-  ? settings.card.dropShadow.blur + settings.card.dropShadow.spread + Math.abs(settings.card.dropShadow.right)
-  : 0;
-
-  const wrapperWidth = scalingValue(
-      (width * content.length) + 
-      (settings.card.gap * (content.length)) +
-      (card.borders.width * 2 * content.length) +
-      shadowHorizontalExtent,
-      isEditor ?? false);
-  const splideKey = `${general.autoplay}-${content.length}`;
-  const hasDropShadow = settings.card.dropShadow.active === 'on';
-  const cardHeight = scalingValue(card.dimensions.height, isEditor ?? false);
-  const isRtl = settings.general.direction === 'right';
-  const step = general.move === 'one' ? 1 : visibleSlides;
+  const isRtl = settings.direction === 'right';
 
   useEffect(() => {
     if (sliderRef.current?.splide) {
@@ -54,13 +40,13 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
         ...splide.options,
         autoplay: isAutoplay,
         perMove: 1,
-        perPage: isAutoplay ? (content.length || 3) : visibleSlides,
+        perPage: isAutoplay ? (items.length || 3) : visibleSlides,
         interval: isAutoplay ? (speedMs || 5000) : 0,
         rewind: !isAutoplay,
       };
       splide.refresh();
     }
-  }, [general.autoplay, speedMs, content.length]);
+  }, [autoplay, speedMs, items.length]);
   
   useEffect(() => {
     const updateVisibleSlides = () => {
@@ -76,18 +62,16 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
       setVisibleSlides(perView);
     };
     updateVisibleSlides();
-  }, [settings.card.gap, isEditor, settings.general.move]);
+  }, [isEditor]);
   
   return (
     <>
       <div
         style={{ 
-          height: `calc(100% + ${scalingValue(Math.abs(card.dropShadow.down) + card.dropShadow.blur + card.dropShadow.spread, isEditor ?? false)} )`,
-          transform: card.dropShadow.down > 0 ? `translateY(-${scalingValue(card.dropShadow.down, isEditor ?? false)})`
-            : `translateY(${scalingValue(card.dropShadow.down, isEditor ?? false)})`,
-            ['--gradient-color' as string]: settings.general.gradientCorners.color,
+          height: '100%',
+          transform: stroke > 0 ? `translateY(-${scalingValue(stroke, isEditor ?? false)})`
+            : `translateY(${scalingValue(stroke, isEditor ?? false)})`,
         }}
-        className={settings.general.gradientCorners.active === 'gradient' ? classes.gradientCorners : undefined}
         ></div>
       <div
         className={classes.container}
@@ -97,24 +81,21 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
         }}
       >
         <div
-          className={cn(classes.wrapper, !isAutoplay && classes.wrapperAutoplayOff, hasDropShadow && classes.wrapperDropShadow)}
+          className={cn(classes.wrapper, !isAutoplay && classes.wrapperAutoplayOff)}
           style={{
-            ...(wrapperWidth ? { width: wrapperWidth } : {}), 
-            ['--card-gap' as string]: isAutoplay ? 0 : `${scalingValue(settings.card.gap, isEditor ?? false)}`,
+            width: scalingValue(cardWidth + stroke * 2, isEditor ?? false),
           }}
           ref={wrapperRef}
         >
           <Splide 
-            key={splideKey}
             ref={sliderRef}
             options={{
-              type: isAutoplay || general.controls?.isActive === 'visible' ? 'loop' : 'slide',
-              fixedWidth: scalingValue(width + card.borders.width * 2, isEditor ?? false),
+              type: isAutoplay || settings.controls?.isActive === 'visible' ? 'loop' : 'slide',
+              fixedWidth: scalingValue(cardWidth + settings.stroke * 2, isEditor ?? false),
               height: 'auto',
               arrows: false,
               perMove: 1,
               perPage: visibleSlides,
-              gap: isAutoplay ? scalingValue(settings.card.gap, isEditor ?? false) : 0,
               padding: 0,
               drag: false,
               autoplay: isAutoplay,
@@ -122,26 +103,24 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
               interval: speedMs || 5000,
               rewind: !isAutoplay,
               easing: 'linear',
-              direction: settings.general.direction === 'left' ? 'ltr' : 'rtl',
+              direction: settings.direction === 'left' ? 'ltr' : 'rtl',
               pagination: false,
-              pauseOnHover: settings.general.pause === 'hover',
-              pauseOnFocus: settings.general.pause === 'click',
+              pauseOnHover: settings.pause === 'hover',
             }}>
-            {content.map((item, index) => {
+            {items.map((item, index) => {
               return (
               <SplideSlide key={index}>
                 <div
                   ref={slideRef}
                   style={{
-                    padding: `${scalingValue(settings.card.padding.top, isEditor ?? false)} ${scalingValue(settings.card.padding.right, isEditor ?? false)} ${scalingValue(settings.card.padding.bottom, isEditor ?? false)} ${scalingValue(settings.card.padding.left, isEditor ?? false)}`,
-                    width: scalingValue(width + card.borders.width * 2, isEditor ?? false),
+                    padding: `${scalingValue(settings.padding.top, isEditor ?? false)} ${scalingValue(settings.padding.right, isEditor ?? false)} ${scalingValue(settings.padding.bottom, isEditor ?? false)} ${scalingValue(settings.padding.left, isEditor ?? false)}`,
+                    width: scalingValue(cardWidth + settings.stroke * 2, isEditor ?? false),
                     minHeight: cardHeight,
                     height: '100%',
-                    borderRadius: scalingValue(settings.card.corner, isEditor ?? false),
-                    border: `${scalingValue(settings.card.borders.width, isEditor ?? false)} solid ${settings.card.borders.color}`,
+                    borderRadius: scalingValue(settings.corners, isEditor ?? false),
+                    border: `${scalingValue(settings.stroke, isEditor ?? false)} solid ${settings.strokeColor}`,
                     boxSizing: 'border-box',
                     position: 'relative',
-                    boxShadow: settings.card.dropShadow.active === 'on' ? `${scalingValue(settings.card.dropShadow.right, isEditor ?? false)} ${scalingValue(settings.card.dropShadow.down, isEditor ?? false)} ${scalingValue(settings.card.dropShadow.blur, isEditor ?? false)} ${scalingValue(settings.card.dropShadow.spread, isEditor ?? false)} ${settings.card.dropShadow.color}` : 'none',
                     }}
                   >
                   {item.image?.url && (
@@ -151,7 +130,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                       alt={item.image?.name}
                       style={{
                         objectFit: item.image?.objectFit || 'cover',
-                        borderRadius: `${scalingValue(settings.card.corner, isEditor ?? false)}`,
+                        borderRadius: `${scalingValue(settings.corners, isEditor ?? false)}`,
                         height: cardHeight,
                       }}
                     />
@@ -159,8 +138,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                   <div
                     className={classes.cover}
                     style={{
-                      background: settings.card.bgColor,
-                      borderRadius: `${scalingValue(settings.card.corner, isEditor ?? false)}`,
+                      borderRadius: `${scalingValue(settings.corners, isEditor ?? false)}`,
                       height: '100%',
                     }}
                   />
@@ -203,8 +181,9 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                             </div>
                           );
                         }
-                        if (key === 'text' && styles.imageCaption) {
-                          const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = styles.imageCaption;
+                        if (key === 'text' && settings.styles.imageCaption) {
+                          const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } =
+                            settings.styles.imageCaption;
                           return (
                             <div key="text" style={{ order: orderIndex, zIndex: orderIndex }}>
                               <div data-controls="elements.text.margin.top" className={classes.control} style={{ height: scalingValue(settings.elements.text.margin.top, isEditor ?? false)}} />
@@ -233,8 +212,9 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
                             </div>
                           );
                         }
-                        if (key === 'caption' && styles.caption) {
-                          const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = styles.caption;
+                        if (key === 'caption' && settings.styles.caption) {
+                          const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } =
+                            settings.styles.caption;
                           return (
                             <div key="caption" style={{ order: orderIndex, zIndex: orderIndex }}>
                               <div data-controls="elements.caption.margin.top" className={classes.control} style={{ height: scalingValue(settings.elements.caption.margin.top, isEditor ?? false)}}/>
@@ -273,11 +253,11 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
             })} 
           </Splide>
         </div>
-        {settings.general.controls?.isActive === 'visible' && general.autoplay === 'off' && (
+        {settings.controls?.isActive === 'visible' && settings.autoplay === 'off' && (
           <Arrows
             isRtl={isRtl}
-            step={step}
-            controls={settings.general.controls}
+            step={1}
+            controls={settings.controls}
             isEditor={isEditor ?? false}
             sliderRef={sliderRef}
           />
@@ -287,7 +267,7 @@ export const Testimonials: FC<TestimonialsProps> = ({ settings, content, styles,
   );
 };
 
-type TestimonialsImage = {
+export type TestimonialsItem = {
   image?: {
     url?: string;
     name?: string;
@@ -303,24 +283,6 @@ type TestimonialsImage = {
 };
 
 export type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
-
-export type Offset = {
-  x: number;
-  y: number;
-};
-
-type TestimonialsGeneral = {
-  autoplay: 'on' | 'off';
-  move: 'one' | 'view';
-  speed: string;
-  direction: 'left' | 'right';
-  pause: 'hover' | 'click' | 'off';
-  controls?: TestimonialsControls;
-  gradientCorners: {
-    active: 'gradient' | 'none';
-    color: string;
-  };
-};
 
 export type TestimonialsControls = {
   arrowsImgUrl: string | null;
@@ -338,29 +300,6 @@ type Padding = {
   right: number;
   bottom: number;
   left: number;
-};
-
-type TestimonialsCard = {
-  dimensions: {
-    width: number;
-    height: number;
-  };
-  gap: number;
-  corner: number;
-  borders: {
-    width: number;
-    color: string;
-  };
-  bgColor: string;
-  padding: Padding;
-  dropShadow: {
-    active: 'on' | 'off';
-    right: number;
-    down: number;
-    spread: number;
-    blur: number;
-    color: string;
-  },
 };
 
 type ElementOrderKey = 'text' | 'icon' | 'caption';
@@ -392,14 +331,24 @@ type TestimonialsElements = {
 };
 
 type TestimonialsSettings = {
-  general: TestimonialsGeneral;
-  card: TestimonialsCard;
+  autoplay: 'on' | 'off';
+  move: 'one' | 'view';
+  speed: string;
+  direction: 'left' | 'right';
+  pause: 'hover' | 'click' | 'off';
+  controls?: TestimonialsControls;
+  gradientCorners: {
+    active: 'gradient' | 'none';
+    color: string;
+  };
+  cardWidth: number;
+  cardHeight: number;
+  corners: number;
+  stroke: number;
+  strokeColor: string;
+  padding: Padding;
   elements: TestimonialsElements;
-};
-
-type TestimonialsStyles = {
-  imageCaption: CaptionStyles;
-  caption: CaptionStyles;
+  styles: TestimonialsStyles;
 };
 
 type CaptionStyles = {
@@ -425,4 +374,9 @@ type CaptionStyles = {
     fontVariant: 'normal' | 'small-caps';
   };
   color: string;
+};
+
+type TestimonialsStyles = {
+  imageCaption: CaptionStyles;
+  caption: CaptionStyles;
 };

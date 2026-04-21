@@ -60,7 +60,7 @@ const paletteBookmarkItems = [
   'errorColor',
 ] as const;
 
-const schema: ComponentSchemaV1 = {
+const schema = {
   type: 'object',
   version: 1,
   settings: {
@@ -515,7 +515,7 @@ const schema: ComponentSchemaV1 = {
   },
   allowedPlugins: ['newsletter'],
   states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
-};
+} satisfies ComponentSchemaV1;
 
 export const OnelinerFormComponent = {
   element: OnelinerForm,

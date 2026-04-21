@@ -1,8 +1,8 @@
-import { Form } from './Form';
+import { Form, type FormFieldItem } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Form.tsx?raw';
 
-const defaultFieldsItems = [
+const defaultFieldsItems: FormFieldItem[] = [
   { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
   { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
   { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Please, enter your company name.' },
@@ -61,7 +61,7 @@ const paletteBookmarkItems = [
   'errorColor',
 ] as const;
 
-const schema: ComponentSchemaV1 = {
+const schema = {
   type: 'object',
   version: 1,
   settings: {
@@ -653,7 +653,7 @@ const schema: ComponentSchemaV1 = {
   },
   allowedPlugins: ['newsletter'],
   states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
-};
+} satisfies ComponentSchemaV1;
 
 export const FormComponent = {
   element: Form,
