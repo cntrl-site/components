@@ -548,6 +548,10 @@ const schema: ComponentSchemaV1 = {
         if: { name: 'inputStroke', value: 0 },
         then: { name: 'properties.inputBorderColor.display.visible', value: false },
       },
+      {
+        if: { name: 'fieldsToShow', value: 1 },
+        then: { name: 'properties.fieldsGap.display.visible', value: false },
+      }
     ],
   },
   panels: [
@@ -661,7 +665,7 @@ export const FormComponent = {
   name: 'Newsletter Stacked',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/formImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/formImg.jpg',
   },
   version: 1,
   defaultSize: {

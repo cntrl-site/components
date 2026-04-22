@@ -7,6 +7,7 @@ interface SvgImageProps {
   fill?: string;
   hoverFill?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const isSvgMaskableUrl = (url: string): boolean => {
@@ -21,7 +22,7 @@ const maskImageUrlCss = (href: string): string => {
   return `url("${escaped}")`;
 };
 
-export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill = '#CCCCCC', className = '' }) => {
+export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill = '#CCCCCC', className = '', style }) => {
   const [supportsMask, setSupportsMask] = useState(() => {
     if (typeof window === 'undefined') return true;
     return CSS.supports('mask-image', 'url("")') || CSS.supports('-webkit-mask-image', 'url("")');
@@ -35,7 +36,7 @@ export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill =
   }, []);
 
   if (!isSvgMaskableUrl(url) || !supportsMask) {
-    return <img src={url} alt="" className={cn(styles.img, className)} />;
+    return <img src={url} alt="" className={cn(styles.img, className)} style={style} />;
   }
 
   return (
@@ -46,6 +47,7 @@ export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill =
         '--svg': maskImageUrlCss(url),
         '--fill': fill,
         '--hover-fill': hoverFill,
+        ...(style ?? {}),
       } as React.CSSProperties}
     />
   );
