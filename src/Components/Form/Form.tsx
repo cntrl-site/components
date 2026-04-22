@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
@@ -229,6 +229,13 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
   };
   const inputTypographyCss = omitTextColors(textStylesToCss(resolvedInputTextStyle, isEditor));
   const strokeForInput = scalingValue(inputStroke ?? 0, isEditor);
+  const inputBaseHeight = scalingValue(
+    (inputLineHeight ?? inputFontSize ?? 0.01) +
+      (inputPadding?.top ?? 0) +
+      (inputPadding?.bottom ?? 0) +
+      (type === 'C' ? (inputStroke ?? 0) : (inputStroke ?? 0) * 2),
+    isEditor,
+  );
   const inputFieldCss = {
     ...inputTypographyCss,
     borderStyle: 'solid',
@@ -245,6 +252,8 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
     paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
     paddingLeft: scalingValue(inputPadding?.left ?? 0, isEditor),
+    height: inputBaseHeight,
+    minHeight: inputBaseHeight,
   } as React.CSSProperties;
 
   const resolvedButtonTextStyle: TextStyles = {
@@ -316,9 +325,19 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     : activeEvent === 'error' ? 'error'
     : status;
   const displayError = activeEvent === 'error' ? errorMessageText : errorMessage;
-  const displayValues = activeEvent === 'filled'
-    ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
-    : fieldValues;
+  const isFilledPreview = activeEvent === 'filled';
+  const displayValues = useMemo(() => {
+    if (!isFilledPreview) return fieldValues;
+
+    let next: Record<string, string> | null = null;
+    for (const f of visibleFields) {
+      const current = fieldValues[f.name] ?? '';
+      if (current.trim().length > 0) continue;
+      next = next ?? { ...fieldValues };
+      next[f.name] = 'Filled';
+    }
+    return next ?? fieldValues;
+  }, [fieldValues, isFilledPreview, visibleFields]);
   const validationErrorMessage =
     displayStatus === 'error'
       ? getFormFieldValidationError(visibleFields, displayValues)
@@ -401,7 +420,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
                   className={`${P}-input`}
                   style={inputFieldCss}
                   rows={1}
-                  data-filled={((displayValues[field.name] ?? '') as string).trim().length > 0}
+                  data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
                   data-field-type="textarea"
                 />
               ) : (
@@ -415,7 +434,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
                   required={field.isRequired ?? field.type === 'email'}
                   className={`${P}-input`}
                   style={inputFieldCss}
-                  data-filled={((displayValues[field.name] ?? '') as string).trim().length > 0}
+                  data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
                 />
               )}
             </div>

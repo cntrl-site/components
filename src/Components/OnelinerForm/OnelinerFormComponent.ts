@@ -5,9 +5,13 @@ import onelinerFormSourceRaw from './OnelinerForm.tsx?raw';
 const onelinerDefaultSubmitIconUrl =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="6" height="9">' +
-      '<path fill="white" transform="translate(0.0625 0.0595703)" d="M0.18305826 0.18305826C0.40836075 -0.042244215 0.76288015 -0.059575174 1.0080621 0.13106538L1.0669417 0.18305826L4.8169417 3.9330583C5.0422444 4.158361 5.0595751 4.5128803 4.8689346 4.7580624L4.8169417 4.8169417L1.0669417 8.5669422C0.82286406 8.8110189 0.42713594 8.8110189 0.18305826 8.5669422C-0.042244215 8.3416395 -0.059575174 7.9871197 0.13106538 7.7419376L0.18305826 7.6830583L3.4906249 4.375L0.18305826 1.0669417C-0.042244215 0.84163928 -0.059575174 0.48711985 0.13106538 0.24193785L0.18305826 0.18305826Z" fill-rule="evenodd"/>' +
-      '</svg>',
+    '<svg width="23px" height="20px" viewBox="0 0 23 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' +
+      '<g id="Newsletter" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">' +
+        '<g id="Tutorials-pop-up-Copy-12" transform="translate(-43, -687)" fill="#FFFFFF" fill-rule="nonzero">' +
+          '<path d="M66,697 C66,697.552285 65.5522847,698 65,698 L44,698 C43.4477153,698 43,697.552285 43,697 C43,696.447715 43.4477153,696 44,696 L65,696 C65.5522847,696 66,696.447715 66,697 Z M55.6689647,687.256706 L65.6689647,696.256706 C66.1103451,696.653948 66.1103451,697.346052 65.6689647,697.743294 L55.6689647,706.743294 C55.2584547,707.112753 54.6261649,707.079475 54.2567059,706.668965 C53.8872468,706.258455 53.9205252,705.626165 54.3310353,705.256706 L63.5051529,697 L54.3310353,688.743294 C53.9205252,688.373835 53.8872468,687.741545 54.2567059,687.331035 C54.6261649,686.920525 55.2584547,686.887247 55.6689647,687.256706 Z" id="Combined-Shape"></path>' +
+        '</g>' +
+      '</g>' +
+    '</svg>',
   );
 
 const defaultFields = [
@@ -96,11 +100,11 @@ const schema = {
         title: 'Button Label',
         display: { type: 'text-input' },
       },
-      buttonContent: {
+      buttonIcon: {
         type: 'object',
         scope: 'common',
         title: 'Button Icon',
-        display: { type: 'button-content-switch' },
+        display: { type: 'button-icon-switch' },
         properties: {
           mode: {
             type: 'string',
@@ -112,6 +116,14 @@ const schema = {
             display: { type: 'settings-image-input' },
           },
         },
+      },
+      iconMaxWidth: {
+        type: 'number',
+        scope: 'common',
+        title: 'Icon Max Width',
+        display: { type:'full-width-input' },
+        min: 0,
+        max: 1,
       },
       fontFamily: {
         type: 'string',
@@ -329,7 +341,7 @@ const schema = {
       fields: defaultFields,
       fieldsToShow: 1,
       buttonLabel: 'Subscribe',
-      buttonContent: {
+      buttonIcon: {
         mode: 'Off',
         icon: onelinerDefaultSubmitIconUrl,
       },
@@ -386,6 +398,7 @@ const schema = {
     layoutDefaults: {
       m: {
         minHeight: 0.1,
+        iconMaxWidth: 0.1,
         stroke: 0,
         corners: 0,
         buttonPadding: { top: 0.02, right: 0.04, bottom: 0.02, left: 0.04 },
@@ -399,6 +412,7 @@ const schema = {
       },
       d: {
         minHeight: 0.028,
+        iconMaxWidth: 0.028,
         stroke: 0,
         corners: 0,
         buttonPadding: { right: 0.0175, left: 0.0175, top: 0.005, bottom: 0.004,},
@@ -417,28 +431,32 @@ const schema = {
         then: { name: 'properties.strokeColor.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'On' },
+        if: { name: 'buttonIcon.mode', value: 'On' },
         then: { name: 'properties.buttonFontSettings.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'On' },
+        if: { name: 'buttonIcon.mode', value: 'On' },
         then: { name: 'properties.buttonFontSize.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'On' },
+        if: { name: 'buttonIcon.mode', value: 'On' },
         then: { name: 'properties.buttonLineHeight.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'On' },
+        if: { name: 'buttonIcon.mode', value: 'On' },
         then: { name: 'properties.buttonLetterSpacing.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'On' },
+        if: { name: 'buttonIcon.mode', value: 'On' },
         then: { name: 'properties.buttonWordSpacing.display.visible', value: false },
       },
       {
-        if: { name: 'buttonContent.mode', value: 'On' },
+        if: { name: 'buttonIcon.mode', value: 'On' },
         then: { name: 'properties.buttonTextAppearance.display.visible', value: false },
+      },
+      {
+        if: { name: 'buttonIcon.mode', value: 'Off' },
+        then: { name: 'properties.iconMaxWidth.display.visible', value: false },
       },
     ],
   },
@@ -452,7 +470,7 @@ const schema = {
         { type: 'row', items: ['__componentName__', 'fieldsToShow'] },
         {type: 'row', items: ['minHeight', 'corners']},
         {type: 'row', items: [
-          {type: 'group', title: '', items: ['stroke', 'buttonContent']},
+          {type: 'group', title: '', items: ['stroke', 'buttonIcon']},
           {
           type: 'switcher',
           title: 'Padding',
@@ -462,6 +480,7 @@ const schema = {
           },
         },
       ]},
+      'iconMaxWidth'
       ],
     },
     {
@@ -524,11 +543,15 @@ export const OnelinerFormComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/onelinerImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/onelinerImg.jpg',
   },
   defaultSize: {
     width: 400,
     height: 60,
+  },
+  assetsPaths: {
+    content: [],
+    parameters: [{ path: 'buttonIcon.icon' }]
   },
   schema,
   sourceCode: onelinerFormSourceRaw,

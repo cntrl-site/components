@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
@@ -214,7 +214,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
   const { prefix: P } = useScopedStyles();
   const {
     fields = [{ name: 'email', type: 'email', placeholder: 'Your email' }],
-    buttonContent,
+    buttonIcon,
     buttonLabel,
     fieldsToShow = 1,
     fontFamily,
@@ -236,6 +236,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     statusLetterSpacing,
     statusWordSpacing,
     statusTextAppearance,
+    iconMaxWidth,
     minHeight,
     corners,
     stroke,
@@ -257,9 +258,19 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
     : activeEvent === 'error' ? 'error'
     : status;
   const displayError = activeEvent === 'error' ? errorMessageText : errorMessage;
-  const displayValues = activeEvent === 'filled'
-    ? Object.fromEntries(visibleFields.map((f) => [f.name, 'Filled']))
-    : values;
+  const isFilledPreview = activeEvent === 'filled';
+  const displayValues = useMemo(() => {
+    if (!isFilledPreview) return values;
+
+    let next: Record<string, string> | null = null;
+    for (const f of visibleFields) {
+      const current = values[f.name] ?? '';
+      if (current.trim().length > 0) continue;
+      next = next ?? { ...values };
+      next[f.name] = 'Filled';
+    }
+    return next ?? values;
+  }, [isFilledPreview, values, visibleFields]);
   const validationErrorMessage = displayStatus === 'error'
     ? getFormFieldValidationError(visibleFields, displayValues)
     : null;
@@ -271,8 +282,8 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
 
   const submitUrl = metadata?.submitUrl as string | undefined;
   const labelText = buttonLabel ?? '';
-  const iconSrc = buttonContent?.icon ?? '';
-  const useIconButton = buttonContent?.mode === 'On';
+  const iconSrc = buttonIcon?.icon ?? '';
+  const useIconButton = buttonIcon?.mode === 'On';
   const submitAriaLabel = labelText || 'Submit';
 
   const resolvedInputTextStyle: TextStyles = {
@@ -439,6 +450,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
                     <SvgImage
                       url={iconSrc}
                       className={`${P}-submitBtnIcon`}
+                      style={{ maxWidth: scalingValue(iconMaxWidth ?? 0, isEditor) }}
                       fill={`var(--${P}-button-text-color)`}
                       hoverFill={`var(--${P}-button-text-color)`}
                     />
@@ -488,7 +500,7 @@ type OnelinerColorKeys =
 
 type StateColorOverrides = Partial<Record<OnelinerColorKeys, string>>;
 
-export type OnelinerFormButtonContent = {
+export type OnelinerFormButtonIcon = {
   mode?: 'On' | 'Off';
   icon?: string | null;
 };
@@ -497,7 +509,8 @@ export type OnelinerFormSettings = {
   fields: FieldConfig[];
   fieldsToShow: number;
   buttonLabel?: string | null;
-  buttonContent?: OnelinerFormButtonContent | null;
+  buttonIcon?: OnelinerFormButtonIcon | null;
+  iconMaxWidth?: number;
   fontFamily?: string;
   inputFontSettings?: { fontWeight: number; fontStyle: string };
   inputFontSize?: number;

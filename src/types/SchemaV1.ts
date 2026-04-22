@@ -40,12 +40,6 @@ export type LayoutSwitcher = {
   options: Record<string, LayoutItem[]>;
 };
 
-export type LayoutAccordion = {
-  type: 'accordion';
-  title: string;
-  options: Record<string, LayoutItem[]>;
-};
-
 export type LayoutPaletteBookmark = {
   type: 'palette-bookmark';
   items: string[];
@@ -56,7 +50,6 @@ export type LayoutItem =
   | LayoutRow
   | LayoutGroup
   | LayoutSwitcher
-  | LayoutAccordion
   | LayoutPaletteBookmark;
 
 export type SchemaDisplayRule = {

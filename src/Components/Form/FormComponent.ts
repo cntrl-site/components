@@ -128,7 +128,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Gap',
-        display: { type: 'range-control' },
+        display: { type: 'range-control', enabled: true },
         min: 0,
         max: 100,
       },
@@ -156,7 +156,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control' },
+        display: { type: 'range-control', enabled: true },
         min: 0,
         max: 100,
       },
@@ -172,7 +172,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control' },
+        display: { type: 'range-control', enabled: true },
         min: 0,
         max: 100,
       },
@@ -534,11 +534,11 @@ const schema = {
       },
       {
         if: { name: 'type', value: 'C' },
-        then: { name: 'properties.buttonCorners.display.visible', value: false },
+        then: { name: 'properties.buttonCorners.display.enabled', value: false },
       },
       {
         if: { name: 'type', value: 'C' },
-        then: { name: 'properties.inputCorners.display.visible', value: false },
+        then: { name: 'properties.inputCorners.display.enabled', value: false },
       },
       {
         if: { name: 'buttonStroke', value: 0 },
@@ -548,6 +548,10 @@ const schema = {
         if: { name: 'inputStroke', value: 0 },
         then: { name: 'properties.inputBorderColor.display.visible', value: false },
       },
+      {
+        if: { name: 'fieldsToShow', value: 1 },
+        then: { name: 'properties.fieldsGap.display.enabled', value: false },
+      }
     ],
   },
   panels: [
@@ -661,7 +665,7 @@ export const FormComponent = {
   name: 'Newsletter Stacked',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/formImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/formImg.jpg',
   },
   version: 1,
   defaultSize: {
