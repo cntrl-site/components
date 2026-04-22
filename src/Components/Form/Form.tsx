@@ -229,6 +229,13 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
   };
   const inputTypographyCss = omitTextColors(textStylesToCss(resolvedInputTextStyle, isEditor));
   const strokeForInput = scalingValue(inputStroke ?? 0, isEditor);
+  const inputBaseHeight = scalingValue(
+    (inputLineHeight ?? inputFontSize ?? 0.01) +
+      (inputPadding?.top ?? 0) +
+      (inputPadding?.bottom ?? 0) +
+      (type === 'C' ? (inputStroke ?? 0) : (inputStroke ?? 0) * 2),
+    isEditor,
+  );
   const inputFieldCss = {
     ...inputTypographyCss,
     borderStyle: 'solid',
@@ -245,6 +252,8 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
     paddingRight: scalingValue(inputPadding?.right ?? 0, isEditor),
     paddingBottom: scalingValue(inputPadding?.bottom ?? 0, isEditor),
     paddingLeft: scalingValue(inputPadding?.left ?? 0, isEditor),
+    height: inputBaseHeight,
+    minHeight: inputBaseHeight,
   } as React.CSSProperties;
 
   const resolvedButtonTextStyle: TextStyles = {

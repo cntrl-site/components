@@ -156,7 +156,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control' },
+        display: { type: 'range-control', enabled: true },
         min: 0,
         max: 100,
       },
@@ -172,7 +172,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control' },
+        display: { type: 'range-control', enabled: true },
         min: 0,
         max: 100,
       },
@@ -534,11 +534,11 @@ const schema: ComponentSchemaV1 = {
       },
       {
         if: { name: 'type', value: 'C' },
-        then: { name: 'properties.buttonCorners.display.visible', value: false },
+        then: { name: 'properties.buttonCorners.display.enabled', value: false },
       },
       {
         if: { name: 'type', value: 'C' },
-        then: { name: 'properties.inputCorners.display.visible', value: false },
+        then: { name: 'properties.inputCorners.display.enabled', value: false },
       },
       {
         if: { name: 'buttonStroke', value: 0 },
