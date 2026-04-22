@@ -128,7 +128,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Gap',
-        display: { type: 'range-control' },
+        display: { type: 'range-control', enabled: true },
         min: 0,
         max: 100,
       },
@@ -550,7 +550,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         if: { name: 'fieldsToShow', value: 1 },
-        then: { name: 'properties.fieldsGap.display.visible', value: false },
+        then: { name: 'properties.fieldsGap.display.enabled', value: false },
       }
     ],
   },
