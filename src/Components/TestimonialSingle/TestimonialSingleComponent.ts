@@ -788,10 +788,10 @@ const schema: ComponentSchemaV1 = {
   },
 };
 
-export const TestimonialsComponent = {
+export const TestimonialSingleComponent = {
   element: Testimonials,
-  id: 'testimonials',
-  name: 'Testimonials',
+  id: 'testimonials single',
+  name: 'Testimonial Single',
   version: 1,
   preview: {
     type: 'image' as const,

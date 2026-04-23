@@ -6,7 +6,6 @@ import classes from './Testimonials.module.scss';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
-import { Arrows } from '../TestimonialGrid/Arrows';
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
@@ -254,13 +253,8 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
           </Splide>
         </div>
         {settings.controls?.isActive === 'visible' && settings.autoplay === 'off' && (
-          <Arrows
-            isRtl={isRtl}
-            step={1}
-            controls={settings.controls}
-            isEditor={isEditor ?? false}
-            sliderRef={sliderRef}
-          />
+          // TODO: Add controls
+          <div>Controls</div>
         )}
       </div>
     </>

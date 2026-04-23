@@ -1,5 +1,12 @@
 @use '../mixins.scss' as *;
 
+.container {
+  overflow-x: clip; 
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
 .gradientCorners {
   width: 100%;
   position: absolute;
