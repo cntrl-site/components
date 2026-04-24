@@ -12,6 +12,31 @@ type TestimonialsProps = {
   isEditor?: boolean;
 } & CommonComponentProps;
 
+type CaptionStyleFromFlatSettings = {
+  fontSettings: {
+    fontFamily: string;
+    fontWeight: number;
+    fontStyle: string;
+  };
+  widthSettings: {
+    width: number;
+    sizing: 'auto' | 'manual';
+  };
+  letterSpacing: number;
+  textAlign: 'left' | 'center' | 'right';
+  wordSpacing: number;
+  fontSizeLineHeight: {
+    fontSize: number;
+    lineHeight: number;
+  };
+  textAppearance: {
+    textTransform: 'none' | 'uppercase' | 'lowercase';
+    textDecoration: 'none' | 'underline';
+    fontVariant: 'normal' | 'small-caps';
+  };
+  color: string;
+};
+
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
 
 const parseSpeed = (speed: unknown): number => {
@@ -46,6 +71,63 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
   const animRef = useRef<Animation | null>(null);
   const lastDirectionRef = useRef(direction);
   const hoverPauseEnabled = isAutoplay && pause === 'hover';
+
+  const resolveCaptionStyle = (kind: 'text' | 'caption'): CaptionStyles | undefined => {
+    const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
+    if (fromNested) return fromNested;
+
+    const prefix = kind === 'text' ? 'text' : 'caption';
+    const fontFamily = (settings as any)?.[`${prefix}FontFamily`];
+    const fontSettings = (settings as any)?.[`${prefix}FontSettings`];
+    const letterSpacing = (settings as any)?.[`${prefix}LetterSpacing`];
+    const wordSpacing = (settings as any)?.[`${prefix}WordSpacing`];
+    const textAlign = (settings as any)?.[`${prefix}TextAlign`];
+    const textAppearance = (settings as any)?.[`${prefix}TextAppearance`];
+    const color =
+      (settings as any)?.[`${prefix}Color`] ??
+      (kind === 'text' ? (settings as any)?.imageCaptionColor : undefined);
+    const fontSize = (settings as any)?.[`${prefix}FontSize`];
+    const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
+
+    const hasAnyFlat =
+      typeof fontFamily === "string" ||
+      !!fontSettings ||
+      typeof letterSpacing === "number" ||
+      typeof wordSpacing === "number" ||
+      typeof textAlign === "string" ||
+      !!textAppearance ||
+      typeof color === "string" ||
+      typeof fontSize === "number" ||
+      typeof lineHeight === "number";
+    if (!hasAnyFlat) return undefined;
+
+    const flat: CaptionStyleFromFlatSettings = {
+      widthSettings: { width: 0.13, sizing: 'manual' },
+      fontSettings: {
+        fontFamily: typeof fontFamily === 'string' ? fontFamily : 'Arial',
+        fontWeight: typeof fontSettings?.fontWeight === 'number' ? fontSettings.fontWeight : 400,
+        fontStyle: typeof fontSettings?.fontStyle === 'string' ? fontSettings.fontStyle : 'normal',
+      },
+      letterSpacing: typeof letterSpacing === 'number' ? letterSpacing : 0,
+      wordSpacing: typeof wordSpacing === 'number' ? wordSpacing : 0,
+      textAlign: (textAlign === 'left' || textAlign === 'center' || textAlign === 'right') ? textAlign : 'left',
+      fontSizeLineHeight: {
+        fontSize: typeof fontSize === 'number' ? fontSize : 0.01,
+        lineHeight: typeof lineHeight === 'number' ? lineHeight : 0.01,
+      },
+      textAppearance: {
+        textTransform: textAppearance?.textTransform ?? 'none',
+        textDecoration: textAppearance?.textDecoration ?? 'none',
+        fontVariant: textAppearance?.fontVariant ?? 'normal',
+      },
+      color: typeof color === 'string' ? color : '#000000',
+    };
+
+    return flat as CaptionStyles;
+  };
+
+  const textStyle = resolveCaptionStyle('text');
+  const captionStyle = resolveCaptionStyle('caption');
 
   const copies = useMemo(() => {
     if (!isAutoplay || items.length === 0) return 1;
@@ -196,8 +278,8 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
             />
           </div>
         </div>
-        {renderText(settings.styles.imageCaption, item.imageCaption, 'imageCaption', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
-        {renderText(settings.styles.caption, item.caption, 'caption', 'elements.caption.margin.top', 'caption', captionMarginTop)}
+        {textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
+        {captionStyle && renderText(captionStyle, item.caption, 'caption', 'elements.caption.margin.top', 'caption', captionMarginTop)}
       </div>
     </div>
   );
@@ -256,7 +338,7 @@ export type TestimonialsItem = {
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
-  imageCaption: any[];
+  text: any[];
   caption: any[];
 };
 
@@ -314,6 +396,6 @@ type CaptionStyles = {
 };
 
 type TestimonialsStyles = {
-  imageCaption: CaptionStyles;
+  text: CaptionStyles;
   caption: CaptionStyles;
 };

@@ -1,6 +1,29 @@
-import { Testimonials } from './TestimonialSingle';
+import { TestimonialSingle } from './TestimonialSingle';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import testimonialSingleSourceRaw from './TestimonialSingle.tsx?raw';
+
+const testimonialCaptionTextStyleProperties = {
+  fontSettings: {
+    type: 'object' as const,
+    scope: 'common' as const,
+    display: { type: 'font-settings' },
+    properties: {
+      fontWeight: { type: 'number' as const, scope: 'common' as const },
+      fontStyle: { type: 'string' as const, scope: 'common' as const },
+    },
+  }
+};
+
+const defaultCaptionStyleValues = {
+  widthSettings: { width: 0.13, sizing: 'manual' as const },
+  fontSettings: { fontFamily: 'Arial', fontWeight: 400, fontStyle: 'normal' },
+  fontSizeLineHeight: { fontSize: 0.01, lineHeight: 0.01 },
+  letterSpacing: 0,
+  wordSpacing: 0,
+  textAlign: 'left' as const,
+  textAppearance: { textTransform: 'none' as const, textDecoration: 'none' as const, fontVariant: 'normal' as const },
+  color: '#000000',
+};
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -8,671 +31,308 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto manual',
     properties: {
-      general: {
-        type: 'object',
+      autoplay: {
+        type: 'string',
         scope: 'common',
-        properties: {
-          autoplay: {
-            type: 'string',
-            scope: 'common',
-            title: 'Autoplay',
-            display: { type: 'ratio-group', direction: 'horizontal' },
-            enum: ['on', 'off'],
-          },
-          move: {
-            type: 'string',
-            scope: 'common',
-            title: 'Move',
-            display: { type: 'ratio-group', direction: 'horizontal' },
-            enum: ['one', 'view'],
-          },
-          speed: {
-            type: ['string', 'null'] as const,
-            scope: 'common',
-            title: 'Speed',
-            display: { type: 'step-selector' },
-            enum: ['1s', '2s', '3s', '4s', '5s', '6s', '7s', '8s', '9s', '10s'],
-          },
-          direction: {
-            type: 'string',
-            scope: 'common',
-            display: { type: 'ratio-group' },
-            enum: ['left', 'right'],
-          },
-          pause: {
-            title: 'Pause on',
-            type: 'string',
-            scope: 'common',
-            display: { type: 'ratio-group' },
-            enum: ['hover', 'click', 'off'],
-          },
-          controls: {
-            title: 'controls',
-            type: 'object',
-            scope: 'common',
-            properties: {
-              isActive: {
-                type: 'string',
-                scope: 'common',
-                title: 'Controls',
-                display: { type: 'ratio-group', direction: 'vertical' },
-                enum: ['visible', 'hidden'],
-              },
-              arrowsImgUrl: {
-                type: ['string', 'null'] as const,
-                scope: 'common',
-                display: { type: 'settings-image-input' },
-              },
-              align: {
-                display: { type: 'align-grid', direction: 'horizontal' },
-                scope: 'common',
-                type: 'string',
-                enum: [
-                  'top-left',
-                  'top-center',
-                  'top-right',
-                  'middle-left',
-                  'middle-center',
-                  'middle-right',
-                  'bottom-left',
-                  'bottom-center',
-                  'bottom-right',
-                ],
-              },
-              gap: {
-                type: 'number',
-                scope: 'layout',
-                title: 'Gap',
-                display: { type: 'numeric-input' },
-              },
-              scale: {
-                type: 'number',
-                scope: 'layout',
-                title: 'scale',
-                min: 50,
-                max: 600,
-                display: { type: 'range-control' },
-              },
-              color: {
-                title: 'color',
-                type: 'string',
-                scope: 'common',
-                display: { type: 'settings-color-picker', format: 'single' },
-              },
-              hover: {
-                title: 'hover',
-                type: 'string',
-                scope: 'common',
-                display: { type: 'settings-color-picker', format: 'single' },
-              },
-            },
-          },
-          gradientCorners: {
-            type: 'object',
-            scope: 'common',
-            title: '',
-            display: { type: 'group' },
-            properties: {
-              active: {
-                type: 'string',
-                scope: 'common',
-                title: 'Corners',
-                display: { type: 'ratio-group', direction: 'vertical' },
-                enum: ['gradient', 'none'],
-              },
-              color: {
-                type: 'string',
-                scope: 'common',
-                title: 'Gradient',
-                display: { type: 'settings-color-picker', format: 'single' },
-              },
-            },
-          },
-        },
+        title: 'Autoplay',
+        display: { type: 'switch-toggle' },
+        enum: ['on', 'off'],
       },
-      card: {
-        type: 'object',
-        scope: 'common',
-        properties: {
-          dimensions: {
-            type: 'object',
-            scope: 'common',
-            title: 'Size',
-            display: { type: 'group' },
-            properties: {
-              width: {
-                type: 'number',
-                scope: 'layout',
-                display: { type: 'numeric-input', visible: true },
-              },
-              height: {
-                type: 'number',
-                scope: 'layout',
-                title: 'Min Height',
-                display: { type: 'numeric-input', visible: true },
-              },
-            },
-          },
-          gap: {
-            type: 'number',
-            scope: 'layout',
-            title: 'Gap',
-            min: 0,
-            display: { type: 'numeric-input' },
-          },
-          corner: {
-            type: 'number',
-            scope: 'layout',
-            title: 'Corners',
-            min: 0,
-            display: { type: 'numeric-input' },
-          },
-          borders: {
-            type: 'object',
-            scope: 'common',
-            title: 'Borders',
-            display: { type: 'group' },
-            properties: {
-              width: {
-                type: 'number',
-                scope: 'layout',
-                min: 0,
-                display: { type: 'numeric-input' },
-              },
-              color: {
-                type: 'string',
-                scope: 'common',
-                display: { type: 'settings-color-picker', format: 'single' },
-              },
-            },
-          },
-          bgColor: {
-            title: 'BG color',
-            type: 'string',
-            scope: 'common',
-            display: { type: 'settings-color-picker', format: 'single' },
-          },
-          padding: {
-            type: 'object',
-            scope: 'layout',
-            title: 'Padding',
-            display: { type: 'padding-controls' },
-          },
-          dropShadow: {
-            type: 'object',
-            scope: 'common',
-            title: 'Shadow',
-            display: { type: 'group' },
-            properties: {
-              active: {
-                type: 'string',
-                scope: 'common',
-                title: 'active',
-                display: { type: 'ratio-group', direction: 'horizontal' },
-                enum: ['on', 'off'],
-              },
-              right: {
-                type: 'number',
-                scope: 'layout',
-                display: { type: 'numeric-input' },
-              },
-              down: {
-                type: 'number',
-                scope: 'layout',
-                display: { type: 'numeric-input' },
-              },
-              blur: {
-                type: 'number',
-                scope: 'layout',
-                display: { type: 'numeric-input' },
-              },
-              spread: {
-                type: 'number',
-                scope: 'layout',
-                title: 'Spread',
-                display: { type: 'numeric-input' },
-              },
-              color: {
-                title: 'color',
-                type: 'string',
-                scope: 'common',
-                display: { type: 'settings-color-picker', format: 'single' },
-              },
-            },
-          },
-        },
+      speed: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Speed',
+        display: { type: 'speed-control' },
+        min: 1,
+        max: 10,
       },
-      elements: {
-        title: 'elements',
-        type: 'object',
-        scope: 'common',
-        properties: {
-          elements: {
-            type: 'object',
-            scope: 'common',
-            display: { type: 'order-selector' },
-            properties: {
-              order: {
-                type: 'array',
-                scope: 'common',
-                items: { type: 'string', enum: ['text', 'icon', 'caption'] },
-              },
-              active: {
-                type: 'string',
-                scope: 'common',
-                enum: ['text', 'icon', 'caption'],
-              },
-            },
-          },
-          text: {
-            type: 'object',
-            scope: 'common',
-            display: { type: 'group' },
-            properties: {
-              minHeight: {
-                type: 'number',
-                scope: 'layout',
-                title: 'Min Height',
-                display: { type: 'numeric-input' },
-              },
-              margin: {
-                type: 'object',
-                scope: 'layout',
-                title: 'Margin',
-                display: { type: 'group', visible: false },
-                properties: {
-                  top: {
-                    type: 'number',
-                    scope: 'layout',
-                    title: 'Top',
-                    min: 0,
-                    display: { type: 'numeric-input', visible: false },
-                  },
-                },
-              },
-            },
-          },
-          icon: {
-            type: 'object',
-            scope: 'common',
-            display: { type: 'group' },
-            properties: {
-              margin: {
-                type: 'object',
-                scope: 'layout',
-                title: 'Margin',
-                display: { type: 'group', visible: false },
-                properties: {
-                  top: {
-                    type: 'number',
-                    scope: 'layout',
-                    title: 'Top',
-                    min: 0,
-                    display: { type: 'numeric-input', visible: false },
-                  },
-                },
-              },
-              align: {
-                type: 'string',
-                scope: 'common',
-                title: 'Align',
-                enum: ['left', 'center', 'right'],
-                display: { type: 'align-group', direction: 'vertical' },
-              },
-              scale: {
-                type: 'number',
-                scope: 'layout',
-                title: 'scale',
-                min: 50,
-                max: 600,
-                display: { type: 'range-control', visible: false },
-              },
-            },
-          },
-          caption: {
-            type: 'object',
-            scope: 'common',
-            display: { type: 'group' },
-            properties: {
-              minHeight: {
-                type: 'number',
-                scope: 'layout',
-                title: 'Min Height',
-                display: { type: 'numeric-input' },
-              },
-              margin: {
-                type: 'object',
-                scope: 'layout',
-                title: 'Margin',
-                display: { type: 'group', visible: false },
-                properties: {
-                  top: {
-                    type: 'number',
-                    scope: 'layout',
-                    title: 'Top',
-                    min: 0,
-                    display: { type: 'numeric-input', visible: false },
-                  },
-                },
-              },
-            },
-          },
-        },
+      width: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Card width',
+        min: 0,
+        max: 400,
+        display: { type: 'range-control' },
       },
-      styles: {
+      padding: {
         type: 'object',
+        scope: 'layout',
+        title: 'Padding',
+        display: { type: 'padding-controls' },
+      },
+      iconMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Icon margin top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      iconAlign: {
+        type: 'string',
         scope: 'common',
-        properties: {
-          imageCaption: {
-            type: 'object',
-            scope: 'common',
-            properties: {
-              fontSettings: {
-                type: 'object',
-                scope: 'common',
-                display: { type: 'font-settings' },
-                properties: {
-                  fontFamily: { type: 'string', scope: 'common' },
-                  fontWeight: { type: 'number', scope: 'common' },
-                  fontStyle: { type: 'string', scope: 'common' },
-                },
-              },
-              widthSettings: {
-                display: { type: 'text-width-control' },
-                type: 'object',
-                scope: 'common',
-                properties: {
-                  width: { type: 'number', scope: 'layout' },
-                  sizing: { type: 'string', scope: 'common', enum: ['auto', 'manual'] },
-                },
-              },
-              fontSizeLineHeight: {
-                type: 'object',
-                scope: 'common',
-                display: { type: 'font-size-line-height' },
-                properties: {
-                  fontSize: { type: 'number', scope: 'layout' },
-                  lineHeight: { type: 'number', scope: 'layout' },
-                },
-              },
-              letterSpacing: {
-                display: { type: 'letter-spacing-input' },
-                type: 'number',
-                scope: 'layout',
-              },
-              wordSpacing: {
-                display: { type: 'word-spacing-input' },
-                type: 'number',
-                scope: 'layout',
-              },
-              textAlign: {
-                display: { type: 'text-align-control' },
-                type: 'string',
-                scope: 'common',
-                enum: ['left', 'center', 'right'],
-              },
-              textAppearance: {
-                display: { type: 'text-appearance' },
-                type: 'object',
-                scope: 'common',
-                properties: {
-                  textTransform: { type: 'string', scope: 'common', enum: ['none', 'uppercase', 'lowercase'] },
-                  textDecoration: { type: 'string', scope: 'common', enum: ['none', 'underline'] },
-                  fontVariant: { type: 'string', scope: 'common', enum: ['normal', 'small-caps'] },
-                },
-              },
-              color: {
-                display: { type: 'style-panel-color-picker' },
-                type: 'string',
-                scope: 'common',
-              },
-            },
-          },
-          caption: {
-            type: 'object',
-            scope: 'common',
-            properties: {
-              fontSettings: {
-                type: 'object',
-                scope: 'common',
-                display: { type: 'font-settings' },
-                properties: {
-                  fontFamily: { type: 'string', scope: 'common' },
-                  fontWeight: { type: 'number', scope: 'common' },
-                  fontStyle: { type: 'string', scope: 'common' },
-                },
-              },
-              widthSettings: {
-                display: { type: 'text-width-control' },
-                type: 'object',
-                scope: 'common',
-                properties: {
-                  width: { type: 'number', scope: 'layout' },
-                  sizing: { type: 'string', scope: 'common', enum: ['auto', 'manual'] },
-                },
-              },
-              fontSizeLineHeight: {
-                type: 'object',
-                scope: 'common',
-                display: { type: 'font-size-line-height' },
-                properties: {
-                  fontSize: { type: 'number', scope: 'layout' },
-                  lineHeight: { type: 'number', scope: 'layout' },
-                },
-              },
-              letterSpacing: {
-                display: { type: 'letter-spacing-input' },
-                type: 'number',
-                scope: 'layout',
-              },
-              wordSpacing: {
-                display: { type: 'word-spacing-input' },
-                type: 'number',
-                scope: 'layout',
-              },
-              textAlign: {
-                display: { type: 'text-align-control' },
-                type: 'string',
-                scope: 'common',
-                enum: ['left', 'center', 'right'],
-              },
-              textAppearance: {
-                display: { type: 'text-appearance' },
-                type: 'object',
-                scope: 'common',
-                properties: {
-                  textTransform: { type: 'string', scope: 'common', enum: ['none', 'uppercase', 'lowercase'] },
-                  textDecoration: { type: 'string', scope: 'common', enum: ['none', 'underline'] },
-                  fontVariant: { type: 'string', scope: 'common', enum: ['normal', 'small-caps'] },
-                },
-              },
-              color: {
-                display: { type: 'style-panel-color-picker' },
-                type: 'string',
-                scope: 'common',
-              },
-            },
-          },
-        },
+        title: 'Icon align',
+        enum: ['left', 'center', 'right'],
+        display: { type: 'align-group', direction: 'vertical' },
+      },
+      iconScale: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Icon scale',
+        min: 50,
+        max: 600,
+        display: { type: 'range-control' },
+      },
+      textMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text margin top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      textMinHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text min height',
+        min: 0,
+        max: 300,
+        display: { type: 'range-control' },
+      },
+      captionMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption margin top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+
+      imageCaptionFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Text Font Family',
+        display: { type: 'font-family-select' },
+      },
+      imageCaptionFontSettings: {
+        ...testimonialCaptionTextStyleProperties.fontSettings,
+        scope: 'common',
+        title: 'Text',
+        display: { type: 'font-settings-weight' },
+      },
+      imageCaptionFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Font Size',
+        display: { type: 'font-size' },
+      },
+      imageCaptionLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Line Height',
+        display: { type: 'line-height-input' },
+      },
+      imageCaptionLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      imageCaptionWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      imageCaptionTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Text Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      imageCaptionTextAlign: {
+        display: { type: 'text-align-control' },
+        type: 'string',
+        scope: 'common',
+        title: 'Text Align',
+        enum: ['left', 'center', 'right'],
+      },
+      imageCaptionColor: {
+        display: { type: 'style-panel-color-picker' },
+        type: 'string',
+        scope: 'common',
+        title: 'Text Color',
+      },
+      captionFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Caption Font Family',
+        display: { type: 'font-family-select' },
+      },
+      captionFontSettings: {
+        ...testimonialCaptionTextStyleProperties.fontSettings,
+        scope: 'common',
+        title: 'Caption',
+        display: { type: 'font-settings-weight' },
+      },
+      captionFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Font Size',
+        display: { type: 'font-size' },
+      },
+      captionLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Line Height',
+        display: { type: 'line-height-input' },
+      },
+      captionLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      captionWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      captionTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Caption Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      captionTextAlign: {
+        display: { type: 'text-align-control' },
+        type: 'string',
+        scope: 'common',
+        title: 'Caption Align',
+        enum: ['left', 'center', 'right'],
+      },
+      captionColor: {
+        display: { type: 'style-panel-color-picker' },
+        type: 'string',
+        scope: 'common',
+        title: 'Caption Color',
       },
     },
     defaults: {
-      general: {
-        autoplay: 'off',
-        move: 'one',
-        speed: '5s',
-        direction: 'left',
-        pause: 'off',
-        controls: {
-          isActive: 'hidden',
-          arrowsImgUrl: null,
-          align: 'top-center',
-          gap: 0.02,
-          scale: 100,
-          color: '#000000',
-          hover: '#cccccc',
-        },
-        gradientCorners: {
-          active: 'none',
-          color: '#ffffff',
-        },
+      autoplay: 'off',
+      iconAlign: 'left',
+      iconScale: 100,
+
+      imageCaptionFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
+      imageCaptionFontSettings: {
+        fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
+        fontStyle: defaultCaptionStyleValues.fontSettings.fontStyle,
       },
-      card: {
-        dimensions: {
-          width: 0.15,
-          height: 0.2,
-        },
-        gap: 0.02,
-        corner: 0.005,
-        borders: {
-          width: 0.001,
-          color: '#000000',
-        },
-        bgColor: 'rgba(255, 255, 255, 0.2)',
-        padding: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
-        dropShadow: {
-          active: 'on',
-          right: 0,
-          down: 0,
-          spread: 0,
-          blur: 0,
-          color: '#000000',
-        },
+      imageCaptionLetterSpacing: defaultCaptionStyleValues.letterSpacing,
+      imageCaptionWordSpacing: defaultCaptionStyleValues.wordSpacing,
+      imageCaptionTextAlign: defaultCaptionStyleValues.textAlign,
+      imageCaptionTextAppearance: defaultCaptionStyleValues.textAppearance,
+      imageCaptionColor: defaultCaptionStyleValues.color,
+
+      captionFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
+      captionFontSettings: {
+        fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
+        fontStyle: defaultCaptionStyleValues.fontSettings.fontStyle,
       },
-      elements: {
-        elements: {
-          order: ['text', 'icon', 'caption'],
-          active: 'text',
-        },
-        text: {
-          minHeight: 0.01,
-          margin: { top: 0 },
-        },
-        icon: {
-          margin: { top: 0 },
-          scale: 100,
-          align: 'left',
-        },
-        caption: {
-          minHeight: 0.01,
-          margin: { top: 0 },
-        },
+      captionLetterSpacing: defaultCaptionStyleValues.letterSpacing,
+      captionWordSpacing: defaultCaptionStyleValues.wordSpacing,
+      captionTextAlign: defaultCaptionStyleValues.textAlign,
+      captionTextAppearance: defaultCaptionStyleValues.textAppearance,
+      captionColor: defaultCaptionStyleValues.color,
+    },
+    layoutDefaults: {
+      m: {
+        speed: 5,
+        width: 0.15,
+        height: 0.2,
+        corners: 0.005,
+        stroke: 0.001,
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        iconMarginTop: 0,
+        textMarginTop: 0,
+        textMinHeight: 0.01,
+        captionMarginTop: 0,
       },
-      styles: {
-        imageCaption: {
-          widthSettings: { width: 0.13, sizing: 'manual' },
-          fontSettings: { fontFamily: 'Arial', fontWeight: 400, fontStyle: 'normal' },
-          fontSizeLineHeight: { fontSize: 0.01, lineHeight: 0.01 },
-          letterSpacing: 0,
-          wordSpacing: 0,
-          textAlign: 'left',
-          textAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
-          color: '#000000',
-        },
-        caption: {
-          widthSettings: { width: 0.13, sizing: 'manual' },
-          fontSettings: { fontFamily: 'Arial', fontWeight: 400, fontStyle: 'normal' },
-          fontSizeLineHeight: { fontSize: 0.01, lineHeight: 0.01 },
-          letterSpacing: 0,
-          wordSpacing: 0,
-          textAlign: 'left',
-          textAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
-          color: '#000000',
-        },
+      d: {
+        speed: 5,
+        width: 0.15,
+        height: 0.2,
+        corners: 0.005,
+        stroke: 0.001,
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        iconMarginTop: 0,
+        textMarginTop: 0,
+        textMinHeight: 0.01,
+        captionMarginTop: 0,
       },
     },
-    displayRules: [
-      {
-        if: { name: 'general.autoplay', value: 'off' },
-        then: { name: 'properties.general.properties.move.display.visible', value: true },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.move.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.direction.display.visible', value: true },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.pause.display.visible', value: true },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'off' },
-        then: { name: 'properties.general.properties.direction.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'off' },
-        then: { name: 'properties.general.properties.pause.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.controls.properties.isActive.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.controls.properties.arrowsImgUrl.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.controls.properties.scale.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.controls.properties.color.display.visible', value: false },
-      },
-      {
-        if: { name: 'general.autoplay', value: 'on' },
-        then: { name: 'properties.general.properties.controls.properties.hover.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'text' },
-        then: { name: 'properties.elements.properties.text.properties.minHeight.display.visible', value: true },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'text' },
-        then: { name: 'properties.elements.properties.caption.properties.minHeight.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'caption' },
-        then: { name: 'properties.elements.properties.caption.properties.minHeight.display.visible', value: true },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'caption' },
-        then: { name: 'properties.elements.properties.text.properties.minHeight.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'caption' },
-        then: { name: 'properties.elements.properties.icon.properties.align.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'text' },
-        then: { name: 'properties.elements.properties.icon.properties.align.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'icon' },
-        then: { name: 'properties.elements.properties.text.properties.minHeight.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'icon' },
-        then: { name: 'properties.elements.properties.caption.properties.minHeight.display.visible', value: false },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'icon' },
-        then: { name: 'properties.elements.properties.icon.properties.scale.display.visible', value: true },
-      },
-      {
-        if: { name: 'elements.elements.active', value: 'icon' },
-        then: { name: 'properties.elements.properties.icon.properties.align.display.visible', value: true },
-      },
+    displayRules: [],
+    layout: [
+      '__componentName__',
+      'autoplay',
+      'speed',
+      'width',
+      'padding',
+      'iconMarginTop',
+      'iconAlign',
+      'iconScale',
+      'textMarginTop',
+      'textMinHeight',
+      'captionMarginTop',
     ],
-    layout: ['__componentName__', 'general', 'card', 'elements', 'styles'],
+  },
+  panels: [
+    {
+      id: 'general',
+      icon: 'cursor',
+      title: 'General',
+      tooltip: 'General Settings',
+      layout: [
+        { type: 'row', items: ['__componentName__', 'autoplay'] },
+        { type: 'row', items: ['speed'] },
+        { type: 'row', items: [{ type: 'group', title: '', items: ['width'] }, { type: 'group', title: '', items: ['padding'] }] },
+        { type: 'row', items: [{ type: 'group', title: '', items: ['iconMarginTop', 'iconAlign', 'iconScale'] }] },
+        { type: 'row', items: [{ type: 'group', title: '', items: ['textMarginTop', 'textMinHeight', 'captionMarginTop'] }] },
+      ],
+    },
+    {
+      id: 'typeStyle',
+      icon: 'text-icon',
+      title: 'Type Style',
+      tooltip: 'Typography',
+      layout: [
+        {
+          type: 'group',
+          title: '',
+          items: [
+            { type: 'row', items: ['imageCaptionFontFamily', 'imageCaptionFontSettings'] },
+            { type: 'row', items: ['imageCaptionFontSize', 'imageCaptionLineHeight', 'imageCaptionLetterSpacing', 'imageCaptionWordSpacing'] },
+            'imageCaptionTextAppearance',
+            { type: 'row', items: ['imageCaptionTextAlign', 'imageCaptionColor'] },
+          ],
+        },
+        {
+          type: 'group',
+          title: '',
+          items: [
+            { type: 'row', items: ['captionFontFamily', 'captionFontSettings'] },
+            { type: 'row', items: ['captionFontSize', 'captionLineHeight', 'captionLetterSpacing', 'captionWordSpacing'] },
+            'captionTextAppearance',
+            { type: 'row', items: ['captionTextAlign', 'captionColor'] },
+          ],
+        },
+      ],
+    },
+  ],
+  paletteBookmark: {
+    items: ['imageCaptionColor', 'captionColor'],
+    panelIds: ['general', 'typeStyle'],
   },
   content: {
     properties: {
@@ -708,12 +368,12 @@ const schema: ComponentSchemaV1 = {
               },
             },
             imageCaption: {
-              type: 'object',
+              type: 'array',
               title: 'Text',
               display: { type: 'rich-text', minWidth: 300, maxWidth: 550 },
             },
             caption: {
-              type: 'object',
+              type: 'array',
               title: 'Caption',
               display: { type: 'rich-text', minWidth: 300, maxWidth: 550 },
             },
@@ -789,8 +449,8 @@ const schema: ComponentSchemaV1 = {
 };
 
 export const TestimonialSingleComponent = {
-  element: Testimonials,
-  id: 'testimonials single',
+  element: TestimonialSingle,
+  id: 'testimonial single',
   name: 'Testimonial Single',
   version: 1,
   preview: {
@@ -803,5 +463,13 @@ export const TestimonialSingleComponent = {
   },
   schema,
   sourceCode: testimonialSingleSourceRaw,
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }, { path: 'styles.caption.fontSettings' }]
+  },
 };
 

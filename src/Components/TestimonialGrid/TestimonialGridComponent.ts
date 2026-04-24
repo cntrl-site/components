@@ -14,17 +14,6 @@ const testimonialCaptionTextStyleProperties = {
   }
 };
 
-const defaultCaptionStyleValues = {
-  widthSettings: { width: 0.13, sizing: 'manual' as const },
-  fontSettings: { fontFamily: 'Arial', fontWeight: 400, fontStyle: 'normal' },
-  fontSizeLineHeight: { fontSize: 0.01, lineHeight: 0.01 },
-  letterSpacing: 0,
-  wordSpacing: 0,
-  textAlign: 'left' as const,
-  textAppearance: { textTransform: 'none' as const, textDecoration: 'none' as const, fontVariant: 'normal' as const },
-  color: '#000000',
-};
-
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
@@ -39,7 +28,7 @@ const schema: ComponentSchemaV1 = {
         enum: ['on', 'off'],
       },
       speed: {
-        type: 'string',
+        type: 'number',
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
@@ -132,6 +121,18 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 200,
         display: { type: 'range-control' },
+      },
+      imageCaptionColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Text color',
+        display: { type: 'palette-color-picker' },
+      },
+      captionColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Caption color',
+        display: { type: 'palette-color-picker' },
       },
       textMarginTop: {
         type: 'number',
@@ -248,7 +249,9 @@ const schema: ComponentSchemaV1 = {
       pause: 'off',
       strokeColor: '#000000',
       bgColor: 'rgba(255, 255, 255, 0.2)',
-      captionfontFamily: 'Arial',
+      imageCaptionColor: '#000000',
+      captionColor: '#000000',
+      captionFontFamily: 'Arial',
       captionFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -260,7 +263,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      textfontFamily: 'Arial',
+      textFontFamily: 'Arial',
       textFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -350,7 +353,7 @@ const schema: ComponentSchemaV1 = {
         {
           type: 'group',
           title: '',
-          items: [ 'imageCaption', {type: 'row', items: ['imageCaptionFontSize', 'imageCaptionLineHeight', 'imageCaptionLetterSpacing', 'imageCaptionWordSpacing']}, 'imageCaptionTextAppearance'],
+          items: [ 'text', {type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing']}, 'textTextAppearance'],
         },
         {
           type: 'group',
@@ -361,7 +364,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['strokeColor', 'bgColor'],
+    items: ['strokeColor', 'bgColor', 'imageCaptionColor', 'captionColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
@@ -397,7 +400,7 @@ const schema: ComponentSchemaV1 = {
                 objectFit: { type: 'string', enum: ['cover', 'contain'] },
               },
             },
-            imageCaption: {
+            text: {
               type: 'array',
               title: 'Text',
               display: { type: 'rich-text', minWidth: 300, maxWidth: 550 },
@@ -420,7 +423,7 @@ const schema: ComponentSchemaV1 = {
             url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
             name: '',
           },
-          imageCaption: [
+          text: [
             {
               type: 'paragraph',
               children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }],
@@ -440,7 +443,7 @@ const schema: ComponentSchemaV1 = {
             url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
             name: '',
           },
-          imageCaption: [
+          text: [
             {
               type: 'paragraph',
               children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }],
@@ -460,7 +463,7 @@ const schema: ComponentSchemaV1 = {
             url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
             name: '',
           },
-          imageCaption: [
+          text: [
             {
               type: 'paragraph',
               children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }],
@@ -499,7 +502,7 @@ export const TestimonialGridComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
+    parameters: [{ path: 'styles.text.fontSettings' }]
   },
 };
 
