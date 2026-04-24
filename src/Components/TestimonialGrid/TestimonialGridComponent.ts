@@ -8,60 +8,10 @@ const testimonialCaptionTextStyleProperties = {
     scope: 'common' as const,
     display: { type: 'font-settings' },
     properties: {
-      fontFamily: { type: 'string' as const, scope: 'common' as const },
       fontWeight: { type: 'number' as const, scope: 'common' as const },
       fontStyle: { type: 'string' as const, scope: 'common' as const },
     },
-  },
-  widthSettings: {
-    display: { type: 'text-width-control' },
-    type: 'object' as const,
-    scope: 'common' as const,
-    properties: {
-      width: { type: 'number' as const, scope: 'layout' as const },
-      sizing: { type: 'string' as const, scope: 'common' as const, enum: ['auto', 'manual'] },
-    },
-  },
-  fontSizeLineHeight: {
-    type: 'object' as const,
-    scope: 'common' as const,
-    display: { type: 'font-size-line-height' },
-    properties: {
-      fontSize: { type: 'number' as const, scope: 'layout' as const },
-      lineHeight: { type: 'number' as const, scope: 'layout' as const },
-    },
-  },
-  letterSpacing: {
-    display: { type: 'letter-spacing-input' },
-    type: 'number' as const,
-    scope: 'layout' as const,
-  },
-  wordSpacing: {
-    display: { type: 'word-spacing-input' },
-    type: 'number' as const,
-    scope: 'layout' as const,
-  },
-  textAlign: {
-    display: { type: 'text-align-control' },
-    type: 'string' as const,
-    scope: 'common' as const,
-    enum: ['left', 'center', 'right'],
-  },
-  textAppearance: {
-    display: { type: 'text-appearance' },
-    type: 'object' as const,
-    scope: 'common' as const,
-    properties: {
-      textTransform: { type: 'string' as const, scope: 'common' as const, enum: ['none', 'uppercase', 'lowercase'] },
-      textDecoration: { type: 'string' as const, scope: 'common' as const, enum: ['none', 'underline'] },
-      fontVariant: { type: 'string' as const, scope: 'common' as const, enum: ['normal', 'small-caps'] },
-    },
-  },
-  color: {
-    display: { type: 'style-panel-color-picker' },
-    type: 'string' as const,
-    scope: 'common' as const,
-  },
+  }
 };
 
 const defaultCaptionStyleValues = {
@@ -90,9 +40,9 @@ const schema: ComponentSchemaV1 = {
       },
       speed: {
         type: 'string',
-        scope: 'common',
+        scope: 'layout',
         title: 'Speed',
-        display: { type: 'range-control' },
+        display: { type: 'speed-control' },
         min: 1,
         max: 10,
       },
@@ -183,14 +133,6 @@ const schema: ComponentSchemaV1 = {
         max: 200,
         display: { type: 'range-control' },
       },
-      iconHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Icon height',
-        min: 0,
-        max: 200,
-        display: { type: 'range-control' },
-      },
       textMarginTop: {
         type: 'number',
         scope: 'layout',
@@ -215,55 +157,125 @@ const schema: ComponentSchemaV1 = {
         max: 100,
         display: { type: 'range-control' },
       },
-      imageCaption: {
-        type: 'object',
+      captionFontFamily: {
+        type: 'string',
         scope: 'common',
-        properties: testimonialCaptionTextStyleProperties,
+        title: 'Caption Font Family',
+        display: { type: 'font-family-select' },
       },
-      caption: {
-        type: 'object',
+      captionFontSettings: {
+        ...testimonialCaptionTextStyleProperties.fontSettings,
         scope: 'common',
-        properties: testimonialCaptionTextStyleProperties,
+        title: 'Caption',
+        display : { type: 'font-settings-weight'},
       },
-      // styles: {
-      //   type: 'object',
-      //   scope: 'common',
-      //   title: 'Styles',
-      //   display: { type: 'group' },
-      //   properties: {
-      //     imageCaption: {
-      //       type: 'object',
-      //       scope: 'common',
-      //       properties: testimonialCaptionTextStyleProperties,
-      //     },
-      //     caption: {
-      //       type: 'object',
-      //       scope: 'common',
-      //       properties: testimonialCaptionTextStyleProperties,
-      //     },
-      //   },
-      // },
+      captionFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Font Size',
+        display: { type: 'font-size' },
+      },
+      captionLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Line Height',
+        display: { type: 'line-height-input' },
+      },
+      captionLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      captionWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      captionTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Caption Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      textFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Text Font Family',
+        display: { type: 'font-family-select' },
+      },
+      textFontSettings: {
+        ...testimonialCaptionTextStyleProperties.fontSettings,
+        scope: 'common',
+        title: 'Text',
+        display : { type: 'font-settings-weight'},
+      },
+      textFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Font Size',
+        display: { type: 'font-size' },
+      },
+      textLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Line Height',
+        display: { type: 'line-height-input' },
+      },
+      textLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      textWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      textTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Text Text Appearance',
+        display: { type: 'text-appearance' },
+      },
     },
     defaults: {
       autoplay: 'off',
-      speed: '5s',
       direction: 'left',
       pause: 'off',
       strokeColor: '#000000',
       bgColor: 'rgba(255, 255, 255, 0.2)',
-      styles: {
-        imageCaption: {
-          ...defaultCaptionStyleValues,
-          textAppearance: { ...defaultCaptionStyleValues.textAppearance },
-        },
-        caption: {
-          ...defaultCaptionStyleValues,
-          textAppearance: { ...defaultCaptionStyleValues.textAppearance },
-        },
+      captionfontFamily: 'Arial',
+      captionFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      captionLetterSpacing: 0,
+      captionWordSpacing: 0,
+      captionTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      textfontFamily: 'Arial',
+      textFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      textLetterSpacing: 0,
+      textWordSpacing: 0,
+      textTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
       },
     },
     layoutDefaults: {
       m: {
+        speed: 3,
         gap: 0.02,
         cardWidth: 0.15,
         cardHeight: 0.2,
@@ -272,12 +284,12 @@ const schema: ComponentSchemaV1 = {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         iconMarginTop: 0,
         iconWidth: 0,
-        iconHeight: 0,
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
       },
       d: {
+        speed: 5,
         gap: 0.02,
         cardWidth: 0.15,
         cardHeight: 0.2,
@@ -286,7 +298,6 @@ const schema: ComponentSchemaV1 = {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
         iconMarginTop: 0,
         iconWidth: 0,
-        iconHeight: 0,
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
@@ -310,7 +321,6 @@ const schema: ComponentSchemaV1 = {
       'padding',
       'iconMarginTop',
       'iconWidth',
-      'iconHeight',
       'textMarginTop',
       'textMinHeight',
       'captionMarginTop',
@@ -324,14 +334,10 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         {type: 'row', items: ['__componentName__', 'autoplay']},   
-        {type: 'row', items: ['pause', 'direction']},
-        {type: 'row', items: ['speed', 'gap']},
-        {type: 'row', items: ['cardWidth', 'cardHeight']},
-        {type: 'row', items: ['corners', 'stroke']},
-        {type: 'row', items: ['padding']},
-        {type: 'row', items: ['iconWidth', 'iconHeight']},
-        {type: 'row', items: ['textMarginTop', 'textMinHeight']},
-        {type: 'row', items: ['captionMarginTop', 'iconMarginTop',]},
+        {type: 'row', items: ['pause', 'speed']},
+        {type: 'row', items: ['direction', 'gap']},
+        {type: 'row', items: [{type: 'group', title: '', items: ['cardWidth', 'cardHeight', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding', 'iconWidth']}]},
+        {type: 'row', items: ['textMinHeight']},
       ],
     },
     {
@@ -356,7 +362,7 @@ const schema: ComponentSchemaV1 = {
   ],
   paletteBookmark: {
     items: ['strokeColor', 'bgColor'],
-    panelIds: ['general', 'styles'],
+    panelIds: ['general', 'typeStyle'],
   },
   content: {
     properties: {
@@ -450,7 +456,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {},
           icon: {
-            objectFit: 'cover',
+            objectFit: 'contain',
             url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
             name: '',
           },
@@ -487,5 +493,13 @@ export const TestimonialGridComponent = {
   },
   schema,
   sourceCode: testimonialGridSourceRaw,
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'styles.imageCaption.fontSettings' }]
+  },
 };
 

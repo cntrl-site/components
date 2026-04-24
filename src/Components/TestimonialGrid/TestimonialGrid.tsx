@@ -1,3 +1,4 @@
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import classes from './Testimonials.module.scss';
 import { CommonComponentProps } from '../props';
@@ -11,176 +12,236 @@ type TestimonialsProps = {
   isEditor?: boolean;
 } & CommonComponentProps;
 
-const parseSpeedToMs = (speed: string): number => {
-  if (!speed) return 0;
-  const match = speed.match(/^(\d+)s$/);
-  if (!match) return 0;
-  return parseInt(match[1], 10) * 1000;
+const PX_PER_SEC_PER_SPEED_UNIT = 30;
+
+const parseSpeed = (speed: unknown): number => {
+  if (typeof speed === 'number') return speed;
+  const n = parseFloat(String(speed ?? ''));
+  return Number.isFinite(n) ? n : 0;
 };
+
+const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
+  fontSettings: { ...caption.fontSettings },
+  letterSpacing: caption.letterSpacing,
+  wordSpacing: caption.wordSpacing,
+  fontSize: caption.fontSizeLineHeight.fontSize,
+  lineHeight: caption.fontSizeLineHeight.lineHeight,
+  textAppearance: caption.textAppearance,
+  color: caption.color,
+});
 
 export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps) => {
   const items = content?.items ?? [];
-  const { autoplay, speed, direction, pause, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop } = settings;
+  const { autoplay, speed, direction, pause, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop, iconWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
-  const speedMs = speed ? parseSpeedToMs(speed) : 0;
-  const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
-    fontSettings: {
-      fontFamily: caption.fontSettings.fontFamily,
-      fontWeight: caption.fontSettings.fontWeight,
-      fontStyle: caption.fontSettings.fontStyle,
-    },
-    letterSpacing: caption.letterSpacing,
-    wordSpacing: caption.wordSpacing,
-    fontSize: caption.fontSizeLineHeight.fontSize,
-    lineHeight: caption.fontSizeLineHeight.lineHeight,
-    textAppearance: caption.textAppearance,
-    color: caption.color,
-  });
+  const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
+  const scaled = (v: number) => scalingValue(v, isEditor ?? false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const setRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [setWidth, setSetWidth] = useState(0);
+  const progressRef = useRef(0);
+  const hoveringRef = useRef(false);
+  const animRef = useRef<Animation | null>(null);
+  const lastDirectionRef = useRef(direction);
+  const hoverPauseEnabled = isAutoplay && pause === 'hover';
 
-  const wrapperWidth = scalingValue(
-      (cardWidth * items.length) + 
-      (settings.gap * (items.length)) +
-      (stroke * 2 * items.length),
-      isEditor ?? false);
-  const scaledCardHeight = scalingValue(cardHeight, isEditor ?? false);
-  
-  return (
-    <>
-      <div className={classes.wrapper}>
-        <div
+  const copies = useMemo(() => {
+    if (!isAutoplay || items.length === 0) return 1;
+    if (setWidth <= 0 || containerWidth <= 0) return 2;
+    return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
+  }, [isAutoplay, items.length, setWidth, containerWidth]);
+
+  useLayoutEffect(() => {
+    if (!isAutoplay) return;
+    const wrapper = wrapperRef.current;
+    const set = setRef.current;
+    if (!wrapper || !set) return;
+    let raf = 0;
+    const measure = () => {
+      setContainerWidth(wrapper.getBoundingClientRect().width);
+      setSetWidth(set.getBoundingClientRect().width);
+    };
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+    schedule();
+    const ro = new ResizeObserver(schedule);
+    ro.observe(wrapper);
+    ro.observe(set);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [isAutoplay, items.length]);
+
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!isAutoplay || !track) return;
+    if (setWidth <= 0 || pxPerSec <= 0) {
+      track.style.transform = 'translate3d(0, 0, 0)';
+      return;
+    }
+    if (lastDirectionRef.current !== direction) {
+      progressRef.current = 1 - progressRef.current;
+      lastDirectionRef.current = direction;
+    }
+    const duration = (setWidth / pxPerSec) * 1000;
+    const from = direction === 'right' ? -setWidth : 0;
+    const to = direction === 'right' ? 0 : -setWidth;
+    const anim = track.animate(
+      [{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }],
+      { duration, iterations: Infinity, easing: 'linear' }
+    );
+    anim.currentTime = progressRef.current * duration;
+    if (hoveringRef.current) anim.pause();
+    animRef.current = anim;
+    return () => {
+      const ct = typeof anim.currentTime === 'number' ? anim.currentTime : 0;
+      progressRef.current = duration > 0 ? (ct / duration) % 1 : 0;
+      anim.cancel();
+      if (animRef.current === anim) animRef.current = null;
+    };
+  }, [isAutoplay, setWidth, pxPerSec, direction]);
+
+  const onTrackEnter = () => {
+    if (!hoverPauseEnabled) return;
+    hoveringRef.current = true;
+    animRef.current?.pause();
+  };
+  const onTrackLeave = () => {
+    if (!hoverPauseEnabled) return;
+    hoveringRef.current = false;
+    animRef.current?.play();
+  };
+
+  const renderText = (
+    style: CaptionStyles,
+    content: any[],
+    dataStyles: string,
+    dataControls: string,
+    key: string,
+    marginTop: number,
+    minHeight?: number
+  ) => (
+    <div key={key}>
+      <div data-controls={dataControls} className={classes.control} />
+      <div
+        data-styles={dataStyles}
+        className={classes.caption}
+        style={{
+          ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
+          textAlign: style.textAlign,
+          pointerEvents: 'auto',
+          marginTop: scaled(marginTop),
+          ...(minHeight ? { minHeight: scaled(minHeight) } : {}),
+        }}
+      >
+        <RichTextRenderer content={content} />
+      </div>
+    </div>
+  );
+
+  const renderCard = (item: TestimonialsItem, key: string | number) => (
+    <div
+      key={key}
+      style={{
+        padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
+        width: scaled(cardWidth + stroke * 2),
+        minHeight: scaled(cardHeight),
+        height: '100%',
+        borderRadius: scaled(corners),
+        border: `${scaled(stroke)} solid ${strokeColor}`,
+        boxSizing: 'border-box',
+        position: 'relative',
+        flex: '0 0 auto',
+      }}
+    >
+      {item.image?.url && (
+        <img
+          className={classes.image}
+          src={item.image.url}
+          alt={item.image.name}
           style={{
-            display: 'flex',
-            flexDirection: 'row',
-            gap: scalingValue(settings.gap, isEditor ?? false),
-            justifyContent: 'center',
-            overflowX: 'auto',
+            objectFit: item.image.objectFit || 'cover',
+            borderRadius: scaled(corners),
+            height: scaled(cardHeight),
           }}
-          aria-label="Testimonials"
+        />
+      )}
+      <div
+        className={classes.cover}
+        style={{
+          background: bgColor,
+          borderRadius: scaled(corners),
+          height: '100%',
+        }}
+      />
+      <div
+        className={classes.elementsOverlay}
+        style={{ display: 'flex', flexDirection: 'column', pointerEvents: 'none' }}
+      >
+        <div key="icon">
+          <div
+            data-controls="elements.icon.margin.top"
+            className={classes.control}
+            style={{ marginTop: scaled(iconMarginTop), width: scaled(iconWidth) }}
+          >
+            <img
+              src={item.icon?.url}
+              alt={item.icon?.name}
+              style={{ pointerEvents: 'auto',width: '100%', height: '100%', objectFit: item.icon?.objectFit || 'cover' }}
+            />
+          </div>
+        </div>
+        {renderText(settings.styles.imageCaption, item.imageCaption, 'imageCaption', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
+        {renderText(settings.styles.caption, item.caption, 'caption', 'elements.caption.margin.top', 'caption', captionMarginTop)}
+      </div>
+    </div>
+  );
+
+  if (isAutoplay && items.length > 0) {
+    return (
+      <div ref={wrapperRef} className={cn(classes.wrapper, classes.marqueeWrapper)} aria-label="Testimonials">
+        <div
+          ref={trackRef}
+          className={classes.marqueeTrack}
+          onMouseEnter={onTrackEnter}
+          onMouseLeave={onTrackLeave}
         >
-          {items.map((item, index) => (
+          {Array.from({ length: copies }, (_, copyIndex) => (
             <div
-              key={index}
-                style={{
-                  padding: `${scalingValue(padding.top, isEditor ?? false)} ${scalingValue(padding.right, isEditor ?? false)} ${scalingValue(padding.bottom, isEditor ?? false)} ${scalingValue(padding.left, isEditor ?? false)}`,
-                  width: scalingValue(cardWidth + stroke * 2, isEditor ?? false),
-                  minHeight: scaledCardHeight,
-                  height: '100%',
-                  borderRadius: scalingValue(corners, isEditor ?? false),
-                  border: `${scalingValue(stroke, isEditor ?? false)} solid ${strokeColor}`,
-                  boxSizing: 'border-box',
-                  position: 'relative',
-                  }}
-                >
-                {item.image?.url && (
-                  <img
-                    className={classes.image}
-                    src={item.image?.url}
-                    alt={item.image?.name}
-                    style={{
-                      objectFit: item.image?.objectFit || 'cover',
-                      borderRadius: `${scalingValue(corners, isEditor ?? false)}`,
-                      height: scaledCardHeight,
-                    }}
-                  />
-                )}
-                <div
-                  className={classes.cover}
-                  style={{
-                    background: bgColor,
-                    borderRadius: `${scalingValue(corners, isEditor ?? false)}`,
-                    height: '100%',
-                  }}
-                />
-                <div
-                  className={classes.elementsOverlay}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    inset: 0,
-                    pointerEvents: 'none'
-                  }}
-                >
-                  <>
-                    <div key="icon">
-                      <div
-                        data-controls="elements.icon.margin.top"
-                        className={classes.control}
-                        style={{ height: scalingValue(iconMarginTop, isEditor ?? false)}}
-                      />
-                      <div style={{ width: '100%'}}>
-                        <img
-                          src={item.icon?.url}
-                          alt={item.icon?.name}
-                          className={classes.icon}
-                          style={{
-                            // transform: `scale(${settings.elements.icon.scale / 100})`,
-                            pointerEvents: 'auto'
-                          }}
-                        />
-                      </div>
-                    </div>
-                    {(() => {
-                      const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } =
-                        settings.styles.imageCaption;
-                      const imageCaptionTypographyCss = textStylesToCss(
-                        resolveCaptionTextStyles(settings.styles.imageCaption),
-                        isEditor
-                      );
-                      return (
-                        <div key="text">
-                          <div
-                            data-controls="elements.text.margin.top"
-                            className={classes.control}
-                            // style={{ height: scalingValue(settings.elements.text.margin.top, isEditor ?? false)}}
-                          />
-                          <div
-                            data-styles="imageCaption"
-                            className={classes.caption}
-                            style={{
-                              ...imageCaptionTypographyCss,
-                              textAlign,
-                              pointerEvents: 'auto'
-                            }}
-                          >
-                            <RichTextRenderer content={item.imageCaption} />
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    {(() => {
-                            const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } =
-                          settings.styles.caption;
-                        const captionTypographyCss = textStylesToCss(
-                          resolveCaptionTextStyles(settings.styles.caption),
-                          isEditor
-                        );
-                        return (
-                          <div key="caption">
-                            <div
-                            data-controls="elements.caption.margin.top" className={classes.control}
-                            // style={{ height: scalingValue(settings.elements.caption.margin.top, isEditor ?? false)}}
-                            />
-                            <div
-                              data-styles="caption"
-                              className={classes.caption}
-                              style={{
-                                ...captionTypographyCss,
-                                textAlign,
-                                pointerEvents: 'auto'
-                              }}
-                            >
-                              <RichTextRenderer content={item.caption} />
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </>
-                </div>
-              </div>
+              key={`set-${copyIndex}`}
+              ref={copyIndex === 0 ? setRef : undefined}
+              className={classes.marqueeSet}
+              style={{ gap: scaled(gap), paddingRight: scaled(gap) }}
+              aria-hidden={copyIndex > 0}
+            >
+              {items.map((item, index) => renderCard(item, `${copyIndex}-${index}`))}
+            </div>
           ))}
         </div>
       </div>
-    </>
+    );
+  }
+
+  return (
+    <div className={classes.wrapper}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: scaled(gap),
+          justifyContent: 'center',
+          overflowX: 'auto',
+        }}
+        aria-label="Testimonials"
+      >
+        {items.map((item, index) => renderCard(item, index))}
+      </div>
+    </div>
   );
 };
 
@@ -208,7 +269,7 @@ type Padding = {
 
 type TestimonialsSettings = {
   autoplay: 'on' | 'off';
-  speed: string;
+  speed: number;
   direction: 'left' | 'right';
   pause: 'hover' | 'off';
   gap: number;
@@ -221,7 +282,6 @@ type TestimonialsSettings = {
   padding: Padding;
   iconMarginTop: number;
   iconWidth: number;
-  iconHeight: number;
   textMarginTop: number;
   textMinHeight: number;
   captionMarginTop: number;
