@@ -71,6 +71,12 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
   const lastDirectionRef = useRef(direction);
   const hoverPauseEnabled = isAutoplay && pauseOnHover === 'on';
 
+  const normalizedDirection = useMemo<'left' | 'right'>(() => {
+    if (typeof direction === 'boolean') return direction ? 'right' : 'left';
+    const d = String(direction ?? '').trim().toLowerCase();
+    return d === 'right' ? 'right' : 'left';
+  }, [direction]);
+
   const resolveCaptionStyle = (kind: 'text' | 'caption'): CaptionStyles | undefined => {
     const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
     if (fromNested) return fromNested;
@@ -170,8 +176,8 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
       lastDirectionRef.current = direction;
     }
     const duration = (setWidth / pxPerSec) * 1000;
-    const from = direction === 'left' ? -setWidth : 0;
-    const to = direction === 'left' ? 0 : -setWidth;
+    const from = normalizedDirection === 'left' ? -setWidth : 0;
+    const to = normalizedDirection === 'left' ? 0 : -setWidth;
     const anim = track.animate(
       [{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }],
       { duration, iterations: Infinity, easing: 'linear' }
@@ -179,6 +185,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
     anim.currentTime = progressRef.current * duration;
     if (hoveringRef.current) anim.pause();
     animRef.current = anim;
+
     return () => {
       const ct = typeof anim.currentTime === 'number' ? anim.currentTime : 0;
       progressRef.current = duration > 0 ? (ct / duration) % 1 : 0;
