@@ -24,7 +24,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Autoplay',
-        display: { type: 'switch-toggle' },
+        display: { type: 'switch-control' },
         enum: ['on', 'off'],
       },
       speed: {
@@ -38,15 +38,14 @@ const schema: ComponentSchemaV1 = {
       direction: {
         type: 'string',
         scope: 'common',
-        display: { type: 'switch-toggle' },
-        enum: ['left', 'right'],
+        title: 'Direction',
+        display: { type: 'toggle', enum: ['Left', 'Right'] },
       },
-      pause: {
-        title: 'Pause on',
+      pauseOnHover: {
+        title: 'Pause on hover',
         type: 'string',
         scope: 'common',
-        display: { type: 'switch-toggle' },
-        enum: ['hover', 'off'],
+        display: { type: 'switch-toggle-2', enum: ['on', 'off'] },
       },
       type: {
         type: 'string',
@@ -168,13 +167,13 @@ const schema: ComponentSchemaV1 = {
       captionFontFamily: {
         type: 'string',
         scope: 'common',
-        title: 'Caption Font Family',
+        title: 'Caption',
         display: { type: 'font-family-select' },
       },
       captionFontSettings: {
         ...testimonialCaptionTextStyleProperties.fontSettings,
         scope: 'common',
-        title: 'Caption',
+        title: '',
         display : { type: 'font-settings-weight'},
       },
       captionFontSize: {
@@ -210,13 +209,13 @@ const schema: ComponentSchemaV1 = {
       textFontFamily: {
         type: 'string',
         scope: 'common',
-        title: 'Text Font Family',
+        title: 'Text',
         display: { type: 'font-family-select' },
       },
       textFontSettings: {
         ...testimonialCaptionTextStyleProperties.fontSettings,
         scope: 'common',
-        title: 'Text',
+        title: '',
         display : { type: 'font-settings-weight'},
       },
       textFontSize: {
@@ -254,7 +253,7 @@ const schema: ComponentSchemaV1 = {
       type: 'A',
       autoplay: 'off',
       direction: 'left',
-      pause: 'off',
+      pauseOnHover: 'off',
       strokeColor: '#000000',
       bgColor: 'rgba(255, 255, 255, 0.2)',
       imageCaptionColor: '#000000',
@@ -298,6 +297,8 @@ const schema: ComponentSchemaV1 = {
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
+        textFontSize: 0.01,
+        captionFontSize: 0.01,
       },
       d: {
         speed: 5,
@@ -312,6 +313,8 @@ const schema: ComponentSchemaV1 = {
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
+        textFontSize: 0.01,
+        captionFontSize: 0.01,
       },
     },
     displayRules: [
@@ -321,7 +324,7 @@ const schema: ComponentSchemaV1 = {
       'autoplay',
       'speed',
       'direction',
-      'pause',
+      'pauseOnHover',
       'gap',
       'cardWidth',
       'cardHeight',
@@ -346,10 +349,10 @@ const schema: ComponentSchemaV1 = {
       layout: [
         {type: 'row', items: ['__componentName__', 'autoplay']},   
         'type',
-        {type: 'row', items: ['pause', 'speed']},
-        {type: 'row', items: ['direction', 'gap']},
-        {type: 'row', items: [{type: 'group', title: '', items: ['cardWidth', 'cardHeight', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding', 'iconWidth']}]},
-        {type: 'row', items: ['textMinHeight']},
+        {type: 'row', items: ['pauseOnHover', 'speed']},
+        {type: 'row', items: ['direction']},
+        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'cardHeight', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding', 'iconWidth']}]},
+        {type: 'row', title: 'Quote', items: ['textMinHeight']},
       ],
     },
     {
@@ -358,12 +361,15 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        'fontFamily',
+        'textFontFamily',
+        'textFontSettings',
         {
           type: 'group',
           title: '',
           items: [ 'text', {type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing']}, 'textTextAppearance'],
         },
+        'captionFontFamily',
+        'captionFontSettings',
         {
           type: 'group',
           title: '',

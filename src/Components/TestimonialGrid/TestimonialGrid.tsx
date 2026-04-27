@@ -56,7 +56,7 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
 });
 
 export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps) => {
-  const { type, autoplay, speed, direction, pause, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop, iconWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
+  const { type, autoplay, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop, iconWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -69,7 +69,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
   const hoveringRef = useRef(false);
   const animRef = useRef<Animation | null>(null);
   const lastDirectionRef = useRef(direction);
-  const hoverPauseEnabled = isAutoplay && pause === 'hover';
+  const hoverPauseEnabled = isAutoplay && pauseOnHover === 'on';
 
   const resolveCaptionStyle = (kind: 'text' | 'caption'): CaptionStyles | undefined => {
     const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
@@ -170,8 +170,8 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
       lastDirectionRef.current = direction;
     }
     const duration = (setWidth / pxPerSec) * 1000;
-    const from = direction === 'right' ? -setWidth : 0;
-    const to = direction === 'right' ? 0 : -setWidth;
+    const from = direction === 'left' ? -setWidth : 0;
+    const to = direction === 'left' ? 0 : -setWidth;
     const anim = track.animate(
       [{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }],
       { duration, iterations: Infinity, easing: 'linear' }
@@ -356,7 +356,7 @@ type TestimonialsSettings = {
   autoplay: 'on' | 'off';
   speed: number;
   direction: 'left' | 'right';
-  pause: 'hover' | 'off';
+  pauseOnHover: 'on' | 'off';
   gap: number;
   cardWidth: number;
   cardHeight: number;
