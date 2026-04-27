@@ -540,7 +540,7 @@ export const OnelinerFormComponent = {
   element: OnelinerForm,
   id: 'oneliner-form',
   name: 'Newsletter Single Line',
-  version: 1,
+  category: 'forms',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/onelinerImg.jpg',

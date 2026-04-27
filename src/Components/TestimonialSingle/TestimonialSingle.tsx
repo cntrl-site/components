@@ -7,7 +7,7 @@ import { scalingValue } from '../utils/scalingValue';
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
-  content?: { items: TestimonialsItem[] };
+  content?: TestimonialsItem[];
   isEditor?: boolean;
 } & CommonComponentProps;
 
@@ -37,7 +37,7 @@ type CaptionStyleFromFlatSettings = {
 };
 
 export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsProps) => {
-  const items = content?.items ?? [];
+  const items = content || [];
   const { autoplay, speed } = settings;
   const isAutoplay = autoplay === 'on';
 

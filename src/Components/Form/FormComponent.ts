@@ -663,11 +663,11 @@ export const FormComponent = {
   element: Form,
   id: 'form',
   name: 'Newsletter Stacked',
+  category: 'forms',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/formImg.jpg',
   },
-  version: 1,
   defaultSize: {
     width: 300,
     height: 42,

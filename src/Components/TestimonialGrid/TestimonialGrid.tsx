@@ -8,7 +8,7 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
-  content?: { items: TestimonialsItem[] };
+  content?: TestimonialsItem[];
   isEditor?: boolean;
 } & CommonComponentProps;
 
@@ -56,8 +56,7 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
 });
 
 export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps) => {
-  const items = content?.items ?? [];
-  const { autoplay, speed, direction, pause, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop, iconWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
+  const { type, autoplay, speed, direction, pause, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop, iconWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -90,15 +89,15 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
     const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
 
     const hasAnyFlat =
-      typeof fontFamily === "string" ||
+      typeof fontFamily === 'string' ||
       !!fontSettings ||
-      typeof letterSpacing === "number" ||
-      typeof wordSpacing === "number" ||
-      typeof textAlign === "string" ||
+      typeof letterSpacing === 'number' ||
+      typeof wordSpacing === 'number' ||
+      typeof textAlign === 'string' ||
       !!textAppearance ||
-      typeof color === "string" ||
-      typeof fontSize === "number" ||
-      typeof lineHeight === "number";
+      typeof color === 'string' ||
+      typeof fontSize === 'number' ||
+      typeof lineHeight === 'number';
     if (!hasAnyFlat) return undefined;
 
     const flat: CaptionStyleFromFlatSettings = {
@@ -130,10 +129,10 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
   const captionStyle = resolveCaptionStyle('caption');
 
   const copies = useMemo(() => {
-    if (!isAutoplay || items.length === 0) return 1;
+    if (!isAutoplay || content?.length === 0) return 1;
     if (setWidth <= 0 || containerWidth <= 0) return 2;
     return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [isAutoplay, items.length, setWidth, containerWidth]);
+  }, [isAutoplay, content?.length, setWidth, containerWidth]);
 
   useLayoutEffect(() => {
     if (!isAutoplay) return;
@@ -157,7 +156,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [isAutoplay, items.length]);
+  }, [isAutoplay, content?.length]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
@@ -239,6 +238,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         boxSizing: 'border-box',
         position: 'relative',
         flex: '0 0 auto',
+        overflow: 'hidden',
       }}
     >
       {item.image?.url && (
@@ -257,7 +257,6 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         className={classes.cover}
         style={{
           background: bgColor,
-          borderRadius: scaled(corners),
           height: '100%',
         }}
       />
@@ -265,6 +264,8 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         className={classes.elementsOverlay}
         style={{ display: 'flex', flexDirection: 'column', pointerEvents: 'none' }}
       >
+        {type === 'B' && textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
+
         <div key="icon">
           <div
             data-controls="elements.icon.margin.top"
@@ -274,17 +275,18 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
             <img
               src={item.icon?.url}
               alt={item.icon?.name}
-              style={{ pointerEvents: 'auto',width: '100%', height: '100%', objectFit: item.icon?.objectFit || 'cover' }}
+              style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.icon?.objectFit || 'cover' }}
             />
           </div>
         </div>
-        {textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
+
+        {type !== 'B' && textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
         {captionStyle && renderText(captionStyle, item.caption, 'caption', 'elements.caption.margin.top', 'caption', captionMarginTop)}
       </div>
     </div>
   );
 
-  if (isAutoplay && items.length > 0) {
+  if (isAutoplay && content?.length && content.length > 0) {
     return (
       <div ref={wrapperRef} className={cn(classes.wrapper, classes.marqueeWrapper)} aria-label="Testimonials">
         <div
@@ -301,7 +303,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
               style={{ gap: scaled(gap), paddingRight: scaled(gap) }}
               aria-hidden={copyIndex > 0}
             >
-              {items.map((item, index) => renderCard(item, `${copyIndex}-${index}`))}
+              {content?.map((item: TestimonialsItem, index: number) => renderCard(item, `${copyIndex}-${index}`))}
             </div>
           ))}
         </div>
@@ -321,7 +323,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         }}
         aria-label="Testimonials"
       >
-        {items.map((item, index) => renderCard(item, index))}
+        {content?.map((item: TestimonialsItem, index: number) => renderCard(item, index))}
       </div>
     </div>
   );
@@ -350,6 +352,7 @@ type Padding = {
 };
 
 type TestimonialsSettings = {
+  type: 'A' | 'B';
   autoplay: 'on' | 'off';
   speed: number;
   direction: 'left' | 'right';

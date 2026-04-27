@@ -39,7 +39,7 @@ const schema: ComponentSchemaV1 = {
         enum: ['on', 'off'],
       },
       speed: {
-        type: 'string',
+        type: 'number',
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
@@ -334,128 +334,132 @@ const schema: ComponentSchemaV1 = {
     items: ['imageCaptionColor', 'captionColor'],
     panelIds: ['general', 'typeStyle'],
   },
-  content: {
-    properties: {
+
+    content: {
+      type: 'array',
+      settings: {
+        addItemFromFileExplorer: true
+      },
       items: {
-        type: 'array',
-        scope: 'common',
-        display: {
-          type: 'content-items',
-          addItemFromFileExplorer: false,
-          defaultWidth: 500,
-        },
-        items: {
-          type: 'object',
-          properties: {
-            image: {
-              type: 'object',
-              title: 'Image',
-              display: { minWidth: 58, maxWidth: 108, type: 'media-input' },
-              properties: {
-                url: { type: 'string' },
-                name: { type: 'string' },
-                objectFit: { type: 'string', enum: ['cover', 'contain'] },
+        type: 'object',
+        properties: {
+          image: {
+            type: 'object',
+            label: 'Image',
+            display: {
+              type: 'media-input',
+            },
+            properties: {
+              url: {
+                type: 'string',
               },
-            },
-            icon: {
-              type: 'object',
-              title: 'Icon',
-              display: { minWidth: 58, maxWidth: 108, type: 'media-input' },
-              properties: {
-                url: { type: 'string' },
-                name: { type: 'string' },
-                objectFit: { type: 'string', enum: ['cover', 'contain'] },
+              name: {
+                type: 'string',
               },
+              objectFit: {
+                type: 'string',
+                enum: ['cover', 'contain'],
+              }
             },
-            imageCaption: {
-              type: 'array',
-              title: 'Text',
-              display: { type: 'rich-text', minWidth: 300, maxWidth: 550 },
+            required: ['url', 'name']
+          },
+          icon: {
+            type: 'object',
+            label: 'Icon',
+            display: {
+              type: 'media-input',
             },
-            caption: {
-              type: 'array',
-              title: 'Caption',
-              display: { type: 'rich-text', minWidth: 300, maxWidth: 550 },
-            },
+          },
+          text: {
+            placeholder: 'Add Text...',
+            label: 'Text',
+            display: {
+              type: 'rich-text',
+            }
+          },
+          caption: {
+            placeholder: 'Add Caption...',
+            label: 'Caption',
+            display: {
+              type: 'rich-text',
+            }
           },
         },
       },
+      default: [
+          {
+            image: {},
+            icon: {
+              objectFit: 'cover',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
+              name: '',
+            },
+            text: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }],
+              },
+            ],
+            caption: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'CEO @ Company' }],
+              },
+            ],
+          },
+          {
+            image: {},
+            icon: {
+              objectFit: 'cover',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
+              name: '',
+            },
+            text: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }],
+              },
+            ],
+            caption: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'CEO @ Company' }],
+              },
+            ],
+          },
+          {
+            image: {},
+            icon: {
+              objectFit: 'cover',
+              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
+              name: '',
+            },
+            text: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }],
+              },
+            ],
+            caption: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'CEO @ Company' }],
+              },
+            ],
+          },
+        ],
     },
-    defaults: {
-      items: [
-        {
-          image: {},
-          icon: {
-            objectFit: 'cover',
-            url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
-            name: '',
-          },
-          imageCaption: [
-            {
-              type: 'paragraph',
-              children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }],
-            },
-          ],
-          caption: [
-            {
-              type: 'paragraph',
-              children: [{ text: 'CEO @ Company' }],
-            },
-          ],
-        },
-        {
-          image: {},
-          icon: {
-            objectFit: 'cover',
-            url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
-            name: '',
-          },
-          imageCaption: [
-            {
-              type: 'paragraph',
-              children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }],
-            },
-          ],
-          caption: [
-            {
-              type: 'paragraph',
-              children: [{ text: 'CEO @ Company' }],
-            },
-          ],
-        },
-        {
-          image: {},
-          icon: {
-            objectFit: 'cover',
-            url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
-            name: '',
-          },
-          imageCaption: [
-            {
-              type: 'paragraph',
-              children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }],
-            },
-          ],
-          caption: [
-            {
-              type: 'paragraph',
-              children: [{ text: 'CEO @ Company' }],
-            },
-          ],
-        },
-      ],
-    },
-  },
 };
 
 export const TestimonialSingleComponent = {
   element: TestimonialSingle,
-  id: 'testimonial single',
-  name: 'Testimonial Single',
+  id: 'testimonial-single',
+  name: 'Clara',
+  category: 'testimonials',
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/testimonials.png',
+    url: 'https://cdn.cntrl.site/component-assets/tesimonialsSingle.png',
   },
   defaultSize: {
     width: 700,
