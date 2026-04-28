@@ -39,20 +39,14 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Direction',
-        display: { type: 'toggle', enum: ['Left', 'Right'] },
+        display: { type: 'direction-control' },
+        enum: ['left', 'right'],
       },
       pauseOnHover: {
         title: 'Pause on hover',
         type: 'string',
         scope: 'common',
         display: { type: 'switch-toggle-2', enum: ['on', 'off'] },
-      },
-      type: {
-        type: 'string',
-        scope: 'common',
-        title: '',
-        display: { type: 'radio-group' },
-        enum: ['A', 'B'],
       },
       gap: {
         type: 'number',
@@ -61,6 +55,15 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 200,
         display: { type: 'range-control'  },
+      },
+      align: {
+        type: 'string',
+        title: 'Align',
+        display: {
+          type: 'align-group',
+          direction: 'horizontal',
+        },
+        enum: ['start', 'center', 'end']
       },
       cardWidth: {
         type: 'number',
@@ -112,18 +115,18 @@ const schema: ComponentSchemaV1 = {
         title: 'Padding',
         display: { type: 'padding-controls' },
       },
-      iconMarginTop: {
+      logoMarginTop: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon margin top',
+        title: 'Logo margin top',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
       },
-      iconWidth: {
+      logoWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon width',
+        title: 'Logo width',
         min: 0,
         max: 200,
         display: { type: 'range-control' },
@@ -151,7 +154,7 @@ const schema: ComponentSchemaV1 = {
       textMinHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Text min height',
+        title: 'min height',
         min: 0,
         max: 300,
         display: { type: 'range-control' },
@@ -250,7 +253,6 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      type: 'A',
       autoplay: 'off',
       direction: 'left',
       pauseOnHover: 'off',
@@ -263,6 +265,7 @@ const schema: ComponentSchemaV1 = {
         fontWeight: 400,
         fontStyle: 'normal',
       },
+      align: 'start',
       captionLetterSpacing: 0,
       captionWordSpacing: 0,
       captionTextAppearance: {
@@ -292,8 +295,8 @@ const schema: ComponentSchemaV1 = {
         corners: 0.005,
         stroke: 0.001,
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        iconMarginTop: 0,
-        iconWidth: 0,
+        logoMarginTop: 0,
+        logoWidth: 0,
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
@@ -308,8 +311,8 @@ const schema: ComponentSchemaV1 = {
         corners: 0.005,
         stroke: 0.001,
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        iconMarginTop: 0,
-        iconWidth: 0,
+        logoMarginTop: 0,
+        logoWidth: 0,
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
@@ -333,8 +336,8 @@ const schema: ComponentSchemaV1 = {
       'strokeColor',
       'bgColor',
       'padding',
-      'iconMarginTop',
-      'iconWidth',
+      'logoMarginTop',
+      'logoWidth',
       'textMarginTop',
       'textMinHeight',
       'captionMarginTop',
@@ -348,11 +351,10 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         {type: 'row', items: ['__componentName__', 'autoplay']},   
-        'type',
-        {type: 'row', items: ['pauseOnHover', 'speed']},
-        {type: 'row', items: ['direction']},
-        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'cardHeight', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding', 'iconWidth']}]},
-        {type: 'row', title: 'Quote', items: ['textMinHeight']},
+        {type: 'row', items: ['speed', {type: 'row', title: '', items: ['pauseOnHover', 'direction']}]},
+        {type: 'row', items: ['align']},
+        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'cardHeight', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding', 'logoWidth']}]},
+        {type: 'row', title: 'Quote', items: ['textMinHeight', '']},
       ],
     },
     {
@@ -385,7 +387,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
-      addItemFromFileExplorer: true
+      addItemFromFileExplorer: false
     },
     items: {
       type: 'object',
@@ -409,9 +411,9 @@ const schema: ComponentSchemaV1 = {
             }
           },
         },
-        icon: {
+        logo: {
           type: 'object',
-          label: 'Icon',
+          label: 'Logo',
           display: {
             type: 'media-input',
           },
@@ -435,9 +437,9 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {},
-        icon: {
+        logo: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
+          url: 'https://cdn.cntrl.site/component-assets/logo.png',
           name: '',
         },
         text: [
@@ -455,9 +457,9 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {},
-        icon: {
+        logo: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
+          url: 'https://cdn.cntrl.site/component-assets/logo.png',
           name: '',
         },
         text: [
@@ -475,9 +477,9 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {},
-        icon: {
+        logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
+          url: 'https://cdn.cntrl.site/component-assets/logo.png',
           name: '',
         },
         text: [

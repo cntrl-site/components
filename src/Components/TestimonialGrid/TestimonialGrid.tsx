@@ -56,7 +56,7 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
 });
 
 export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps) => {
-  const { type, autoplay, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, iconMarginTop, iconWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
+  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -205,6 +205,30 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
     animRef.current?.play();
   };
 
+  const overlayAlignItems = useMemo(() => {
+    switch (align) {
+      case 'center':
+        return 'center' as const;
+      case 'end':
+        return 'flex-end' as const;
+      case 'start':
+      default:
+        return 'flex-start' as const;
+    }
+  }, [align]);
+
+  const overlayTextAlign = useMemo(() => {
+    switch (align) {
+      case 'center':
+        return 'center' as const;
+      case 'end':
+        return 'right' as const;
+      case 'start':
+      default:
+        return 'left' as const;
+    }
+  }, [align]);
+
   const renderText = (
     style: CaptionStyles,
     content: any[],
@@ -214,14 +238,22 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
     marginTop: number,
     minHeight?: number
   ) => (
-    <div key={key}>
+    <div
+      key={key}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: overlayAlignItems,
+        width: '100%',
+      }}
+    >
       <div data-controls={dataControls} className={classes.control} />
       <div
         data-styles={dataStyles}
         className={classes.caption}
         style={{
           ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
-          textAlign: style.textAlign,
+          textAlign: overlayTextAlign,
           pointerEvents: 'auto',
           marginTop: scaled(marginTop),
           ...(minHeight ? { minHeight: scaled(minHeight) } : {}),
@@ -269,25 +301,39 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
       />
       <div
         className={classes.elementsOverlay}
-        style={{ display: 'flex', flexDirection: 'column', pointerEvents: 'none' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          pointerEvents: 'none',
+          alignItems: overlayAlignItems,
+          textAlign: overlayTextAlign,
+        }}
       >
-        {type === 'B' && textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
-
-        <div key="icon">
+        {textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
+        <div
+          key="logo"
+          style={{
+            display: 'flex',
+            justifyContent:
+              align === 'center' ? 'center' : align === 'end' ? 'flex-end' : 'flex-start',
+            width: '100%',
+          }}
+        >
           <div
-            data-controls="elements.icon.margin.top"
+            data-controls="elements.logo.margin.top"
             className={classes.control}
-            style={{ marginTop: scaled(iconMarginTop), width: scaled(iconWidth) }}
+            style={{
+              marginTop: scaled(logoMarginTop),
+              width: scaled(logoWidth),
+            }}
           >
             <img
-              src={item.icon?.url}
-              alt={item.icon?.name}
-              style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.icon?.objectFit || 'cover' }}
+              src={item.logo?.url}
+              alt={item.logo?.name}
+              style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.logo?.objectFit || 'cover' }}
             />
           </div>
         </div>
-
-        {type !== 'B' && textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
         {captionStyle && renderText(captionStyle, item.caption, 'caption', 'elements.caption.margin.top', 'caption', captionMarginTop)}
       </div>
     </div>
@@ -342,7 +388,7 @@ export type TestimonialsItem = {
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
-  icon?: {
+  logo?: {
     url?: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
@@ -362,6 +408,7 @@ type TestimonialsSettings = {
   type: 'A' | 'B';
   autoplay: 'on' | 'off';
   speed: number;
+  align: 'start' | 'center' | 'end';
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
   gap: number;
@@ -372,8 +419,8 @@ type TestimonialsSettings = {
   strokeColor: string;
   bgColor: string;
   padding: Padding;
-  iconMarginTop: number;
-  iconWidth: number;
+  logoMarginTop: number;
+  logoWidth: number;
   textMarginTop: number;
   textMinHeight: number;
   captionMarginTop: number;

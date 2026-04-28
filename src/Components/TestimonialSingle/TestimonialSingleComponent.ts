@@ -35,7 +35,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Autoplay',
-        display: { type: 'switch-toggle' },
+        display: { type: 'switch-control' },
         enum: ['on', 'off'],
       },
       speed: {
@@ -54,33 +54,20 @@ const schema: ComponentSchemaV1 = {
         max: 400,
         display: { type: 'range-control' },
       },
-      padding: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Padding',
-        display: { type: 'padding-controls' },
-      },
-      iconMarginTop: {
+      imageWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon margin top',
+        title: 'Image width',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
       },
-      iconAlign: {
-        type: 'string',
-        scope: 'common',
-        title: 'Icon align',
-        enum: ['left', 'center', 'right'],
-        display: { type: 'align-group', direction: 'vertical' },
-      },
-      iconScale: {
+      imageMarginTop: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon scale',
-        min: 50,
-        max: 600,
+        title: 'Image margin top',
+        min: 0,
+        max: 100,
         display: { type: 'range-control' },
       },
       textMarginTop: {
@@ -107,72 +94,16 @@ const schema: ComponentSchemaV1 = {
         max: 100,
         display: { type: 'range-control' },
       },
-
-      imageCaptionFontFamily: {
-        type: 'string',
-        scope: 'common',
-        title: 'Text Font Family',
-        display: { type: 'font-family-select' },
-      },
-      imageCaptionFontSettings: {
-        ...testimonialCaptionTextStyleProperties.fontSettings,
-        scope: 'common',
-        title: 'Text',
-        display: { type: 'font-settings-weight' },
-      },
-      imageCaptionFontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Font Size',
-        display: { type: 'font-size' },
-      },
-      imageCaptionLineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Line Height',
-        display: { type: 'line-height-input' },
-      },
-      imageCaptionLetterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Letter Spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      imageCaptionWordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Word Spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      imageCaptionTextAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Text Text Appearance',
-        display: { type: 'text-appearance' },
-      },
-      imageCaptionTextAlign: {
-        display: { type: 'text-align-control' },
-        type: 'string',
-        scope: 'common',
-        title: 'Text Align',
-        enum: ['left', 'center', 'right'],
-      },
-      imageCaptionColor: {
-        display: { type: 'style-panel-color-picker' },
-        type: 'string',
-        scope: 'common',
-        title: 'Text Color',
-      },
       captionFontFamily: {
         type: 'string',
         scope: 'common',
-        title: 'Caption Font Family',
+        title: 'Caption',
         display: { type: 'font-family-select' },
       },
       captionFontSettings: {
         ...testimonialCaptionTextStyleProperties.fontSettings,
         scope: 'common',
-        title: 'Caption',
+        title: '',
         display: { type: 'font-settings-weight' },
       },
       captionFontSize: {
@@ -218,23 +149,74 @@ const schema: ComponentSchemaV1 = {
         scope: 'common',
         title: 'Caption Color',
       },
+      textFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Text',
+        display: { type: 'font-family-select' },
+      },
+      textFontSettings: {
+        ...testimonialCaptionTextStyleProperties.fontSettings,
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+      },
+      textFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Font Size',
+        display: { type: 'font-size' },
+      },
+      textLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Line Height',
+        display: { type: 'line-height-input' },
+      },
+      textLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      textWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      textTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Text Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      textTextAlign: {
+        display: { type: 'text-align-control' },
+        type: 'string',
+        scope: 'common',
+        title: 'Text Align',
+        enum: ['left', 'center', 'right'],
+      },
+      textColor: {
+        display: { type: 'style-panel-color-picker' },
+        type: 'string',
+        scope: 'common',
+        title: 'Text Color',
+      },
     },
     defaults: {
       autoplay: 'off',
-      iconAlign: 'left',
-      iconScale: 100,
-
-      imageCaptionFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
-      imageCaptionFontSettings: {
+      textFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
+      textFontSettings: {
         fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
         fontStyle: defaultCaptionStyleValues.fontSettings.fontStyle,
       },
-      imageCaptionLetterSpacing: defaultCaptionStyleValues.letterSpacing,
-      imageCaptionWordSpacing: defaultCaptionStyleValues.wordSpacing,
-      imageCaptionTextAlign: defaultCaptionStyleValues.textAlign,
-      imageCaptionTextAppearance: defaultCaptionStyleValues.textAppearance,
-      imageCaptionColor: defaultCaptionStyleValues.color,
-
+      textLetterSpacing: defaultCaptionStyleValues.letterSpacing,
+      textWordSpacing: defaultCaptionStyleValues.wordSpacing,
+      textTextAlign: defaultCaptionStyleValues.textAlign,
+      textTextAppearance: defaultCaptionStyleValues.textAppearance,
+      textColor: defaultCaptionStyleValues.color,
       captionFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
       captionFontSettings: {
         fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
@@ -253,11 +235,15 @@ const schema: ComponentSchemaV1 = {
         height: 0.2,
         corners: 0.005,
         stroke: 0.001,
-        padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        iconMarginTop: 0,
+        imageMarginTop: 0,
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
+        textFontSize: 0.01,
+        captionFontSize: 0.01,
+        textLineHeight: 0.01,
+        captionLineHeight: 0.01,
+        imageWidth: 0.15,
       },
       d: {
         speed: 5,
@@ -265,11 +251,15 @@ const schema: ComponentSchemaV1 = {
         height: 0.2,
         corners: 0.005,
         stroke: 0.001,
-        padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        iconMarginTop: 0,
+        imageMarginTop: 0,
         textMarginTop: 0,
         textMinHeight: 0.01,
         captionMarginTop: 0,
+        textFontSize: 0.01,
+        captionFontSize: 0.01,
+        textLineHeight: 0.01,
+        captionLineHeight: 0.01,
+        imageWidth: 0.15,
       },
     },
     displayRules: [],
@@ -278,10 +268,7 @@ const schema: ComponentSchemaV1 = {
       'autoplay',
       'speed',
       'width',
-      'padding',
-      'iconMarginTop',
-      'iconAlign',
-      'iconScale',
+      'imageMarginTop',
       'textMarginTop',
       'textMinHeight',
       'captionMarginTop',
@@ -295,10 +282,9 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'autoplay'] },
-        { type: 'row', items: ['speed'] },
-        { type: 'row', items: [{ type: 'group', title: '', items: ['width'] }, { type: 'group', title: '', items: ['padding'] }] },
-        { type: 'row', items: [{ type: 'group', title: '', items: ['iconMarginTop', 'iconAlign', 'iconScale'] }] },
-        { type: 'row', items: [{ type: 'group', title: '', items: ['textMarginTop', 'textMinHeight', 'captionMarginTop'] }] },
+        { type: 'row', items: ['controls', 'speed'] },
+        { type: 'row', items: [{ type: 'group', title: '', items: ['width'] }] },
+        { type: 'row', items: [{ type: 'group', title: '', items: ['delay', 'imageWidth'] }] },
       ],
     },
     {
@@ -307,148 +293,118 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        'textFontFamily',
+        'textFontSettings',
         {
           type: 'group',
           title: '',
-          items: [
-            { type: 'row', items: ['imageCaptionFontFamily', 'imageCaptionFontSettings'] },
-            { type: 'row', items: ['imageCaptionFontSize', 'imageCaptionLineHeight', 'imageCaptionLetterSpacing', 'imageCaptionWordSpacing'] },
-            'imageCaptionTextAppearance',
-            { type: 'row', items: ['imageCaptionTextAlign', 'imageCaptionColor'] },
-          ],
+          items: [ 'text', {type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing']}, 'textTextAppearance'],
         },
+        'captionFontFamily',
+        'captionFontSettings',
         {
           type: 'group',
           title: '',
-          items: [
-            { type: 'row', items: ['captionFontFamily', 'captionFontSettings'] },
-            { type: 'row', items: ['captionFontSize', 'captionLineHeight', 'captionLetterSpacing', 'captionWordSpacing'] },
-            'captionTextAppearance',
-            { type: 'row', items: ['captionTextAlign', 'captionColor'] },
-          ],
+          items: [ 'caption', {type: 'row', items: ['captionFontSize', 'captionLineHeight', 'captionLetterSpacing', 'captionWordSpacing']}, 'captionTextAppearance'],
         },
       ],
     },
   ],
   paletteBookmark: {
-    items: ['imageCaptionColor', 'captionColor'],
+    items: ['textColor', 'captionColor'],
     panelIds: ['general', 'typeStyle'],
   },
-
-    content: {
-      type: 'array',
-      settings: {
-        addItemFromFileExplorer: true
-      },
-      items: {
-        type: 'object',
-        properties: {
-          image: {
-            type: 'object',
-            label: 'Image',
-            display: {
-              type: 'media-input',
-            },
-            properties: {
-              url: {
-                type: 'string',
-              },
-              name: {
-                type: 'string',
-              },
-              objectFit: {
-                type: 'string',
-                enum: ['cover', 'contain'],
-              }
-            },
-            required: ['url', 'name']
-          },
-          icon: {
-            type: 'object',
-            label: 'Icon',
-            display: {
-              type: 'media-input',
-            },
-          },
-          text: {
-            placeholder: 'Add Text...',
-            label: 'Text',
-            display: {
-              type: 'rich-text',
-            }
-          },
-          caption: {
-            placeholder: 'Add Caption...',
-            label: 'Caption',
-            display: {
-              type: 'rich-text',
-            }
+  content: {
+    type: 'array',
+    settings: {
+      addItemFromFileExplorer: true
+    },
+    items: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'object',
+          label: 'Image',
+          display: {
+            type: 'media-input',
           },
         },
+        text: {
+          placeholder: 'Add Text...',
+          label: 'Text',
+          display: {
+            type: 'rich-text',
+          }
+        },
+        caption: {
+          placeholder: 'Add Caption...',
+          label: 'Caption',
+          display: {
+            type: 'rich-text',
+          }
+        },
       },
-      default: [
-          {
-            image: {},
-            icon: {
-              objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
-              name: '',
-            },
-            text: [
-              {
-                type: 'paragraph',
-                children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }],
-              },
-            ],
-            caption: [
-              {
-                type: 'paragraph',
-                children: [{ text: 'CEO @ Company' }],
-              },
-            ],
-          },
-          {
-            image: {},
-            icon: {
-              objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
-              name: '',
-            },
-            text: [
-              {
-                type: 'paragraph',
-                children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }],
-              },
-            ],
-            caption: [
-              {
-                type: 'paragraph',
-                children: [{ text: 'CEO @ Company' }],
-              },
-            ],
-          },
-          {
-            image: {},
-            icon: {
-              objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/projects/01GJ2SPNXG3V5P35ZA35YM1JTW/articles-assets/01KFXFA89BHQHVAJNAZCJMWDA1.png',
-              name: '',
-            },
-            text: [
-              {
-                type: 'paragraph',
-                children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }],
-              },
-            ],
-            caption: [
-              {
-                type: 'paragraph',
-                children: [{ text: 'CEO @ Company' }],
-              },
-            ],
-          },
-        ],
     },
+    default: [
+        {
+          image: {
+            objectFit: 'cover',
+            url: 'https://cdn.cntrl.site/component-assets/logo.png',
+            name: '',
+          },
+          text: [
+            {
+              type: 'paragraph',
+              children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }],
+            },
+          ],
+          caption: [
+            {
+              type: 'paragraph',
+              children: [{ text: 'CEO @ Company' }],
+            },
+          ],
+        },
+        {
+          image: {
+            objectFit: 'cover',
+            url: 'https://cdn.cntrl.site/component-assets/logo.png',
+            name: '',
+          },
+          text: [
+            {
+              type: 'paragraph',
+              children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }],
+            },
+          ],
+          caption: [
+            {
+              type: 'paragraph',
+              children: [{ text: 'CEO @ Company' }],
+            },
+          ],
+        },
+        {
+          image: {
+            objectFit: 'cover',
+            url: 'https://cdn.cntrl.site/component-assets/logo.png',
+            name: '',
+          },
+          text: [
+            {
+              type: 'paragraph',
+              children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }],
+            },
+          ],
+          caption: [
+            {
+              type: 'paragraph',
+              children: [{ text: 'CEO @ Company' }],
+            },
+          ],
+        },
+      ],
+  },
 };
 
 export const TestimonialSingleComponent = {
@@ -459,7 +415,7 @@ export const TestimonialSingleComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/tesimonialsSingle.png',
+    url: 'https://cdn.cntrl.site/component-assets/testimonialsSingle.png',
   },
   defaultSize: {
     width: 700,
@@ -473,7 +429,7 @@ export const TestimonialSingleComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'styles.imageCaption.fontSettings' }, { path: 'styles.caption.fontSettings' }]
+    parameters: [{ path: 'styles.text.fontSettings' }, { path: 'styles.caption.fontSettings' }]
   },
 };
 

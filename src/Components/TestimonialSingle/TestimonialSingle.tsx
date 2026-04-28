@@ -38,13 +38,11 @@ type CaptionStyleFromFlatSettings = {
 
 export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsProps) => {
   const items = content || [];
-  const { autoplay, speed } = settings;
+  const { autoplay, speed, imageWidth } = settings;
   const isAutoplay = autoplay === 'on';
 
   const cardWidth = settings.width ?? 0;
-  const iconMarginTop = settings.iconMarginTop ?? 0;
-  const iconAlign = settings.iconAlign ?? 'left';
-  const iconScale = settings.iconScale ?? 100;
+  const imageMarginTop = settings.imageMarginTop ?? 0;
   const textMarginTop = settings.textMarginTop ?? 0;
   const textMinHeight = settings.textMinHeight ?? 0;
   const captionMarginTop = settings.captionMarginTop ?? 0;
@@ -52,12 +50,12 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
   const item = items[0];
 
   const resolveCaptionStyle = (
-    kind: 'imageCaption' | 'caption'
+    kind: 'text' | 'caption'
   ): CaptionStyles | undefined => {
     const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
     if (fromNested) return fromNested;
 
-    const prefix = kind === 'imageCaption' ? 'imageCaption' : 'caption';
+    const prefix = kind === 'text' ? 'text' : 'caption';
     const fontFamily = (settings as any)?.[`${prefix}FontFamily`];
     const fontSettings = (settings as any)?.[`${prefix}FontSettings`];
     const letterSpacing = (settings as any)?.[`${prefix}LetterSpacing`];
@@ -105,10 +103,10 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
     return flat as CaptionStyles;
   };
 
-  const imageCaptionStyle = resolveCaptionStyle('imageCaption');
+  const textStyle = resolveCaptionStyle('text');
   const captionStyle = resolveCaptionStyle('caption');
   const elementOrder = useMemo(() => {
-    const order: ElementOrderKey[] = ['text', 'icon', 'caption'];
+    const order: ElementOrderKey[] = ['text', 'image', 'caption'];
     return order.map((key, index: number) => ({ key, order: index }));
   }, []);
 
@@ -131,21 +129,12 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
         >
           <div
             style={{
-              padding: `${scalingValue(settings.padding.top, isEditor ?? false)} ${scalingValue(settings.padding.right, isEditor ?? false)} ${scalingValue(settings.padding.bottom, isEditor ?? false)} ${scalingValue(settings.padding.left, isEditor ?? false)}`,
               width: scalingValue(cardWidth, isEditor ?? false),
               height: '100%',
               boxSizing: 'border-box',
               position: 'relative',
             }}
           >
-            {item.image?.url && (
-              <img
-                className={classes.image}
-                src={item.image?.url}
-                alt={item.image?.name}
-                style={{objectFit: item.image?.objectFit || 'cover'}}
-              />
-            )}
             <div className={classes.cover} />
             <div
               className={classes.elementsOverlay}
@@ -157,36 +146,33 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
               }}
             >
               {elementOrder.map(({ key, order: orderIndex }: { key: ElementOrderKey, order: number }) => {
-                if (key === 'icon') {
+                if (key === 'image') {
                   return (
-                    <div key="icon" style={{ order: orderIndex, zIndex: orderIndex }}>
+                    <div key="image" style={{ order: orderIndex, zIndex: orderIndex }}>
                       <div
-                        data-controls="iconMarginTop"
+                        data-controls="imageMarginTop"
                         className={classes.control}
-                        style={{ height: scalingValue(iconMarginTop, isEditor ?? false) }}
+                        style={{ height: scalingValue(imageMarginTop, isEditor ?? false) }}
                       />
-                      <div
-                        style={{
-                          width: '100%',
-                          textAlign: iconAlign
-                        }}
-                      >
+                      <div style={{ width: '100%'}}>
                         <img
-                          src={item.icon?.url}
-                          alt={item.icon?.name}
+                          src={item.image?.url}
+                          alt={item.image?.name}
                           className={classes.icon}
                           style={{
-                            transform: `scale(${iconScale / 100})`,
-                            pointerEvents: 'auto'
+                            pointerEvents: 'auto',
+                            objectFit: item.image?.objectFit || 'cover',
+                            width: scalingValue(imageWidth ?? 0, isEditor ?? false),
+                            height: '100%',
                           }}
                         />
                       </div>
                     </div>
                   );
                 }
-                if (key === 'text' && imageCaptionStyle) {
+                if (key === 'text' && textStyle) {
                   const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } =
-                    imageCaptionStyle;
+                    textStyle;
                   return (
                     <div key="text" style={{ order: orderIndex, zIndex: orderIndex }}>
                       <div
@@ -195,7 +181,7 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
                         style={{ height: scalingValue(textMarginTop, isEditor ?? false) }}
                       />
                       <div
-                        data-styles="imageCaption"
+                        data-styles="text"
                         className={classes.caption}
                         style={{
                           fontFamily: fontSettings.fontFamily,
@@ -214,7 +200,7 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
                           pointerEvents: 'auto'
                         }}
                       >
-                        <RichTextRenderer content={item.imageCaption ?? item.text ?? []} />
+                        <RichTextRenderer content={item.text ?? []} />
                       </div>
                     </div>
                   );
@@ -274,13 +260,7 @@ export type TestimonialsItem = {
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
-  icon?: {
-    url?: string;
-    name?: string;
-    objectFit?: 'cover' | 'contain';
-  };
   text: any[];
-  imageCaption?: any[];
   caption: any[];
 };
 
@@ -295,13 +275,11 @@ type TestimonialsSettings = {
   autoplay: 'on' | 'off';
   speed: number;
   width: number;
-  iconMarginTop?: number;
-  iconAlign?: 'left' | 'center' | 'right';
-  iconScale?: number;
+  imageMarginTop?: number;
+  imageWidth?: number;
   textMarginTop?: number;
   textMinHeight?: number;
   captionMarginTop?: number;
-  padding: Padding;
   styles: TestimonialsStyles;
   controls: {
     isActive: 'visible' | 'hidden';
@@ -340,9 +318,8 @@ type CaptionStyles = {
 };
 
 type TestimonialsStyles = {
-  imageCaption?: CaptionStyles;
   text: CaptionStyles;
   caption: CaptionStyles;
 };
 
-type ElementOrderKey = 'text' | 'icon' | 'caption';
+type ElementOrderKey = 'text' | 'image' | 'caption';
