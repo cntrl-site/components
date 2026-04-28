@@ -247,7 +247,11 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         width: '100%',
       }}
     >
-      <div data-controls={dataControls} className={classes.control} />
+      <div
+        data-controls={dataControls}
+        className={classes.control}
+        style={{ width: '100%', height: scaled(marginTop) }}
+      />
       <div
         data-styles={dataStyles}
         className={classes.caption}
@@ -255,7 +259,6 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
           ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
           textAlign: overlayTextAlign,
           pointerEvents: 'auto',
-          marginTop: scaled(marginTop),
           ...(minHeight ? { minHeight: scaled(minHeight) } : {}),
         }}
       >
@@ -276,7 +279,6 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         border: `${scaled(stroke)} solid ${strokeColor}`,
         boxSizing: 'border-box',
         position: 'relative',
-        flex: '0 0 auto',
         overflow: 'hidden',
       }}
     >
@@ -294,10 +296,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
       )}
       <div
         className={classes.cover}
-        style={{
-          background: bgColor,
-          height: '100%',
-        }}
+        style={{background: bgColor,height: '100%'}}
       />
       <div
         className={classes.elementsOverlay}
@@ -309,24 +308,22 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
           textAlign: overlayTextAlign,
         }}
       >
-        {textStyle && renderText(textStyle, item.text, 'text', 'elements.text.margin.top', 'text', textMarginTop, textMinHeight)}
+        {textStyle && renderText(textStyle, item.text, 'text', 'textMarginTop', 'text', textMarginTop, textMinHeight)}
         <div
           key="logo"
           style={{
             display: 'flex',
-            justifyContent:
-              align === 'center' ? 'center' : align === 'end' ? 'flex-end' : 'flex-start',
+            flexDirection: 'column',
+            alignItems: overlayAlignItems,
             width: '100%',
           }}
         >
           <div
-            data-controls="elements.logo.margin.top"
+            data-controls="logoMarginTop"
             className={classes.control}
-            style={{
-              marginTop: scaled(logoMarginTop),
-              width: scaled(logoWidth),
-            }}
-          >
+            style={{ width: '100%', height: scaled(logoMarginTop) }}
+          />
+          <div style={{ width: scaled(logoWidth) }}>
             <img
               src={item.logo?.url}
               alt={item.logo?.name}
@@ -334,8 +331,36 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
             />
           </div>
         </div>
-        {captionStyle && renderText(captionStyle, item.caption, 'caption', 'elements.caption.margin.top', 'caption', captionMarginTop)}
+        {captionStyle && renderText(captionStyle, item.caption, 'caption', 'captionMarginTop', 'caption', captionMarginTop)}
       </div>
+    </div>
+  );
+
+  const renderCardWrapper = (item: TestimonialsItem, key: string | number, isLast: boolean) => (
+    <div
+      key={key}
+      style={{
+        position: 'relative',
+        flex: '0 0 auto',
+        height: '100%',
+      }}
+    >
+      {renderCard(item, `card-${key}`)}
+      {isEditor && !isLast && (
+        <div
+          data-controls="gap"
+          data-controls-axis="x"
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: `calc(-1 * ${scaled(gap)})`,
+            width: scaled(gap),
+            height: '100%',
+            pointerEvents: 'auto',
+            zIndex: 2,
+          }}
+        />
+      )}
     </div>
   );
 
@@ -356,7 +381,9 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
               style={{ gap: scaled(gap), paddingRight: scaled(gap) }}
               aria-hidden={copyIndex > 0}
             >
-              {content?.map((item: TestimonialsItem, index: number) => renderCard(item, `${copyIndex}-${index}`))}
+              {content?.map((item: TestimonialsItem, index: number) =>
+                renderCardWrapper(item, `${copyIndex}-${index}`, index === (content?.length ?? 0) - 1)
+              )}
             </div>
           ))}
         </div>
@@ -376,7 +403,9 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
         }}
         aria-label="Testimonials"
       >
-        {content?.map((item: TestimonialsItem, index: number) => renderCard(item, index))}
+        {content?.map((item: TestimonialsItem, index: number) =>
+          renderCardWrapper(item, index, index === (content?.length ?? 0) - 1)
+        )}
       </div>
     </div>
   );
