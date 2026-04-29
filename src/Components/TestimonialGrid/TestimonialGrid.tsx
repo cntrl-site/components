@@ -57,7 +57,7 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
 });
 
 export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
-  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, textMinHeight, captionMarginTop } = settings;
+  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, textMinHeight, captionMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
   const isAnimating = isAutoplay && !isPreviewMode;
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
@@ -70,7 +70,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const progressRef = useRef(0);
   const hoveringRef = useRef(false);
   const animRef = useRef<Animation | null>(null);
-  const lastDirectionRef = useRef(direction);
   const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
 
   const normalizedDirection = useMemo<'left' | 'right'>(() => {
@@ -78,6 +77,8 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     const d = String(direction ?? '').trim().toLowerCase();
     return d === 'right' ? 'right' : 'left';
   }, [direction]);
+
+  const lastDirectionRef = useRef<'left' | 'right'>(normalizedDirection);
 
   const resolveCaptionStyle = (kind: 'text' | 'caption'): CaptionStyles | undefined => {
     const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
@@ -173,9 +174,9 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       track.style.transform = 'translate3d(0, 0, 0)';
       return;
     }
-    if (lastDirectionRef.current !== direction) {
+    if (lastDirectionRef.current !== normalizedDirection) {
       progressRef.current = 1 - progressRef.current;
-      lastDirectionRef.current = direction;
+      lastDirectionRef.current = normalizedDirection;
     }
     const duration = (setWidth / pxPerSec) * 1000;
     const from = normalizedDirection === 'left' ? -setWidth : 0;
@@ -194,7 +195,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       anim.cancel();
       if (animRef.current === anim) animRef.current = null;
     };
-  }, [isAutoplay, isAnimating, setWidth, pxPerSec, direction]);
+  }, [isAutoplay, isAnimating, setWidth, pxPerSec, normalizedDirection]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -277,7 +278,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       style={{
         padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
         width: scaled(cardWidth + stroke * 2),
-        minHeight: scaled(cardHeight),
         height: '100%',
         borderRadius: scaled(corners),
         border: `${scaled(stroke)} solid ${strokeColor}`,
@@ -294,7 +294,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
           style={{
             objectFit: item.image.objectFit || 'cover',
             borderRadius: scaled(corners),
-            height: scaled(cardHeight),
           }}
         />
       )}
@@ -312,7 +311,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
           textAlign: overlayTextAlign,
         }}
       >
-        {textStyle && renderText(textStyle, item.text, 'text', { minHeight: textMinHeight })}
+        {textStyle && item.text && renderText(textStyle, item.text, 'text', { minHeight: textMinHeight })}
         <div
           key="logo"
           style={{
@@ -327,7 +326,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
             className={classes.control}
             style={{ width: '100%', height: scaled(logoMarginTop) }}
           />
-          <div style={{ width: scaled(logoWidth) }}>
+          <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
             <img
               src={item.logo?.url}
               alt={item.logo?.name}
@@ -335,10 +334,11 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
             />
           </div>
         </div>
-        {captionStyle &&
+        {captionStyle && item.caption &&
           renderText(captionStyle, item.caption, 'caption', {
             controlsName: 'captionMarginTop',
             marginTop: captionMarginTop,
+            minHeight: captionMinHeight,
           })}
       </div>
     </div>
@@ -430,8 +430,8 @@ export type TestimonialsItem = {
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
-  text: any[];
-  caption: any[];
+  text?: any[];
+  caption?: any[];
 };
 
 type Padding = {
@@ -442,7 +442,6 @@ type Padding = {
 };
 
 type TestimonialsSettings = {
-  type: 'A' | 'B';
   autoplay: 'on' | 'off';
   speed: number;
   align: 'start' | 'center' | 'end';
@@ -450,7 +449,6 @@ type TestimonialsSettings = {
   pauseOnHover: 'on' | 'off';
   gap: number;
   cardWidth: number;
-  cardHeight: number;
   corners: number;
   stroke: number;
   strokeColor: string;
@@ -458,7 +456,9 @@ type TestimonialsSettings = {
   padding: Padding;
   logoMarginTop: number;
   logoWidth: number;
+  logoHeight: number;
   textMinHeight: number;
+  captionMinHeight: number;
   captionMarginTop: number;
   styles: TestimonialsStyles;
 };
