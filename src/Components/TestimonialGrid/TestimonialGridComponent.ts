@@ -32,8 +32,8 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
-        min: 1,
-        max: 10,
+        min: 0.5,
+        max: 8,
       },
       direction: {
         type: 'string',
@@ -68,7 +68,7 @@ const schema: ComponentSchemaV1 = {
       cardWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Card width',
+        title: 'width',
         min: 0,
         max: 400,
         display: { type: 'range-control'  },
@@ -76,7 +76,7 @@ const schema: ComponentSchemaV1 = {
       cardHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Card height',
+        title: 'height',
         min: 0,
         max: 400,
         display: { type: 'range-control' },

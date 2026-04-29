@@ -10,6 +10,7 @@ type TestimonialsProps = {
   settings: TestimonialsSettings;
   content?: TestimonialsItem[];
   isEditor?: boolean;
+  isPreviewMode?: boolean;
 } & CommonComponentProps;
 
 type CaptionStyleFromFlatSettings = {
@@ -55,9 +56,10 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
   color: caption.color,
 });
 
-export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps) => {
+export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
+  const isAnimating = isAutoplay && !isPreviewMode;
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -69,7 +71,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
   const hoveringRef = useRef(false);
   const animRef = useRef<Animation | null>(null);
   const lastDirectionRef = useRef(direction);
-  const hoverPauseEnabled = isAutoplay && pauseOnHover === 'on';
+  const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
 
   const normalizedDirection = useMemo<'left' | 'right'>(() => {
     if (typeof direction === 'boolean') return direction ? 'right' : 'left';
@@ -166,7 +168,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
 
   useLayoutEffect(() => {
     const track = trackRef.current;
-    if (!isAutoplay || !track) return;
+    if (!isAutoplay || !track || !isAnimating) return;
     if (setWidth <= 0 || pxPerSec <= 0) {
       track.style.transform = 'translate3d(0, 0, 0)';
       return;
@@ -192,7 +194,7 @@ export const Testimonials = ({ settings, content, isEditor }: TestimonialsProps)
       anim.cancel();
       if (animRef.current === anim) animRef.current = null;
     };
-  }, [isAutoplay, setWidth, pxPerSec, direction]);
+  }, [isAutoplay, isAnimating, setWidth, pxPerSec, direction]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
