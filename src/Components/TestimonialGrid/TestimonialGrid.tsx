@@ -57,7 +57,7 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
 });
 
 export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
-  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, textMarginTop, textMinHeight, captionMarginTop } = settings;
+  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, cardHeight, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, textMinHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
   const isAnimating = isAutoplay && !isPreviewMode;
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
@@ -234,11 +234,12 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const renderText = (
     style: CaptionStyles,
     content: any[],
-    dataStyles: string,
-    dataControls: string,
     key: string,
-    marginTop: number,
-    minHeight?: number
+    options?: {
+      controlsName?: string;
+      marginTop?: number;
+      minHeight?: number;
+    }
   ) => (
     <div
       key={key}
@@ -249,19 +250,20 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         width: '100%',
       }}
     >
+      {options?.marginTop ? (
+        <div
+          data-controls={options.controlsName}
+          className={classes.control}
+          style={{ width: '100%', height: scaled(options.marginTop) }}
+        />
+      ) : null}
       <div
-        data-controls={dataControls}
-        className={classes.control}
-        style={{ width: '100%', height: scaled(marginTop) }}
-      />
-      <div
-        data-styles={dataStyles}
         className={classes.caption}
         style={{
           ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
           textAlign: overlayTextAlign,
           pointerEvents: 'auto',
-          ...(minHeight ? { minHeight: scaled(minHeight) } : {}),
+          ...(options?.minHeight ? { minHeight: scaled(options.minHeight) } : {}),
         }}
       >
         <RichTextRenderer content={content} />
@@ -310,7 +312,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
           textAlign: overlayTextAlign,
         }}
       >
-        {textStyle && renderText(textStyle, item.text, 'text', 'textMarginTop', 'text', textMarginTop, textMinHeight)}
+        {textStyle && renderText(textStyle, item.text, 'text', { minHeight: textMinHeight })}
         <div
           key="logo"
           style={{
@@ -333,7 +335,11 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
             />
           </div>
         </div>
-        {captionStyle && renderText(captionStyle, item.caption, 'caption', 'captionMarginTop', 'caption', captionMarginTop)}
+        {captionStyle &&
+          renderText(captionStyle, item.caption, 'caption', {
+            controlsName: 'captionMarginTop',
+            marginTop: captionMarginTop,
+          })}
       </div>
     </div>
   );
@@ -452,7 +458,6 @@ type TestimonialsSettings = {
   padding: Padding;
   logoMarginTop: number;
   logoWidth: number;
-  textMarginTop: number;
   textMinHeight: number;
   captionMarginTop: number;
   styles: TestimonialsStyles;
