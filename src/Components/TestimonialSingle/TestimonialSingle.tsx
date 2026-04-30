@@ -38,7 +38,7 @@ type CaptionStyleFromFlatSettings = {
   color: string;
 };
 
-export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsProps) => {
+export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const items = content || [];
   const { autoplay, speed, align, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor, textMinHeight, captionMinHeight } = settings;
   const isAutoplay = (() => {
@@ -50,6 +50,7 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
     }
     return false;
   })();
+  const isAnimating = isAutoplay && !isPreviewMode;
 
   const cardWidth = settings.width ?? 0;
   const imageMarginTop = settings.imageMarginTop ?? 0;
@@ -185,7 +186,7 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
   }, [canSwitch, commitTransition, items.length]);
 
   useEffect(() => {
-    if (!isAutoplay || !canSwitch) return;
+    if (!isAnimating || !canSwitch) return;
     const speedSeconds = typeof speed === 'number' && Number.isFinite(speed) ? speed : 0;
     const intervalMs = Math.max(0.1, speedSeconds) * 1000;
     const id = window.setInterval(() => {
@@ -194,7 +195,7 @@ export const TestimonialSingle = ({ settings, content, isEditor }: TestimonialsP
     return () => {
       window.clearInterval(id);
     };
-  }, [isAutoplay, canSwitch, commitTransition, items.length, speed]);
+  }, [isAnimating, canSwitch, commitTransition, items.length, speed]);
 
   useEffect(() => {
     return () => {
