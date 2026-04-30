@@ -42,14 +42,23 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Speed',
-        display: { type: 'speed-control' },
-        min: 1,
+        display: { type: 'speed-control', reverse: true },
+        min: 0.5,
         max: 10,
+      },
+      align: {
+        type: 'string',
+        title: 'Align',
+        display: {
+          type: 'align-group',
+          direction: 'horizontal',
+        },
+        enum: ['start', 'center', 'end']
       },
       width: {
         type: 'number',
         scope: 'layout',
-        title: 'Card width',
+        title: 'width',
         min: 0,
         max: 400,
         display: { type: 'range-control' },
@@ -57,7 +66,15 @@ const schema: ComponentSchemaV1 = {
       imageWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Image width',
+        title: 'width',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      imageHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'height',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
@@ -70,6 +87,14 @@ const schema: ComponentSchemaV1 = {
         max: 100,
         display: { type: 'range-control' },
       },
+      textMinHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text',
+        min: 0,
+        max: 300,
+        display: { type: 'range-control' },
+      },
       textMarginTop: {
         type: 'number',
         scope: 'layout',
@@ -78,12 +103,49 @@ const schema: ComponentSchemaV1 = {
         max: 100,
         display: { type: 'range-control' },
       },
-      textMinHeight: {
+      controls: {
+        type: 'object',
+        scope: 'common',
+        title: 'Controls',
+        display: { type: 'button-icon-switch' },
+        properties: {
+          mode: {
+            type: 'string',
+            enum: ['On', 'Off'],
+          },
+          icon: {
+            type: ['string', 'null'] as const,
+            title: 'Icon',
+            display: { type: 'settings-image-input' },
+          },
+        },
+      },
+      controlsWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Text min height',
+        title: 'Controls width',
         min: 0,
-        max: 300,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      controlsColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Controls Color',
+        display: { type: 'settings-color-picker' },
+      },
+      controlsHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Controls Hover',
+        display: { type: 'settings-color-picker' },
+      },
+      captionMinHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Caption',
+        min: 0,
+        max: 100,
         display: { type: 'range-control' },
       },
       captionMarginTop: {
@@ -207,6 +269,9 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       autoplay: 'off',
+      controlsColor: '#000000',
+      controlsHoverColor: '#EABC01',
+      align: 'center',
       textFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
       textFontSettings: {
         fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
@@ -235,15 +300,18 @@ const schema: ComponentSchemaV1 = {
         height: 0.2,
         corners: 0.005,
         stroke: 0.001,
-        imageMarginTop: 0,
+        imageMarginTop: 0.01,
+        textMinHeight: 0.1,
+        captionMarginTop: 0.01,
         textMarginTop: 0,
-        textMinHeight: 0.01,
-        captionMarginTop: 0,
         textFontSize: 0.01,
         captionFontSize: 0.01,
         textLineHeight: 0.01,
         captionLineHeight: 0.01,
-        imageWidth: 0.15,
+        imageWidth: 0.05,
+        imageHeight: 0.05,
+        controlsWidth: 0.02,
+        captionMinHeight: 0.01,
       },
       d: {
         speed: 5,
@@ -251,15 +319,18 @@ const schema: ComponentSchemaV1 = {
         height: 0.2,
         corners: 0.005,
         stroke: 0.001,
-        imageMarginTop: 0,
+        imageMarginTop: 0.01,
         textMarginTop: 0,
-        textMinHeight: 0.01,
-        captionMarginTop: 0,
+        textMinHeight: 0.08,
+        captionMarginTop: 0.01,
         textFontSize: 0.01,
         captionFontSize: 0.01,
         textLineHeight: 0.01,
         captionLineHeight: 0.01,
-        imageWidth: 0.15,
+        imageWidth: 0.05,
+        imageHeight: 0.05,
+        controlsWidth: 0.02,
+        captionMinHeight: 0.01,
       },
     },
     displayRules: [],
@@ -282,9 +353,10 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'autoplay'] },
-        { type: 'row', items: ['controls', 'speed'] },
-        { type: 'row', items: [{ type: 'group', title: '', items: ['width'] }] },
-        { type: 'row', items: [{ type: 'group', title: '', items: ['delay', 'imageWidth'] }] },
+        { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['speed', 'width']}] },
+        { type: 'row', items: ['controlsWidth', 'align'] },
+        { type: 'row', title: 'Min Height', items: ['textMinHeight', 'captionMinHeight'] },
+        { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
       ],
     },
     {
@@ -311,7 +383,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['textColor', 'captionColor'],
+    items: ['textColor', 'captionColor', 'controlsColor', 'controlsHoverColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
@@ -348,7 +420,7 @@ const schema: ComponentSchemaV1 = {
     default: [
         {
           image: {
-            objectFit: 'cover',
+            objectFit: 'contain',
             url: 'https://cdn.cntrl.site/component-assets/logo.png',
             name: '',
           },
@@ -367,7 +439,7 @@ const schema: ComponentSchemaV1 = {
         },
         {
           image: {
-            objectFit: 'cover',
+            objectFit: 'contain',
             url: 'https://cdn.cntrl.site/component-assets/logo.png',
             name: '',
           },
@@ -386,7 +458,7 @@ const schema: ComponentSchemaV1 = {
         },
         {
           image: {
-            objectFit: 'cover',
+            objectFit: 'contain',
             url: 'https://cdn.cntrl.site/component-assets/logo.png',
             name: '',
           },

@@ -93,7 +93,8 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     const textAppearance = (settings as any)?.[`${prefix}TextAppearance`];
     const color =
       (settings as any)?.[`${prefix}Color`] ??
-      (kind === 'text' ? (settings as any)?.imageCaptionColor : undefined);
+      (kind === 'text' ? (settings as any)?.textColor : undefined) ??
+      (kind === 'caption' ? (settings as any)?.captionColor : undefined);
     const fontSize = (settings as any)?.[`${prefix}FontSize`];
     const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
 
@@ -254,6 +255,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       {options?.marginTop ? (
         <div
           data-controls={options.controlsName}
+          data-controls-axis="y"
           className={classes.control}
           style={{ width: '100%', height: scaled(options.marginTop) }}
         />
@@ -286,17 +288,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         overflow: 'hidden',
       }}
     >
-      {item.image?.url && (
-        <img
-          className={classes.image}
-          src={item.image.url}
-          alt={item.image.name}
-          style={{
-            objectFit: item.image.objectFit || 'cover',
-            borderRadius: scaled(corners),
-          }}
-        />
-      )}
       <div
         className={classes.cover}
         style={{background: bgColor,height: '100%'}}
@@ -420,11 +411,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
 };
 
 export type TestimonialsItem = {
-  image?: {
-    url?: string;
-    name?: string;
-    objectFit?: 'cover' | 'contain';
-  };
   logo?: {
     url?: string;
     name?: string;

@@ -86,7 +86,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Stroke',
         min: 0,
-        max: 20,
+        max: 10,
         display: { type: 'range-control' },
       },
       strokeColor: {
@@ -131,7 +131,7 @@ const schema: ComponentSchemaV1 = {
         max: 200,
         display: { type: 'range-control' },
       },
-      imageCaptionColor: {
+      textColor: {
         type: 'string',
         scope: 'common',
         title: 'Text color',
@@ -258,7 +258,7 @@ const schema: ComponentSchemaV1 = {
       pauseOnHover: 'off',
       strokeColor: '#000000',
       bgColor: 'rgba(255, 255, 255, 0.81)',
-      imageCaptionColor: '#000000',
+      textColor: '#000000',
       captionColor: '#000000',
       captionFontFamily: 'Arial',
       captionFontSettings: {
@@ -389,7 +389,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['strokeColor', 'bgColor', 'imageCaptionColor', 'captionColor'],
+    items: ['bgColor','strokeColor', 'textColor', 'captionColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
@@ -400,25 +400,6 @@ const schema: ComponentSchemaV1 = {
     items: {
       type: 'object',
       properties: {
-        image: {
-          type: 'object',
-          label: 'Image',
-          display: {
-            type: 'media-input',
-          },
-          properties: {
-            url: {
-              type: 'string',
-            },
-            name: {
-              type: 'string',
-            },
-            objectFit: {
-              type: 'string',
-              enum: ['cover', 'contain'],
-            }
-          },
-        },
         logo: {
           type: 'object',
           label: 'Logo',
@@ -444,7 +425,6 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       {
-        image: {},
         logo: {
           objectFit: 'contain',
           url: 'https://cdn.cntrl.site/component-assets/logo.png',
@@ -464,7 +444,6 @@ const schema: ComponentSchemaV1 = {
         ],
       },
       {
-        image: {},
         logo: {
           objectFit: 'contain',
           url: 'https://cdn.cntrl.site/component-assets/logo.png',
@@ -484,7 +463,6 @@ const schema: ComponentSchemaV1 = {
         ],
       },
       {
-        image: {},
         logo: {
           objectFit: 'contain',
           url: 'https://cdn.cntrl.site/component-assets/logo.png',
@@ -524,7 +502,7 @@ export const TestimonialGridComponent = {
   schema,
   sourceCode: testimonialGridSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'logo.url', placeholderEnabled: true }],
     parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
   },
   fontSettingsPaths: {
