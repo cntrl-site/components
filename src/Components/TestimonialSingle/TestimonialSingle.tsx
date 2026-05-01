@@ -1,6 +1,6 @@
 import cn from 'classnames';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import classes from './Testimonials.module.scss';
+import classes from './TestimonialSingle.module.scss';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
-import classes from './Testimonials.module.scss';
+import classes from './TestimonialsGrid.module.scss';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
@@ -259,7 +259,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         style={{ width: '100%', height: scaled(options?.marginTop ?? 0) }}
       />
       <div
-        className={classes.caption}
         style={{
           ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
           textAlign: overlayTextAlign,
