@@ -252,14 +252,12 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         width: '100%',
       }}
     >
-      {options?.marginTop ? (
-        <div
-          data-controls={options.controlsName}
-          data-controls-axis="y"
-          className={classes.control}
-          style={{ width: '100%', height: scaled(options.marginTop) }}
-        />
-      ) : null}
+      <div
+        data-controls={options?.controlsName}
+        data-controls-axis="y"
+        className={classes.control}
+        style={{ width: '100%', height: scaled(options?.marginTop ?? 0) }}
+      />
       <div
         className={classes.caption}
         style={{
