@@ -7,6 +7,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { CommonComponentProps } from '../props';
+import { TextElementStyles } from '../../types/TextElementStyles';
 
 type SliderProps = {
   settings: SliderSettings;
@@ -365,33 +366,8 @@ type SliderSettings = {
   triggers: Triggers;
 };
 
-type CaptionStyles = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  },
-  widthSettings: {
-    width: number;
-    sizing: 'auto' | 'manual';
-  };
-  letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right';
-  wordSpacing: number;
-  fontSizeLineHeight: {
-    fontSize: number;
-    lineHeight: number;
-  };
-  textAppearance: {
-    textTransform: 'none' | 'uppercase' | 'lowercase';
-    textDecoration: 'none' | 'underline';
-    fontVariant: 'normal' | 'small-caps';
-  };
-  color: string;
-};
-
 type SliderStyles = {
-  imageCaption: CaptionStyles;
+  imageCaption: TextElementStyles;
 }
 
 type Dimensions = {
