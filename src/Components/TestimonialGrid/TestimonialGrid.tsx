@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import classes from './TestimonialsGrid.module.scss';
 import { CommonComponentProps } from '../props';
@@ -56,8 +56,21 @@ const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
   color: caption.color,
 });
 
+type RenderCardOpts = {
+  textMinHeightPx?: number;
+  captionMinHeightPx?: number;
+  dataMeasureAttrs?: boolean;
+};
+
+type RenderTextOpts = {
+  controlsName?: string;
+  marginTop?: number;
+  minHeightPx?: number;
+  dataMeasureKind?: 'text' | 'caption';
+};
+
 export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
-  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, textMinHeight, captionMinHeight, captionMarginTop } = settings;
+  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
   const isAutoplay = autoplay === 'on';
   const isAnimating = isAutoplay && !isPreviewMode;
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
@@ -71,6 +84,9 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const hoveringRef = useRef(false);
   const animRef = useRef<Animation | null>(null);
   const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
+  const measureLayerRef = useRef<HTMLDivElement>(null);
+  const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
+  const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
 
   const normalizedDirection = useMemo<'left' | 'right'>(() => {
     if (typeof direction === 'boolean') return direction ? 'right' : 'left';
@@ -137,6 +153,11 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
 
   const textStyle = resolveCaptionStyle('text');
   const captionStyle = resolveCaptionStyle('caption');
+
+  const shouldMeasureTextExtents = useMemo(
+    () => (content?.length ?? 0) > 1 && (!!textStyle || !!captionStyle),
+    [content, textStyle, captionStyle]
+  );
 
   const copies = useMemo(() => {
     if (!isAutoplay || content?.length === 0) return 1;
@@ -233,104 +254,193 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     }
   }, [align]);
 
-  const renderText = (
-    style: CaptionStyles,
-    content: any[],
-    key: string,
-    options?: {
-      controlsName?: string;
-      marginTop?: number;
-      minHeight?: number;
-    }
-  ) => (
-    <div
-      key={key}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: overlayAlignItems,
-        width: '100%',
-      }}
-    >
+  const renderText = useCallback(
+    (style: CaptionStyles, richContent: any[], key: string, options?: RenderTextOpts) => (
       <div
-        data-controls={options?.controlsName}
-        data-controls-axis="y"
-        className={classes.control}
-        style={{ width: '100%', height: scaled(options?.marginTop ?? 0) }}
-      />
-      <div
-        style={{
-          ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
-          textAlign: overlayTextAlign,
-          pointerEvents: 'auto',
-          ...(options?.minHeight ? { minHeight: scaled(options.minHeight) } : {}),
-        }}
-      >
-        <RichTextRenderer content={content} />
-      </div>
-    </div>
-  );
-
-  const renderCard = (item: TestimonialsItem, key: string | number) => (
-    <div
-      key={key}
-      style={{
-        padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
-        width: scaled(cardWidth + stroke * 2),
-        height: '100%',
-        borderRadius: scaled(corners),
-        border: `${scaled(stroke)} solid ${strokeColor}`,
-        boxSizing: 'border-box',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        className={classes.cover}
-        style={{background: bgColor,height: '100%'}}
-      />
-      <div
-        className={classes.elementsOverlay}
+        key={key}
         style={{
           display: 'flex',
           flexDirection: 'column',
-          pointerEvents: 'none',
           alignItems: overlayAlignItems,
-          textAlign: overlayTextAlign,
+          width: '100%',
         }}
       >
-        {textStyle && item.text && renderText(textStyle, item.text, 'text', { minHeight: textMinHeight })}
         <div
-          key="logo"
+          data-controls={options?.controlsName}
+          data-controls-axis="y"
+          className={classes.control}
+          style={{ width: '100%', height: scaled(options?.marginTop ?? 0) }}
+        />
+        <div
+          {...(options?.dataMeasureKind ? { 'data-testimonial-measure': options.dataMeasureKind } : {})}
+          style={{
+            ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
+            textAlign: overlayTextAlign,
+            pointerEvents: 'auto',
+            ...(typeof options?.minHeightPx === 'number' && options.minHeightPx > 0
+              ? { minHeight: options.minHeightPx }
+              : {}),
+          }}
+        >
+          <RichTextRenderer content={richContent} />
+        </div>
+      </div>
+    ),
+    [overlayAlignItems, overlayTextAlign, isEditor, classes.control]
+  );
+
+  const renderCard = useCallback(
+    (item: TestimonialsItem, key: string | number, opts?: RenderCardOpts) => (
+      <div
+        key={key}
+        style={{
+          padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
+          width: scaled(cardWidth + stroke * 2),
+          height: '100%',
+          borderRadius: scaled(corners),
+          border: `${scaled(stroke)} solid ${strokeColor}`,
+          boxSizing: 'border-box',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          className={classes.cover}
+          style={{ background: bgColor, height: '100%' }}
+        />
+        <div
+          className={classes.elementsOverlay}
           style={{
             display: 'flex',
             flexDirection: 'column',
+            pointerEvents: 'none',
             alignItems: overlayAlignItems,
-            width: '100%',
+            textAlign: overlayTextAlign,
           }}
         >
+          {textStyle &&
+            item.text &&
+            renderText(
+              textStyle,
+              item.text,
+              'text',
+              opts?.dataMeasureAttrs
+                ? { dataMeasureKind: 'text' }
+                : typeof opts?.textMinHeightPx === 'number' && opts.textMinHeightPx > 0
+                  ? { minHeightPx: opts.textMinHeightPx }
+                  : undefined
+            )}
           <div
-            data-controls="logoMarginTop"
-            className={classes.control}
-            style={{ width: '100%', height: scaled(logoMarginTop) }}
-          />
-          <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
-            <img
-              src={item.logo?.url}
-              alt={item.logo?.name}
-              style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.logo?.objectFit || 'cover' }}
+            key="logo"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: overlayAlignItems,
+              width: '100%',
+            }}
+          >
+            <div
+              data-controls="logoMarginTop"
+              className={classes.control}
+              style={{ width: '100%', height: scaled(logoMarginTop) }}
             />
+            <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
+              <img
+                src={item.logo?.url}
+                alt={item.logo?.name}
+                style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.logo?.objectFit || 'cover' }}
+              />
+            </div>
           </div>
+          {captionStyle &&
+            item.caption &&
+            renderText(captionStyle, item.caption, 'caption', {
+              controlsName: 'captionMarginTop',
+              marginTop: captionMarginTop,
+              ...(opts?.dataMeasureAttrs
+                ? { dataMeasureKind: 'caption' as const }
+                : typeof opts?.captionMinHeightPx === 'number' && opts.captionMinHeightPx > 0
+                  ? { minHeightPx: opts.captionMinHeightPx }
+                  : {}),
+            })}
         </div>
-        {captionStyle && item.caption &&
-          renderText(captionStyle, item.caption, 'caption', {
-            controlsName: 'captionMarginTop',
-            marginTop: captionMarginTop,
-            minHeight: captionMinHeight,
-          })}
       </div>
-    </div>
+    ),
+    [
+      bgColor,
+      captionMarginTop,
+      captionStyle,
+      cardWidth,
+      corners,
+      logoHeight,
+      logoMarginTop,
+      logoWidth,
+      overlayAlignItems,
+      overlayTextAlign,
+      padding.bottom,
+      padding.left,
+      padding.right,
+      padding.top,
+      renderText,
+      stroke,
+      strokeColor,
+      textStyle,
+      isEditor,
+    ]
   );
+
+  useLayoutEffect(() => {
+    if (!shouldMeasureTextExtents) {
+      setMeasuredTextMinPx(0);
+      setMeasuredCaptionMinPx(0);
+      return;
+    }
+
+    const root = measureLayerRef.current;
+    if (!root) return;
+
+    const readExtents = () => {
+      const maxText = Array.from(root.querySelectorAll('[data-testimonial-measure="text"]')).reduce(
+        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
+        0
+      );
+      const maxCaption = Array.from(root.querySelectorAll('[data-testimonial-measure="caption"]')).reduce(
+        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
+        0
+      );
+      setMeasuredTextMinPx(maxText);
+      setMeasuredCaptionMinPx(maxCaption);
+    };
+
+    readExtents();
+    const ro = new ResizeObserver(readExtents);
+    ro.observe(root);
+    return () => {
+      ro.disconnect();
+    };
+  }, [shouldMeasureTextExtents, content, renderCard]);
+
+  const visibleCardOpts: RenderCardOpts | undefined = shouldMeasureTextExtents
+    ? { textMinHeightPx: measuredTextMinPx, captionMinHeightPx: measuredCaptionMinPx }
+    : undefined;
+
+  const measureLayerEl = shouldMeasureTextExtents ? (
+    <div
+      ref={measureLayerRef}
+      aria-hidden
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        width: '100%',
+        visibility: 'hidden',
+        pointerEvents: 'none',
+        zIndex: -1,
+      }}
+    >
+      {(content ?? []).map((item, index) => renderCard(item, `measure-${index}`, { dataMeasureAttrs: true }))}
+    </div>
+  ) : null;
 
   const renderCardWrapper = (item: TestimonialsItem, key: string | number, isLast: boolean) => (
     <div
@@ -341,7 +451,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         height: '100%',
       }}
     >
-      {renderCard(item, `card-${key}`)}
+      {renderCard(item, `card-${key}`, visibleCardOpts)}
       {isEditor && !isLast && (
         <div
           data-controls="gap"
@@ -363,6 +473,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   if (isAutoplay && content?.length && content.length > 0) {
     return (
       <div ref={wrapperRef} className={cn(classes.wrapper, classes.marqueeWrapper)} aria-label="Testimonials">
+        {measureLayerEl}
         <div
           ref={trackRef}
           className={classes.marqueeTrack}
@@ -389,6 +500,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
 
   return (
     <div className={classes.wrapper}>
+      {measureLayerEl}
       <div
         style={{
           display: 'flex',
@@ -440,8 +552,6 @@ type TestimonialsSettings = {
   logoMarginTop: number;
   logoWidth: number;
   logoHeight: number;
-  textMinHeight: number;
-  captionMinHeight: number;
   captionMarginTop: number;
   styles: TestimonialsStyles;
 };
