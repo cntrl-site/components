@@ -317,22 +317,25 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             width: '100%',
           }}
         >
-          <div
-            data-controls="imageMarginTop"
-            className={classes.control}
-            style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false), width: '100%' }}
-          />
-          <img
-            src={item.image?.url}
-            alt={item.image?.name}
-            className={classes.icon}
-            style={{
-              pointerEvents: 'auto',
-              objectFit: item.image?.objectFit || 'cover',
-              width: scalingValue(imageWidth ?? 0, isEditor ?? false),
-              height: scalingValue(imageHeight ?? 0, isEditor ?? false),
-            }}
-          />
+          
+          <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
+            {item.image?.url && <div
+              data-controls="imageMarginTop"
+              className={classes.control}
+              style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false), width: '100%' }}
+            />}
+            {item.image?.url && <img
+              src={item.image?.url}
+              alt={item.image?.name}
+              className={classes.icon}
+              style={{
+                pointerEvents: 'auto',
+                objectFit: item.image?.objectFit || 'cover',
+                width: '100%',
+                height: '100%',
+              }}
+            />}
+          </div>
         </div>
         {captionSection}
       </>
