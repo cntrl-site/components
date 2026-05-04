@@ -40,7 +40,7 @@ type CaptionStyleFromFlatSettings = {
 
 export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const items = content || [];
-  const { autoplay, speed, align, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor, textMinHeight, captionMinHeight } = settings;
+  const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor, textMinHeight, captionMinHeight } = settings;
   const isAutoplay = (() => {
     const v = autoplay as unknown;
     if (typeof v === 'boolean') return v;
@@ -51,12 +51,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     return false;
   })();
   const isAnimating = isAutoplay && !isPreviewMode;
-
-  const cardWidth = settings.width ?? 0;
-  const imageMarginTop = settings.imageMarginTop ?? 0;
-  const captionMarginTop = settings.captionMarginTop ?? 0;
-  const textMarginTop = settings.textMarginTop ?? 0;
-
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);
@@ -187,15 +181,13 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   useEffect(() => {
     if (!isAnimating || !canSwitch) return;
-    const speedSeconds = typeof speed === 'number' && Number.isFinite(speed) ? speed : 0;
-    const intervalMs = Math.max(0.1, speedSeconds) * 1000;
     const id = window.setInterval(() => {
       setActiveIndex((currentIndex) => commitTransition(currentIndex, (currentIndex + 1) % items.length));
-    }, intervalMs);
+    }, delay);
     return () => {
       window.clearInterval(id);
     };
-  }, [isAnimating, canSwitch, commitTransition, items.length, speed]);
+  }, [isAnimating, canSwitch, commitTransition, items.length, delay]);
 
   useEffect(() => {
     return () => {
@@ -225,125 +217,125 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
   );
 
   const renderItemContent = useCallback((item: TestimonialsItem) => {
+    let textSection = null;
+    if (textStyle) {
+      const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = textStyle;
+      textSection = (
+        <div
+          key="text"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: overlayAlignItems,
+            width: '100%',
+          }}
+        >
+          <div
+            data-controls="textMarginTop"
+            className={classes.control}
+            style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false), width: '100%' }}
+          />
+          <div
+            style={{
+              fontFamily: fontSettings.fontFamily,
+              fontWeight: fontSettings.fontWeight,
+              fontStyle: fontSettings.fontStyle,
+              minHeight: scalingValue(textMinHeight ?? 0, isEditor ?? false),
+              letterSpacing: scalingValue(letterSpacing, isEditor),
+              wordSpacing: scalingValue(wordSpacing, isEditor),
+              textAlign: overlayTextAlign,
+              fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+              lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+              textTransform: textAppearance.textTransform ?? 'none',
+              textDecoration: textAppearance.textDecoration ?? 'none',
+              fontVariant: textAppearance.fontVariant ?? 'normal',
+              color,
+              pointerEvents: 'auto',
+            }}
+          >
+            <RichTextRenderer content={item.text ?? []} />
+          </div>
+        </div>
+      );
+    }
+
+    let captionSection = null;
+    if (captionStyle) {
+      const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = captionStyle;
+      captionSection = (
+        <div
+          key="caption"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: overlayAlignItems,
+            width: '100%',
+          }}
+        >
+          <div
+            data-controls="captionMarginTop"
+            className={classes.control}
+            style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false), width: '100%' }}
+          />
+          <div
+            style={{
+              fontFamily: fontSettings.fontFamily,
+              fontWeight: fontSettings.fontWeight,
+              fontStyle: fontSettings.fontStyle,
+              minHeight: scalingValue(captionMinHeight ?? 0, isEditor ?? false),
+              letterSpacing: scalingValue(letterSpacing, isEditor),
+              wordSpacing: scalingValue(wordSpacing, isEditor),
+              textAlign: overlayTextAlign,
+              fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
+              lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
+              textTransform: textAppearance.textTransform ?? 'none',
+              textDecoration: textAppearance.textDecoration ?? 'none',
+              fontVariant: textAppearance.fontVariant ?? 'normal',
+              color,
+              pointerEvents: 'auto',
+            }}
+          >
+            <RichTextRenderer content={item.caption} />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
-        {['text', 'image', 'caption'].map((key: string) => {
-          if (key === 'image') {
-            return (
-              <div
-                key="image"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: overlayAlignItems,
-                  width: '100%',
-                }}
-              >
-                <div
-                  data-controls="imageMarginTop"
-                  className={classes.control}
-                  style={{ height: scalingValue(imageMarginTop, isEditor ?? false), width: '100%' }}
-                />
-                <img
-                  src={item.image?.url}
-                  alt={item.image?.name}
-                  className={classes.icon}
-                  style={{
-                    pointerEvents: 'auto',
-                    objectFit: item.image?.objectFit || 'cover',
-                    width: scalingValue(imageWidth ?? 0, isEditor ?? false),
-                    height: scalingValue(imageHeight ?? 0, isEditor ?? false),
-                  }}
-                />
-              </div>
-            );
-          }
-          if (key === 'text' && textStyle) {
-            const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = textStyle;
-            return (
-              <div
-                key="text"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: overlayAlignItems,
-                  width: '100%',
-                }}
-              >
-                <div
-                  data-controls="textMarginTop"
-                  className={classes.control}
-                  style={{ height: scalingValue(textMarginTop, isEditor ?? false), width: '100%' }}
-                />
-                <div
-                  style={{
-                    fontFamily: fontSettings.fontFamily,
-                    fontWeight: fontSettings.fontWeight,
-                    fontStyle: fontSettings.fontStyle,
-                    minHeight: scalingValue(textMinHeight ?? 0, isEditor ?? false),
-                    letterSpacing: scalingValue(letterSpacing, isEditor),
-                    wordSpacing: scalingValue(wordSpacing, isEditor),
-                    textAlign: overlayTextAlign,
-                    fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                    lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                    textTransform: textAppearance.textTransform ?? 'none',
-                    textDecoration: textAppearance.textDecoration ?? 'none',
-                    fontVariant: textAppearance.fontVariant ?? 'normal',
-                    color,
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  <RichTextRenderer content={item.text ?? []} />
-                </div>
-              </div>
-            );
-          }
-          if (key === 'caption' && captionStyle) {
-            const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = captionStyle;
-            return (
-              <div
-                key="caption"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: overlayAlignItems,
-                  width: '100%',
-                }}
-              >
-                <div
-                  data-controls="captionMarginTop"
-                  className={classes.control}
-                  style={{ height: scalingValue(captionMarginTop, isEditor ?? false), width: '100%' }}
-                />
-                <div
-                  style={{
-                    fontFamily: fontSettings.fontFamily,
-                    fontWeight: fontSettings.fontWeight,
-                    fontStyle: fontSettings.fontStyle,
-                    minHeight: scalingValue(captionMinHeight ?? 0, isEditor ?? false),
-                    letterSpacing: scalingValue(letterSpacing, isEditor),
-                    wordSpacing: scalingValue(wordSpacing, isEditor),
-                    textAlign: overlayTextAlign,
-                    fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                    lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                    textTransform: textAppearance.textTransform ?? 'none',
-                    textDecoration: textAppearance.textDecoration ?? 'none',
-                    fontVariant: textAppearance.fontVariant ?? 'normal',
-                    color,
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  <RichTextRenderer content={item.caption} />
-                </div>
-              </div>
-            );
-          }
-          return null;
-        })}
+        {textSection}
+        <div
+          key="image"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: overlayAlignItems,
+            width: '100%',
+          }}
+        >
+          <div
+            data-controls="imageMarginTop"
+            className={classes.control}
+            style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false), width: '100%' }}
+          />
+          <img
+            src={item.image?.url}
+            alt={item.image?.name}
+            className={classes.icon}
+            style={{
+              pointerEvents: 'auto',
+              objectFit: item.image?.objectFit || 'cover',
+              width: scalingValue(imageWidth ?? 0, isEditor ?? false),
+              height: scalingValue(imageHeight ?? 0, isEditor ?? false),
+            }}
+          />
+        </div>
+        {captionSection}
       </>
     );
   }, [
     captionMarginTop,
+    captionMinHeight,
     captionStyle,
     imageMarginTop,
     imageWidth,
@@ -351,6 +343,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     isEditor,
     overlayAlignItems,
     overlayTextAlign,
+    textMarginTop,
     textMinHeight,
     textStyle,
   ]);
@@ -367,7 +360,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         <div
           className={cn(classes.elementsOverlay, classes.wrapper, !isAutoplay && classes.wrapperAutoplayOff)}
           style={{
-            width: scalingValue(cardWidth, isEditor ?? false),
+            width: scalingValue(width ?? 0, isEditor ?? false),
             display: 'flex',
             flexDirection: 'column',
             alignItems: overlayAlignItems,
@@ -490,16 +483,8 @@ export type TestimonialsItem = {
   caption: any[];
 };
 
-type Padding = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};
-
 type TestimonialsSettings = {
   autoplay: 'on' | 'off';
-  speed: number;
   delay: number;
   align: 'start' | 'center' | 'end';
   width: number;
@@ -550,5 +535,3 @@ type TestimonialsStyles = {
   text: CaptionStyles;
   caption: CaptionStyles;
 };
-
-type ElementOrderKey = 'text' | 'image' | 'caption';

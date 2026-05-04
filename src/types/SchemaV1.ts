@@ -20,6 +20,7 @@ export type SchemaProperty = {
   default?: unknown;
   min?: number;
   max?: number;
+  step?: number;
 };
 
 export type LayoutRow = {

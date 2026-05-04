@@ -38,13 +38,14 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'switch-control' },
         enum: ['on', 'off'],
       },
-      speed: {
+      delay: {
         type: 'number',
-        scope: 'layout',
-        title: 'Speed',
-        display: { type: 'speed-control', reverse: true },
-        min: 0.5,
-        max: 10,
+        scope: 'common',
+        title: 'Delay(ms)',
+        display: { type: 'step-control'},
+        step: 500,
+        min: 1000,
+        max: 5000,
       },
       align: {
         type: 'string',
@@ -60,7 +61,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'width',
         min: 0,
-        max: 400,
+        max: 1000,
         display: { type: 'range-control' },
       },
       imageWidth: {
@@ -68,7 +69,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'width',
         min: 0,
-        max: 100,
+        max: 300,
         display: { type: 'range-control' },
       },
       imageHeight: {
@@ -76,7 +77,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'height',
         min: 0,
-        max: 100,
+        max: 300,
         display: { type: 'range-control' },
       },
       imageMarginTop: {
@@ -295,7 +296,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        speed: 5,
+        delay: 2500,
         width: 0.15,
         height: 0.2,
         corners: 0.005,
@@ -314,7 +315,7 @@ const schema: ComponentSchemaV1 = {
         captionMinHeight: 0.01,
       },
       d: {
-        speed: 5,
+        delay: 2500,
         width: 0.15,
         height: 0.2,
         corners: 0.005,
@@ -333,11 +334,16 @@ const schema: ComponentSchemaV1 = {
         captionMinHeight: 0.01,
       },
     },
-    displayRules: [],
+    displayRules: [
+      {
+        if: { name: 'autoplay', value: 'off' },
+        then: { name: 'properties.delay.display.enabled', value: false },
+      },
+    ],
     layout: [
       '__componentName__',
       'autoplay',
-      'speed',
+      'delay',
       'width',
       'imageMarginTop',
       'textMarginTop',
@@ -353,7 +359,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'autoplay'] },
-        { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['speed', 'width']}] },
+        { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['delay', 'width']}] },
         { type: 'row', items: ['controlsWidth', 'align'] },
         { type: 'row', title: 'Min Height', items: ['textMinHeight', 'captionMinHeight'] },
         { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
