@@ -359,7 +359,6 @@ const schema: ComponentSchemaV1 = {
       'width',
       'imageMarginTop',
       'textMarginTop',
-      'textMinHeight',
       'captionMarginTop',
     ],
   },
@@ -373,7 +372,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__', 'autoplay'] },
         { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['delay', 'width']}] },
         { type: 'row', items: ['controlsWidth', 'align'] },
-        { type: 'row', title: 'Min Height', items: ['textMinHeight', 'captionMinHeight'] },
+        // { type: 'row', title: 'Min Height', items: ['textMinHeight', 'captionMinHeight'] },
         { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
       ],
     },
@@ -407,7 +406,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
-      addItemFromFileExplorer: true
+      addItemFromFileExplorer: false
     },
     items: {
       type: 'object',

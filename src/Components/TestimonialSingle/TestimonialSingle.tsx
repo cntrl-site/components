@@ -1,5 +1,5 @@
 import cn from 'classnames';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import classes from './TestimonialSingle.module.scss';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
@@ -12,6 +12,12 @@ type TestimonialsProps = {
   isEditor?: boolean;
   isPreviewMode?: boolean;
 } & CommonComponentProps;
+
+type RenderItemContentOpts = {
+  textMinHeightPx?: number;
+  captionMinHeightPx?: number;
+  dataMeasureAttrs?: boolean;
+};
 
 type CaptionStyleFromFlatSettings = {
   fontSettings: {
@@ -40,7 +46,7 @@ type CaptionStyleFromFlatSettings = {
 
 export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const items = content || [];
-  const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor, textMinHeight, captionMinHeight } = settings;
+  const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
   const isAutoplay = (() => {
     const v = autoplay as unknown;
     if (typeof v === 'boolean') return v;
@@ -145,10 +151,12 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   const textStyle = resolveCaptionStyle('text');
   const captionStyle = resolveCaptionStyle('caption');
-
-  if (!currentItem) return <></>;
-
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
+
+  const shouldMeasureTextExtents = items.length > 1 && (!!textStyle || !!captionStyle);
+  const measureLayerRef = useRef<HTMLDivElement>(null);
+  const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
+  const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
 
   const canSwitch = items.length > 1;
   const commitTransition = useCallback((currentIndex: number, nextIndex: number) => {
@@ -207,7 +215,10 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     [controlsWidth, isEditor]
   );
 
-  const renderItemContent = useCallback((item: TestimonialsItem) => {
+  const renderItemContent = useCallback((item: TestimonialsItem, opts?: RenderItemContentOpts) => {
+    const textMinHeightPx = opts?.textMinHeightPx;
+    const captionMinHeightPx = opts?.captionMinHeightPx;
+    const dataMeasureAttrs = opts?.dataMeasureAttrs;
     let textSection = null;
     if (textStyle) {
       const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = textStyle;
@@ -227,11 +238,12 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false), width: '100%' }}
           />
           <div
+            {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'text' as const } : {})}
             style={{
               fontFamily: fontSettings.fontFamily,
               fontWeight: fontSettings.fontWeight,
               fontStyle: fontSettings.fontStyle,
-              minHeight: scalingValue(textMinHeight ?? 0, isEditor ?? false),
+              ...(typeof textMinHeightPx === 'number' && textMinHeightPx > 0 ? { minHeight: textMinHeightPx } : {}),
               letterSpacing: scalingValue(letterSpacing, isEditor),
               wordSpacing: scalingValue(wordSpacing, isEditor),
               textAlign: overlayTextAlign,
@@ -269,11 +281,12 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false), width: '100%' }}
           />
           <div
+            {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'caption' as const } : {})}
             style={{
               fontFamily: fontSettings.fontFamily,
               fontWeight: fontSettings.fontWeight,
               fontStyle: fontSettings.fontStyle,
-              minHeight: scalingValue(captionMinHeight ?? 0, isEditor ?? false),
+              ...(typeof captionMinHeightPx === 'number' && captionMinHeightPx > 0 ? { minHeight: captionMinHeightPx } : {}),
               letterSpacing: scalingValue(letterSpacing, isEditor),
               wordSpacing: scalingValue(wordSpacing, isEditor),
               textAlign: overlayTextAlign,
@@ -326,7 +339,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     );
   }, [
     captionMarginTop,
-    captionMinHeight,
     captionStyle,
     imageMarginTop,
     imageWidth,
@@ -335,10 +347,46 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     overlayAlignItems,
     overlayTextAlign,
     textMarginTop,
-    textMinHeight,
     textStyle,
   ]);
-  
+
+  useLayoutEffect(() => {
+    if (!shouldMeasureTextExtents) {
+      setMeasuredTextMinPx(0);
+      setMeasuredCaptionMinPx(0);
+      return;
+    }
+
+    const root = measureLayerRef.current;
+    if (!root) return;
+
+    const readExtents = () => {
+      const maxText = Array.from(root.querySelectorAll('[data-testimonial-measure="text"]')).reduce(
+        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
+        0
+      );
+      const maxCaption = Array.from(root.querySelectorAll('[data-testimonial-measure="caption"]')).reduce(
+        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
+        0
+      );
+      setMeasuredTextMinPx(maxText);
+      setMeasuredCaptionMinPx(maxCaption);
+    };
+
+    readExtents();
+    const ro = new ResizeObserver(readExtents);
+    ro.observe(root);
+    return () => {
+      ro.disconnect();
+    };
+  }, [shouldMeasureTextExtents, items, renderItemContent]);
+
+  if (!currentItem) return <></>;
+
+  const visibleContentOpts: RenderItemContentOpts | undefined = shouldMeasureTextExtents
+    ? { textMinHeightPx: measuredTextMinPx, captionMinHeightPx: measuredCaptionMinPx }
+    : undefined;
+
   return (
     <>
       <div
@@ -362,14 +410,35 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             position: 'relative',
           }}
         >
+          {shouldMeasureTextExtents && (
+            <div
+              ref={measureLayerRef}
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: '100%',
+                visibility: 'hidden',
+                pointerEvents: 'none',
+                zIndex: -1,
+              }}
+            >
+              {items.map((item, index) => (
+                <div key={index} style={{ width: '100%' }}>
+                  {renderItemContent(item, { dataMeasureAttrs: true })}
+                </div>
+              ))}
+            </div>
+          )}
           <div className={classes.fadeStack}>
             {previousItem && isFading && (
               <div className={cn(classes.fadeItemPrev, classes.fadeOut)}>
-                {renderItemContent(previousItem)}
+                {renderItemContent(previousItem, visibleContentOpts)}
               </div>
             )}
             <div className={cn(classes.fadeItemCurrent, isFading ? classes.fadeIn : undefined)}>
-              {renderItemContent(currentItem)}
+              {renderItemContent(currentItem, visibleContentOpts)}
             </div>
           </div>
         </div>
@@ -465,9 +534,7 @@ type TestimonialsSettings = {
   imageMarginTop?: number;
   imageWidth?: number;
   imageHeight?: number;
-  textMinHeight?: number;
   textMarginTop?: number;
-  captionMinHeight?: number;
   captionMarginTop?: number;
   styles: TestimonialsStyles;
   controlsColor: string;
