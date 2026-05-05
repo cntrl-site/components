@@ -1,8 +1,8 @@
-import { Form, type FormFieldItem } from './Form';
+import { Form } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Form.tsx?raw';
 
-const defaultFieldsItems: FormFieldItem[] = [
+const defaultFieldsItems = [
   { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
   { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
   { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Please, enter your company name.' },
