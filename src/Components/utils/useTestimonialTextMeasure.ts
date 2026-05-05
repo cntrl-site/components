@@ -12,7 +12,7 @@ type UseTestimonialMeasureExtentsOpts = {
   deps?: DependencyList;
 };
 
-export const useTestimonialMeasureExtents = ({
+export const useTestimonialTextMeasure = ({
   enabled,
   rootRef,
   onExtents,

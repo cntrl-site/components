@@ -1,11 +1,11 @@
 import cn from 'classnames';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { useTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
+import { useTestimonialTextMeasure } from '../utils/useTestimonialTextMeasure';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function getCSS(P: string): string {
@@ -204,35 +204,22 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
   const previousItem = prevIndex === null ? null : items[prevIndex];
 
   const resolveTextStyle = (kind: 'text' | 'caption'): TextStyles => {
-    const fromNested = (settings as any)?.styles?.[kind] as TextStyles | undefined;
-    if (fromNested) return fromNested;
-
-    const prefix = kind === 'text' ? 'text' : 'caption';
-    const fontFamily = (settings as any)?.[`${prefix}FontFamily`];
-    const fontSettings = (settings as any)?.[`${prefix}FontSettings`];
-    const letterSpacing = (settings as any)?.[`${prefix}LetterSpacing`];
-    const wordSpacing = (settings as any)?.[`${prefix}WordSpacing`];
-    const textAppearance = (settings as any)?.[`${prefix}TextAppearance`];
-    const color = (settings as any)?.[`${prefix}Color`];
-    const fontSize = (settings as any)?.[`${prefix}FontSize`];
-    const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
-
     const styles: TextStyles = {
       fontSettings: {
-        fontFamily: fontFamily ?? 'Arial',
-        fontWeight: fontSettings?.fontWeight ?? 400,
-        fontStyle: fontSettings?.fontStyle ?? 'normal',
+        fontFamily:(settings as any)?.[`${kind}FontFamily`] ?? 'Arial',
+        fontWeight: (settings as any)?.[`${kind}FontSettings`]?.fontWeight ?? 400,
+        fontStyle: (settings as any)?.[`${kind}FontSettings`]?.fontStyle ?? 'normal',
       },
-      fontSize: fontSize ?? 0.01,
-      lineHeight: lineHeight ?? 0.01,
       textAppearance: {
-        textTransform: textAppearance?.textTransform ?? 'none',
-        textDecoration: textAppearance?.textDecoration ?? 'none',
-        fontVariant: textAppearance?.fontVariant ?? 'normal',
+        textTransform: (settings as any)?.[`${kind}TextAppearance`]?.textTransform ?? 'none',
+        textDecoration: (settings as any)?.[`${kind}TextAppearance`]?.textDecoration ?? 'none',
+        fontVariant: (settings as any)?.[`${kind}TextAppearance`]?.fontVariant ?? 'normal',
       },
-      letterSpacing: letterSpacing ?? 0,
-      wordSpacing: wordSpacing ?? 0,
-      color: color ?? '#000000',
+      fontSize: (settings as any)?.[`${kind}FontSize`] ?? 0.01,
+      lineHeight: (settings as any)?.[`${kind}LineHeight`] ?? 0.01,
+      letterSpacing: (settings as any)?.[`${kind}LetterSpacing`] ?? 0,
+      wordSpacing: (settings as any)?.[`${kind}WordSpacing`] ?? 0,
+      color: (settings as any)?.[`${kind}Color`] ?? '#000000',
     };
     return styles;
   };
@@ -384,7 +371,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     textStyle,
   ]);
 
-  useTestimonialMeasureExtents({
+  useTestimonialTextMeasure({
     enabled: shouldMeasureTextExtents,
     rootRef: measureLayerRef,
     onExtents: ({ maxTextPx, maxCaptionPx }) => {
@@ -518,7 +505,6 @@ type TestimonialsSettings = {
   imageHeight?: number;
   textMarginTop?: number;
   captionMarginTop?: number;
-  styles: TestimonialsStyles;
   controlsColor: string;
   controlsHoverColor: string;
   controlsWidth?: number;
@@ -526,9 +512,4 @@ type TestimonialsSettings = {
     mode?: 'On' | 'Off';
     icon?: string | null;
   };
-};
-
-type TestimonialsStyles = {
-  text: TextStyles;
-  caption: TextStyles;
 };

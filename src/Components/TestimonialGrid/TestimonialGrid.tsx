@@ -5,7 +5,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { useTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
+import { useTestimonialTextMeasure } from '../utils/useTestimonialTextMeasure';
 
 function getCSS(P: string): string {
   return `
@@ -57,7 +57,6 @@ function getCSS(P: string): string {
   position: relative;
   z-index: 2;
   width: 100%;
-  width: '100%'
 }
 
 .${P}-control::before {
@@ -96,7 +95,7 @@ type RenderTextOpts = {
   dataMeasureKind?: 'text' | 'caption';
 };
 
-export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
+export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
   const isAnimating = autoplay === 'on' && !isPreviewMode;
@@ -117,41 +116,24 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const lastDirectionRef = useRef<'left' | 'right'>(direction);
 
   const resolveTextStyle = (kind: 'text' | 'caption'): TextStyles => {
-    const fromNested = (settings as any)?.styles?.[kind] as TextStyles | undefined;
-    if (fromNested) return fromNested;
-
-    const prefix = kind === 'text' ? 'text' : 'caption';
-    const fontFamily = (settings as any)?.[`${prefix}FontFamily`];
-    const fontSettings = (settings as any)?.[`${prefix}FontSettings`];
-    const letterSpacing = (settings as any)?.[`${prefix}LetterSpacing`];
-    const wordSpacing = (settings as any)?.[`${prefix}WordSpacing`];
-    const textAppearance = (settings as any)?.[`${prefix}TextAppearance`];
-    const color =
-      (settings as any)?.[`${prefix}Color`] ??
-      (kind === 'text' ? (settings as any)?.textColor : undefined) ??
-      (kind === 'caption' ? (settings as any)?.captionColor : undefined);
-    const fontSize = (settings as any)?.[`${prefix}FontSize`];
-    const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
-
-    const flat: TextStyles = {
+    const styles: TextStyles = {
       fontSettings: {
-        fontFamily: fontFamily ?? 'Arial',
-        fontWeight: fontSettings?.fontWeight ?? 400,
-        fontStyle: fontSettings?.fontStyle ?? 'normal',
+        fontFamily: (settings as any)?.[`${kind}FontFamily`] ?? 'Arial',
+        fontWeight: (settings as any)?.[`${kind}FontSettings`]?.fontWeight ?? 400,
+        fontStyle: (settings as any)?.[`${kind}FontSettings`]?.fontStyle ?? 'normal',
       },
-      letterSpacing: letterSpacing ?? 0,
-      wordSpacing: wordSpacing ?? 0,
-      fontSize: fontSize ?? 0.01,
-      lineHeight: lineHeight ?? 0.01,
       textAppearance: {
-        textTransform: textAppearance?.textTransform ?? 'none',
-        textDecoration: textAppearance?.textDecoration ?? 'none',
-        fontVariant: textAppearance?.fontVariant ?? 'normal',
+        textTransform: (settings as any)?.[`${kind}TextAppearance`]?.textTransform ?? 'none',
+        textDecoration: (settings as any)?.[`${kind}TextAppearance`]?.textDecoration ?? 'none',
+        fontVariant: (settings as any)?.[`${kind}TextAppearance`]?.fontVariant ?? 'normal',
       },
-      color: color ?? '#000000',
+      letterSpacing: (settings as any)?.[`${kind}LetterSpacing`] ?? 0,
+      wordSpacing: (settings as any)?.[`${kind}WordSpacing`] ?? 0,
+      fontSize: (settings as any)?.[`${kind}FontSize`] ?? 0.01,
+      lineHeight: (settings as any)?.[`${kind}LineHeight`] ?? 0.01,
+      color: (settings as any)?.[`${kind}Color`] ?? '#000000',
     };
-
-    return flat;
+    return styles;
   };
 
   const textStyle = resolveTextStyle('text');
@@ -381,7 +363,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     ]
   );
 
-  useTestimonialMeasureExtents({
+  useTestimonialTextMeasure({
     enabled: shouldMeasureTextExtents,
     rootRef: measureLayerRef,
     onExtents: ({ maxTextPx, maxCaptionPx }) => {
@@ -519,10 +501,4 @@ type TestimonialsSettings = {
   logoWidth: number;
   logoHeight: number;
   captionMarginTop: number;
-  styles: TestimonialsStyles;
-};
-
-type TestimonialsStyles = {
-  text: TextStyles;
-  caption: TextStyles;
 };
