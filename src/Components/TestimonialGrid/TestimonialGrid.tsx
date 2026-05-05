@@ -5,6 +5,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import { getTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
 
 function getCSS(P: string): string {
   return `
@@ -462,16 +463,9 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     if (!root) return;
 
     const readExtents = () => {
-      const maxText = Array.from(root.querySelectorAll('[data-testimonial-measure="text"]')).reduce(
-        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
-        0
-      );
-      const maxCaption = Array.from(root.querySelectorAll('[data-testimonial-measure="caption"]')).reduce(
-        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
-        0
-      );
-      setMeasuredTextMinPx(maxText);
-      setMeasuredCaptionMinPx(maxCaption);
+      const { maxTextPx, maxCaptionPx } = getTestimonialMeasureExtents(root);
+      setMeasuredTextMinPx(maxTextPx);
+      setMeasuredCaptionMinPx(maxCaptionPx);
     };
 
     readExtents();
@@ -567,11 +561,11 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       {measureLayerEl}
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'row',
           gap: scaled(gap),
           justifyContent: 'center',
           overflowX: 'auto',
+          display: 'flex',
+          flexDirection: 'row',
         }}
         aria-label="Testimonials"
       >

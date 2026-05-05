@@ -5,6 +5,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import { getTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
 
 function getCSS(P: string): string {
   return `
@@ -13,6 +14,8 @@ function getCSS(P: string): string {
   display: flex;
   height: 100%;
   width: 100%;
+  flexDirection: column;
+  alignItems: center;
 }
 
 .${P}-wrapper {
@@ -20,6 +23,13 @@ function getCSS(P: string): string {
   width: 100%;
   height: 100%;
   order: 1;
+  display: flex;
+  flexDirection: column;
+  inset: 0;
+  pointerEvents: none;
+  height: 100%;
+  boxSizing: border-box;
+  position: relative;
 }
 
 .${P}-wrapper-autoplay-off {
@@ -67,12 +77,17 @@ function getCSS(P: string): string {
 }
 
 .${P}-controls {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   display: flex;
   width: 100%;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .${P}-arrow {
+  pointer-events: auto;
   position: relative;
   display: flex;
   align-items: center;
@@ -92,6 +107,7 @@ function getCSS(P: string): string {
   cursor: pointer;
   width: 100%;
   height: 100%;
+  pointerEvents: auto;
 }
 
 .${P}-arrow-img {
@@ -122,6 +138,11 @@ function getCSS(P: string): string {
   pointer-events: auto;
   z-index: 10;
 }
+.${P}-icon {
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+}
 `;
 }
 
@@ -138,7 +159,7 @@ type RenderItemContentOpts = {
   dataMeasureAttrs?: boolean;
 };
 
-type CaptionStyleFromFlatSettings = {
+type CaptionStyleSettings = {
   fontSettings: {
     fontFamily: string;
     fontWeight: number;
@@ -235,7 +256,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
       typeof lineHeight === 'number';
     if (!hasAnyFlat) return undefined;
 
-    const flat: CaptionStyleFromFlatSettings = {
+    const flat: CaptionStyleSettings = {
       widthSettings: { width: 0.13, sizing: 'manual' },
       fontSettings: {
         fontFamily: typeof fontFamily === 'string' ? fontFamily : 'Arial',
@@ -330,10 +351,10 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     const textMinHeightPx = opts?.textMinHeightPx;
     const captionMinHeightPx = opts?.captionMinHeightPx;
     const dataMeasureAttrs = opts?.dataMeasureAttrs;
-    let textSection = null;
-    if (textStyle) {
-      const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = textStyle;
-      textSection = (
+    const textSection = textStyle
+      ? (() => {
+          const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = textStyle;
+          return (
         <div
           key="text"
           style={{
@@ -370,13 +391,14 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             <RichTextRenderer content={item.text ?? []} />
           </div>
         </div>
-      );
-    }
+          );
+        })()
+      : null;
 
-    let captionSection = null;
-    if (captionStyle) {
-      const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = captionStyle;
-      captionSection = (
+    const captionSection = captionStyle
+      ? (() => {
+          const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = captionStyle;
+          return (
         <div
           key="caption"
           style={{
@@ -413,8 +435,9 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             <RichTextRenderer content={item.caption} />
           </div>
         </div>
-      );
-    }
+          );
+        })()
+      : null;
 
     return (
       <>
@@ -439,12 +462,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
               src={item.image?.url}
               alt={item.image?.name}
               className={`${P}-icon`}
-              style={{
-                pointerEvents: 'auto',
-                objectFit: item.image?.objectFit || 'cover',
-                width: '100%',
-                height: '100%',
-              }}
+              style={{ objectFit: item.image?.objectFit || 'cover' }}
             />}
           </div>
         </div>
@@ -470,21 +488,12 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
       setMeasuredCaptionMinPx(0);
       return;
     }
-
     const root = measureLayerRef.current;
     if (!root) return;
-
     const readExtents = () => {
-      const maxText = Array.from(root.querySelectorAll('[data-testimonial-measure="text"]')).reduce(
-        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
-        0
-      );
-      const maxCaption = Array.from(root.querySelectorAll('[data-testimonial-measure="caption"]')).reduce(
-        (acc, el) => Math.max(acc, el.getBoundingClientRect().height),
-        0
-      );
-      setMeasuredTextMinPx(maxText);
-      setMeasuredCaptionMinPx(maxCaption);
+      const { maxTextPx, maxCaptionPx } = getTestimonialMeasureExtents(root);
+      setMeasuredTextMinPx(maxTextPx);
+      setMeasuredCaptionMinPx(maxCaptionPx);
     };
 
     readExtents();
@@ -503,27 +512,11 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   return (
     <>
-      <div
-        className={`${P}-container`}
-        style={{
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}
-      >
+      <div className={`${P}-container`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         <div
           className={cn(`${P}-elements-overlay`, `${P}-wrapper`, autoplay === 'off' && `${P}-wrapper-autoplay-off`)}
-          style={{
-            width: scalingValue(width ?? 0, isEditor ?? false),
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: overlayAlignItems,
-            inset: 0,
-            pointerEvents: 'none',
-            height: '100%',
-            boxSizing: 'border-box',
-            position: 'relative',
-          }}
+          style={{ width: scalingValue(width ?? 0, isEditor ?? false), alignItems: overlayAlignItems }}
         >
           {shouldMeasureTextExtents && (
             <div
@@ -561,12 +554,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           <div
             className={`${P}-controls`}
             style={{
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
               paddingLeft: controlsInsetX,
               paddingRight: controlsInsetX,
             }}
@@ -574,7 +561,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             <div
               className={`${P}-arrow`}
               style={{
-                pointerEvents: 'auto',
                 width: controlsIconSize,
                 height: controlsIconSize,
                 ['--arrow-hover-color' as string]: controlsHoverColor,
@@ -585,7 +571,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 className={`${P}-arrow-inner`}
                 onClick={goPrev}
                 aria-label="Previous testimonial"
-                style={{ pointerEvents: 'auto' }}
               >
                 {customArrowsUrl && (
                   <SvgImage
@@ -600,7 +585,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             <div
               className={cn(`${P}-arrow`, `${P}-next-arrow`)}
               style={{
-                pointerEvents: 'auto',
                 width: controlsIconSize,
                 height: controlsIconSize,
                 ['--arrow-hover-color' as string]: controlsHoverColor,
@@ -611,7 +595,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 className={`${P}-arrow-inner`}
                 onClick={goNext}
                 aria-label="Next testimonial"
-                style={{ pointerEvents: 'auto' }}
               >
                 {customArrowsUrl && (
                   <SvgImage
