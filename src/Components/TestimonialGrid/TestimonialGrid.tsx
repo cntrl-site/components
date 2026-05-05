@@ -1,10 +1,72 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
-import classes from './TestimonialsGrid.module.scss';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { useScopedStyles } from '../utils/useScopedStyles';
+
+function getCSS(P: string): string {
+  return `
+.${P}-marquee-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.${P}-marquee-track {
+  display: flex;
+  flex-direction: row;
+  width: max-content;
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.${P}-marquee-set {
+  display: flex;
+  flex-direction: row;
+  flex: 0 0 auto;
+}
+
+.${P}-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  order: 1;
+}
+
+.${P}-cover {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.${P}-elements-overlay {
+  position: relative;
+  inset: 0;
+}
+
+.${P}-control {
+  position: relative;
+  z-index: 2;
+}
+
+.${P}-control::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 20px;
+  pointer-events: auto;
+  z-index: 10;
+}
+`;
+}
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
@@ -70,9 +132,9 @@ type RenderTextOpts = {
 };
 
 export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
+  const { prefix: P } = useScopedStyles();
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
-  const isAutoplay = autoplay === 'on';
-  const isAnimating = isAutoplay && !isPreviewMode;
+  const isAnimating = autoplay === 'on' && !isPreviewMode;
   const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -160,13 +222,13 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   );
 
   const copies = useMemo(() => {
-    if (!isAutoplay || content?.length === 0) return 1;
+    if (autoplay === 'off' || content?.length === 0) return 1;
     if (setWidth <= 0 || containerWidth <= 0) return 2;
     return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [isAutoplay, content?.length, setWidth, containerWidth]);
+  }, [autoplay, content?.length, setWidth, containerWidth]);
 
   useLayoutEffect(() => {
-    if (!isAutoplay) return;
+    if (autoplay === 'off') return;
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
@@ -187,11 +249,11 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [isAutoplay, content?.length]);
+  }, [autoplay, content?.length]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
-    if (!isAutoplay || !track || !isAnimating) return;
+    if (autoplay === 'off' || !track || !isAnimating) return;
     if (setWidth <= 0 || pxPerSec <= 0) {
       track.style.transform = 'translate3d(0, 0, 0)';
       return;
@@ -217,7 +279,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       anim.cancel();
       if (animRef.current === anim) animRef.current = null;
     };
-  }, [isAutoplay, isAnimating, setWidth, pxPerSec, normalizedDirection]);
+  }, [autoplay, isAnimating, setWidth, pxPerSec, normalizedDirection]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -268,7 +330,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         <div
           data-controls={options?.controlsName}
           data-controls-axis="y"
-          className={classes.control}
+          className={`${P}-control`}
           style={{ width: '100%', height: scaled(options?.marginTop ?? 0) }}
         />
         <div
@@ -286,7 +348,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         </div>
       </div>
     ),
-    [overlayAlignItems, overlayTextAlign, isEditor, classes.control]
+    [overlayAlignItems, overlayTextAlign, isEditor]
   );
 
   const renderCard = useCallback(
@@ -305,11 +367,11 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         }}
       >
         <div
-          className={classes.cover}
+          className={`${P}-cover`}
           style={{ background: bgColor, height: '100%' }}
         />
         <div
-          className={classes.elementsOverlay}
+          className={`${P}-elements-overlay`}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -341,7 +403,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
           >
             <div
               data-controls="logoMarginTop"
-              className={classes.control}
+              className={`${P}-control`}
               style={{ width: '100%', height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
@@ -470,13 +532,14 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     </div>
   );
 
-  if (isAutoplay && content?.length && content.length > 0) {
+  if (autoplay === 'on' && content?.length && content.length > 0) {
     return (
-      <div ref={wrapperRef} className={cn(classes.wrapper, classes.marqueeWrapper)} aria-label="Testimonials">
+      <div ref={wrapperRef} className={cn(`${P}-wrapper`, `${P}-marquee-wrapper`)} aria-label="Testimonials">
+        <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         {measureLayerEl}
         <div
           ref={trackRef}
-          className={classes.marqueeTrack}
+          className={`${P}-marquee-track`}
           onMouseEnter={onTrackEnter}
           onMouseLeave={onTrackLeave}
         >
@@ -484,7 +547,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
             <div
               key={`set-${copyIndex}`}
               ref={copyIndex === 0 ? setRef : undefined}
-              className={classes.marqueeSet}
+              className={`${P}-marquee-set`}
               style={{ gap: scaled(gap), paddingRight: scaled(gap) }}
               aria-hidden={copyIndex > 0}
             >
@@ -499,7 +562,8 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   }
 
   return (
-    <div className={classes.wrapper}>
+    <div className={`${P}-wrapper`}>
+      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       {measureLayerEl}
       <div
         style={{

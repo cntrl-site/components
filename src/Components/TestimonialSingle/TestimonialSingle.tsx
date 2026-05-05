@@ -1,10 +1,129 @@
 import cn from 'classnames';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import classes from './TestimonialSingle.module.scss';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { useScopedStyles } from '../utils/useScopedStyles';
+
+function getCSS(P: string): string {
+  return `
+.${P}-container {
+  overflow-x: clip;
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.${P}-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  order: 1;
+}
+
+.${P}-wrapper-autoplay-off {
+  overflow-x: hidden;
+}
+
+.${P}-elements-overlay {
+  position: relative;
+  inset: 0;
+}
+
+.${P}-fade-stack {
+  position: relative;
+  width: 100%;
+}
+
+.${P}-fade-item-prev {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.${P}-fade-item-current {
+  position: relative;
+  width: 100%;
+}
+
+@keyframes ${P}-testimonial-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ${P}-testimonial-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.${P}-fade-in {
+  animation: ${P}-testimonial-fade-in 300ms ease-in forwards;
+}
+
+.${P}-fade-out {
+  animation: ${P}-testimonial-fade-out 300ms ease-in forwards;
+}
+
+.${P}-controls {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.${P}-arrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  z-index: 1;
+  padding: 0;
+}
+
+.${P}-next-arrow {
+  left: unset;
+}
+
+.${P}-arrow-inner {
+  all: unset;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.${P}-arrow-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.${P}-mirror {
+  transform: translate(-50%, -50%) scaleX(-1) !important;
+}
+
+.${P}-control {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.${P}-control::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 20px;
+  pointer-events: auto;
+  z-index: 10;
+}
+`;
+}
 
 type TestimonialsProps = {
   settings: TestimonialsSettings;
@@ -45,18 +164,10 @@ type CaptionStyleFromFlatSettings = {
 };
 
 export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
+  const { prefix: P } = useScopedStyles();
   const items = content || [];
   const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
-  const isAutoplay = (() => {
-    const v = autoplay as unknown;
-    if (typeof v === 'boolean') return v;
-    if (typeof v === 'string') {
-      const s = v.trim().toLowerCase();
-      return s === 'on' || s === 'true';
-    }
-    return false;
-  })();
-  const isAnimating = isAutoplay && !isPreviewMode;
+  const isAnimating = autoplay === 'on' && !isPreviewMode;
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);
@@ -234,7 +345,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         >
           <div
             data-controls="textMarginTop"
-            className={classes.control}
+            className={`${P}-control`}
             style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false), width: '100%' }}
           />
           <div
@@ -277,7 +388,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         >
           <div
             data-controls="captionMarginTop"
-            className={classes.control}
+            className={`${P}-control`}
             style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false), width: '100%' }}
           />
           <div
@@ -321,13 +432,13 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
             {item.image?.url && <div
               data-controls="imageMarginTop"
-              className={classes.control}
+              className={`${P}-control`}
               style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false), width: '100%' }}
             />}
             {item.image?.url && <img
               src={item.image?.url}
               alt={item.image?.name}
-              className={classes.icon}
+              className={`${P}-icon`}
               style={{
                 pointerEvents: 'auto',
                 objectFit: item.image?.objectFit || 'cover',
@@ -393,14 +504,15 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
   return (
     <>
       <div
-        className={classes.container}
+        className={`${P}-container`}
         style={{
           flexDirection: 'column',
           alignItems: 'center'
         }}
       >
+        <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         <div
-          className={cn(classes.elementsOverlay, classes.wrapper, !isAutoplay && classes.wrapperAutoplayOff)}
+          className={cn(`${P}-elements-overlay`, `${P}-wrapper`, autoplay === 'off' && `${P}-wrapper-autoplay-off`)}
           style={{
             width: scalingValue(width ?? 0, isEditor ?? false),
             display: 'flex',
@@ -434,20 +546,20 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
               ))}
             </div>
           )}
-          <div className={classes.fadeStack}>
+          <div className={`${P}-fade-stack`}>
             {previousItem && isFading && (
-              <div className={cn(classes.fadeItemPrev, classes.fadeOut)}>
+              <div className={cn(`${P}-fade-item-prev`, `${P}-fade-out`)}>
                 {renderItemContent(previousItem, visibleContentOpts)}
               </div>
             )}
-            <div className={cn(classes.fadeItemCurrent, isFading ? classes.fadeIn : undefined)}>
+            <div className={cn(`${P}-fade-item-current`, isFading ? `${P}-fade-in` : undefined)}>
               {renderItemContent(currentItem, visibleContentOpts)}
             </div>
           </div>
         </div>
         {controls.mode === 'On' && (
           <div
-            className={classes.controls}
+            className={`${P}-controls`}
             style={{
               position: 'absolute',
               inset: 0,
@@ -460,7 +572,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             }}
           >
             <div
-              className={classes.arrow}
+              className={`${P}-arrow`}
               style={{
                 pointerEvents: 'auto',
                 width: controlsIconSize,
@@ -470,7 +582,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             >
               <button
                 type="button"
-                className={classes.arrowInner}
+                className={`${P}-arrow-inner`}
                 onClick={goPrev}
                 aria-label="Previous testimonial"
                 style={{ pointerEvents: 'auto' }}
@@ -480,13 +592,13 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                     url={customArrowsUrl}
                     fill={controlsColor}
                     hoverFill={controlsHoverColor}
-                    className={cn(classes.arrowImg, classes.mirror)}
+                    className={cn(`${P}-arrow-img`, `${P}-mirror`)}
                   />
                 )}
               </button>
             </div>
             <div
-              className={cn(classes.arrow, classes.nextArrow)}
+              className={cn(`${P}-arrow`, `${P}-next-arrow`)}
               style={{
                 pointerEvents: 'auto',
                 width: controlsIconSize,
@@ -496,7 +608,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             >
               <button
                 type="button"
-                className={classes.arrowInner}
+                className={`${P}-arrow-inner`}
                 onClick={goNext}
                 aria-label="Next testimonial"
                 style={{ pointerEvents: 'auto' }}
@@ -506,7 +618,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                     url={customArrowsUrl}
                     fill={controlsColor}
                     hoverFill={controlsHoverColor}
-                    className={classes.arrowImg}
+                    className={`${P}-arrow-img`}
                   />
                 )}
               </button>
