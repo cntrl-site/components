@@ -6,6 +6,7 @@ import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { useTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function getCSS(P: string): string {
   return `
@@ -135,7 +136,6 @@ function getCSS(P: string): string {
   left: 0;
   width: 100%;
   height: 100%;
-  min-height: 20px;
   pointer-events: auto;
   z-index: 10;
 }
@@ -158,31 +158,6 @@ type RenderItemContentOpts = {
   textMinHeightPx?: number;
   captionMinHeightPx?: number;
   dataMeasureAttrs?: boolean;
-};
-
-type CaptionStyleSettings = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  widthSettings: {
-    width: number;
-    sizing: 'auto' | 'manual';
-  };
-  letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right';
-  wordSpacing: number;
-  fontSizeLineHeight: {
-    fontSize: number;
-    lineHeight: number;
-  };
-  textAppearance: {
-    textTransform: 'none' | 'uppercase' | 'lowercase';
-    textDecoration: 'none' | 'underline';
-    fontVariant: 'normal' | 'small-caps';
-  };
-  color: string;
 };
 
 export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
@@ -228,10 +203,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
   const currentItem = items[activeIndex];
   const previousItem = prevIndex === null ? null : items[prevIndex];
 
-  const resolveCaptionStyle = (
-    kind: 'text' | 'caption'
-  ): CaptionStyles | undefined => {
-    const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
+  const resolveTextStyle = (kind: 'text' | 'caption'): TextStyles => {
+    const fromNested = (settings as any)?.styles?.[kind] as TextStyles | undefined;
     if (fromNested) return fromNested;
 
     const prefix = kind === 'text' ? 'text' : 'caption';
@@ -239,59 +212,40 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     const fontSettings = (settings as any)?.[`${prefix}FontSettings`];
     const letterSpacing = (settings as any)?.[`${prefix}LetterSpacing`];
     const wordSpacing = (settings as any)?.[`${prefix}WordSpacing`];
-    const textAlign = (settings as any)?.[`${prefix}TextAlign`];
     const textAppearance = (settings as any)?.[`${prefix}TextAppearance`];
     const color = (settings as any)?.[`${prefix}Color`];
     const fontSize = (settings as any)?.[`${prefix}FontSize`];
     const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
 
-    const hasAnyFlat =
-      typeof fontFamily === 'string' ||
-      !!fontSettings ||
-      typeof letterSpacing === 'number' ||
-      typeof wordSpacing === 'number' ||
-      typeof textAlign === 'string' ||
-      !!textAppearance ||
-      typeof color === 'string' ||
-      typeof fontSize === 'number' ||
-      typeof lineHeight === 'number';
-    if (!hasAnyFlat) return undefined;
-
-    const flat: CaptionStyleSettings = {
-      widthSettings: { width: 0.13, sizing: 'manual' },
+    const styles: TextStyles = {
       fontSettings: {
-        fontFamily: typeof fontFamily === 'string' ? fontFamily : 'Arial',
-        fontWeight: typeof fontSettings?.fontWeight === 'number' ? fontSettings.fontWeight : 400,
-        fontStyle: typeof fontSettings?.fontStyle === 'string' ? fontSettings.fontStyle : 'normal',
+        fontFamily: fontFamily ?? 'Arial',
+        fontWeight: fontSettings?.fontWeight ?? 400,
+        fontStyle: fontSettings?.fontStyle ?? 'normal',
       },
-      letterSpacing: typeof letterSpacing === 'number' ? letterSpacing : 0,
-      wordSpacing: typeof wordSpacing === 'number' ? wordSpacing : 0,
-      textAlign: (textAlign === 'left' || textAlign === 'center' || textAlign === 'right') ? textAlign : 'left',
-      fontSizeLineHeight: {
-        fontSize: typeof fontSize === 'number' ? fontSize : 0.01,
-        lineHeight: typeof lineHeight === 'number' ? lineHeight : 0.01,
-      },
+      fontSize: fontSize ?? 0.01,
+      lineHeight: lineHeight ?? 0.01,
       textAppearance: {
         textTransform: textAppearance?.textTransform ?? 'none',
         textDecoration: textAppearance?.textDecoration ?? 'none',
         fontVariant: textAppearance?.fontVariant ?? 'normal',
       },
-      color: typeof color === 'string' ? color : '#000000',
+      letterSpacing: letterSpacing ?? 0,
+      wordSpacing: wordSpacing ?? 0,
+      color: color ?? '#000000',
     };
-
-    return flat as CaptionStyles;
+    return styles;
   };
 
-  const textStyle = resolveCaptionStyle('text');
-  const captionStyle = resolveCaptionStyle('caption');
-  const scaled = (v: number) => scalingValue(v, isEditor ?? false);
-
+  const textStyle = resolveTextStyle('text');
+  const captionStyle = resolveTextStyle('caption');
   const shouldMeasureTextExtents = items.length > 1 && (!!textStyle || !!captionStyle);
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
   const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
-
+  const controls: TestimonialsSettings['controls'] = settings.controls ?? { mode: 'Off', icon: null };
   const canSwitch = items.length > 1;
+
   const commitTransition = useCallback((currentIndex: number, nextIndex: number) => {
     if (!canSwitch) return currentIndex;
     if (nextIndex === currentIndex) return currentIndex;
@@ -305,10 +259,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     }, 300);
     return nextIndex;
   }, [canSwitch]);
-
-  const transitionToIndex = useCallback((nextIndex: number) => {
-    setActiveIndex((currentIndex) => commitTransition(currentIndex, nextIndex));
-  }, [commitTransition]);
 
   const goPrev = useCallback(() => {
     if (!canSwitch) return;
@@ -336,113 +286,36 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     };
   }, []);
 
-  const controls: TestimonialsSettings['controls'] = settings.controls ?? {
-    mode: 'Off',
-    icon: null,
-  };
-
-  const customArrowsUrl = controls.mode === 'On' ? (controls.icon ?? null) : null;
-  const controlsInsetX = useMemo(() => scaled(0.01), [isEditor]);
-  const controlsIconSize = useMemo(
-    () => scalingValue(controlsWidth ?? 0.02, isEditor ?? false),
-    [controlsWidth, isEditor]
-  );
-
   const renderItemContent = useCallback((item: TestimonialsItem, opts?: RenderItemContentOpts) => {
     const textMinHeightPx = opts?.textMinHeightPx;
     const captionMinHeightPx = opts?.captionMinHeightPx;
     const dataMeasureAttrs = opts?.dataMeasureAttrs;
-    const textSection = textStyle
-      ? (() => {
-          const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = textStyle;
-          return (
-        <div
-          key="text"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: overlayAlignItems,
-            width: '100%',
-          }}
-        >
-          <div
-            data-controls="textMarginTop"
-            className={`${P}-control`}
-            style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false) }}
-          />
-          <div
-            {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'text' as const } : {})}
-            style={{
-              fontFamily: fontSettings.fontFamily,
-              fontWeight: fontSettings.fontWeight,
-              fontStyle: fontSettings.fontStyle,
-              ...(typeof textMinHeightPx === 'number' && textMinHeightPx > 0 ? { minHeight: textMinHeightPx } : {}),
-              letterSpacing: scalingValue(letterSpacing, isEditor),
-              wordSpacing: scalingValue(wordSpacing, isEditor),
-              textAlign: overlayTextAlign,
-              fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-              lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-              textTransform: textAppearance.textTransform ?? 'none',
-              textDecoration: textAppearance.textDecoration ?? 'none',
-              fontVariant: textAppearance.fontVariant ?? 'normal',
-              color,
-              pointerEvents: 'auto',
-            }}
-          >
-            <RichTextRenderer content={item.text ?? []} />
-          </div>
-        </div>
-          );
-        })()
-      : null;
-
-    const captionSection = captionStyle
-      ? (() => {
-          const { fontSettings, letterSpacing, wordSpacing, fontSizeLineHeight, textAppearance, color } = captionStyle;
-          return (
-        <div
-          key="caption"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: overlayAlignItems,
-            width: '100%',
-          }}
-        >
-          <div
-            data-controls="captionMarginTop"
-            className={`${P}-control`}
-            style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false) }}
-          />
-          <div
-            {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'caption' as const } : {})}
-            style={{
-              fontFamily: fontSettings.fontFamily,
-              fontWeight: fontSettings.fontWeight,
-              fontStyle: fontSettings.fontStyle,
-              ...(typeof captionMinHeightPx === 'number' && captionMinHeightPx > 0 ? { minHeight: captionMinHeightPx } : {}),
-              letterSpacing: scalingValue(letterSpacing, isEditor),
-              wordSpacing: scalingValue(wordSpacing, isEditor),
-              textAlign: overlayTextAlign,
-              fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-              lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-              textTransform: textAppearance.textTransform ?? 'none',
-              textDecoration: textAppearance.textDecoration ?? 'none',
-              fontVariant: textAppearance.fontVariant ?? 'normal',
-              color,
-              pointerEvents: 'auto',
-            }}
-          >
-            <RichTextRenderer content={item.caption} />
-          </div>
-        </div>
-          );
-        })()
-      : null;
 
     return (
       <>
-        {textSection}
+        {textStyle && (
+          <div
+            key="text"
+            style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%'}}
+          >
+            <div
+              data-controls="textMarginTop"
+              className={`${P}-control`}
+              style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false) }}
+            />
+            <div
+              {...(dataMeasureAttrs && { 'data-testimonial-measure': 'text' as const })}
+              style={{
+                ...textStylesToCss(textStyle, isEditor),
+                ...(textMinHeightPx &&textMinHeightPx > 0 ? { minHeight: textMinHeightPx } : {}),
+                textAlign: overlayTextAlign,
+                pointerEvents: 'auto',
+              }}
+            >
+              <RichTextRenderer content={item.text ?? []} />
+            </div>
+          </div>
+        )}
         <div
           key="image"
           style={{
@@ -468,7 +341,34 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             />}
           </div>
         </div>
-        {captionSection}
+        {captionStyle && (
+          <div
+            key="caption"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: overlayAlignItems,
+              width: '100%',
+            }}
+          >
+            <div
+              data-controls="captionMarginTop"
+              className={`${P}-control`}
+              style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false) }}
+            />
+            <div
+              {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'caption' as const } : {})}
+              style={{
+                ...textStylesToCss(captionStyle, isEditor),
+                ...(captionMinHeightPx && captionMinHeightPx > 0 ? { minHeight: captionMinHeightPx } : {}),
+                textAlign: overlayTextAlign,
+                pointerEvents: 'auto',
+              }}
+            >
+              <RichTextRenderer content={item.caption} />
+            </div>
+          </div>
+        )}
       </>
     );
   }, [
@@ -541,12 +441,12 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           </div>
         </div>
         {controls.mode === 'On' && (
-          <div className={`${P}-controls`} style={{ paddingLeft: controlsInsetX, paddingRight: controlsInsetX }}>
+          <div className={`${P}-controls`}>
             <div
               className={`${P}-arrow`}
               style={{
-                width: controlsIconSize,
-                height: controlsIconSize,
+                width: scalingValue(controlsWidth ?? 0.02, isEditor ?? false),
+                height: scalingValue(controlsWidth ?? 0.02, isEditor ?? false),
                 ['--arrow-hover-color' as string]: controlsHoverColor,
               }}
             >
@@ -556,9 +456,9 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 onClick={goPrev}
                 aria-label="Previous testimonial"
               >
-                {customArrowsUrl && (
+                {controls.icon  && (
                   <SvgImage
-                    url={customArrowsUrl}
+                    url={controls.icon }
                     fill={controlsColor}
                     hoverFill={controlsHoverColor}
                     className={cn(`${P}-arrow-img`, `${P}-mirror`)}
@@ -569,8 +469,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             <div
               className={cn(`${P}-arrow`, `${P}-next-arrow`)}
               style={{
-                width: controlsIconSize,
-                height: controlsIconSize,
+                width: scalingValue(controlsWidth ?? 0.02, isEditor ?? false),
+                height: scalingValue(controlsWidth ?? 0.02, isEditor ?? false),
                 ['--arrow-hover-color' as string]: controlsHoverColor,
               }}
             >
@@ -580,9 +480,9 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 onClick={goNext}
                 aria-label="Next testimonial"
               >
-                {customArrowsUrl && (
+                {controls.icon && (
                   <SvgImage
-                    url={customArrowsUrl}
+                    url={controls.icon }
                     fill={controlsColor}
                     hoverFill={controlsHoverColor}
                     className={`${P}-arrow-img`}
@@ -628,32 +528,7 @@ type TestimonialsSettings = {
   };
 };
 
-type CaptionStyles = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  widthSettings: {
-    width: number;
-    sizing: 'auto' | 'manual';
-  };
-  letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right';
-  wordSpacing: number;
-  fontSizeLineHeight: {
-    fontSize: number;
-    lineHeight: number;
-  };
-  textAppearance: {
-    textTransform: 'none' | 'uppercase' | 'lowercase';
-    textDecoration: 'none' | 'underline';
-    fontVariant: 'normal' | 'small-caps';
-  };
-  color: string;
-};
-
 type TestimonialsStyles = {
-  text: CaptionStyles;
-  caption: CaptionStyles;
+  text: TextStyles;
+  caption: TextStyles;
 };

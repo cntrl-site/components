@@ -81,42 +81,7 @@ type TestimonialsProps = {
   isPreviewMode?: boolean;
 } & CommonComponentProps;
 
-type CaptionStyleFromFlatSettings = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  widthSettings: {
-    width: number;
-    sizing: 'auto' | 'manual';
-  };
-  letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right';
-  wordSpacing: number;
-  fontSizeLineHeight: {
-    fontSize: number;
-    lineHeight: number;
-  };
-  textAppearance: {
-    textTransform: 'none' | 'uppercase' | 'lowercase';
-    textDecoration: 'none' | 'underline';
-    fontVariant: 'normal' | 'small-caps';
-  };
-  color: string;
-};
-
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
-
-const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
-  fontSettings: { ...caption.fontSettings },
-  letterSpacing: caption.letterSpacing,
-  wordSpacing: caption.wordSpacing,
-  fontSize: caption.fontSizeLineHeight.fontSize,
-  lineHeight: caption.fontSizeLineHeight.lineHeight,
-  textAppearance: caption.textAppearance,
-  color: caption.color,
-});
 
 type RenderCardOpts = {
   textMinHeightPx?: number;
@@ -151,8 +116,8 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
   const lastDirectionRef = useRef<'left' | 'right'>(direction);
 
-  const resolveCaptionStyle = (kind: 'text' | 'caption'): CaptionStyles | undefined => {
-    const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
+  const resolveTextStyle = (kind: 'text' | 'caption'): TextStyles => {
+    const fromNested = (settings as any)?.styles?.[kind] as TextStyles | undefined;
     if (fromNested) return fromNested;
 
     const prefix = kind === 'text' ? 'text' : 'caption';
@@ -160,7 +125,6 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     const fontSettings = (settings as any)?.[`${prefix}FontSettings`];
     const letterSpacing = (settings as any)?.[`${prefix}LetterSpacing`];
     const wordSpacing = (settings as any)?.[`${prefix}WordSpacing`];
-    const textAlign = (settings as any)?.[`${prefix}TextAlign`];
     const textAppearance = (settings as any)?.[`${prefix}TextAppearance`];
     const color =
       (settings as any)?.[`${prefix}Color`] ??
@@ -169,45 +133,29 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     const fontSize = (settings as any)?.[`${prefix}FontSize`];
     const lineHeight = (settings as any)?.[`${prefix}LineHeight`];
 
-    const hasAnyFlat =
-      typeof fontFamily === 'string' ||
-      !!fontSettings ||
-      typeof letterSpacing === 'number' ||
-      typeof wordSpacing === 'number' ||
-      typeof textAlign === 'string' ||
-      !!textAppearance ||
-      typeof color === 'string' ||
-      typeof fontSize === 'number' ||
-      typeof lineHeight === 'number';
-    if (!hasAnyFlat) return undefined;
-
-    const flat: CaptionStyleFromFlatSettings = {
-      widthSettings: { width: 0.13, sizing: 'manual' },
+    const flat: TextStyles = {
       fontSettings: {
-        fontFamily: typeof fontFamily === 'string' ? fontFamily : 'Arial',
-        fontWeight: typeof fontSettings?.fontWeight === 'number' ? fontSettings.fontWeight : 400,
-        fontStyle: typeof fontSettings?.fontStyle === 'string' ? fontSettings.fontStyle : 'normal',
+        fontFamily: fontFamily ?? 'Arial',
+        fontWeight: fontSettings?.fontWeight ?? 400,
+        fontStyle: fontSettings?.fontStyle ?? 'normal',
       },
-      letterSpacing: typeof letterSpacing === 'number' ? letterSpacing : 0,
-      wordSpacing: typeof wordSpacing === 'number' ? wordSpacing : 0,
-      textAlign: (textAlign === 'left' || textAlign === 'center' || textAlign === 'right') ? textAlign : 'left',
-      fontSizeLineHeight: {
-        fontSize: typeof fontSize === 'number' ? fontSize : 0.01,
-        lineHeight: typeof lineHeight === 'number' ? lineHeight : 0.01,
-      },
+      letterSpacing: letterSpacing ?? 0,
+      wordSpacing: wordSpacing ?? 0,
+      fontSize: fontSize ?? 0.01,
+      lineHeight: lineHeight ?? 0.01,
       textAppearance: {
         textTransform: textAppearance?.textTransform ?? 'none',
         textDecoration: textAppearance?.textDecoration ?? 'none',
         fontVariant: textAppearance?.fontVariant ?? 'normal',
       },
-      color: typeof color === 'string' ? color : '#000000',
+      color: color ?? '#000000',
     };
 
-    return flat as CaptionStyles;
+    return flat;
   };
 
-  const textStyle = resolveCaptionStyle('text');
-  const captionStyle = resolveCaptionStyle('caption');
+  const textStyle = resolveTextStyle('text');
+  const captionStyle = resolveTextStyle('caption');
 
   const shouldMeasureTextExtents = useMemo(
     () => (content?.length ?? 0) > 1 && (!!textStyle || !!captionStyle),
@@ -310,7 +258,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   }, [align]);
 
   const renderText = useCallback(
-    (style: CaptionStyles, richContent: any[], key: string, options?: RenderTextOpts) => (
+    (style: TextStyles, richContent: any[], key: string, options?: RenderTextOpts) => (
       <div
         key={key}
         style={{
@@ -329,7 +277,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
         <div
           {...(options?.dataMeasureKind ? { 'data-testimonial-measure': options.dataMeasureKind } : {})}
           style={{
-            ...textStylesToCss(resolveCaptionTextStyles(style), isEditor),
+            ...textStylesToCss(style, isEditor),
             textAlign: overlayTextAlign,
             pointerEvents: 'auto',
             ...(typeof options?.minHeightPx === 'number' && options.minHeightPx > 0
@@ -574,32 +522,7 @@ type TestimonialsSettings = {
   styles: TestimonialsStyles;
 };
 
-type CaptionStyles = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  };
-  widthSettings: {
-    width: number;
-    sizing: 'auto' | 'manual';
-  };
-  letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right';
-  wordSpacing: number;
-  fontSizeLineHeight: {
-    fontSize: number;
-    lineHeight: number;
-  };
-  textAppearance: {
-    textTransform: 'none' | 'uppercase' | 'lowercase';
-    textDecoration: 'none' | 'underline';
-    fontVariant: 'normal' | 'small-caps';
-  };
-  color: string;
-};
-
 type TestimonialsStyles = {
-  text: CaptionStyles;
-  caption: CaptionStyles;
+  text: TextStyles;
+  caption: TextStyles;
 };
