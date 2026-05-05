@@ -22,17 +22,6 @@ const testimonialCaptionTextStyleProperties = {
   }
 };
 
-const defaultCaptionStyleValues = {
-  widthSettings: { width: 0.13, sizing: 'manual' as const },
-  fontSettings: { fontFamily: 'Arial', fontWeight: 400, fontStyle: 'normal' },
-  fontSizeLineHeight: { fontSize: 0.01, lineHeight: 0.01 },
-  letterSpacing: 0,
-  wordSpacing: 0,
-  textAlign: 'left' as const,
-  textAppearance: { textTransform: 'none' as const, textDecoration: 'none' as const, fontVariant: 'normal' as const },
-  color: '#000000',
-};
-
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
@@ -285,26 +274,23 @@ const schema: ComponentSchemaV1 = {
       controlsColor: '#000000',
       controlsHoverColor: '#EABC01',
       align: 'center',
-      textFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
+      textFontFamily: 'Arial',
       textFontSettings: {
-        fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
-        fontStyle: defaultCaptionStyleValues.fontSettings.fontStyle,
+        fontWeight: 400,
+        fontStyle: 'normal',
       },
-      textLetterSpacing: defaultCaptionStyleValues.letterSpacing,
-      textWordSpacing: defaultCaptionStyleValues.wordSpacing,
-      textTextAlign: defaultCaptionStyleValues.textAlign,
-      textTextAppearance: defaultCaptionStyleValues.textAppearance,
-      textColor: defaultCaptionStyleValues.color,
-      captionFontFamily: defaultCaptionStyleValues.fontSettings.fontFamily,
-      captionFontSettings: {
-        fontWeight: defaultCaptionStyleValues.fontSettings.fontWeight,
-        fontStyle: defaultCaptionStyleValues.fontSettings.fontStyle,
-      },
-      captionLetterSpacing: defaultCaptionStyleValues.letterSpacing,
-      captionWordSpacing: defaultCaptionStyleValues.wordSpacing,
-      captionTextAlign: defaultCaptionStyleValues.textAlign,
-      captionTextAppearance: defaultCaptionStyleValues.textAppearance,
-      captionColor: defaultCaptionStyleValues.color,
+      textLetterSpacing: 0,
+      textWordSpacing: 0,
+      textTextAlign: 'left',
+      textTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
+      textColor: '#000000',
+      captionFontFamily: 'Arial',
+      captionFontSettings: { fontWeight: 400, fontStyle: 'normal' },
+      captionLetterSpacing: 0,
+      captionWordSpacing: 0,
+      captionTextAlign: 'left',
+      captionTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
+      captionColor: '#000000',
     },
     layoutDefaults: {
       m: {
@@ -372,7 +358,6 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__', 'autoplay'] },
         { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['delay', 'width']}] },
         { type: 'row', items: ['controlsWidth', 'align'] },
-        // { type: 'row', title: 'Min Height', items: ['textMinHeight', 'captionMinHeight'] },
         { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
       ],
     },
@@ -514,7 +499,7 @@ export const TestimonialSingleComponent = {
   sourceCode: testimonialSingleSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [{ path: 'settings.controls.icon' }]
+    parameters: [{ path: 'settings.controls.icon' } ]
   },
   fontSettingsPaths: {
     content: [],

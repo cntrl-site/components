@@ -481,7 +481,7 @@ export const TestimonialGridComponent = {
   sourceCode: testimonialGridSourceRaw,
   assetsPaths: {
     content: [{ path: 'logo.url', placeholderEnabled: true }],
-    parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
+    parameters: []
   },
   fontSettingsPaths: {
     content: [],
