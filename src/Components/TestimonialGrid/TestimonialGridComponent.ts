@@ -154,7 +154,7 @@ const schema: ComponentSchemaV1 = {
       captionFontFamily: {
         type: 'string',
         scope: 'common',
-        title: 'Caption',
+        title: 'Font Family',
         display: { type: 'font-family-select' },
       },
       captionFontSettings: {
@@ -196,7 +196,7 @@ const schema: ComponentSchemaV1 = {
       textFontFamily: {
         type: 'string',
         scope: 'common',
-        title: 'Text',
+        title: 'Font Family',
         display: { type: 'font-family-select' },
       },
       textFontSettings: {
@@ -349,20 +349,16 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        { type: 'group', title: 'Text', items: [
         'textFontFamily',
         'textFontSettings',
-        {
-          type: 'group',
-          title: '',
-          items: [ 'text', {type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing']}, 'textTextAppearance'],
-        },
+        { type: 'group',title: '', items: [ 'text', {type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing']}, 'textTextAppearance']}
+      ]},
+        { type: 'group', title: 'Caption', items: [
         'captionFontFamily',
         'captionFontSettings',
-        {
-          type: 'group',
-          title: '',
-          items: [ 'caption', {type: 'row', items: ['captionFontSize', 'captionLineHeight', 'captionLetterSpacing', 'captionWordSpacing']}, 'captionTextAppearance'],
-        },
+        { type: 'group', title: '', items: [ 'caption', {type: 'row', items: ['captionFontSize', 'captionLineHeight', 'captionLetterSpacing', 'captionWordSpacing']}, 'captionTextAppearance']},
+      ]},
       ],
     },
   ],
