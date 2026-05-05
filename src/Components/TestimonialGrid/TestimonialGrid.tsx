@@ -5,7 +5,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { getTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
+import { useTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
 
 function getCSS(P: string): string {
   return `
@@ -48,11 +48,16 @@ function getCSS(P: string): string {
 .${P}-elements-overlay {
   position: relative;
   inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
 }
 
 .${P}-control {
   position: relative;
   z-index: 2;
+  width: 100%;
+  width: '100%'
 }
 
 .${P}-control::before {
@@ -103,12 +108,6 @@ type CaptionStyleFromFlatSettings = {
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
 
-const parseSpeed = (speed: unknown): number => {
-  if (typeof speed === 'number') return speed;
-  const n = parseFloat(String(speed ?? ''));
-  return Number.isFinite(n) ? n : 0;
-};
-
 const resolveCaptionTextStyles = (caption: CaptionStyles): TextStyles => ({
   fontSettings: { ...caption.fontSettings },
   letterSpacing: caption.letterSpacing,
@@ -136,7 +135,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const { prefix: P } = useScopedStyles();
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
   const isAnimating = autoplay === 'on' && !isPreviewMode;
-  const pxPerSec = Math.max(0, parseSpeed(speed)) * PX_PER_SEC_PER_SPEED_UNIT;
+  const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -150,14 +149,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
   const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
-
-  const normalizedDirection = useMemo<'left' | 'right'>(() => {
-    if (typeof direction === 'boolean') return direction ? 'right' : 'left';
-    const d = String(direction ?? '').trim().toLowerCase();
-    return d === 'right' ? 'right' : 'left';
-  }, [direction]);
-
-  const lastDirectionRef = useRef<'left' | 'right'>(normalizedDirection);
+  const lastDirectionRef = useRef<'left' | 'right'>(direction);
 
   const resolveCaptionStyle = (kind: 'text' | 'caption'): CaptionStyles | undefined => {
     const fromNested = (settings as any)?.styles?.[kind] as CaptionStyles | undefined;
@@ -259,13 +251,13 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       track.style.transform = 'translate3d(0, 0, 0)';
       return;
     }
-    if (lastDirectionRef.current !== normalizedDirection) {
+    if (lastDirectionRef.current !== direction) {
       progressRef.current = 1 - progressRef.current;
-      lastDirectionRef.current = normalizedDirection;
+      lastDirectionRef.current = direction;
     }
     const duration = (setWidth / pxPerSec) * 1000;
-    const from = normalizedDirection === 'left' ? -setWidth : 0;
-    const to = normalizedDirection === 'left' ? 0 : -setWidth;
+    const from = direction === 'left' ? -setWidth : 0;
+    const to = direction === 'left' ? 0 : -setWidth;
     const anim = track.animate(
       [{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }],
       { duration, iterations: Infinity, easing: 'linear' }
@@ -280,7 +272,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
       anim.cancel();
       if (animRef.current === anim) animRef.current = null;
     };
-  }, [autoplay, isAnimating, setWidth, pxPerSec, normalizedDirection]);
+  }, [autoplay, isAnimating, setWidth, pxPerSec, direction]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -332,7 +324,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
           data-controls={options?.controlsName}
           data-controls-axis="y"
           className={`${P}-control`}
-          style={{ width: '100%', height: scaled(options?.marginTop ?? 0) }}
+          style={{ height: scaled(options?.marginTop ?? 0) }}
         />
         <div
           {...(options?.dataMeasureKind ? { 'data-testimonial-measure': options.dataMeasureKind } : {})}
@@ -367,23 +359,12 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
           overflow: 'hidden',
         }}
       >
-        <div
-          className={`${P}-cover`}
-          style={{ background: bgColor, height: '100%' }}
-        />
+        <div className={`${P}-cover`} style={{ background: bgColor }} />
         <div
           className={`${P}-elements-overlay`}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            pointerEvents: 'none',
-            alignItems: overlayAlignItems,
-            textAlign: overlayTextAlign,
-          }}
+          style={{ alignItems: overlayAlignItems, textAlign: overlayTextAlign }}
         >
-          {textStyle &&
-            item.text &&
-            renderText(
+          {textStyle && item.text && renderText(
               textStyle,
               item.text,
               'text',
@@ -405,7 +386,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
             <div
               data-controls="logoMarginTop"
               className={`${P}-control`}
-              style={{ width: '100%', height: scaled(logoMarginTop) }}
+              style={{ height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
               <img
@@ -452,29 +433,15 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
     ]
   );
 
-  useLayoutEffect(() => {
-    if (!shouldMeasureTextExtents) {
-      setMeasuredTextMinPx(0);
-      setMeasuredCaptionMinPx(0);
-      return;
-    }
-
-    const root = measureLayerRef.current;
-    if (!root) return;
-
-    const readExtents = () => {
-      const { maxTextPx, maxCaptionPx } = getTestimonialMeasureExtents(root);
+  useTestimonialMeasureExtents({
+    enabled: shouldMeasureTextExtents,
+    rootRef: measureLayerRef,
+    onExtents: ({ maxTextPx, maxCaptionPx }) => {
       setMeasuredTextMinPx(maxTextPx);
       setMeasuredCaptionMinPx(maxCaptionPx);
-    };
-
-    readExtents();
-    const ro = new ResizeObserver(readExtents);
-    ro.observe(root);
-    return () => {
-      ro.disconnect();
-    };
-  }, [shouldMeasureTextExtents, content, renderCard]);
+    },
+    deps: [content, renderCard],
+  });
 
   const visibleCardOpts: RenderCardOpts | undefined = shouldMeasureTextExtents
     ? { textMinHeightPx: measuredTextMinPx, captionMinHeightPx: measuredCaptionMinPx }
@@ -499,14 +466,7 @@ export const Testimonials = ({ settings, content, isEditor, isPreviewMode }: Tes
   ) : null;
 
   const renderCardWrapper = (item: TestimonialsItem, key: string | number, isLast: boolean) => (
-    <div
-      key={key}
-      style={{
-        position: 'relative',
-        flex: '0 0 auto',
-        height: '100%',
-      }}
-    >
+    <div key={key} style={{ position: 'relative', flex: '0 0 auto', height: '100%' }}>
       {renderCard(item, `card-${key}`, visibleCardOpts)}
       {isEditor && !isLast && (
         <div

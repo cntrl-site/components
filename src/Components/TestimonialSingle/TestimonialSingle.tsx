@@ -5,7 +5,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { getTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
+import { useTestimonialMeasureExtents } from '../utils/getTestimonialMeasureExtents';
 
 function getCSS(P: string): string {
   return `
@@ -14,8 +14,8 @@ function getCSS(P: string): string {
   display: flex;
   height: 100%;
   width: 100%;
-  flexDirection: column;
-  alignItems: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 .${P}-wrapper {
@@ -24,11 +24,11 @@ function getCSS(P: string): string {
   height: 100%;
   order: 1;
   display: flex;
-  flexDirection: column;
+  flex-direction: column;
   inset: 0;
-  pointerEvents: none;
+  pointer-events: none;
   height: 100%;
-  boxSizing: border-box;
+  box-sizing: border-box;
   position: relative;
 }
 
@@ -107,7 +107,7 @@ function getCSS(P: string): string {
   cursor: pointer;
   width: 100%;
   height: 100%;
-  pointerEvents: auto;
+  pointer-events: auto;
 }
 
 .${P}-arrow-img {
@@ -125,6 +125,7 @@ function getCSS(P: string): string {
   position: relative;
   z-index: 2;
   pointer-events: auto;
+  width: 100%;
 }
 
 .${P}-control::before {
@@ -367,7 +368,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           <div
             data-controls="textMarginTop"
             className={`${P}-control`}
-            style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false), width: '100%' }}
+            style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false) }}
           />
           <div
             {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'text' as const } : {})}
@@ -411,7 +412,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           <div
             data-controls="captionMarginTop"
             className={`${P}-control`}
-            style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false), width: '100%' }}
+            style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false) }}
           />
           <div
             {...(dataMeasureAttrs ? { 'data-testimonial-measure': 'caption' as const } : {})}
@@ -451,13 +452,14 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             width: '100%',
           }}
         >
-          
-          <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
-            {item.image?.url && <div
+          {item.image?.url && (
+            <div
               data-controls="imageMarginTop"
               className={`${P}-control`}
-              style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false), width: '100%' }}
-            />}
+              style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
+            />
+          )}
+          <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
             {item.image?.url && <img
               src={item.image?.url}
               alt={item.image?.name}
@@ -482,27 +484,15 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     textStyle,
   ]);
 
-  useLayoutEffect(() => {
-    if (!shouldMeasureTextExtents) {
-      setMeasuredTextMinPx(0);
-      setMeasuredCaptionMinPx(0);
-      return;
-    }
-    const root = measureLayerRef.current;
-    if (!root) return;
-    const readExtents = () => {
-      const { maxTextPx, maxCaptionPx } = getTestimonialMeasureExtents(root);
+  useTestimonialMeasureExtents({
+    enabled: shouldMeasureTextExtents,
+    rootRef: measureLayerRef,
+    onExtents: ({ maxTextPx, maxCaptionPx }) => {
       setMeasuredTextMinPx(maxTextPx);
       setMeasuredCaptionMinPx(maxCaptionPx);
-    };
-
-    readExtents();
-    const ro = new ResizeObserver(readExtents);
-    ro.observe(root);
-    return () => {
-      ro.disconnect();
-    };
-  }, [shouldMeasureTextExtents, items, renderItemContent]);
+    },
+    deps: [items, renderItemContent],
+  });
 
   if (!currentItem) return <></>;
 
@@ -551,13 +541,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           </div>
         </div>
         {controls.mode === 'On' && (
-          <div
-            className={`${P}-controls`}
-            style={{
-              paddingLeft: controlsInsetX,
-              paddingRight: controlsInsetX,
-            }}
-          >
+          <div className={`${P}-controls`} style={{ paddingLeft: controlsInsetX, paddingRight: controlsInsetX }}>
             <div
               className={`${P}-arrow`}
               style={{
