@@ -260,7 +260,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   useEffect(() => {
     if (!isAnimating || !canSwitch) return;
-    const safeDelayMs = Math.max(300, Number.isFinite(delay) ? delay : 0);
+    const safeDelayMs = Math.max(300, Number.isFinite(delay * 1000) ? delay * 1000 : 0);
     const id = window.setInterval(() => {
       setActiveIndex((currentIndex) => commitTransition(currentIndex, (currentIndex + 1) % items.length));
     }, safeDelayMs);

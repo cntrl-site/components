@@ -38,11 +38,11 @@ const schema: ComponentSchemaV1 = {
       delay: {
         type: 'number',
         scope: 'common',
-        title: 'Delay(ms)',
+        title: 'Delay(s)',
         display: { type: 'step-control'},
-        step: 500,
-        min: 1000,
-        max: 5000,
+        step: 1,
+        min: 1,
+        max: 8,
       },
       align: {
         type: 'string',
@@ -294,7 +294,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        delay: 2500,
+        delay: 4,
         width: 0.15,
         height: 0.2,
         corners: 0.005,
@@ -313,7 +313,7 @@ const schema: ComponentSchemaV1 = {
         captionMinHeight: 0.01,
       },
       d: {
-        delay: 2500,
+        delay: 4,
         width: 0.15,
         height: 0.2,
         corners: 0.005,
