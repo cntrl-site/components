@@ -206,7 +206,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
   const resolveTextStyle = (kind: 'text' | 'caption'): TextStyles => {
     const styles: TextStyles = {
       fontSettings: {
-        fontFamily:(settings as any)?.[`${kind}FontFamily`] ?? 'Arial',
+        fontFamily: (settings as any)?.[`${kind}FontFamily`] ?? 'Arial',
         fontWeight: (settings as any)?.[`${kind}FontSettings`]?.fontWeight ?? 400,
         fontStyle: (settings as any)?.[`${kind}FontSettings`]?.fontStyle ?? 'normal',
       },
@@ -226,7 +226,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   const textStyle = resolveTextStyle('text');
   const captionStyle = resolveTextStyle('caption');
-  const shouldMeasureTextExtents = items.length > 1 && (!!textStyle || !!captionStyle);
+  const shouldMeasureTextExtents =
+    items.length > 1 && items.some((item) => (item.text?.length ?? 0) > 0 || (item.caption?.length ?? 0) > 0);
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
   const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
@@ -259,9 +260,10 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   useEffect(() => {
     if (!isAnimating || !canSwitch) return;
+    const safeDelayMs = Math.max(300, Number.isFinite(delay) ? delay : 0);
     const id = window.setInterval(() => {
       setActiveIndex((currentIndex) => commitTransition(currentIndex, (currentIndex + 1) % items.length));
-    }, delay);
+    }, safeDelayMs);
     return () => {
       window.clearInterval(id);
     };
@@ -280,10 +282,10 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
     return (
       <>
-        {textStyle && (
+        {item.text && (
           <div
             key="text"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%'}}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}
           >
             <div
               data-controls="textMarginTop"
@@ -294,12 +296,12 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
               {...(dataMeasureAttrs && { 'data-testimonial-measure': 'text' as const })}
               style={{
                 ...textStylesToCss(textStyle, isEditor),
-                ...(textMinHeightPx &&textMinHeightPx > 0 ? { minHeight: textMinHeightPx } : {}),
+                ...(textMinHeightPx && textMinHeightPx > 0 ? { minHeight: textMinHeightPx } : {}),
                 textAlign: overlayTextAlign,
                 pointerEvents: 'auto',
               }}
             >
-              <RichTextRenderer content={item.text ?? []} />
+              <RichTextRenderer content={item.text} />
             </div>
           </div>
         )}
@@ -312,23 +314,23 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             width: '100%',
           }}
         >
-          {item.image?.url && (
             <div
               data-controls="imageMarginTop"
               className={`${P}-control`}
               style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
             />
-          )}
           <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
-            {item.image?.url && <img
+            {item.image?.url && 
+              <img
               src={item.image?.url}
               alt={item.image?.name}
               className={`${P}-icon`}
-              style={{ objectFit: item.image?.objectFit || 'cover' }}
-            />}
+              style={{ objectFit: item.image?.objectFit || 'contain' }}
+            />
+            }
           </div>
         </div>
-        {captionStyle && (
+        {item.caption && (
           <div
             key="caption"
             style={{

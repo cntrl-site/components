@@ -1,4 +1,4 @@
-import { Testimonials } from './TestimonialGrid';
+import { TestimonialGrid } from './TestimonialGrid';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import testimonialGridSourceRaw from './TestimonialGrid.tsx?raw';
 
@@ -464,7 +464,7 @@ const schema: ComponentSchemaV1 = {
 };
 
 export const TestimonialGridComponent = {
-  element: Testimonials,
+  element: TestimonialGrid,
   id: 'testimonials',
   name: 'Eliana',
   category: 'testimonials',

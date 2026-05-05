@@ -9,4 +9,4 @@ export type { ValidatableFormField } from './formFieldValidation';
 export { useScopedStyles } from './useScopedStyles';
 export type { ScopedStyles } from './useScopedStyles';
 export type { CommonComponentProps } from '../props';
-export { useTestimonialMeasureExtents } from './useTestimonialTextMeasure';
+export { useTestimonialTextMeasure } from './useTestimonialTextMeasure';

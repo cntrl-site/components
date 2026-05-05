@@ -140,8 +140,10 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   const captionStyle = resolveTextStyle('caption');
 
   const shouldMeasureTextExtents = useMemo(
-    () => (content?.length ?? 0) > 1 && (!!textStyle || !!captionStyle),
-    [content, textStyle, captionStyle]
+    () =>
+      (content?.length ?? 0) > 1 &&
+      (content ?? []).some((item) => (item.text?.length ?? 0) > 0 || (item.caption?.length ?? 0) > 0),
+    [content]
   );
 
   const copies = useMemo(() => {
@@ -319,11 +321,13 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
               style={{ height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
-              <img
-                src={item.logo?.url}
-                alt={item.logo?.name}
-                style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.logo?.objectFit || 'cover' }}
-              />
+              {item.logo?.url && (
+                <img
+                  src={item.logo.url}
+                  alt={item.logo?.name ?? ''}
+                  style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.logo?.objectFit || 'contain' }}
+                />
+              )}
             </div>
           </div>
           {captionStyle &&
