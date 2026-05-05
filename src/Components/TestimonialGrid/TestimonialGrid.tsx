@@ -5,7 +5,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { useTestimonialTextMeasure } from '../utils/useTestimonialTextMeasure';
+import { readTestimonialTextMeasure } from '../utils/readTestimonialTextMeasure';
 
 function getCSS(P: string): string {
   return `
@@ -139,8 +139,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   const textStyle = resolveTextStyle('text');
   const captionStyle = resolveTextStyle('caption');
 
-  const shouldMeasureTextExtents = useMemo(
-    () =>
+  const shouldMeasureTextExtents = useMemo(() =>
       (content?.length ?? 0) > 1 &&
       (content ?? []).some((item) => (item.text?.length ?? 0) > 0 || (item.caption?.length ?? 0) > 0),
     [content]
@@ -330,8 +329,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
               )}
             </div>
           </div>
-          {captionStyle &&
-            item.caption &&
+          {captionStyle && item.caption &&
             renderText(captionStyle, item.caption, 'caption', {
               controlsName: 'captionMarginTop',
               marginTop: captionMarginTop,
@@ -367,15 +365,28 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     ]
   );
 
-  useTestimonialTextMeasure({
-    enabled: shouldMeasureTextExtents,
-    rootRef: measureLayerRef,
-    onExtents: ({ maxTextPx, maxCaptionPx }) => {
-      setMeasuredTextMinPx(maxTextPx);
-      setMeasuredCaptionMinPx(maxCaptionPx);
-    },
-    deps: [content, renderCard],
-  });
+  const onMeasuredExtents = useCallback((extents: { maxTextPx: number; maxCaptionPx: number }) => {
+    setMeasuredTextMinPx(extents.maxTextPx);
+    setMeasuredCaptionMinPx(extents.maxCaptionPx);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!shouldMeasureTextExtents) {
+      onMeasuredExtents({ maxTextPx: 0, maxCaptionPx: 0 });
+      return;
+    }
+    const root = measureLayerRef.current;
+    if (!root) return;
+    const readExtents = () => {
+      readTestimonialTextMeasure(root, onMeasuredExtents);
+    };
+    readExtents();
+    const ro = new ResizeObserver(readExtents);
+    ro.observe(root);
+    return () => {
+      ro.disconnect();
+    };
+  }, [shouldMeasureTextExtents, onMeasuredExtents, content, renderCard]);
 
   const visibleCardOpts: RenderCardOpts | undefined = shouldMeasureTextExtents
     ? { textMinHeightPx: measuredTextMinPx, captionMinHeightPx: measuredCaptionMinPx }
@@ -399,10 +410,10 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     </div>
   ) : null;
 
-  const renderCardWrapper = (item: TestimonialsItem, key: string | number, isLast: boolean) => (
+  const renderCardWrapper = (item: TestimonialsItem, key: string | number) => (
     <div key={key} style={{ position: 'relative', flex: '0 0 auto', height: '100%' }}>
       {renderCard(item, `card-${key}`, visibleCardOpts)}
-      {isEditor && !isLast && (
+      {isEditor && (
         <div
           data-controls="gap"
           data-controls-axis="x"
@@ -440,7 +451,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
               aria-hidden={copyIndex > 0}
             >
               {content?.map((item: TestimonialsItem, index: number) =>
-                renderCardWrapper(item, `${copyIndex}-${index}`, index === (content?.length ?? 0) - 1)
+                renderCardWrapper(item, `${copyIndex}-${index}`)
               )}
             </div>
           ))}
@@ -464,7 +475,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         aria-label="Testimonials"
       >
         {content?.map((item: TestimonialsItem, index: number) =>
-          renderCardWrapper(item, index, index === (content?.length ?? 0) - 1)
+          renderCardWrapper(item, index)
         )}
       </div>
     </div>
