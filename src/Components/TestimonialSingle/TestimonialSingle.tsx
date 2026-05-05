@@ -1,11 +1,11 @@
 import cn from 'classnames';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { useTestimonialTextMeasure } from '../utils/useTestimonialTextMeasure';
+import { readTestimonialTextMeasure } from '../utils/readTestimonialTextMeasure';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function getCSS(P: string): string {
@@ -28,9 +28,7 @@ function getCSS(P: string): string {
   flex-direction: column;
   inset: 0;
   pointer-events: none;
-  height: 100%;
   box-sizing: border-box;
-  position: relative;
 }
 
 .${P}-wrapper-autoplay-off {
@@ -284,7 +282,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
       <>
         {item.text && (
           <div
-            key="text"
             style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}
           >
             <div
@@ -306,7 +303,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           </div>
         )}
         <div
-          key="image"
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -323,7 +319,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             {item.image?.url && 
               <img
               src={item.image?.url}
-              alt={item.image?.name}
+              alt={item.image?.name ?? ''}
               className={`${P}-icon`}
               style={{ objectFit: item.image?.objectFit || 'contain' }}
             />
@@ -332,7 +328,6 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         </div>
         {item.caption && (
           <div
-            key="caption"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -373,15 +368,28 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     textStyle,
   ]);
 
-  useTestimonialTextMeasure({
-    enabled: shouldMeasureTextExtents,
-    rootRef: measureLayerRef,
-    onExtents: ({ maxTextPx, maxCaptionPx }) => {
-      setMeasuredTextMinPx(maxTextPx);
-      setMeasuredCaptionMinPx(maxCaptionPx);
-    },
-    deps: [items, renderItemContent],
-  });
+  const onMeasuredExtents = useCallback((extents: { maxTextPx: number; maxCaptionPx: number }) => {
+    setMeasuredTextMinPx(extents.maxTextPx);
+    setMeasuredCaptionMinPx(extents.maxCaptionPx);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!shouldMeasureTextExtents) {
+      onMeasuredExtents({ maxTextPx: 0, maxCaptionPx: 0 });
+      return;
+    }
+    const root = measureLayerRef.current;
+    if (!root) return;
+    const readExtents = () => {
+      readTestimonialTextMeasure(root, onMeasuredExtents);
+    };
+    readExtents();
+    const ro = new ResizeObserver(readExtents);
+    ro.observe(root);
+    return () => {
+      ro.disconnect();
+    };
+  }, [shouldMeasureTextExtents, onMeasuredExtents, content, renderItemContent]);
 
   if (!currentItem) return <></>;
 
@@ -443,6 +451,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 type="button"
                 className={`${P}-arrow-inner`}
                 onClick={goPrev}
+                disabled={!canSwitch}
                 aria-label="Previous testimonial"
               >
                 {controls.icon  && (
@@ -467,6 +476,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 type="button"
                 className={`${P}-arrow-inner`}
                 onClick={goNext}
+                disabled={!canSwitch}
                 aria-label="Next testimonial"
               >
                 {controls.icon && (
@@ -493,8 +503,8 @@ export type TestimonialsItem = {
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
-  text: any[];
-  caption: any[];
+  text?: any[];
+  caption?: any[];
 };
 
 type TestimonialsSettings = {
