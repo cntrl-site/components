@@ -26,6 +26,11 @@ function getCSS(P: string): string {
   align-items: center;
   gap: 12px;
 }
+.${P}-item-image-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .${P}-item-image {
   width: 100%;
   height: 100%;
@@ -40,6 +45,8 @@ function getCSS(P: string): string {
 }
 .${P}-item-slider .splide__slide {
   display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .${P}-item-title {
   white-space: normal;
@@ -77,6 +84,7 @@ type LightboxProps = {
   index: number;
   imageDisplay: 'Fit' | 'Cover';
   originRect: AnimRect | null;
+  reverseClose: boolean;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -85,7 +93,7 @@ type LightboxProps = {
 const LIGHTBOX_ANIM_MS = 500;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
-function Lightbox({ images, index, imageDisplay, originRect, onClose, onPrev, onNext }: LightboxProps) {
+function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext }: LightboxProps) {
   const ghostRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
@@ -142,8 +150,6 @@ function Lightbox({ images, index, imageDisplay, originRect, onClose, onPrev, on
     return () => clearTimeout(t);
   }, [phase, onClose]);
 
-  // Once the user starts switching images, drop the size/position transition so that
-  // finalRect updates (driven by each image's aspect ratio) apply instantly instead of animating.
   useEffect(() => {
     if (prevIndexRef.current !== index) {
       setTransitionsEnabled(false);
@@ -156,9 +162,14 @@ function Lightbox({ images, index, imageDisplay, originRect, onClose, onPrev, on
     setPhase('closing');
   };
 
-  const animatedRect = phase === 'opening' ? (originRect ?? finalRect) : finalRect;
   const isOpen = phase === 'open';
   const isClosing = phase === 'closing';
+  const reverseAnimateClose = isClosing && reverseClose && !!originRect;
+  const animatedRect = phase === 'opening'
+    ? (originRect ?? finalRect)
+    : reverseAnimateClose
+      ? originRect
+      : finalRect;
 
   return (
     <div
@@ -236,10 +247,10 @@ function Lightbox({ images, index, imageDisplay, originRect, onClose, onPrev, on
             width: animatedRect.width,
             height: animatedRect.height,
             objectFit: imageDisplay === 'Cover' ? 'cover' : 'contain',
-            opacity: isClosing ? 0 : 1,
-            transition: isClosing
+            opacity: isClosing && !reverseAnimateClose ? 0 : 1,
+            transition: isClosing && !reverseAnimateClose
               ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-              : transitionsEnabled
+              : (reverseAnimateClose || transitionsEnabled)
                 ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
                 : 'none',
             pointerEvents: 'none',
@@ -375,6 +386,24 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
 
   const size = imageSizeMap[imageSize] ?? 0.2;
 
+  const isCover = imageDisplay?.display === 'Cover';
+  const ratioValue = imageDisplay?.ratioValue ?? '1:1';
+  const ratioReversed = imageDisplay?.reversed ?? false;
+  const [rW, rH] = ratioValue.split(':').map(Number);
+  const effW = ratioReversed ? rH : rW;
+  const effH = ratioReversed ? rW : rH;
+  const aspectRatio = `${effW} / ${effH}`;
+  const isLandscape = effW >= effH;
+
+  const imageStyle: React.CSSProperties = {
+    objectFit: isCover ? 'cover' : 'contain',
+    ...(isCover && {
+      aspectRatio,
+      width: isLandscape ? '100%' : 'auto',
+      height: isLandscape ? 'auto' : '100%',
+    }),
+  };
+
   const [dir, setDir] = useState('ltr');
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -407,65 +436,63 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
               className={`${P}-item`.trim()}
             >
               <div className={`${P}-item-image-wrapper`} style={{ width: scalingValue(size ?? 0, isEditor), height: scalingValue(size ?? 0, isEditor) }}>
-                {slider === 'Off'
-                  ?
-                  <img
-                    src={item.image[0].url}
-                    alt={item.image[0].name}
-                    className={`${P}-item-image`.trim()}
-                    style={{
-                      objectFit: imageDisplay === 'Cover' ? 'cover' : 'contain'
-                    }}
-                    onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), 0)}
-                  />
-                  :
-                  <Splide
-                    key={`${transition}-${imageSize}-${direction}-${sliderTiming}`}
-                    className={`${P}-item-slider`}
-                    options={{
-                      arrows: false,
-                      pagination: false,
-                      drag: false,
-                      perPage: 1,
-                      autoplay: true,
-                      interval: sliderTiming * 1000,
-                      width: '100%',
-                      height: '100%',
-                      speed: 500,
-                      type: transition === 'Fade' ? 'fade' : 'loop',
-                      rewind: transition === 'Fade',
-                      pauseOnHover: false,
-                      pauseOnFocus: false,
-                      direction: transition === 'Fade' ? 'ltr' : direction !== 'Random'
-                        ? direction === 'Horizontal'
-                          ? 'ltr'
-                          : 'ttb'
-                        : dir,
-                    }}
-                    onMoved={(splide) => {
-                      if (direction !== 'Random' || transition === 'Fade') return;
-                      const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : Math.random() > 0.5 ? 'btt' : 'ttb';
-                      setDir(next);
+                {(item.image?.length ?? 0) === 0
+                  ? null
+                  : slider === 'Off'
+                    ?
+                    <img
+                      src={item.image[0].url}
+                      alt={item.image[0].name}
+                      className={`${P}-item-image`.trim()}
+                      style={imageStyle}
+                      onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), 0)}
+                    />
+                    :
+                    <Splide
+                      key={`${transition}-${imageSize}-${direction}-${sliderTiming}`}
+                      className={`${P}-item-slider`}
+                      options={{
+                        arrows: false,
+                        pagination: false,
+                        drag: false,
+                        perPage: 1,
+                        autoplay: true,
+                        interval: sliderTiming * 1000,
+                        width: '100%',
+                        height: '100%',
+                        speed: 500,
+                        type: transition === 'Fade' ? 'fade' : 'loop',
+                        rewind: transition === 'Fade',
+                        pauseOnHover: false,
+                        pauseOnFocus: false,
+                        direction: transition === 'Fade' ? 'ltr' : direction !== 'Random'
+                          ? direction === 'Horizontal'
+                            ? 'ltr'
+                            : 'ttb'
+                          : dir,
+                      }}
+                      onMoved={(splide) => {
+                        if (direction !== 'Random' || transition === 'Fade') return;
+                        const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : Math.random() > 0.5 ? 'btt' : 'ttb';
+                        setDir(next);
 
-                      setTimeout(() => {
-                        splide.refresh();
-                      }, 0);
-                    }}
-                  >
-                    {item.image.map((img: { url: string; name?: string }, imgIndex: number) => (
-                      <SplideSlide key={imgIndex}>
-                        <img
-                          src={img.url}
-                          alt={img.name}
-                          className={`${P}-item-image`.trim()}
-                          style={{
-                            objectFit: imageDisplay === 'Cover' ? 'cover' : 'contain'
-                          }}
-                          onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), imgIndex)}
-                        />
-                      </SplideSlide>
-                    ))}
-                  </Splide>
+                        setTimeout(() => {
+                          splide.refresh();
+                        }, 0);
+                      }}
+                    >
+                      {item.image.map((img: { url: string; name?: string }, imgIndex: number) => (
+                        <SplideSlide key={imgIndex}>
+                          <img
+                            src={img.url}
+                            alt={img.name}
+                            className={`${P}-item-image`.trim()}
+                            style={imageStyle}
+                            onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), imgIndex)}
+                          />
+                        </SplideSlide>
+                      ))}
+                    </Splide>
                 }
               </div>
               <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
@@ -484,8 +511,9 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
             <Lightbox
               images={lightboxImages}
               index={lightboxIndex}
-              imageDisplay={imageDisplay}
+              imageDisplay={imageDisplay.display}
               originRect={lightboxOriginRect}
+              reverseClose={slider === 'Off'}
               onClose={() => setLightboxOpen(false)}
               onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)}
               onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)}
@@ -505,7 +533,11 @@ type GridSettings = {
   entriesCount: number;
   lightbox: 'On' | 'Off';
   imageSize: 'Small' | 'Medium' | 'Big';
-  imageDisplay: 'Fit' | 'Cover';
+  imageDisplay: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   slider: 'On' | 'Off';
   sliderTiming: number;
   direction: 'Horizontal' | 'Vertical' | 'Random',

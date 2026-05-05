@@ -133,7 +133,7 @@ const schema: GridSchema = {
     },
   },
   settings: {
-    sizing: 'auto manual', // TODO think where to place this non-editable property
+    sizing: 'auto manual',
     properties: {
       fieldsToShow: {
         type: 'number',
@@ -184,10 +184,23 @@ const schema: GridSchema = {
         display: { type: 'toggle-cycle', enum: ['Small', 'Medium', 'Big'] },
       },
       imageDisplay: {
-        type: 'string',
+        type: 'object',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['Fit', 'Cover'] },
+        display: { type: 'image-ratio-control' },
+        properties: {
+          display: {
+            type: 'string',
+            enum: ['Fit', 'Cover'],
+          },
+          ratioValue: {
+            type: 'string',
+            enum: ['1:1', '2:3', '3:4', '4:5', '16:9'],
+          },
+          reversed: {
+            type: 'boolean',
+          },
+        },
       },
       slider: {
         type: 'boolean',
@@ -207,7 +220,7 @@ const schema: GridSchema = {
         type: 'string',
         scope: 'common',
         title: 'Direction',
-        display: { type: 'toggle-cycle', enum: ['Horizontal', 'Vertical', 'Random'] },
+        display: { type: 'toggle-cycle', enum: ['Horizontal', 'Vertical', 'Random'], enabled: true },
       },
       transition: {
         type: 'string',
@@ -225,7 +238,7 @@ const schema: GridSchema = {
         type: 'string',
         scope: 'common',
         title: 'Subtitle Color',
-        display: { type: 'palette-color-picker' },
+        display: { type: 'palette-color-picker', visible: false },
       },
       titleFontFamily: {
         type: 'string',
@@ -315,7 +328,11 @@ const schema: GridSchema = {
     defaults: {
       fieldsToShow: 2,
       lightbox: 'Off',
-      imageDisplay: 'Fit',
+      imageDisplay: {
+        display: 'Fit',
+        ratioValue: '16:9',
+        reversed: false,
+      },
       type: 'A',
       slider: 'Off',
       sliderTiming: 5,
@@ -379,7 +396,14 @@ const schema: GridSchema = {
       }
     },
     displayRules: [
-
+      {
+        if: { name: 'transition', value: 'Fade' },
+        then: { name: 'properties.direction.display.enabled', value: false },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.subtitleColor.display.visible', value: true },
+      }
     ],
   },
   panels: [
@@ -522,7 +546,7 @@ const schema: GridSchema = {
 export const GridComponent = {
   element: Grid,
   id: 'grid',
-  name: 'Grid Default',
+  name: 'Neptune',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/formImg.png',
