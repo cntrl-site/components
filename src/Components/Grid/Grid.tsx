@@ -5,6 +5,7 @@ import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedSty
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
+import { getFontBasedOnSystem } from '../utils/getMainFontBaseOnSystem';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -227,6 +228,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
             lineHeight: '16px',
             opacity: isOpen ? 1 : 0,
             transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
+            fontFamily: getFontBasedOnSystem(),
           }}
         >
           <p>{index + 1}</p>
@@ -419,6 +421,16 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
     setLightboxIndex(idx);
     setLightboxOpen(true);
   };
+
+  useEffect(() => {
+    if (!lightboxOpen || lightbox !== 'On') return;
+    if (typeof document === 'undefined') return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightboxOpen, lightbox]);
 
   return (
     <>
