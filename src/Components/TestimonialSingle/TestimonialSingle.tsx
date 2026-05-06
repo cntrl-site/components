@@ -281,9 +281,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     return (
       <>
         {item.text && (
-          <div
-            style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
             <div
               data-controls="textMarginTop"
               className={`${P}-control`}
@@ -302,39 +300,25 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
             </div>
           </div>
         )}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: overlayAlignItems,
-            width: '100%',
-          }}
-        >
-            <div
-              data-controls="imageMarginTop"
-              className={`${P}-control`}
-              style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
+          <div
+            data-controls="imageMarginTop"
+            className={`${P}-control`}
+            style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
+          />
           <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
             {item.image?.url && 
               <img
-              src={item.image?.url}
-              alt={item.image?.name ?? ''}
-              className={`${P}-icon`}
-              style={{ objectFit: item.image?.objectFit || 'contain' }}
-            />
+                src={item.image?.url}
+                alt={item.image?.name ?? ''}
+                className={`${P}-icon`}
+                style={{ objectFit: item.image?.objectFit || 'contain' }}
+              />
             }
           </div>
         </div>
         {item.caption && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: overlayAlignItems,
-              width: '100%',
-            }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
             <div
               data-controls="captionMarginTop"
               className={`${P}-control`}

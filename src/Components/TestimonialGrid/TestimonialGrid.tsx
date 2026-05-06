@@ -15,6 +15,16 @@ function getCSS(P: string): string {
   height: 100%;
 }
 
+@keyframes ${P}-marquee-left {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(-1 * var(--marquee-distance)), 0, 0); }
+}
+
+@keyframes ${P}-marquee-right {
+  from { transform: translate3d(calc(-1 * var(--marquee-distance)), 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
 .${P}-marquee-track {
   display: flex;
   flex-direction: row;
@@ -22,6 +32,21 @@ function getCSS(P: string): string {
   will-change: transform;
   backface-visibility: hidden;
   transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  perspective: 1000px;
+  animation-duration: var(--marquee-duration);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-play-state: var(--marquee-play-state, running);
+}
+
+.${P}-marquee-track[data-direction="left"] {
+  animation-name: ${P}-marquee-left;
+}
+
+.${P}-marquee-track[data-direction="right"] {
+  animation-name: ${P}-marquee-right;
 }
 
 .${P}-marquee-set {
@@ -98,7 +123,8 @@ type RenderTextOpts = {
 export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
-  const isAnimating = autoplay === 'on' && !isPreviewMode;
+  const autoplayEnabled = autoplay === 'on' && !isPreviewMode;
+  const isAnimating = autoplayEnabled;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -106,14 +132,12 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   const setRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
-  const progressRef = useRef(0);
-  const hoveringRef = useRef(false);
-  const animRef = useRef<Animation | null>(null);
   const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
+  const [isHovering, setIsHovering] = useState(false);
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
   const [measuredCaptionMinPx, setMeasuredCaptionMinPx] = useState(0);
-  const lastDirectionRef = useRef<'left' | 'right'>(direction);
+  const stableCandidateRef = useRef<number | null>(null);
 
   const resolveTextStyle = (kind: 'text' | 'caption'): TextStyles => {
     const styles: TextStyles = {
@@ -146,22 +170,34 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   );
 
   const copies = useMemo(() => {
-    if (autoplay === 'off' || content?.length === 0) return 1;
+    if (!autoplayEnabled || content?.length === 0) return 1;
     if (setWidth <= 0 || containerWidth <= 0) return 2;
     return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [autoplay, content?.length, setWidth, containerWidth]);
+  }, [autoplayEnabled, content?.length, setWidth, containerWidth]);
 
   useLayoutEffect(() => {
-    if (autoplay === 'off') return;
+    if (!autoplayEnabled) return;
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
     let raf = 0;
     const measure = () => {
       const nextContainerWidth = wrapper.getBoundingClientRect().width;
-      const nextSetWidth = set.getBoundingClientRect().width;
+      const nextRawSetWidth = set.getBoundingClientRect().width;
+      const prevCandidate = stableCandidateRef.current;
+      const isStableNow = typeof prevCandidate === 'number' && Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
+      stableCandidateRef.current = nextRawSetWidth;
       setContainerWidth(nextContainerWidth);
-      setSetWidth(nextSetWidth);
+      if (typeof nextRawSetWidth === 'number' && nextRawSetWidth > 0 && setWidth <= 0) {
+        setSetWidth(nextRawSetWidth);
+        return;
+      }
+      if (isStableNow && nextRawSetWidth !== setWidth) {
+        setSetWidth(nextRawSetWidth);
+      } else if (!isStableNow && setWidth <= 0) {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(measure);
+      }
     };
     const schedule = () => {
       cancelAnimationFrame(raf);
@@ -175,47 +211,25 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplay, content?.length]);
+  }, [autoplayEnabled, setWidth]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
-    if (autoplay === 'off' || !track || !isAnimating) return;
-    if (setWidth <= 0 || pxPerSec <= 0) {
-      track.style.transform = 'translate3d(0, 0, 0)';
-      return;
-    }
-    if (lastDirectionRef.current !== direction) {
-      progressRef.current = 1 - progressRef.current;
-      lastDirectionRef.current = direction;
-    }
-    const duration = (setWidth / pxPerSec) * 1000;
-    const from = direction === 'left' ? -setWidth : 0;
-    const to = direction === 'left' ? 0 : -setWidth;
-    const anim = track.animate(
-      [{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }],
-      { duration, iterations: Infinity, easing: 'linear' }
-    );
-    anim.currentTime = progressRef.current * duration;
-    if (hoveringRef.current) anim.pause();
-    animRef.current = anim;
-
-    return () => {
-      const ct = typeof anim.currentTime === 'number' ? anim.currentTime : 0;
-      progressRef.current = duration > 0 ? (ct / duration) % 1 : 0;
-      anim.cancel();
-      if (animRef.current === anim) animRef.current = null;
-    };
-  }, [autoplay, isAnimating, setWidth, pxPerSec, direction]);
+    if (!autoplayEnabled || !track || !isAnimating) return;
+    const safeSetWidth = setWidth > 0 ? setWidth : 0;
+    const durationMs = safeSetWidth > 0 && pxPerSec > 0 ? (safeSetWidth / pxPerSec) * 1000 : 0;
+    const durationS = `${Math.max(0, durationMs) / 1000}s`;
+    track.style.setProperty('--marquee-distance', `${safeSetWidth}px`);
+    track.style.setProperty('--marquee-duration', durationS);
+  }, [autoplayEnabled, isAnimating, pxPerSec, setWidth]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
-    hoveringRef.current = true;
-    animRef.current?.pause();
+    setIsHovering(true);
   };
   const onTrackLeave = () => {
     if (!hoverPauseEnabled) return;
-    hoveringRef.current = false;
-    animRef.current?.play();
+    setIsHovering(false);
   };
 
   const overlayAlignItems = useMemo(() => {
@@ -297,7 +311,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
           className={`${P}-elements-overlay`}
           style={{ alignItems: overlayAlignItems, textAlign: overlayTextAlign }}
         >
-          {textStyle && item.text && renderText(
+          {item.text && renderText(
               textStyle,
               item.text,
               'text',
@@ -308,7 +322,6 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
                   : undefined
             )}
           <div
-            key="logo"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -331,7 +344,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
               )}
             </div>
           </div>
-          {captionStyle && item.caption &&
+          {item.caption &&
             renderText(captionStyle, item.caption, 'caption', {
               controlsName: 'captionMarginTop',
               marginTop: captionMarginTop,
@@ -413,7 +426,18 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   ) : null;
 
   const renderCardWrapper = (item: TestimonialsItem, key: string | number) => (
-    <div key={key} style={{ position: 'relative', flex: '0 0 auto', height: '100%' }}>
+    <div
+      key={key}
+      style={{
+        position: 'relative',
+        flex: '0 0 auto',
+        height: '100%',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        willChange: 'transform',
+      }}
+    >
       {renderCard(item, `card-${key}`, visibleCardOpts)}
       {isEditor && (
         <div
@@ -433,23 +457,50 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     </div>
   );
 
-  if (autoplay === 'on' && content?.length && content.length > 0) {
+  if (autoplayEnabled && (content?.length ?? 0) > 0) {
     return (
-      <div ref={wrapperRef} className={cn(`${P}-wrapper`, `${P}-marquee-wrapper`)} aria-label="Testimonials">
+      <div
+        ref={wrapperRef}
+        className={cn(`${P}-wrapper`, `${P}-marquee-wrapper`)}
+        aria-label="Testimonials"
+        style={{ overflow: 'hidden', width: '100%', height: '100%' }}
+      >
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         {measureLayerEl}
         <div
           ref={trackRef}
           className={`${P}-marquee-track`}
+          data-direction={direction}
           onMouseEnter={onTrackEnter}
           onMouseLeave={onTrackLeave}
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'nowrap',
+            width: 'max-content',
+            willChange: 'transform',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'translateZ(0)',
+            WebkitTransform: 'translateZ(0)',
+            perspective: '1000px',
+            ...(hoverPauseEnabled
+              ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
+              : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
+          }}
         >
           {Array.from({ length: copies }, (_, copyIndex) => (
             <div
               key={`set-${copyIndex}`}
               ref={copyIndex === 0 ? setRef : undefined}
               className={`${P}-marquee-set`}
-              style={{ gap: scaled(gap), paddingRight: scaled(gap) }}
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flex: '0 0 auto',
+                gap: scaled(gap),
+                paddingRight: scaled(gap),
+              }}
               aria-hidden={copyIndex > 0}
             >
               {content?.map((item: TestimonialsItem, index: number) =>
