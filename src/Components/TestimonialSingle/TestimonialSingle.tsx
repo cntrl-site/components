@@ -32,7 +32,7 @@ function getCSS(P: string): string {
 }
 
 .${P}-wrapper-autoplay-off {
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .${P}-fade-stack {
@@ -382,6 +382,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
                 left: 0,
                 top: 0,
                 width: '100%',
+                height: '100%',
                 visibility: 'hidden',
                 pointerEvents: 'none',
                 zIndex: -1,
