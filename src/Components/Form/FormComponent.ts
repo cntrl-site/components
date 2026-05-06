@@ -65,7 +65,7 @@ const schema = {
   type: 'object',
   version: 1,
   settings: {
-    sizing: 'auto manual', // TODO think where to place this non-editable property
+    sizing: 'auto manual',
     properties: {
       fieldsToShow: {
         type: 'number',

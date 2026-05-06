@@ -12,7 +12,7 @@ function getCSS(P: string): string {
 .${P}-marquee-wrapper {
   overflow: hidden;
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 
 @keyframes ${P}-marquee-left {
@@ -132,6 +132,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   const setRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
+  const [trackHeight, setTrackHeight] = useState(0);
   const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
   const measureLayerRef = useRef<HTMLDivElement>(null);
@@ -222,6 +223,25 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     track.style.setProperty('--marquee-distance', `${safeSetWidth}px`);
     track.style.setProperty('--marquee-duration', durationS);
   }, [autoplayEnabled, isAnimating, pxPerSec, setWidth]);
+
+  useLayoutEffect(() => {
+    if (!autoplayEnabled) {
+      setTrackHeight(0);
+      return;
+    }
+    const track = trackRef.current;
+    if (!track) return;
+    const measure = () => {
+      const next = track.getBoundingClientRect().height;
+      setTrackHeight(next > 0 ? next : 0);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    return () => {
+      ro.disconnect();
+    };
+  }, [autoplayEnabled, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -463,7 +483,11 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         ref={wrapperRef}
         className={cn(`${P}-wrapper`, `${P}-marquee-wrapper`)}
         aria-label="Testimonials"
-        style={{ overflow: 'hidden', width: '100%', height: '100%' }}
+        style={{
+          overflow: 'hidden',
+          width: '100%',
+          ...(trackHeight > 0 ? { height: trackHeight } : {}),
+        }}
       >
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         {measureLayerEl}

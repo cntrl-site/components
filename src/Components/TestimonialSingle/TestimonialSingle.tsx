@@ -11,9 +11,9 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 function getCSS(P: string): string {
   return `
 .${P}-container {
+  position: relative;
   overflow-x: clip;
   display: flex;
-  height: 100%;
   width: 100%;
   flex-direction: column;
   align-items: center;
@@ -22,22 +22,17 @@ function getCSS(P: string): string {
 .${P}-wrapper {
   position: relative;
   width: 100%;
-  height: 100%;
   order: 1;
   display: flex;
   flex-direction: column;
   inset: 0;
   pointer-events: none;
   box-sizing: border-box;
+  height: auto;
 }
 
 .${P}-wrapper-autoplay-off {
   overflow-x: hidden;
-}
-
-.${P}-elements-overlay {
-  position: relative;
-  inset: 0;
 }
 
 .${P}-fade-stack {
@@ -375,7 +370,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
       <div className={`${P}-container`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         <div
-          className={cn(`${P}-elements-overlay`, `${P}-wrapper`, autoplay === 'off' && `${P}-wrapper-autoplay-off`)}
+          className={cn(`${P}-wrapper`, autoplay === 'off' && `${P}-wrapper-autoplay-off`)}
           style={{ width: scalingValue(width ?? 0, isEditor ?? false), alignItems: overlayAlignItems }}
         >
           {shouldMeasureTextExtents && (
