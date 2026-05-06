@@ -61,11 +61,11 @@ const paletteBookmarkItems = [
   'errorColor',
 ] as const;
 
-const schema: ComponentSchemaV1 = {
+const schema = {
   type: 'object',
   version: 1,
   settings: {
-    sizing: 'auto manual', // TODO think where to place this non-editable property
+    sizing: 'auto manual',
     properties: {
       fieldsToShow: {
         type: 'number',
@@ -657,17 +657,17 @@ const schema: ComponentSchemaV1 = {
   },
   allowedPlugins: ['newsletter'],
   states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
-};
+} satisfies ComponentSchemaV1;
 
 export const FormComponent = {
   element: Form,
   id: 'form',
   name: 'Newsletter Stacked',
+  category: 'forms',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/formImg.jpg',
   },
-  version: 1,
   defaultSize: {
     width: 300,
     height: 42,

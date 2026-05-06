@@ -20,6 +20,7 @@ export type SchemaProperty = {
   default?: unknown;
   min?: number;
   max?: number;
+  step?: number;
 };
 
 export type LayoutRow = {
@@ -99,7 +100,7 @@ export type ComponentSchemaV1 = {
   settings: SchemaSection;
   panels?: SchemaPanel[];
   paletteBookmark?: SchemaPaletteBookmark;
-  content?: SchemaSection;
+  content?: any;
   allowedPlugins?: string[];
   states?: string[];
 };
