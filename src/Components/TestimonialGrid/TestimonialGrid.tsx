@@ -158,8 +158,10 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     if (!wrapper || !set) return;
     let raf = 0;
     const measure = () => {
-      setContainerWidth(wrapper.getBoundingClientRect().width);
-      setSetWidth(set.getBoundingClientRect().width);
+      const nextContainerWidth = wrapper.getBoundingClientRect().width;
+      const nextSetWidth = set.getBoundingClientRect().width;
+      setContainerWidth(nextContainerWidth);
+      setSetWidth(nextSetWidth);
     };
     const schedule = () => {
       cancelAnimationFrame(raf);
