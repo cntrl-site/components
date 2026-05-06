@@ -273,7 +273,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     };
   }, []);
 
-  const renderItemContent = useCallback((item: TestimonialsItem, opts?: RenderItemContentOpts) => {
+  const renderItemContent = (item: TestimonialsItem, opts?: RenderItemContentOpts) => {
     const textMinHeightPx = opts?.textMinHeightPx;
     const captionMinHeightPx = opts?.captionMinHeightPx;
     const dataMeasureAttrs = opts?.dataMeasureAttrs;
@@ -355,18 +355,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         )}
       </>
     );
-  }, [
-    captionMarginTop,
-    captionStyle,
-    imageMarginTop,
-    imageWidth,
-    imageHeight,
-    isEditor,
-    overlayAlignItems,
-    overlayTextAlign,
-    textMarginTop,
-    textStyle,
-  ]);
+  };
 
   const onMeasuredExtents = useCallback((extents: { maxTextPx: number; maxCaptionPx: number }) => {
     setMeasuredTextMinPx(extents.maxTextPx);
@@ -389,7 +378,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     return () => {
       ro.disconnect();
     };
-  }, [shouldMeasureTextExtents, onMeasuredExtents, content, renderItemContent]);
+  }, [shouldMeasureTextExtents, onMeasuredExtents, content]);
 
   if (!currentItem) return <></>;
 
