@@ -19,6 +19,30 @@ export type TextStyles = {
   color: string;
 };
 
+const shouldQuoteFontFamily = (family: string) => {
+  const trimmed = family.trim();
+  if (!trimmed) return false;
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith('\'') && trimmed.endsWith('\''))) return false;
+  const tokens = trimmed.split(/\s+/g).filter(Boolean);
+  return tokens.some((t) => /^\d/.test(t));
+};
+
+export const normalizeFontFamilyCssValue = (fontFamily?: string): string | undefined => {
+  if (!fontFamily) return fontFamily;
+
+  const parts = fontFamily
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((family) => {
+      if (!shouldQuoteFontFamily(family)) return family;
+      const escaped = family.replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    });
+
+  return parts.join(', ');
+};
+
 export function omitTextColors(styles: React.CSSProperties): React.CSSProperties {
   const { color, ...rest } = styles;
   return rest;
@@ -26,7 +50,7 @@ export function omitTextColors(styles: React.CSSProperties): React.CSSProperties
 
 export function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
   return {
-    fontFamily: textStyles.fontSettings.fontFamily,
+    fontFamily: normalizeFontFamilyCssValue(textStyles.fontSettings.fontFamily),
     fontWeight: textStyles.fontSettings.fontWeight,
     fontStyle: textStyles.fontSettings.fontStyle,
     letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),

@@ -11,6 +11,7 @@ import { getDisplayedImageRect, getPaddedContainerBounds } from '../utils/getIma
 import { getColorAlpha } from '../utils/getColorAlpha';
 import { getAnimationClasses } from './getAnimationClasses';
 import { CommonComponentProps } from '../props';
+import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -631,7 +632,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
               className={classes.caption} 
               style={{
                 ...getPositionStyles(caption.alignment, caption.offset, isEditor),
-                fontFamily: fontSettings.fontFamily,
+                fontFamily: normalizeFontFamilyCssValue(fontSettings.fontFamily),
                 fontWeight: fontSettings.fontWeight,
                 fontStyle: fontSettings.fontStyle,
                 width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
