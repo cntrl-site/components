@@ -351,7 +351,7 @@ const schema: ComponentSchemaV1 = {
   panels: [
     {
       id: 'general',
-      icon: 'cursor',
+      icon: 'settings',
       title: 'General',
       tooltip: 'General Settings',
       layout: [
