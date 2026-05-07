@@ -32,7 +32,7 @@ function getCSS(P: string): string {
 }
 
 .${P}-wrapper-autoplay-off {
-  overflow: hidden;
+  display: flow-root;
 }
 
 .${P}-fade-stack {
