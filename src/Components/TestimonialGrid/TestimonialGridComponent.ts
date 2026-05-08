@@ -237,14 +237,14 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      autoplay: 'off',
+      autoplay: 'on',
       direction: 'left',
       pauseOnHover: 'off',
       strokeColor: '#000000',
       bgColor: 'rgba(255, 255, 255, 0.81)',
       textColor: '#000000',
       captionColor: '#000000',
-      captionFontFamily: 'Arial',
+      captionFontFamily: 'Goudy Bookletter 1911',
       captionFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -257,7 +257,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      textFontFamily: 'Arial',
+      textFontFamily: 'Goudy Bookletter 1911',
       textFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -272,34 +272,34 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        speed: 3,
-        gap: 0.02,
-        cardWidth: 0.15,
-        corners: 0.005,
+        speed: 0.55,
+        gap: 0.04,
+        cardWidth: 0.8,
+        corners: 0.02,
         stroke: 0.001,
-        padding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-        logoMarginTop: 0,
-        logoWidth: 0.02,
-        logoHeight: 0.02,
-        captionMarginTop: 0,
-        textFontSize: 0.01,
-        textLineHeight: 0.01,
-        captionFontSize: 0.01,
-        captionLineHeight: 0.01,
+        padding: { top: 0.053, right: 0.026, bottom: 0.053, left: 0.026 },
+        logoMarginTop: 0.18,
+        logoWidth: 0.21,
+        logoHeight: 0.21,
+        captionMarginTop: 0.056,
+        textFontSize: 0.058,
+        textLineHeight: 0.088,
+        captionFontSize: 0.053,
+        captionLineHeight: 0.069,
       },
       d: {
-        speed: 5,
+        speed: 1.64,
         gap: 0.02,
         cardWidth: 0.15,
         corners: 0.005,
         stroke: 0.001,
         padding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-        logoMarginTop: 0.01,
-        logoWidth: 0.05,
-        logoHeight: 0.05,
-        captionMarginTop: 0.01,
-        textFontSize: 0.01,
-        textLineHeight: 0.01,
+        logoMarginTop: 0.048,
+        logoWidth: 0.055,
+        logoHeight: 0.027,
+        captionMarginTop: 0.005,
+        textFontSize: 0.012,
+        textLineHeight: 0.013,
         captionFontSize: 0.01,
         captionLineHeight: 0.01,
       },
@@ -340,7 +340,7 @@ const schema: ComponentSchemaV1 = {
         {type: 'row', items: ['speed', 'pauseOnHover']},
         {type: 'row', items: ['align', 'direction']},
         {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding']}]},
-        {type: 'row', title: 'Logo Container', items: ['logoWidth', 'logoHeight']},
+        {type: 'row', title: 'Image Container', items: ['logoWidth', 'logoHeight']},
       ],
     },
     {
@@ -376,7 +376,7 @@ const schema: ComponentSchemaV1 = {
       properties: {
         logo: {
           type: 'object',
-          label: 'Logo',
+          label: 'Image',
           display: {
             type: 'media-input',
           },
@@ -401,57 +401,69 @@ const schema: ComponentSchemaV1 = {
       {
         logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/component-assets/logo.png',
+          url: 'https://cdn.cntrl.site/component-assets/julia.png',
           name: '',
         },
         text: [
           {
             type: 'paragraph',
-            children: [{ text: 'Innovative solutions redefine connectivity, enhancing user experience through seamless digital integration and efficiency.' }],
+            children: [{ text: 'This website is a great tool for designers and developers. The ease of creating animations here is mesmerizing. Bravo to the creators of this product!' }],
           },
         ],
         caption: [
           {
             type: 'paragraph',
-            children: [{ text: 'CEO @ Company' }],
+            children: [{ text: 'Julia Smith,' }],
+          },
+          {
+            type: 'paragraph',
+            children: [{ text: 'Freelance Designer' }],
           },
         ],
       },
       {
         logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/component-assets/logo.png',
+          url: 'https://cdn.cntrl.site/component-assets/mark.png',
           name: '',
         },
         text: [
           {
             type: 'paragraph',
-            children: [{ text: 'In the realm of digital innovation, transformative algorithms redefine connectivity, propelling unprecedented technological advancements.' }],
+            children: [{ text: 'This is super cool. The on onboarding terminal style animation brings me back to what made the Internet simple and fun.' }],
           },
         ],
         caption: [
           {
             type: 'paragraph',
-            children: [{ text: 'CEO @ Company' }],
+            children: [{ text: 'Mark Travis,' }],
+          },
+          {
+            type: 'paragraph',
+            children: [{ text: 'Architect @ United Architects' }],
           },
         ],
       },
       {
         logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/component-assets/logo.png',
+          url: 'https://cdn.cntrl.site/component-assets/pia.png',
           name: '',
         },
         text: [
           {
             type: 'paragraph',
-            children: [{ text: 'Harnessing innovative algorithms, this paradigm shift enhances computational efficiency and optimizes data processing frameworks.' }],
+            children: [{ text: 'Great tool for someone who wants to quickly and easily build a site that has fancy scrolling animations. Totally addictive!' }],
           },
         ],
         caption: [
           {
             type: 'paragraph',
-            children: [{ text: 'CEO @ Company' }],
+            children: [{ text: 'Pia' }],
+          },
+          {
+            type: 'paragraph',
+            children: [{ text: 'Media Buyer' }],
           },
         ],
       },
@@ -470,8 +482,8 @@ export const TestimonialGridComponent = {
     url: 'https://cdn.cntrl.site/component-assets/testimonials.png',
   },
   defaultSize: {
-    width: 750,
-    height: 300,
+    width: '100%',
+    height: 320,
   },
   schema,
   sourceCode: testimonialGridSourceRaw,
