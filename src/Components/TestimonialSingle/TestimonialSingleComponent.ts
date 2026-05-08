@@ -37,7 +37,7 @@ const schema: ComponentSchemaV1 = {
       },
       delay: {
         type: 'number',
-        scope: 'common',
+        scope: 'layout',
         title: 'Delay(s)',
         display: { type: 'step-control'},
         step: 1,

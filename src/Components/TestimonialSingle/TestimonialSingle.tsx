@@ -31,10 +31,6 @@ function getCSS(P: string): string {
   height: auto;
 }
 
-.${P}-wrapper-autoplay-off {
-  display: flow-root;
-}
-
 .${P}-fade-stack {
   position: relative;
   width: 100%;
@@ -370,7 +366,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
       <div className={`${P}-container`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         <div
-          className={cn(`${P}-wrapper`, autoplay === 'off' && `${P}-wrapper-autoplay-off`)}
+          className={`${P}-wrapper`}
           style={{ width: scalingValue(width ?? 0, isEditor ?? false), alignItems: overlayAlignItems }}
         >
           {shouldMeasureTextExtents && (
