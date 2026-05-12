@@ -31,7 +31,6 @@ function getCSS(P: string): string {
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   -webkit-transform: translateZ(0);
-  perspective: 1000px;
   animation-duration: var(--marquee-duration);
   animation-timing-function: linear;
   animation-iteration-count: infinite;
@@ -50,6 +49,7 @@ function getCSS(P: string): string {
   display: flex;
   flex-direction: row;
   flex: 0 0 auto;
+  align-items: center;
 }
 
 .${P}-wrapper {
@@ -120,6 +120,11 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
   const stableCandidateRef = useRef<number | null>(null);
+  const setWidthRef = useRef(0);
+
+  useLayoutEffect(() => {
+    setWidthRef.current = setWidth;
+  }, [setWidth]);
 
   const copies = useMemo(() => {
     if (!autoplayEnabled || content?.length === 0) return 1;
@@ -139,14 +144,17 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       const prevCandidate = stableCandidateRef.current;
       const isStableNow = typeof prevCandidate === 'number' && Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
       stableCandidateRef.current = nextRawSetWidth;
-      setContainerWidth(nextContainerWidth);
-      if (typeof nextRawSetWidth === 'number' && nextRawSetWidth > 0 && setWidth <= 0) {
+      const sw = setWidthRef.current;
+      setContainerWidth((prev) =>
+        prev > 0 && Math.abs(prev - nextContainerWidth) < 0.5 ? prev : nextContainerWidth
+      );
+      if (typeof nextRawSetWidth === 'number' && nextRawSetWidth > 0 && sw <= 0) {
         setSetWidth(nextRawSetWidth);
         return;
       }
-      if (isStableNow && nextRawSetWidth !== setWidth) {
+      if (isStableNow && Math.abs(nextRawSetWidth - sw) > 0.5) {
         setSetWidth(nextRawSetWidth);
-      } else if (!isStableNow && setWidth <= 0) {
+      } else if (!isStableNow && sw <= 0) {
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(measure);
       }
@@ -163,7 +171,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplayEnabled, setWidth]);
+  }, [autoplayEnabled]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
@@ -184,7 +192,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     if (!track) return;
     const measure = () => {
       const next = track.getBoundingClientRect().height;
-      setTrackHeight(next > 0 ? next : 0);
+      const useH = next > 0 ? next : 0;
+      setTrackHeight((prev) => (prev > 0 && Math.abs(prev - useH) < 0.5 ? prev : useH));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -203,22 +212,59 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     setIsHovering(false);
   };
 
-  const renderCard = (item: MarqueeItem, key: string | number) => (
-    <div key={key} style={{ width: scaled(imageMaxWidth), height: scaled(imageMaxHeight)}}>
-      {item.image?.url && (
+  const renderCard = (item: MarqueeItem, key: string | number) => {
+    const maxW = scaled(imageMaxWidth);
+    const maxH = scaled(imageMaxHeight);
+    const objectFit = item.image?.objectFit || 'contain';
+
+    if (!item.image?.url) {
+      return <div key={key} style={{ width: maxW, height: maxH, flexShrink: 0 }} />;
+    }
+
+    if (objectFit === 'cover') {
+      return (
+        <div key={key} style={{ width: maxW, height: maxH, flexShrink: 0, lineHeight: 0 }}>
+          <img
+            src={item.image.url}
+            alt={item.image?.name ?? ''}
+            style={{
+              display: 'block',
+              pointerEvents: 'auto',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={key}
+        style={{
+          display: 'flex',
+          maxWidth: maxW,
+          maxHeight: maxH,
+          lineHeight: 0,
+          flexShrink: 0,
+        }}
+      >
         <img
           src={item.image.url}
           alt={item.image?.name ?? ''}
           style={{
+            display: 'block',
             pointerEvents: 'auto',
-            width: '100%',
-            height: '100%',
-            objectFit: item.image?.objectFit || 'contain',
+            maxWidth: maxW,
+            maxHeight: maxH,
+            width: 'auto',
+            height: 'auto',
           }}
         />
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const renderCardWrapper = (item: MarqueeItem, key: string | number) => (
     <div
@@ -226,11 +272,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       style={{
         position: 'relative',
         flex: '0 0 auto',
-        height: '100%',
-        transform: 'translateZ(0)',
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
-        willChange: 'transform',
       }}
     >
       {renderCard(item, `card-${key}`)}
@@ -281,7 +322,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
             WebkitBackfaceVisibility: 'hidden',
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
-            perspective: '1000px',
             ...(hoverPauseEnabled
               ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
               : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
@@ -318,6 +358,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         style={{
           gap: scaled(gap),
           justifyContent: 'center',
+          alignItems: 'center',
           overflowX: 'auto',
           display: 'flex',
           flexDirection: 'row',

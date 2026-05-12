@@ -77,7 +77,7 @@ const schema: ComponentSchemaV1 = {
         speed: 1.64,
         gap: 0.02,
         imageMaxWidth: 0.15,
-        imageMaxHeight: 0.027,
+        imageMaxHeight: 0.1,
       },
     },
     displayRules: [],
@@ -131,21 +131,35 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/2.jpg',
+          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
+          name: '',
+        },
+      },
+      {
+        image: {
+          objectFit: 'contain',
+          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
           name: '',
         },
       },
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/3.jpg',
+          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
+          name: '',
+        },
+      },
+      {
+        image: {
+          objectFit: 'contain',
+          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
           name: '',
         },
       },
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/4.jpg',
+          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
           name: '',
         },
       },
