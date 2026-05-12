@@ -16,8 +16,6 @@ function getCSS(P: string): string {
 .${P}-wrapper {
   display: grid;
   align-items: start;
-  width: 100%;
-  column-gap: 10%;
   min-height: ${sv(48)};
 }
 .${P}-item {
@@ -231,9 +229,13 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
             fontFamily: getFontBasedOnSystem(),
           }}
         >
-          <p>{index + 1}</p>
-          <p>/</p>
-          <p>{images.length}</p>
+          {images.length > 1 &&
+            <>
+              <p>{index + 1}</p>
+              <p>/</p>
+              <p>{images.length}</p>
+            </>
+          }
         </div>
       </div>
 
@@ -303,12 +305,11 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
   const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
-    fieldsToShow = 2,
+    gridLayout,
     textBoxWidth,
     verticalGap,
     entriesCount,
     lightbox,
-    imageSize,
     imageDisplay,
     slider,
     sliderTiming,
@@ -380,13 +381,7 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
 
   const cropContent = (content ?? []).slice(0, resEntriesCount);
 
-  const imageSizeMap = {
-    Small: 0.1,
-    Medium: 0.2,
-    Big: 0.3,
-  } as const;
-
-  const size = imageSizeMap[imageSize] ?? 0.2;
+  const size = gridLayout.entryWidth ?? 0.2;
 
   const isCover = imageDisplay?.display === 'Cover';
   const ratioValue = imageDisplay?.ratioValue ?? '1:1';
@@ -439,8 +434,10 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
         <div
           className={`${P}-wrapper ${P}-type-${type} ${wrapperStateClasses}`.trim()}
           style={{
-            gridTemplateColumns: `repeat(${fieldsToShow}, 1fr)`,
+            gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
             rowGap: scalingValue(verticalGap ?? 0, isEditor),
+            columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
+            width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor)
           }}>
           {cropContent.map((item, index) => (
             <div
@@ -461,7 +458,7 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
                     />
                     :
                     <Splide
-                      key={`${transition}-${imageSize}-${direction}-${sliderTiming}`}
+                      key={`${transition}-${size}-${direction}-${sliderTiming}`}
                       className={`${P}-item-slider`}
                       options={{
                         arrows: false,
@@ -537,14 +534,21 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
   );
 }
 
+type GridLayoutConfig = {
+  entryWidth: number;
+  horizontalGap: number;
+  wrapperWidth: number;
+  columnsCount: number;
+  lockedParam?: 'wrapperWidth' | 'entryWidth' | 'horizontalGap' | null;
+};
+
 type GridSettings = {
   type: 'A' | 'B';
-  fieldsToShow: number;
+  gridLayout: GridLayoutConfig;
   textBoxWidth: number;
   verticalGap: number;
   entriesCount: number;
   lightbox: 'On' | 'Off';
-  imageSize: 'Small' | 'Medium' | 'Big';
   imageDisplay: {
     display: 'Fit' | 'Cover';
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';

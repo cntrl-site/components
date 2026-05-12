@@ -133,20 +133,42 @@ const schema: GridSchema = {
     },
   },
   settings: {
-    sizing: 'auto manual',
+    sizing: 'auto auto',
     properties: {
-      fieldsToShow: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Columns',
-        display: { type: 'count-number' },
-      },
       type: {
         type: 'string',
         scope: 'common',
         title: '',
         display: { type: 'radio-group' },
         enum: ['A', 'B'],
+      },
+      gridLayout: {
+        type: 'grid-layout',
+        scope: 'layout',
+        display: { type: 'grid-layout' },
+        gridParams: {
+          type: 'object',
+          properties: {
+            entryWidth: {
+              type: 'number',
+              title: 'E'
+            },
+            horizontalGap: {
+              type: 'number',
+              title: 'G'
+            },
+            wrapperWidth: {
+              type: 'number',
+              title: 'W'
+            },
+            columnsCount: {
+              type: 'number',
+              title: 'C',
+              min: 1,
+              max: 4
+            },
+          }
+        }
       },
       textBoxWidth: {
         type: 'number',
@@ -176,12 +198,6 @@ const schema: GridSchema = {
         scope: 'common',
         title: 'Lightbox',
         display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
-      },
-      imageSize: {
-        type: 'string',
-        scope: 'layout',
-        title: 'Size',
-        display: { type: 'toggle-cycle', enum: ['Small', 'Medium', 'Big'] },
       },
       imageDisplay: {
         type: 'object',
@@ -250,7 +266,7 @@ const schema: GridSchema = {
         ...textStyleProperties.fontSettings,
         scope: 'common',
         title: '',
-        display : { type: 'font-settings-weight'},
+        display: { type: 'font-settings-weight' },
       },
       titleFontSize: {
         type: 'number',
@@ -292,7 +308,7 @@ const schema: GridSchema = {
         ...textStyleProperties.fontSettings,
         scope: 'common',
         title: '',
-        display : { type: 'font-settings-weight' },
+        display: { type: 'font-settings-weight' },
       },
       subtitleFontSize: {
         type: 'number',
@@ -326,7 +342,6 @@ const schema: GridSchema = {
       },
     },
     defaults: {
-      fieldsToShow: 2,
       lightbox: 'Off',
       imageDisplay: {
         display: 'Fit',
@@ -367,10 +382,16 @@ const schema: GridSchema = {
     },
     layoutDefaults: {
       m: {
+        gridLayout: {
+          entryWidth: 0.2,
+          horizontalGap: 0.05,
+          wrapperWidth: 1,
+          columnsCount: 2,
+          lockedParam: null,
+        },
         textBoxWidth: 100,
         verticalGap: 0.0083,
         entriesCount: 0,
-        imageSize: 'Medium',
         titleStroke: 0.003,
         titleCorners: 0.192,
         subtitlePadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
@@ -381,10 +402,16 @@ const schema: GridSchema = {
         subtitleLineHeight: 0.0373,
       },
       d: {
+        gridLayout: {
+          entryWidth: 0.2,
+          horizontalGap: 0.05,
+          wrapperWidth: 1,
+          columnsCount: 2,
+          lockedParam: null,
+        },
         textBoxWidth: 100,
         verticalGap: 0.0083,
         entriesCount: 0,
-        imageSize: 'Medium',
         titleStroke: 0.001,
         titleCorners: 0.05,
         subtitlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
@@ -404,7 +431,7 @@ const schema: GridSchema = {
         if: { name: 'type', value: 'B' },
         then: { name: 'properties.subtitleColor.display.visible', value: true },
       }
-    ],
+    ]
   },
   panels: [
     {
@@ -413,8 +440,9 @@ const schema: GridSchema = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'name', 'fieldsToShow'] },
+        { type: 'row', items: ['__componentName__', 'name'] },
         'type',
+        'gridLayout',
         {
           type: 'group',
           title: '',
@@ -461,11 +489,6 @@ const schema: GridSchema = {
               type: 'row',
               title: '',
               items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['imageSize'],
-                },
                 {
                   type: 'row',
                   title: '',
@@ -524,12 +547,12 @@ const schema: GridSchema = {
         {
           type: 'group',
           title: 'Title',
-          items: [ 'titleFontFamily', 'titleFontSettings', {type: 'row', items: ['titleFontSize', 'titleLineHeight', 'titleLetterSpacing', 'titleWordSpacing']}, 'titleTextAppearance'],
+          items: ['titleFontFamily', 'titleFontSettings', { type: 'row', items: ['titleFontSize', 'titleLineHeight', 'titleLetterSpacing', 'titleWordSpacing'] }, 'titleTextAppearance'],
         },
         {
           type: 'group',
           title: 'Subtitle',
-          items: [ 'subtitleFontFamily', 'subtitleFontSettings', {type: 'row', items: ['subtitleFontSize', 'subtitleLineHeight', 'subtitleLetterSpacing', 'subtitleWordSpacing']}, 'subtitleTextAppearance'],
+          items: ['subtitleFontFamily', 'subtitleFontSettings', { type: 'row', items: ['subtitleFontSize', 'subtitleLineHeight', 'subtitleLetterSpacing', 'subtitleWordSpacing'] }, 'subtitleTextAppearance'],
         },
       ],
     },
