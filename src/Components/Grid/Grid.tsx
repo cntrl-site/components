@@ -23,7 +23,6 @@ function getCSS(P: string): string {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 12px;
 }
 .${P}-item-image-wrapper {
   display: flex;
@@ -64,6 +63,24 @@ function getCSS(P: string): string {
   margin-bottom: 0px;
   margin-top: 0px;
   color: var(--${P}-subtitle-color);
+}
+
+.${P}-control {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.${P}-control::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 20px;
+  pointer-events: auto;
+  z-index: 10;
 }
 `;
 }
@@ -315,6 +332,8 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
     sliderTiming,
     direction,
     transition,
+    titleMarginTop,
+    subtitleMarginTop,
     titleColor,
     subtitleColor,
     titleFontFamily,
@@ -504,9 +523,19 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
                     </Splide>
                 }
               </div>
+              <div
+                data-controls="titleMarginTop"
+                className={`${P}-control`}
+                style={{ height: scalingValue(titleMarginTop ?? 0, isEditor) }}
+              />
               <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
                 {item.title}
               </p>
+              {type === 'B' && <div
+                data-controls="subtitleMarginTop"
+                className={`${P}-control`}
+                style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor) }}
+              />}
               {type === 'B' && <p className={`${P}-item-subtitle`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...subtitleFieldCss }}>
                 {item.subtitle}
               </p>}
@@ -558,6 +587,8 @@ type GridSettings = {
   sliderTiming: number;
   direction: 'Horizontal' | 'Vertical' | 'Random',
   transition: 'Fade' | 'Slide',
+  titleMarginTop: number;
+  subtitleMarginTop: number;
   titleColor: string;
   subtitleColor: string;
   titleFontFamily: string;

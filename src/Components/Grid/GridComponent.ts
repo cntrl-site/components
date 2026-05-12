@@ -244,6 +244,22 @@ const schema: GridSchema = {
         title: 'Transition',
         display: { type: 'toggle-cycle', enum: ['Fade', 'Slide'] },
       },
+      titleMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Title margin top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      subtitleMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Subtitle margin top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
       titleColor: {
         type: 'string',
         scope: 'common',
@@ -392,6 +408,8 @@ const schema: GridSchema = {
         textBoxWidth: 100,
         verticalGap: 0.0083,
         entriesCount: 0,
+        titleMarginTop: 0.02,
+        subtitleMarginTop: 0.02,
         titleStroke: 0.003,
         titleCorners: 0.192,
         subtitlePadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
@@ -412,6 +430,8 @@ const schema: GridSchema = {
         textBoxWidth: 100,
         verticalGap: 0.0083,
         entriesCount: 0,
+        titleMarginTop: 0.008,
+        subtitleMarginTop: 0.008,
         titleStroke: 0.001,
         titleCorners: 0.05,
         subtitlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
@@ -431,7 +451,25 @@ const schema: GridSchema = {
         if: { name: 'type', value: 'B' },
         then: { name: 'properties.subtitleColor.display.visible', value: true },
       }
-    ]
+    ],
+    layout: [
+      '__componentName__',
+      'name',
+      'type',
+      'gridLayout',
+      'textBoxWidth',
+      'verticalGap',
+      'entriesCount',
+      'lightbox',
+      'imageDisplay',
+      'slider',
+      'sliderTiming',
+      'direction',
+      'transition',
+      'transition',
+      'titleMarginTop',
+      'subtitleMarginTop'
+    ],
   },
   panels: [
     {
@@ -570,6 +608,7 @@ export const GridComponent = {
   element: Grid,
   id: 'grid',
   name: 'Neptune',
+  category: 'grids',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/formImg.png',
