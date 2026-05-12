@@ -64,7 +64,7 @@ const paletteBookmarkItems = [
   'errorColor',
 ] as const;
 
-const schema: ComponentSchemaV1 = {
+const schema = {
   type: 'object',
   version: 1,
   settings: {
@@ -463,7 +463,7 @@ const schema: ComponentSchemaV1 = {
   panels: [
     {
       id: 'general',
-      icon: 'cursor',
+      icon: 'settings',
       title: 'General',
       tooltip: 'General Settings',
       layout: [
@@ -534,13 +534,13 @@ const schema: ComponentSchemaV1 = {
   },
   allowedPlugins: ['newsletter'],
   states: ['default', 'hover', 'focus', 'filled', 'success', 'error'],
-};
+} satisfies ComponentSchemaV1;
 
 export const OnelinerFormComponent = {
   element: OnelinerForm,
   id: 'oneliner-form',
   name: 'Newsletter Single Line',
-  version: 1,
+  category: 'forms',
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/onelinerImg.jpg',

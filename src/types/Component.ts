@@ -5,6 +5,7 @@ export type Component = {
   element: (props: any) => React.ReactElement;
   id: string;
   name: string;
+  category?: string;
   version?: number;
   defaultSize?: {
     width?: number | string;

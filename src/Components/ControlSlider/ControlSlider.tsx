@@ -7,6 +7,7 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { CommonComponentProps } from '../props';
+import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
 import { TextElementStyles } from '../../types/TextElementStyles';
 
 type SliderProps = {
@@ -88,7 +89,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
                   [styles.active]: index === currentSlideIndex,
                 })}
                 style={{
-                  fontFamily: fontSettings.fontFamily,
+                  fontFamily: normalizeFontFamilyCssValue(fontSettings.fontFamily),
                   fontWeight: fontSettings.fontWeight,
                   fontStyle: fontSettings.fontStyle,
                   width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),

@@ -4,6 +4,8 @@ import { ControlImageRevealSliderComponent } from './ImageRevealSlider/ControlIm
 import { LightboxComponent } from './Lightbox/LightboxComponent';
 import { FormComponent } from './Form/FormComponent';
 import { OnelinerFormComponent } from './OnelinerForm/OnelinerFormComponent';
+import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridComponent';
+import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
 
 export const components: Component[] = [
@@ -12,5 +14,7 @@ export const components: Component[] = [
   LightboxComponent,
   FormComponent,
   OnelinerFormComponent,
+  TestimonialGridComponent,
+  TestimonialSingleComponent,
   GridComponent
 ];

@@ -1,6 +1,7 @@
 import React from 'react';
 import { CSSProperties, FC } from 'react';
 import styles from './RichTextRenderer.module.scss';
+import { normalizeFontFamilyCssValue } from '../../utils/textStylesToCss';
 
 interface Props {
   content: any[];
@@ -31,7 +32,7 @@ export const RichTextRenderer: FC<Props> = ({ content }) => {
 
 function getLeafCss(leaf: any): CSSProperties {
   return {
-    ...(leaf.fontFamily && { fontFamily: leaf.fontFamily }),
+    ...(leaf.fontFamily && { fontFamily: normalizeFontFamilyCssValue(leaf.fontFamily) }),
     ...(leaf.fontWeight && { fontWeight: leaf.fontWeight }),
     ...(leaf.fontStyle && { fontStyle: leaf.fontStyle }),
     ...(leaf.textDecoration && { textDecoration: leaf.textDecoration }),
