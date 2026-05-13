@@ -112,7 +112,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Logo margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       logoWidth: {
@@ -148,7 +148,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Caption margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       captionFontFamily: {

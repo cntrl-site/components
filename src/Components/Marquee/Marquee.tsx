@@ -1,11 +1,20 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ImgHTMLAttributes,
+} from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 
-function getCSS(P: string): string {
-  return `
+const LAYOUT_EPSILON = 0.5;
+
+const getCSS = (P: string): string => `
 .${P}-marquee-wrapper {
   overflow: hidden;
   width: 100%;
@@ -93,7 +102,45 @@ function getCSS(P: string): string {
   z-index: 10;
 }
 `;
-}
+
+type MarqueeMeasuredImgProps = ImgHTMLAttributes<HTMLImageElement> & {
+  index: number;
+  onMeasured: (index: number, width: number) => void;
+};
+
+const MarqueeMeasuredImg = ({ index, onMeasured, ...imgProps }: MarqueeMeasuredImgProps) => {
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const { src } = imgProps;
+
+  useLayoutEffect(() => {
+    const node = imgRef.current;
+    if (!node) return;
+
+    const measure = () => {
+      const w = node.getBoundingClientRect().width;
+      if (w <= 0) return;
+      onMeasured(index, w);
+    };
+
+    let canceled = false;
+    const onLoad = () => {
+      if (!canceled) measure();
+    };
+
+    if (node.complete) {
+      measure();
+    } else {
+      node.addEventListener('load', onLoad, { once: true });
+    }
+
+    return () => {
+      canceled = true;
+      node.removeEventListener('load', onLoad);
+    };
+  }, [index, onMeasured, src]);
+
+  return <img ref={imgRef} {...imgProps} />;
+};
 
 type MarqueeProps = {
   settings: MarqueeSettings;
@@ -106,9 +153,8 @@ const PX_PER_SEC_PER_SPEED_UNIT = 30;
 
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
-  const { autoplay, speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight } = settings;
-  const autoplayEnabled = autoplay === 'on' && !isPreviewMode;
-  const isAnimating = autoplayEnabled;
+  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight } = settings;
+  const isAnimating = !isPreviewMode;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -117,83 +163,106 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
   const [trackHeight, setTrackHeight] = useState(0);
+  const [itemWidths, setItemWidths] = useState<Record<number, number>>({});
   const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
-  const stableCandidateRef = useRef<number | null>(null);
-  const setWidthRef = useRef(0);
 
+  const contentMeasureKey = useMemo(
+    () => (content ?? []).map((c) => `${c.image?.url ?? ''}|${c.image?.objectFit ?? ''}`).join(';'),
+    [content],
+  );
+
+  const prevMeasuredLayoutFingerprintRef = useRef<string | null>(null);
   useLayoutEffect(() => {
-    setWidthRef.current = setWidth;
-  }, [setWidth]);
+    const fingerprint = `${contentMeasureKey}|${gap}|${imageMaxWidth}|${imageMaxHeight}|${isEditor}`;
+    const prev = prevMeasuredLayoutFingerprintRef.current;
+    prevMeasuredLayoutFingerprintRef.current = fingerprint;
+    if (prev === null) return;
+    if (prev !== fingerprint) {
+      setItemWidths({});
+      setSetWidth(0);
+    }
+  }, [contentMeasureKey, gap, imageMaxWidth, imageMaxHeight, isEditor]);
 
-  const copies = useMemo(() => {
-    if (!autoplayEnabled || content?.length === 0) return 1;
-    if (setWidth <= 0 || containerWidth <= 0) return 2;
-    return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [autoplayEnabled, content?.length, setWidth, containerWidth]);
+  const onItemMeasured = useCallback((index: number, width: number) => {
+    setItemWidths((prev) => {
+      if (prev[index] === width) return prev;
+      return { ...prev, [index]: width };
+    });
+  }, []);
 
-  useLayoutEffect(() => {
-    if (!autoplayEnabled) return;
-    const wrapper = wrapperRef.current;
+  const allItemWidthsKnown = useMemo(() => {
+    const len = content?.length ?? 0;
+    if (len === 0) return false;
+    for (let i = 0; i < len; i++) {
+      const w = itemWidths[i];
+      if (typeof w !== 'number' || w <= 0) return false;
+    }
+    return true;
+  }, [content?.length, itemWidths]);
+
+  const applySetWidthFromDom = useCallback(() => {
     const set = setRef.current;
-    if (!wrapper || !set) return;
-    let raf = 0;
-    const measure = () => {
-      const nextContainerWidth = wrapper.getBoundingClientRect().width;
-      const nextRawSetWidth = set.getBoundingClientRect().width;
-      const prevCandidate = stableCandidateRef.current;
-      const isStableNow = typeof prevCandidate === 'number' && Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
-      stableCandidateRef.current = nextRawSetWidth;
-      const sw = setWidthRef.current;
-      setContainerWidth((prev) =>
-        prev > 0 && Math.abs(prev - nextContainerWidth) < 0.5 ? prev : nextContainerWidth
-      );
-      if (typeof nextRawSetWidth === 'number' && nextRawSetWidth > 0 && sw <= 0) {
-        setSetWidth(nextRawSetWidth);
-        return;
-      }
-      if (isStableNow && Math.abs(nextRawSetWidth - sw) > 0.5) {
-        setSetWidth(nextRawSetWidth);
-      } else if (!isStableNow && sw <= 0) {
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(measure);
-      }
-    };
-    const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
-    };
-    schedule();
-    const ro = new ResizeObserver(schedule);
-    ro.observe(wrapper);
+    if (!set) return;
+    const next = set.getBoundingClientRect().width;
+    if (next <= 0) return;
+    setSetWidth((prev) => (Math.abs(prev - next) < LAYOUT_EPSILON ? prev : next));
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isAnimating || !allItemWidthsKnown) return;
+    const set = setRef.current;
+    if (!set) return;
+    applySetWidthFromDom();
+    const ro = new ResizeObserver(() => {
+      applySetWidthFromDom();
+    });
     ro.observe(set);
     return () => {
-      cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplayEnabled]);
+  }, [allItemWidthsKnown, isAnimating, applySetWidthFromDom, gap, imageMaxWidth, imageMaxHeight, isEditor]);
+
+  const copies = useMemo(() => {
+    if (content?.length === 0) return 1;
+    if (setWidth <= 0 || containerWidth <= 0) return 2;
+    return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
+  }, [content?.length, setWidth, containerWidth]);
+
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const measure = () => {
+      const nextContainerWidth = wrapper.getBoundingClientRect().width;
+      setContainerWidth((prev) =>
+        prev > 0 && Math.abs(prev - nextContainerWidth) < LAYOUT_EPSILON ? prev : nextContainerWidth
+      );
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(wrapper);
+    return () => {
+      ro.disconnect();
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
-    if (!autoplayEnabled || !track || !isAnimating) return;
+    if (!track || !isAnimating) return;
     const safeSetWidth = setWidth > 0 ? setWidth : 0;
     const durationMs = safeSetWidth > 0 && pxPerSec > 0 ? (safeSetWidth / pxPerSec) * 1000 : 0;
     const durationS = `${Math.max(0, durationMs) / 1000}s`;
     track.style.setProperty('--marquee-distance', `${safeSetWidth}px`);
     track.style.setProperty('--marquee-duration', durationS);
-  }, [autoplayEnabled, isAnimating, pxPerSec, setWidth]);
+  }, [isAnimating, pxPerSec, setWidth]);
 
   useLayoutEffect(() => {
-    if (!autoplayEnabled) {
-      setTrackHeight(0);
-      return;
-    }
     const track = trackRef.current;
     if (!track) return;
     const measure = () => {
       const next = track.getBoundingClientRect().height;
       const useH = next > 0 ? next : 0;
-      setTrackHeight((prev) => (prev > 0 && Math.abs(prev - useH) < 0.5 ? prev : useH));
+      setTrackHeight((prev) => (prev > 0 && Math.abs(prev - useH) < LAYOUT_EPSILON ? prev : useH));
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -201,44 +270,89 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight]);
+  }, [copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight]);
 
-  const onTrackEnter = () => {
+  const onTrackEnter = useCallback(() => {
     if (!hoverPauseEnabled) return;
     setIsHovering(true);
-  };
-  const onTrackLeave = () => {
+  }, [hoverPauseEnabled]);
+
+  const onTrackLeave = useCallback(() => {
     if (!hoverPauseEnabled) return;
     setIsHovering(false);
-  };
+  }, [hoverPauseEnabled]);
 
-  const renderCard = (item: MarqueeItem, key: string | number) => {
+  const marqueePlayStateStyle = useMemo((): CSSProperties => {
+    if (!hoverPauseEnabled) {
+      return { '--marquee-play-state': 'running' } as CSSProperties;
+    }
+    return {
+      '--marquee-play-state': isHovering ? 'paused' : 'running',
+    } as CSSProperties;
+  }, [hoverPauseEnabled, isHovering]);
+
+  const renderCard = (item: MarqueeItem, key: string | number, index: number) => {
     const maxW = scaled(imageMaxWidth);
     const maxH = scaled(imageMaxHeight);
     const objectFit = item.image?.objectFit || 'contain';
 
     if (!item.image?.url) {
-      return <div key={key} style={{ width: maxW, height: maxH, flexShrink: 0 }} />;
+      return (
+        <div
+          key={key}
+          ref={
+            isAnimating
+              ? (node) => {
+                  if (!node) return;
+                  const w = node.getBoundingClientRect().width;
+                  if (w > 0) onItemMeasured(index, w);
+                }
+              : undefined
+          }
+          style={{ width: maxW, height: maxH, flexShrink: 0 }}
+        />
+      );
     }
 
     if (objectFit === 'cover') {
       return (
         <div key={key} style={{ width: maxW, height: maxH, flexShrink: 0, lineHeight: 0 }}>
-          <img
-            src={item.image.url}
-            alt={item.image?.name ?? ''}
-            style={{
-              display: 'block',
-              pointerEvents: 'auto',
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
+          {isAnimating ? (
+            <MarqueeMeasuredImg
+              index={index}
+              onMeasured={onItemMeasured}
+              src={item.image.url}
+              alt={item.image?.name ?? ''}
+              width={maxW}
+              height={maxH}
+              style={{
+                display: 'block',
+                pointerEvents: 'auto',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+              }}
+            />
+          ) : (
+            <img
+              src={item.image.url}
+              alt={item.image?.name ?? ''}
+              width={maxW}
+              height={maxH}
+              style={{
+                display: 'block',
+                pointerEvents: 'auto',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+              }}
+            />
+          )}
         </div>
       );
     }
-
     return (
       <div
         key={key}
@@ -250,23 +364,36 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           flexShrink: 0,
         }}
       >
-        <img
-          src={item.image.url}
-          alt={item.image?.name ?? ''}
-          style={{
+        {isAnimating ? (
+          <MarqueeMeasuredImg
+            index={index}
+            onMeasured={onItemMeasured}
+            src={item.image.url}
+            alt={item.image?.name ?? ''}
+            style={{
+              display: 'block',
+              pointerEvents: 'auto',
+              maxWidth: maxW,
+              maxHeight: maxH,
+              width: 'auto',
+              height: 'auto',
+            }}
+          />
+        ) : (
+          <img src={item.image.url} alt={item.image?.name ?? ''} style={{
             display: 'block',
             pointerEvents: 'auto',
             maxWidth: maxW,
             maxHeight: maxH,
             width: 'auto',
             height: 'auto',
-          }}
-        />
+          }} />
+        )}
       </div>
     );
   };
 
-  const renderCardWrapper = (item: MarqueeItem, key: string | number) => (
+  const renderCardWrapper = (item: MarqueeItem, key: string | number, index: number) => (
     <div
       key={key}
       style={{
@@ -274,7 +401,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         flex: '0 0 auto',
       }}
     >
-      {renderCard(item, `card-${key}`)}
+      {renderCard(item, `card-${key}`, index)}
       {isEditor && (
         <div
           data-controls="gap"
@@ -293,7 +420,23 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     </div>
   );
 
-  if (autoplayEnabled && (content?.length ?? 0) > 0) {
+  const trackMotionStyle = useMemo(
+    (): CSSProperties => ({
+      display: 'flex',
+      flexDirection: 'row',
+      flexWrap: 'nowrap',
+      width: 'max-content',
+      willChange: 'transform',
+      backfaceVisibility: 'hidden',
+      WebkitBackfaceVisibility: 'hidden',
+      transform: 'translateZ(0)',
+      WebkitTransform: 'translateZ(0)',
+      ...marqueePlayStateStyle,
+    }),
+    [marqueePlayStateStyle],
+  );
+
+  if (isAnimating && (content?.length ?? 0) > 0) {
     return (
       <div
         ref={wrapperRef}
@@ -312,20 +455,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           data-direction={direction}
           onMouseEnter={onTrackEnter}
           onMouseLeave={onTrackLeave}
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'nowrap',
-            width: 'max-content',
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            transform: 'translateZ(0)',
-            WebkitTransform: 'translateZ(0)',
-            ...(hoverPauseEnabled
-              ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
-              : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
-          }}
+          style={trackMotionStyle}
         >
           {Array.from({ length: copies }, (_, copyIndex) => (
             <div
@@ -342,7 +472,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
               aria-hidden={copyIndex > 0}
             >
               {content?.map((item: MarqueeItem, index: number) =>
-                renderCardWrapper(item, `${copyIndex}-${index}`)
+                renderCardWrapper(item, `${copyIndex}-${index}`, index)
               )}
             </div>
           ))}
@@ -365,9 +495,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         }}
         aria-label="Marquee"
       >
-        {content?.map((item: MarqueeItem, index: number) =>
-          renderCardWrapper(item, index)
-        )}
+        {content?.map((item: MarqueeItem, index: number) => renderCardWrapper(item, index, index))}
       </div>
     </div>
   );
@@ -382,7 +510,6 @@ export type MarqueeItem = {
 };
 
 export type MarqueeSettings = {
-  autoplay: 'on' | 'off';
   speed: number;
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';

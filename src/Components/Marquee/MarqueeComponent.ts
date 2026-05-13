@@ -8,13 +8,6 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto manual',
     properties: {
-      autoplay: {
-        type: 'string',
-        scope: 'common',
-        title: 'Autoplay',
-        display: { type: 'switch-control' },
-        enum: ['on', 'off'],
-      },
       speed: {
         type: 'number',
         scope: 'layout',
@@ -62,7 +55,6 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      autoplay: 'on',
       direction: 'left',
       pauseOnHover: 'off',
     },
@@ -83,7 +75,6 @@ const schema: ComponentSchemaV1 = {
     displayRules: [],
     layout: [
       '__componentName__',
-      'autoplay',
       'speed',
       'direction',
       'pauseOnHover',
@@ -99,17 +90,13 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'autoplay'] },
+        { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['imageMaxWidth', 'speed'] },
         { type: 'row', items: [ 'imageMaxHeight', 'pauseOnHover'] },
         { type: 'row', items: ['direction'] },
       ],
     },
   ],
-  paletteBookmark: {
-    items: [],
-    panelIds: ['general'],
-  },
   content: {
     type: 'array',
     settings: {

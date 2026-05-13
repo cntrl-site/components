@@ -83,7 +83,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Image margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       textMarginTop: {
@@ -91,7 +91,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Text margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       controls: {
@@ -136,7 +136,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Caption margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       captionFontFamily: {
