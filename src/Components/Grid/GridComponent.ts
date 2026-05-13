@@ -98,6 +98,14 @@ const schema: GridSchema = {
             },
             required: ['url', 'name'],
           },
+          link: {
+            type: 'string',
+            label: 'Link',
+            placeholder: 'Add link...',
+            display: {
+              type: 'text-input',
+            },
+          },
         },
         required: ['image'],
       },
@@ -110,6 +118,7 @@ const schema: GridSchema = {
             name: 'Grid-1.png',
             objectFit: 'cover',
           }],
+          link: ''
         },
         {
           title: 'Title 2',
@@ -119,6 +128,7 @@ const schema: GridSchema = {
             name: 'Grid-2.png',
             objectFit: 'cover',
           }],
+          link: ''
         },
         {
           title: 'Title 3',
@@ -128,6 +138,7 @@ const schema: GridSchema = {
             name: 'Grid-3.png',
             objectFit: 'cover',
           }],
+          link: ''
         },
       ],
     },

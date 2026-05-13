@@ -24,10 +24,26 @@ function getCSS(P: string): string {
   justify-content: center;
   align-items: center;
 }
+.${P}-item-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  outline: 1px solid #ccc;
+}
+.${P}-item-inner-hidden {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .${P}-item-image-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.${P}-item-image-link {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .${P}-item-image {
   width: 100%;
@@ -89,6 +105,7 @@ type GridProps = {
   settings: GridSettings;
   content?: any;
   isEditor?: boolean;
+  isPreviewMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: GridSettings) => void;
 } & CommonComponentProps;
@@ -318,7 +335,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   );
 }
 
-export function Grid({ settings, content, isEditor, metadata, activeEvent }: GridProps) {
+export function Grid({ settings, content, isEditor, isPreviewMode, metadata, activeEvent }: GridProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
@@ -463,82 +480,89 @@ export function Grid({ settings, content, isEditor, metadata, activeEvent }: Gri
               key={index}
               className={`${P}-item`.trim()}
             >
-              <div className={`${P}-item-image-wrapper`} style={{ width: scalingValue(size ?? 0, isEditor), height: scalingValue(size ?? 0, isEditor) }}>
-                {(item.image?.length ?? 0) === 0
-                  ? null
-                  : slider === 'Off'
-                    ?
-                    <img
-                      src={item.image[0].url}
-                      alt={item.image[0].name}
-                      className={`${P}-item-image`.trim()}
-                      style={imageStyle}
-                      onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), 0)}
-                    />
-                    :
-                    <Splide
-                      key={`${transition}-${size}-${direction}-${sliderTiming}`}
-                      className={`${P}-item-slider`}
-                      options={{
-                        arrows: false,
-                        pagination: false,
-                        drag: false,
-                        perPage: 1,
-                        autoplay: true,
-                        interval: sliderTiming * 1000,
-                        width: '100%',
-                        height: '100%',
-                        speed: 500,
-                        type: transition === 'Fade' ? 'fade' : 'loop',
-                        rewind: transition === 'Fade',
-                        pauseOnHover: false,
-                        pauseOnFocus: false,
-                        direction: transition === 'Fade' ? 'ltr' : direction !== 'Random'
-                          ? direction === 'Horizontal'
-                            ? 'ltr'
-                            : 'ttb'
-                          : dir,
-                      }}
-                      onMoved={(splide) => {
-                        if (direction !== 'Random' || transition === 'Fade') return;
-                        const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : Math.random() > 0.5 ? 'btt' : 'ttb';
-                        setDir(next);
-
-                        setTimeout(() => {
-                          splide.refresh();
-                        }, 0);
-                      }}
-                    >
-                      {item.image.map((img: { url: string; name?: string }, imgIndex: number) => (
-                        <SplideSlide key={imgIndex}>
-                          <img
-                            src={img.url}
-                            alt={img.name}
-                            className={`${P}-item-image`.trim()}
-                            style={imageStyle}
-                            onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), imgIndex)}
-                          />
-                        </SplideSlide>
-                      ))}
-                    </Splide>
-                }
-              </div>
               <div
-                data-controls="titleMarginTop"
-                className={`${P}-control`}
-                style={{ height: scalingValue(titleMarginTop ?? 0, isEditor) }}
-              />
-              <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
-                {item.title}
-              </p>
-              {type === 'B' && <div
-                data-controls="subtitleMarginTop"
-                className={`${P}-control`}
-                style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor) }}
-              />}
-              {type === 'B' && <p className={`${P}-item-subtitle`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...subtitleFieldCss }}>
-                {item.subtitle}
-              </p>}
+                className={isPreviewMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
+                style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` }}
+              >
+                <a href={(item.link?.length ?? 0) > 0 && lightbox === 'Off' ? item.link : undefined} target='_blank' className={`${P}-item-image-link`}>
+                  <div className={`${P}-item-image-wrapper`} style={{ width: scalingValue(size ?? 0, isEditor), height: scalingValue(size ?? 0, isEditor) }}>
+                    {(item.image?.length ?? 0) === 0
+                      ? null
+                      : slider === 'Off'
+                        ?
+                        <img
+                          src={item.image[0].url}
+                          alt={item.image[0].name}
+                          className={`${P}-item-image`.trim()}
+                          style={imageStyle}
+                          onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), 0)}
+                        />
+                        :
+                        <Splide
+                          key={`${transition}-${size}-${direction}-${sliderTiming}`}
+                          className={`${P}-item-slider`}
+                          options={{
+                            arrows: false,
+                            pagination: false,
+                            drag: false,
+                            perPage: 1,
+                            autoplay: true,
+                            interval: sliderTiming * 1000,
+                            width: '100%',
+                            height: '100%',
+                            speed: 500,
+                            type: transition === 'Fade' ? 'fade' : 'loop',
+                            rewind: transition === 'Fade',
+                            pauseOnHover: false,
+                            pauseOnFocus: false,
+                            direction: transition === 'Fade' ? 'ltr' : direction !== 'Random'
+                              ? direction === 'Horizontal'
+                                ? 'ltr'
+                                : 'ttb'
+                              : dir,
+                          }}
+                          onMoved={(splide) => {
+                            if (direction !== 'Random' || transition === 'Fade') return;
+                            const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : Math.random() > 0.5 ? 'btt' : 'ttb';
+                            setDir(next);
+
+                            setTimeout(() => {
+                              splide.refresh();
+                            }, 0);
+                          }}
+                        >
+                          {item.image.map((img: { url: string; name?: string }, imgIndex: number) => (
+                            <SplideSlide key={imgIndex}>
+                              <img
+                                src={img.url}
+                                alt={img.name}
+                                className={`${P}-item-image`.trim()}
+                                style={imageStyle}
+                                onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), imgIndex)}
+                              />
+                            </SplideSlide>
+                          ))}
+                        </Splide>
+                    }
+                  </div>
+                  <div
+                    data-controls="titleMarginTop"
+                    className={`${P}-control`}
+                    style={{ height: scalingValue(titleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
+                  />
+                  <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
+                    {item.title}
+                  </p>
+                  {type === 'B' && <div
+                    data-controls="subtitleMarginTop"
+                    className={`${P}-control`}
+                    style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
+                  />}
+                  {type === 'B' && <p className={`${P}-item-subtitle`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...subtitleFieldCss }}>
+                    {item.subtitle}
+                  </p>}
+                </a>
+              </div>
             </div>
           ))}
         </div>
