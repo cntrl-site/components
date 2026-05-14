@@ -53,10 +53,18 @@ const schema: ComponentSchemaV1 = {
         max: 400,
         display: { type: 'range-control' },
       },
+      imageFit: {
+        type: 'string',
+        scope: 'common',
+        title: 'Image cover',
+        enum: ['cover', 'contain'],
+        display: { type: 'switch-toggle-2', enum: ['cover', 'contain'] },
+      },
     },
     defaults: {
       direction: 'left',
       pauseOnHover: 'off',
+      imageFit: 'contain',
     },
     layoutDefaults: {
       m: {
@@ -81,6 +89,7 @@ const schema: ComponentSchemaV1 = {
       'gap',
       'imageMaxWidth',
       'imageMaxHeight',
+      'imageFit',
     ],
   },
   panels: [
@@ -93,7 +102,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['imageMaxWidth', 'speed'] },
         { type: 'row', items: [ 'imageMaxHeight', 'pauseOnHover'] },
-        { type: 'row', items: ['direction'] },
+        { type: 'row', items: ['direction', 'imageFit'] },
       ],
     },
   ],
@@ -112,43 +121,50 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
           },
         },
+        link: {
+          label: 'URL',
+          placeholder: 'Enter link...',
+          display: {
+            type: 'text-input',
+          },
+        },
       },
     },
     default: [
       {
         image: {
-          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
           name: '',
         },
+        link: '',
       },
       {
         image: {
-          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
           name: '',
         },
+        link: '',
       },
       {
         image: {
-          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
           name: '',
         },
+        link: '',
       },
       {
         image: {
-          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
           name: '',
         },
+        link: '',
       },
       {
         image: {
-          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
           name: '',
         },
+        link: '',
       },
     ],
   },

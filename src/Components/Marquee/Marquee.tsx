@@ -88,6 +88,8 @@ const SET_WIDTH_RAF_FALLBACK = 180;
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
   const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight } = settings;
+  const imageFit: 'cover' | 'contain' =
+    settings.imageFit === 'cover' ? 'cover' : 'contain';
   const autoplayEnabled = !isPreviewMode;
   const isAnimating = autoplayEnabled;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
@@ -119,7 +121,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     if (!autoplayEnabled || content?.length === 0) return 1;
     if (setWidth <= 0 || containerWidth <= 0) return 2;
     return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [autoplayEnabled, content?.length, setWidth, containerWidth]);
+  }, [autoplayEnabled, content?.length, setWidth, containerWidth, imageFit]);
 
   useLayoutEffect(() => {
     loadedFirstSetImagesRef.current = 0;
@@ -198,7 +200,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplayEnabled, firstSetImageUrlCount, setWidth]);
+  }, [autoplayEnabled, firstSetImageUrlCount, setWidth, imageFit]);
 
   useEffect(() => {
     isHoveringRef.current = isHovering;
@@ -276,7 +278,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth]);
+  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -296,31 +298,53 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   };
 
   const renderCard = (item: MarqueeItem, key: string | number, isFirstSet?: boolean) => {
-    const isContain = item?.image?.objectFit === 'contain';
+    const linkHref = item.link?.trim();
+    const imageNode =
+      item.image?.url &&
+      (
+        <img
+          src={item.image.url}
+          alt={item.image?.name ?? ''}
+          style={{
+            pointerEvents: 'auto',
+            height: '100%',
+            ...(imageFit === 'contain'
+              ? { width: 'auto', maxWidth: '100%' }
+              : { width: '100%' }),
+            objectFit: imageFit,
+          }}
+          onLoad={isFirstSet ? onFirstSetImageDone : undefined}
+          onError={isFirstSet ? onFirstSetImageDone : undefined}
+        />
+      );
     return (
       <div
         key={key}
         style={{
-          ...(isContain ? { maxWidth: scaled(imageMaxWidth) } : { width: scaled(imageMaxWidth) }),
+          ...(imageFit === 'contain' ? { maxWidth: scaled(imageMaxWidth) } : { width: scaled(imageMaxWidth) }),
           height: scaled(imageMaxHeight),
+          overflow: 'hidden',
         }}
       >
-        {item.image?.url && (
-          <img
-            src={item.image.url}
-            alt={item.image?.name ?? ''}
-            style={{
-              pointerEvents: 'auto',
-              height: '100%',
-              ...(isContain
-                ? { width: 'auto', maxWidth: '100%' }
-                : { width: '100%' }),
-              objectFit: item.image?.objectFit || 'contain',
-            }}
-            onLoad={isFirstSet ? onFirstSetImageDone : undefined}
-            onError={isFirstSet ? onFirstSetImageDone : undefined}
-          />
-        )}
+        {imageNode &&
+          (linkHref ? (
+            <a
+              href={linkHref}
+              target='_blank'
+              rel='noopener noreferrer'
+              style={{
+                display: 'block',
+                height: '100%',
+                ...(imageFit === 'cover' ? { width: '100%' } : {}),
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              {imageNode}
+            </a>
+          ) : (
+            imageNode
+          ))}
       </div>
     );
   };
@@ -438,8 +462,8 @@ export type MarqueeItem = {
   image?: {
     url?: string;
     name?: string;
-    objectFit?: 'cover' | 'contain';
   };
+  link?: string;
 };
 
 export type MarqueeSettings = {
@@ -449,4 +473,6 @@ export type MarqueeSettings = {
   gap: number;
   imageMaxWidth: number;
   imageMaxHeight: number;
+  /** `contain` is shown as "Fit" in the editor; same as CSS `object-fit: contain`. Legacy stored value `fit` is treated as `contain`. */
+  imageFit?: 'cover' | 'contain' | 'fit';
 };
