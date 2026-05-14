@@ -100,7 +100,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
-      addItemFromFileExplorer: false,
+      addItemFromFileExplorer: true,
     },
     items: {
       type: 'object',
@@ -117,7 +117,7 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          objectFit: 'cover',
+          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
           name: '',
         },
@@ -131,7 +131,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          objectFit: 'cover',
+          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
           name: '',
         },
@@ -145,7 +145,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          objectFit: 'cover',
+          objectFit: 'contain',
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
           name: '',
         },
