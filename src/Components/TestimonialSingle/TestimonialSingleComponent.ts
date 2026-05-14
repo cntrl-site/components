@@ -254,7 +254,7 @@ const schema: ComponentSchemaV1 = {
       textWordSpacing: 0,
       textTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
       textColor: '#000000',
-      captionFontFamily: 'Charter',
+      captionFontFamily: 'Goudy Bookletter 1911',
       captionFontSettings: { fontWeight: 400, fontStyle: 'normal' },
       captionLetterSpacing: 0,
       captionWordSpacing: 0,

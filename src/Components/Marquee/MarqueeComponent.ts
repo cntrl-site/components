@@ -14,7 +14,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Speed',
         display: { type: 'speed-control' },
         min: 0.5,
-        max: 8,
+        max: 7,
       },
       direction: {
         type: 'string',
