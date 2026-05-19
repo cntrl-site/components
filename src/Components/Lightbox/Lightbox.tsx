@@ -331,7 +331,13 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
         return;
       }
       const target = e.target as HTMLElement | null;
-      if (target && (target.closest(`.${classes.thumbsContainer}`) || target.closest(`.${classes.thumbItem}`))) {
+      if (target && (
+        target.closest(`.${classes.thumbsContainer}`) ||
+        target.closest(`.${classes.thumbItem}`) ||
+        target.closest(`.${classes.arrow}`) ||
+        target.closest(`.${classes.closeButton}`) ||
+        target.closest(`.${classes.caption}`)
+      )) {
         return;
       }
       // Don't close if touch is within Splide container when slide type with drag is enabled
