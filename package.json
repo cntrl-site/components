@@ -57,6 +57,7 @@
     "lib": "dist"
   },
   "dependencies": {
+    "@chenglou/pretext": "^0.0.7",
     "classnames": "^2.5.1"
   },
   "peerDependencies": {
@@ -66,7 +67,6 @@
   "devDependencies": {
     "@antfu/eslint-config": "^3.16.0",
     "@splidejs/react-splide": "^0.7.12",
-    "ts-node": "^10.9.1",
     "@tsconfig/node16": "^1.0.3",
     "@tsconfig/recommended": "^1.0.1",
     "@types/node": "^18.11.7",
@@ -78,6 +78,7 @@
     "react-dom": "^18.2.0",
     "rimraf": "^6.0.1",
     "sass": "^1.86.3",
+    "ts-node": "^10.9.1",
     "typescript": "^5.2.2",
     "vite": "^6.2.5",
     "vite-plugin-dts": "^4.5.3"

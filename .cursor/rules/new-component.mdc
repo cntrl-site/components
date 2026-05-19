@@ -1,0 +1,60 @@
+---
+description: Pre-flight checklist before creating a new V1 component in this project
+alwaysApply: false
+---
+
+# Creating a new component
+
+Before writing any code for a new component, do these steps **first** — in order.
+
+## 1. Read existing V1 components as reference
+
+The current V1 components live in `src/Components/`. Read at least one before starting:
+
+- `src/Components/Form/FormComponent.ts` + `src/Components/Form/Form.tsx`
+- `src/Components/OnelinerForm/OnelinerFormComponent.ts` + `src/Components/OnelinerForm/OnelinerForm.tsx`
+- `src/Components/TestimonialGrid/TestimonialGridComponent.ts` + `src/Components/TestimonialGrid/TestimonialGrid.tsx`
+- `src/Components/TestimonialSingle/TestimonialSingleComponent.ts` + `src/Components/TestimonialSingle/TestimonialSingle.tsx`
+
+Pick the closest match to the new component (form-like vs. content-list-like) and mirror its structure.
+
+## 2. Read the schema contract
+
+- `src/types/SchemaV1.ts` — `ComponentSchemaV1`, `SchemaProperty`, `SchemaPanel`, `LayoutItem`, `displayRules`
+- `src/types/Component.ts` — `Component` registration shape (`id`, `name`, `category`, `preview`, `defaultSize`, `schema`, `sourceCode`, `assetsPaths`, `fontSettingsPaths`)
+
+The new schema must be `type: 'object'`, `version: 1`, and typed with `satisfies ComponentSchemaV1`.
+
+## 3. Confirm the required file layout
+
+For component `Foo`, create `src/Components/Foo/`:
+
+- `Foo.tsx` — the React element (uses `useScopedStyles()` for the CSS prefix `P`, renders an inline `<style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />`, consumes `settings` / `content` / `isEditor` / `activeEvent` / `metadata` from `CommonComponentProps`).
+- `FooComponent.ts` — exports `FooComponent` with `element`, `id`, `name`, `category`, `schema`, `sourceCode`, and `import fooSourceRaw from './Foo.tsx?raw'`.
+
+## 4. Reuse shared utilities — do not reinvent
+
+From `src/Components/utils/`:
+
+- `useScopedStyles` for the `P` class prefix
+- `scalingValue` for layout-scoped numeric values
+- `buildColorVars` + `stateOverrides` for state-driven CSS variables
+- `textStylesToCss` / `omitTextColors` for typography
+- `getFormFieldValidationError` for form-style validation
+
+Helpers in `src/Components/helpers/` (`RichTextRenderer`, `SvgImage`) cover rich text content and inline SVGs.
+
+## 5. Plan the schema before typing it out
+
+Sketch on paper (or in chat) before writing the schema:
+
+- Which properties are `scope: 'common'` vs. `scope: 'layout'`?
+- Which `defaults` and per-layout `layoutDefaults` (`m`, `d`) are needed?
+- Which `panels` (e.g. `general`, `typeStyle`, `fields`, `content`) and their `layout` trees?
+- `paletteBookmark.items` + `stateItems` per state
+- `states` (e.g. `['default', 'hover', 'focus', 'filled', 'success', 'error']`) and `allowedPlugins`
+- Any `displayRules` for conditional visibility/enablement
+
+## 6. Register the component last
+
+Add the new component to the exported array in `src/Components/components.ts` — components are not picked up otherwise.
