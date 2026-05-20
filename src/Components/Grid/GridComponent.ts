@@ -493,49 +493,29 @@ const schema: GridSchema = {
         { type: 'row', items: ['__componentName__', 'name'] },
         'type',
         {
-          type: 'group',
+          type: 'row',
           title: 'Grid',
           items: [
-            {type: 'row', items: ['gridLayout']},
-            {type: 'row', items: ['verticalGap']},
+            {type: 'group', title: '', items: ['gridLayout']},
           ],
         },
         {
-          type: 'group',
+          type: 'row',
           title: '',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: ['textBoxWidth', 'entriesCount'],
-            },
-          ],
+          items: ['textBoxWidth', 'entriesCount']
         },
+        {type: 'row', title: '', items: ['verticalGap']},
         {
-          type: 'group',
+          type: 'row',
           title: 'Image',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: ['imageDisplay', 'lightbox'],
-            },
-          ],
+          items: ['imageDisplay', 'lightbox']
         },
         {
-          type: 'group',
+          type: 'row',
           title: 'Slider',
           items: [
-            {
-              type: 'row',
-              title: '',
-              items: ['slider', 'sliderTiming'],
-            },
-            {
-              type: 'row',
-              title: '',
-              items: ['direction', 'transition'],
-            },
+            { type: 'group', title: '', items: ['slider', 'sliderTiming']},
+            { type: 'group', title: '', items: ['direction', 'transition']},
           ],
         },
       ],
