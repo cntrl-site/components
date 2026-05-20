@@ -160,31 +160,32 @@ const schema: GridSchema = {
         gridParams: {
           type: 'object',
           properties: {
-            entryWidth: {
-              type: 'number',
-              title: 'E'
-            },
-            horizontalGap: {
-              type: 'number',
-              title: 'G'
-            },
-            wrapperWidth: {
-              type: 'number',
-              title: 'W'
-            },
             columnsCount: {
               type: 'number',
-              title: 'C',
+              title: 'Columns',
               min: 1,
               max: 4
             },
+            wrapperWidth: {
+              type: 'number',
+              title: 'Width',
+              display: { type: 'numeric-input', highlight: true },
+            },
+            entryWidth: {
+              type: 'number',
+              title: 'Entry'
+            },
+            horizontalGap: {
+              type: 'number',
+              title: 'Gap'
+            }
           }
         }
       },
       textBoxWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Textbox Width',
+        title: 'Text Width (%)',
         display: { type: 'percentage-input' },
         min: 0,
         max: 200,
@@ -238,7 +239,7 @@ const schema: GridSchema = {
       sliderTiming: {
         type: 'number',
         scope: 'common',
-        title: 'Timing (S)',
+        title: 'Timing (Sec)',
         display: { type: 'common-numeric-input' },
         min: 1,
         max: 10,
@@ -491,98 +492,30 @@ const schema: GridSchema = {
       layout: [
         { type: 'row', items: ['__componentName__', 'name'] },
         'type',
-        'gridLayout',
         {
-          type: 'group',
+          type: 'row',
+          title: 'Grid',
+          items: [
+            {type: 'group', title: '', items: ['gridLayout']},
+          ],
+        },
+        {
+          type: 'row',
           title: '',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['textBoxWidth'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['verticalGap'],
-                },
-              ],
-            },
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['entriesCount'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['lightbox'],
-                },
-              ],
-            },
-          ],
+          items: ['textBoxWidth', 'entriesCount']
         },
+        {type: 'row', title: '', items: ['verticalGap']},
         {
-          type: 'group',
+          type: 'row',
           title: 'Image',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['imageDisplay'],
-                },
-              ],
-            },
-          ],
+          items: ['imageDisplay', 'lightbox']
         },
         {
-          type: 'group',
+          type: 'row',
           title: 'Slider',
           items: [
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['slider'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['sliderTiming'],
-                },
-              ],
-            },
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['direction'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['transition'],
-                },
-              ],
-            },
+            { type: 'group', title: '', items: ['slider', 'sliderTiming']},
+            { type: 'group', title: '', items: ['direction', 'transition']},
           ],
         },
       ],
