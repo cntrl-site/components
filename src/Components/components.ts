@@ -7,6 +7,7 @@ import { OnelinerFormComponent } from './OnelinerForm/OnelinerFormComponent';
 import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridComponent';
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
+import { ListComponent } from './List/ListComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -16,5 +17,6 @@ export const components: Component[] = [
   OnelinerFormComponent,
   TestimonialGridComponent,
   TestimonialSingleComponent,
-  GridComponent
+  GridComponent,
+  ListComponent
 ];

@@ -43,7 +43,9 @@ function getCSS(P: string): string {
 .${P}-item-image-link {
   width: 100%;
   height: 100%;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .${P}-item-image {
   width: 100%;
@@ -102,6 +104,7 @@ function getCSS(P: string): string {
 }
 
 type GridProps = {
+  layoutId?: string;
   settings: GridSettings;
   content?: any;
   isEditor?: boolean;
@@ -335,7 +338,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   );
 }
 
-export function Grid({ settings, content, isEditor, isPreviewMode, metadata, activeEvent }: GridProps) {
+export function Grid({ settings, content, isEditor, isPreviewMode, metadata, activeEvent, layoutId }: GridProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
@@ -438,6 +441,18 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
   };
 
   const [dir, setDir] = useState('ltr');
+  const [containerWidth, setContainerWidth] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      setContainerWidth(Math.round(entries[0].contentRect.width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
@@ -468,6 +483,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
       <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <div style={colorVars}>
         <div
+          ref={containerRef}
           className={`${P}-wrapper ${P}-type-${type} ${wrapperStateClasses}`.trim()}
           style={{
             gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
@@ -482,7 +498,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
             >
               <div
                 className={isPreviewMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
-                style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` }}
+                style={{ width: (textBoxWidth ?? 0) > 100 ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` : scalingValue(size ?? 0, isEditor) }}
               >
                 <a href={(item.link?.length ?? 0) > 0 && lightbox === 'Off' ? item.link : undefined} target='_blank' className={`${P}-item-image-link`}>
                   <div className={`${P}-item-image-wrapper`} style={{ width: scalingValue(size ?? 0, isEditor), height: scalingValue(size ?? 0, isEditor) }}>
@@ -499,7 +515,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
                         />
                         :
                         <Splide
-                          key={`${transition}-${size}-${direction}-${sliderTiming}`}
+                          key={`${transition}-${size}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
                           className={`${P}-item-slider`}
                           options={{
                             arrows: false,
