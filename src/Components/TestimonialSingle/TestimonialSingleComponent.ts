@@ -39,7 +39,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Delay(s)',
-        display: { type: 'numeric-input'},
+        display: { type: 'percentage-input'},
         step: 1,
         min: 1,
         max: 8,
