@@ -491,7 +491,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
             columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
             width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor)
           }}>
-          {cropContent.map((item, index) => (
+          {cropContent.map((item: any, index: number) => (
             <div
               key={index}
               className={`${P}-item`.trim()}
@@ -535,7 +535,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
                               ? direction === 'Horizontal'
                                 ? 'ltr'
                                 : 'ttb'
-                              : dir,
+                              : dir as 'ltr' | 'ttb' | 'rtl',
                           }}
                           onMoved={(splide) => {
                             if (direction !== 'Random' || transition === 'Fade') return;
