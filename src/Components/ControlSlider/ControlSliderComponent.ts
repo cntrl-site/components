@@ -351,7 +351,7 @@ export const ControlSliderComponent: Component = {
           pagination: {
             isActive: true,
             scale: 50,
-            position: 'outside-1',
+            position: 'inside-1',
             offset: {
               x: 0,
               y: 0
