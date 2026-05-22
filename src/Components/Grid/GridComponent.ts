@@ -169,15 +169,17 @@ const schema: GridSchema = {
             wrapperWidth: {
               type: 'number',
               title: 'Width',
-              display: { type: 'numeric-input', highlight: true },
+              min: 0,
             },
             entryWidth: {
               type: 'number',
-              title: 'Entry'
+              title: 'Entry',
+              min: 0,
             },
             horizontalGap: {
               type: 'number',
-              title: 'Gap'
+              title: 'Gap',
+              min: 0,
             }
           }
         }
