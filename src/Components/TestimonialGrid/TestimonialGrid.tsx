@@ -317,7 +317,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         key={key}
         style={{
           padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
-          width: scaled(cardWidth + stroke * 2),
+          width: scaled(cardWidth + (stroke * 2)),
           height: '100%',
           borderRadius: scaled(corners),
           border: `${scaled(stroke)} solid ${strokeColor}`,

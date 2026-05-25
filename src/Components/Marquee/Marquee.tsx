@@ -3,8 +3,8 @@ import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
-import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { type TextStyles } from '../utils/textStylesToCss';
+import { MarqueeCard } from './MarqueeCard';
 
 function getCSS(P: string): string {
   return `
@@ -323,105 +323,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     scheduleRemeasureRef.current?.();
   };
 
-  const renderCard = (item: MarqueeItem, key: string | number, isFirstSet?: boolean) => {
-    const linkHref = item.link?.trim();
-    const imageNode =
-      item.image?.url &&
-      (
-        <img
-          src={item.image.url}
-          alt={item.image?.name ?? ''}
-          style={{
-            pointerEvents: 'auto',
-            objectFit: imageFit,
-            objectPosition: 'top',
-            ...(imageFit === 'contain'
-              ? { width: 'auto', maxWidth: '100%', maxHeight: '100%', height: 'auto' }
-              : { width: '100%', height: '100%' }),
-          }}
-          onLoad={isFirstSet ? onFirstSetImageDone : undefined}
-          onError={isFirstSet ? onFirstSetImageDone : undefined}
-        />
-      );
-    const hasText = (item.text?.length ?? 0) > 0;
-    const textNode = hasText && (
-      <>
-        <div
-          {...(isEditor
-            ? { 'data-controls': 'textMarginTop', 'data-controls-axis': 'y' as const }
-            : {})}
-          className={isEditor ? `${P}-control` : undefined}
-          style={{
-            width: '100%',
-            height: scaled(textMarginTop ?? 0),
-            flexShrink: 0,
-          }}
-        />
-        <div
-          style={{
-            ...textStylesToCss(textStyle, isEditor),
-            width: '100%',
-            flexShrink: 0,
-            pointerEvents: 'auto',
-          }}
-        >
-          <RichTextRenderer content={item.text!} />
-        </div>
-      </>
-    );
-    return (
-      <div
-        key={key}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'start',
-          ...(imageFit === 'contain' ? { maxWidth: scaled(imageMaxWidth) } : { width: scaled(imageMaxWidth) }),
-        }}
-      >
-        <div
-          className={imageHoverClass}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-            width: '100%',
-            height: scaled(imageMaxHeight),
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          {imageNode &&
-            (linkHref ? (
-              <a
-                href={linkHref}
-                target='_blank'
-                rel='noopener noreferrer'
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-start',
-                  alignItems: 'center',
-                  alignSelf: 'flex-start',
-                  ...(imageFit === 'cover'
-                    ? { width: '100%', height: '100%' }
-                    : { height: 'auto', width: 'auto', maxWidth: '100%', maxHeight: '100%' }),
-                  textDecoration: 'none',
-                  color: 'inherit',
-                }}
-              >
-                {imageNode}
-              </a>
-            ) : (
-              imageNode
-            ))}
-        </div>
-        {textNode}
-      </div>
-    );
-  };
-
   const renderCardWrapper = (item: MarqueeItem, key: string | number, isFirstSet?: boolean) => (
     <div
       key={key}
@@ -435,7 +336,20 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         willChange: 'transform',
       }}
     >
-      {renderCard(item, `card-${key}`, isFirstSet)}
+      <MarqueeCard
+        item={item}
+        prefix={P}
+        imageFit={imageFit}
+        imageMaxWidth={imageMaxWidth}
+        imageMaxHeight={imageMaxHeight}
+        textMarginTop={textMarginTop}
+        textStyle={textStyle}
+        imageHoverClass={imageHoverClass}
+        isEditor={isEditor}
+        isFirstSet={isFirstSet}
+        scaled={scaled}
+        onFirstSetImageDone={onFirstSetImageDone}
+      />
       {isEditor && (
         <div
           data-controls="gap"
