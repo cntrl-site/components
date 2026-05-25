@@ -192,7 +192,7 @@ const schema: GridSchema = {
         type: 'number',
         scope: 'layout',
         title: 'Columns',
-        display: { type: 'common-numeric-input' },
+        display: { type: 'count-number' },
         min: 1,
         max: 5,
       },
@@ -249,7 +249,7 @@ const schema: GridSchema = {
         type: 'number',
         scope: 'layout',
         title: 'Cut',
-        display: { type: 'toggle-numeric-input', enum: ['Auto', 'Fixed'] },
+        display: { type: 'toggle-numeric-input', enum: ['Off', 'On'] },
         min: 1,
       },
       entryHoverEffect: {
@@ -258,7 +258,60 @@ const schema: GridSchema = {
         title: 'Entry Hover Effect',
         display: { type: 'toggle-cycle', enum: ['None', 'Default', 'Blinds'] },
       },
+      cutCellMinHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Cell min height',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      cutLabel: {
+        type: 'string',
+        scope: 'common',
+        title: 'Cut Label',
+        display: { type: 'label-input' },
+      },
+      showCut: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Show',
+        display: { type: 'toggle-numeric-input', enum: ['All', 'Custom'] },
+        min: 1,
+      },
 
+      rowPaddingTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Row Padding Top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      rowPaddingBottom: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Row Padding Bottom',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      wrapperPaddingLeft: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Wrapper Padding Left',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      wrapperPaddingRight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Wrapper Padding Right',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
       firstColumnWidth: {
         type: 'number',
         scope: 'layout',
@@ -303,13 +356,13 @@ const schema: GridSchema = {
       textColor: {
         type: 'string',
         scope: 'common',
-        title: 'Text Color',
+        title: 'Text Default',
         display: { type: 'palette-color-picker' },
       },
       textHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Text Hover Color',
+        title: 'Text Hover',
         display: { type: 'palette-color-picker' },
       },
       textFontFamily: {
@@ -358,31 +411,32 @@ const schema: GridSchema = {
       backgroundColor: {
         type: 'string',
         scope: 'common',
-        title: 'Background Color',
+        title: 'BG Default',
         display: { type: 'palette-color-picker' },
       },
       dividerColor: {
         type: 'string',
         scope: 'common',
-        title: 'Divider Color',
+        title: 'Divider Default',
         display: { type: 'palette-color-picker' },
       },
       backgroundHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Background Hover Color',
+        title: 'BG Hover',
         display: { type: 'palette-color-picker' },
       },
       dividerHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Divider Hover Color',
+        title: 'Divider Hover',
         display: { type: 'palette-color-picker' },
       },
     },
     defaults: {
       imageOnHover: 'Off',
       entryHoverEffect: 'None',
+      cutLabel: 'SEE ALL',
       textColor: '#767676',
       textHoverColor: '#767676',
       textFontFamily: 'Arial',
@@ -397,9 +451,9 @@ const schema: GridSchema = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#FFFFFF00',
       dividerColor: '#767676',
-      backgroundHoverColor: '#FFFFFF',
+      backgroundHoverColor: '#FFFFFF00',
       dividerHoverColor: '#767676'
     },
     layoutDefaults: {
@@ -411,6 +465,12 @@ const schema: GridSchema = {
         imageSize: { min: 80, max: 320 },
         dividerWidth: 0.002,
         cut: 0,
+        showCut: 0,
+        cutCellMinHeight: 0.02,
+        rowPaddingTop: 0.01,
+        rowPaddingBottom: 0.01,
+        wrapperPaddingLeft: 0.01,
+        wrapperPaddingRight: 0.01,
         firstColumnWidth: 0.2,
         secondColumnWidth: 0.2,
         thirdColumnWidth: 0.2,
@@ -430,6 +490,12 @@ const schema: GridSchema = {
         imageSize: { min: 80, max: 320 },
         dividerWidth: 0.0006,
         cut: 0,
+        showCut: 0,
+        cutCellMinHeight: 0.03,
+        rowPaddingTop: 0.01,
+        rowPaddingBottom: 0.01,
+        wrapperPaddingLeft: 0.01,
+        wrapperPaddingRight: 0.01,
         firstColumnWidth: 0.2,
         secondColumnWidth: 0.2,
         thirdColumnWidth: 0.2,
@@ -444,9 +510,17 @@ const schema: GridSchema = {
     },
     displayRules: [
       {
-        if: { name: 'entryHoverEffect', value: 'None' },
-        then: { name: 'properties.direction.display.visible', value: false },
-      }
+        if: { name: 'cut', value: 0 },
+        then: { name: 'properties.cutLabel.display.visible', value: false },
+      },
+      {
+        if: { name: 'cut', value: 0 },
+        then: { name: 'properties.cutCellMinHeight.display.visible', value: false },
+      },
+      {
+        if: { name: 'cut', value: 0 },
+        then: { name: 'properties.showCut.display.visible', value: false },
+      },
     ],
     layout: [
       '__componentName__',
@@ -459,7 +533,14 @@ const schema: GridSchema = {
       'imageSize',
       'dividerWidth',
       'cut',
+      'showCut',
+      'cutCellMinHeight',
       'entryHoverEffect',
+      'cutLabel',
+      'rowPaddingTop',
+      'rowPaddingBottom',
+      'wrapperPaddingLeft',
+      'wrapperPaddingRight',
       'firstColumnWidth',
       'secondColumnWidth',
       'thirdColumnWidth',
@@ -478,97 +559,35 @@ const schema: GridSchema = {
         'type',
         'gridLayout',
         {
-          type: 'group',
+          type: 'row',
           title: '',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['columns'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['wrapperWidth'],
-                },
-              ],
-            },
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['entriesCount'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['cellMinHeight'],
-                },
-              ],
-            },
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['imageOnHover'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['imageSize'],
-                },
-              ],
-            },
-          ],
+          items: ['columns', 'wrapperWidth']
         },
         {
-          type: 'group',
+          type: 'row',
           title: '',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['dividerWidth'],
-                },
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['cut'],
-                },
-              ],
-            },
-          ],
+          items: ['entriesCount', 'cellMinHeight']
         },
         {
-          type: 'group',
+          type: 'row',
           title: '',
-          items: [
-            {
-              type: 'row',
-              title: '',
-              items: [
-                {
-                  type: 'row',
-                  title: '',
-                  items: ['entryHoverEffect'],
-                },
-              ],
-            },
-          ],
+          items: ['imageOnHover', 'imageSize']
+        },
+        {
+          type: 'row',
+          title: '',
+          items: ['dividerWidth', 'cut']
+        },
+        {type: 'row', title: '', items: ['entryHoverEffect']},
+        {
+          type: 'row',
+          title: 'Cut Settings',
+          items: ['cutLabel', 'cutCellMinHeight']
+        },
+        {
+          type: 'row',
+          title: '',
+          items: ['showCut']
         },
       ],
     },
