@@ -31,7 +31,8 @@ function getCSS(P: string): string {
 }
 
 .${P}-list-item {
-  display: block;
+  display: flex;
+  align-items: stretch;
   width: 100%;
   overflow: visible;
   position: relative;
@@ -734,7 +735,6 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               const hasLink = (row.link?.length ?? 0) > 0;
               const RowElement = hasLink ? 'a' : 'div';
               const rowStyle = {
-                minHeight: scaled(cellMinHeight ?? 0),
                 paddingTop: scaled(resolvedRowPaddingTop),
                 paddingBottom: scaled(resolvedRowPaddingBottom),
                 borderBottomWidth: scalingValue(dividerWidth ?? 0, isEditor),
@@ -767,7 +767,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                     }}
                   />
                 )}
-                <div className={`${P}-list-cols-row`} style={columnsRowStyle}>
+                <div className={`${P}-list-cols-row`} style={{ minHeight: scaled(cellMinHeight ?? 0) }}>
                   {listColumns.map((col, colIndex) => {
                     const isLastColumn = colIndex === listColumns.length - 1;
                     const columnWidth = resolvedColumnWidths[colIndex];
