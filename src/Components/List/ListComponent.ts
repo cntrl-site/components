@@ -70,41 +70,41 @@ const schema: GridSchema = {
       items: {
         type: 'object',
         properties: {
-          firstColumn: {
+          AColumn: {
             type: 'string',
-            label: 'First column',
+            label: 'A column',
             placeholder: 'Add Title...',
             display: {
               type: 'text-input',
             },
           },
-          secondColumn: {
+          BColumn: {
             type: 'string',
-            label: 'Second column',
+            label: 'B column',
             placeholder: 'Add Title...',
             display: {
               type: 'text-input',
             },
           },
-          thirdColumn: {
+          CColumn: {
             type: 'string',
-            label: 'Third column',
+            label: 'C column',
             placeholder: 'Add Title...',
             display: {
               type: 'text-input',
             },
           },
-          fourthColumn: {
+          DColumn: {
             type: 'string',
-            label: 'Fourth column',
+            label: 'D column',
             placeholder: 'Add Title...',
             display: {
               type: 'text-input',
             },
           },
-          fifthColumn: {
+          EColumn: {
             type: 'string',
-            label: 'Fifth column',
+            label: 'E column',
             placeholder: 'Add Title...',
             display: {
               type: 'text-input',
@@ -144,11 +144,11 @@ const schema: GridSchema = {
       },
       default: [
         {
-          firstColumn: 'firstColumn',
-          secondColumn: 'secondColumn',
-          thirdColumn: 'thirdColumn',
-          fourthColumn: 'fourthColumn',
-          fifthColumn: 'fifthColumn',
+          AColumn: 'AColumn',
+          BColumn: 'BColumn',
+          CColumn: 'CColumn',
+          DColumn: 'DColumn',
+          EColumn: 'EColumn',
           image: {
             objectFit: "cover",
             url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png",
@@ -157,11 +157,11 @@ const schema: GridSchema = {
           link: "",
         },
         {
-          firstColumn: 'firstColumn 2',
-          secondColumn: 'secondColumn 2',
-          thirdColumn: 'thirdColumn 2',
-          fourthColumn: 'fourthColumn 2',
-          fifthColumn: 'fifthColumn 2',
+          AColumn: 'AColumn 2',
+          BColumn: 'BColumn 2',
+          CColumn: 'CColumn 2',
+          DColumn: 'DColumn 2',
+          EColumn: 'EColumn 2',
           image: {
             objectFit: "cover",
             url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png",
@@ -170,11 +170,11 @@ const schema: GridSchema = {
           link: "",
         },
         {
-          firstColumn: 'firstColumn 3',
-          secondColumn: 'secondColumn 3',
-          thirdColumn: 'thirdColumn 3',
-          fourthColumn: 'fourthColumn 3',
-          fifthColumn: 'fifthColumn 3',
+          AColumn: 'AColumn 3',
+          BColumn: 'BColumn 3',
+          CColumn: 'CColumn 3',
+          DColumn: 'DColumn 3',
+          EColumn: 'EColumn 3',
           image: {
             objectFit: "cover",
             url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png",
@@ -312,45 +312,52 @@ const schema: GridSchema = {
         max: 100,
         display: { type: 'range-control' },
       },
-      firstColumnWidth: {
+      AColumnWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'First column width',
+        title: 'A column width',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
       },
-      secondColumnWidth: {
+      BColumn: {
         type: 'number',
         scope: 'layout',
-        title: 'Second column width',
+        title: 'B column width',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
       },
-      thirdColumnWidth: {
+      CColumn: {
         type: 'number',
         scope: 'layout',
-        title: 'Third column width',
+        title: 'C column width',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
       },
-      fourthColumnWidth: {
+      DColumn: {
         type: 'number',
         scope: 'layout',
-        title: 'Fourth column width',
+        title: 'D column width',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
       },
-      fifthColumnWidth: {
+      EColumn: {
         type: 'number',
         scope: 'layout',
-        title: 'Fifth column width',
+        title: 'E column width',
         min: 0,
         max: 100,
         display: { type: 'range-control' },
+      },
+      columnsOrder: {
+        type: 'array',
+        scope: 'layout',
+        title: 'Columns Order',
+        display: { type: 'reorder-input' },
+        items: { type: 'string' },
       },
 
       textColor: {
@@ -471,11 +478,12 @@ const schema: GridSchema = {
         rowPaddingBottom: 0.01,
         wrapperPaddingLeft: 0.01,
         wrapperPaddingRight: 0.01,
-        firstColumnWidth: 0.2,
-        secondColumnWidth: 0.2,
-        thirdColumnWidth: 0.2,
-        fourthColumnWidth: 0.2,
-        fifthColumnWidth: 0.2,
+        AColumnWidth: 0.2,
+        BColumn: 0.2,
+        CColumn: 0.2,
+        DColumn: 0.2,
+        EColumn: 0.2,
+        columnsOrder: ['AColumn', 'BColumn', 'CColumn', 'DColumn', 'EColumn'],
         textStroke: 0.003,
         textCorners: 0.192,
         textPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
@@ -496,11 +504,12 @@ const schema: GridSchema = {
         rowPaddingBottom: 0.01,
         wrapperPaddingLeft: 0.01,
         wrapperPaddingRight: 0.01,
-        firstColumnWidth: 0.2,
-        secondColumnWidth: 0.2,
-        thirdColumnWidth: 0.2,
-        fourthColumnWidth: 0.2,
-        fifthColumnWidth: 0.2,
+        AColumnWidth: 0.2,
+        BColumn: 0.2,
+        CColumn: 0.2,
+        DColumn: 0.2,
+        EColumn: 0.2,
+        columnsOrder: ['AColumn', 'BColumn', 'CColumn', 'DColumn', 'EColumn'],
         textStroke: 0.001,
         textCorners: 0.05,
         textPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
@@ -541,11 +550,12 @@ const schema: GridSchema = {
       'rowPaddingBottom',
       'wrapperPaddingLeft',
       'wrapperPaddingRight',
-      'firstColumnWidth',
-      'secondColumnWidth',
-      'thirdColumnWidth',
-      'fourthColumnWidth',
-      'fifthColumnWidth',
+      'AColumnWidth',
+      'BColumn',
+      'CColumn',
+      'DColumn',
+      'EColumn',
+      'columnsOrder',
     ],
   },
   panels: [
@@ -556,8 +566,6 @@ const schema: GridSchema = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'name'] },
-        'type',
-        'gridLayout',
         {
           type: 'row',
           title: '',
@@ -588,7 +596,16 @@ const schema: GridSchema = {
           type: 'row',
           title: '',
           items: ['showCut']
-        },
+        }
+      ],
+    },
+    { 
+      id: 'fields',
+      icon: 'layers',
+      title: 'Fields',
+      tooltip: 'Fields',
+      layout: [
+        'columnsOrder',
       ],
     },
     {

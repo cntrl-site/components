@@ -25,14 +25,13 @@ function getCSS(P: string): string {
   right: 0;
   bottom: 0;
   z-index: 10;
-  pointer-events: auto;
+  pointer-events: none;
   display: block;
   height: auto;
 }
 
 .${P}-list-item {
-  display: flex;
-  align-items: stretch;
+  display: block;
   width: 100%;
   overflow: visible;
   position: relative;
@@ -41,6 +40,13 @@ function getCSS(P: string): string {
   border-bottom-color: var(--${P}-divider-color);
   user-select: none;
   background: var(--${P}-background-color);
+}
+
+.${P}-list-cols-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 a.${P}-list-item {
@@ -197,19 +203,19 @@ type ListItemColumn = {
 };
 
 const COLUMN_CONTENT_KEYS = [
-  'firstColumn',
-  'secondColumn',
-  'thirdColumn',
-  'fourthColumn',
-  'fifthColumn',
+  'AColumn',
+  'BColumn',
+  'CColumn',
+  'DColumn',
+  'EColumn',
 ] as const;
 
 const COLUMN_WIDTH_KEYS = [
-  'firstColumnWidth',
-  'secondColumnWidth',
-  'thirdColumnWidth',
-  'fourthColumnWidth',
-  'fifthColumnWidth',
+  'AColumnWidth',
+  'BColumn',
+  'CColumn',
+  'DColumn',
+  'EColumn',
 ] as const;
 
 type ColumnWidthKey = typeof COLUMN_WIDTH_KEYS[number];
@@ -222,11 +228,11 @@ const ARTICLE_DESIGN_WIDTH = 1440;
 const MIN_COLUMN_WIDTH = MIN_COLUMN_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
 
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnWidthKey, number> = {
-  firstColumnWidth: 0.02,
-  secondColumnWidth: 0.02,
-  thirdColumnWidth: 0.02,
-  fourthColumnWidth: 0.02,
-  fifthColumnWidth: 0.02,
+  AColumnWidth: 0.02,
+  BColumn: 0.02,
+  CColumn: 0.02,
+  DColumn: 0.02,
+  EColumn: 0.02,
 };
 
 export function getListEffectiveContentWidth(
@@ -385,11 +391,11 @@ function getColumnMaxWidth(
 }
 
 type ListContentItem = {
-  firstColumn?: string;
-  secondColumn?: string;
-  thirdColumn?: string;
-  fourthColumn?: string;
-  fifthColumn?: string;
+  AColumn?: string;
+  BColumn?: string;
+  CColumn?: string;
+  DColumn?: string;
+  EColumn?: string;
   image?: {
     objectFit?: 'cover' | 'contain';
     url: string;
@@ -445,11 +451,12 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     rowPaddingBottom,
     wrapperPaddingLeft,
     wrapperPaddingRight,
-    firstColumnWidth,
-    secondColumnWidth,
-    thirdColumnWidth,
-    fourthColumnWidth,
-    fifthColumnWidth,
+    AColumnWidth,
+    BColumn,
+    CColumn,
+    DColumn,
+    EColumn,
+    columnsOrder,
     textColor,
     textFontFamily,
     textFontSettings,
@@ -539,27 +546,35 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
   }, [settings, onUpdateSettings, isEditor]);
 
   const columnWidthByKey: Record<ColumnWidthKey, number> = {
-    firstColumnWidth: firstColumnWidth ?? DEFAULT_COLUMN_WIDTHS.firstColumnWidth,
-    secondColumnWidth: secondColumnWidth ?? DEFAULT_COLUMN_WIDTHS.secondColumnWidth,
-    thirdColumnWidth: thirdColumnWidth ?? DEFAULT_COLUMN_WIDTHS.thirdColumnWidth,
-    fourthColumnWidth: fourthColumnWidth ?? DEFAULT_COLUMN_WIDTHS.fourthColumnWidth,
-    fifthColumnWidth: fifthColumnWidth ?? DEFAULT_COLUMN_WIDTHS.fifthColumnWidth,
+    AColumnWidth: AColumnWidth ?? DEFAULT_COLUMN_WIDTHS.AColumnWidth,
+    BColumn: BColumn ?? DEFAULT_COLUMN_WIDTHS.BColumn,
+    CColumn: CColumn ?? DEFAULT_COLUMN_WIDTHS.CColumn,
+    DColumn: DColumn ?? DEFAULT_COLUMN_WIDTHS.DColumn,
+    EColumn: EColumn ?? DEFAULT_COLUMN_WIDTHS.EColumn,
   };
+
+  const resolvedColumnsOrder = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      return columnsOrder as typeof COLUMN_CONTENT_KEYS[number][];
+    }
+    return [...COLUMN_CONTENT_KEYS];
+  }, [columnsOrder]);
 
   const listColumns: ListItemColumn[] = useMemo(
     () =>
-      COLUMN_CONTENT_KEYS.slice(0, columns).map((key, index) => ({
+      resolvedColumnsOrder.slice(0, columns).map((key, index) => ({
         key,
         widthKey: COLUMN_WIDTH_KEYS[index],
         width: columnWidthByKey[COLUMN_WIDTH_KEYS[index]],
       })),
     [
       columns,
-      firstColumnWidth,
-      secondColumnWidth,
-      thirdColumnWidth,
-      fourthColumnWidth,
-      fifthColumnWidth,
+      resolvedColumnsOrder,
+      AColumnWidth,
+      BColumn,
+      CColumn,
+      DColumn,
+      EColumn,
     ]
   );
 
@@ -570,11 +585,11 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     () => COLUMN_WIDTH_KEYS.slice(0, columns).map((key) => columnWidthByKey[key]),
     [
       columns,
-      firstColumnWidth,
-      secondColumnWidth,
-      thirdColumnWidth,
-      fourthColumnWidth,
-      fifthColumnWidth,
+      AColumnWidth,
+      BColumn,
+      CColumn,
+      DColumn,
+      EColumn,
     ],
   );
   const resolvedColumnWidths = useMemo(
@@ -582,11 +597,11 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     [
       columns,
       resolvedContentWidth,
-      firstColumnWidth,
-      secondColumnWidth,
-      thirdColumnWidth,
-      fourthColumnWidth,
-      fifthColumnWidth,
+      AColumnWidth,
+      BColumn,
+      CColumn,
+      DColumn,
+      EColumn,
     ],
   );
 
@@ -633,6 +648,10 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
   const bottomHandleHeight = Math.max(resolvedRowPaddingBottom, ROW_PADDING_HANDLE_HEIGHT);
   const leftHandleWidth = Math.max(resolvedWrapperPaddingLeft, WRAPPER_PADDING_HANDLE_WIDTH);
   const rightHandleWidth = Math.max(resolvedWrapperPaddingRight, WRAPPER_PADDING_HANDLE_WIDTH);
+  const columnsRowStyle: React.CSSProperties = {
+    paddingLeft: scaled(resolvedWrapperPaddingLeft),
+    paddingRight: scaled(resolvedWrapperPaddingRight),
+  };
 
   const handleRowMouseEnter = (row: ListItemRow) => {
     if (!showHoverImage) return;
@@ -670,8 +689,6 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
           className={`${P}-wrapper ${wrapperStateClasses}`.trim()}
           style={{
             width: scalingValue(wrapperWidth ?? 0, isEditor),
-            paddingLeft: scaled(resolvedWrapperPaddingLeft),
-            paddingRight: scaled(resolvedWrapperPaddingRight),
           }}
           onMouseLeave={showHoverImage ? handleWrapperMouseLeave : undefined}
         >
@@ -750,50 +767,52 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                     }}
                   />
                 )}
-                {listColumns.map((col, colIndex) => {
-                  const isLastColumn = colIndex === listColumns.length - 1;
-                  const columnWidth = resolvedColumnWidths[colIndex];
-                  const maxColumnWidth = getColumnMaxWidth(
-                    colIndex,
-                    resolvedColumnWidths,
-                    storedColumnWidths,
-                    resolvedContentWidth,
-                  );
-                  return (
-                    <div
-                      key={col.key}
-                      className={`${P}-list-col${isLastColumn ? ` ${P}-list-col-last` : ''}`}
-                      style={isLastColumn ? undefined : { width: scaled(columnWidth) }}
-                      data-test={col.width}
-                    >
-                      <span
-                        className={`${P}-list-col-title`}
-                        style={textFieldCss}
+                <div className={`${P}-list-cols-row`} style={columnsRowStyle}>
+                  {listColumns.map((col, colIndex) => {
+                    const isLastColumn = colIndex === listColumns.length - 1;
+                    const columnWidth = resolvedColumnWidths[colIndex];
+                    const maxColumnWidth = getColumnMaxWidth(
+                      colIndex,
+                      resolvedColumnWidths,
+                      storedColumnWidths,
+                      resolvedContentWidth,
+                    );
+                    return (
+                      <div
+                        key={col.key}
+                        className={`${P}-list-col${isLastColumn ? ` ${P}-list-col-last` : ''}`}
+                        style={isLastColumn ? undefined : { width: scaled(columnWidth) }}
+                        data-test={col.width}
                       >
-                        {row.cells[col.key] ?? null}
-                      </span>
-                      {isEditor && !isLastColumn && (
-                        <div
-                          data-controls={col.widthKey}
-                          data-controls-axis="x"
-                          data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
-                          data-controls-max-fraction={String(maxColumnWidth)}
-                          data-controls-no-highlight=""
-                          className={`${P}-col-resize-handle`}
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: `calc(100% - ${scaled(COL_RESIZE_HANDLE_WIDTH / 2)})`,
-                            width: scaled(COL_RESIZE_HANDLE_WIDTH),
-                            height: '100%',
-                            pointerEvents: 'auto',
-                            zIndex: 2,
-                          }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                        <span
+                          className={`${P}-list-col-title`}
+                          style={textFieldCss}
+                        >
+                          {row.cells[col.key] ?? null}
+                        </span>
+                        {isEditor && !isLastColumn && (
+                          <div
+                            data-controls={col.widthKey}
+                            data-controls-axis="x"
+                            data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
+                            data-controls-max-fraction={String(maxColumnWidth)}
+                            data-controls-no-highlight=""
+                            className={`${P}-col-resize-handle`}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: `calc(100% - ${scaled(COL_RESIZE_HANDLE_WIDTH / 2)})`,
+                              width: scaled(COL_RESIZE_HANDLE_WIDTH),
+                              height: '100%',
+                              pointerEvents: 'auto',
+                              zIndex: 2,
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
                 {isEditor && (
                   <div
                     data-controls="rowPaddingBottom"
@@ -823,14 +842,19 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                   borderBottomWidth: scalingValue(dividerWidth ?? 0, isEditor),
                 }}
               >
-                <button
-                  type="button"
-                  className={`${P}-cut-label`}
-                  style={textFieldCss}
-                  onClick={handleShowMore}
+                <div
+                  className={`${P}-list-cols-row`}
+                  style={{ ...columnsRowStyle, justifyContent: 'center' }}
                 >
-                  {cutLabel}
-                </button>
+                  <button
+                    type="button"
+                    className={`${P}-cut-label`}
+                    style={textFieldCss}
+                    onClick={handleShowMore}
+                  >
+                    {cutLabel}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -868,11 +892,12 @@ type ListSettings = {
   rowPaddingBottom: number;
   wrapperPaddingLeft: number;
   wrapperPaddingRight: number;
-  firstColumnWidth: number;
-  secondColumnWidth: number;
-  thirdColumnWidth: number;
-  fourthColumnWidth: number;
-  fifthColumnWidth: number;
+  AColumnWidth: number;
+  BColumn: number;
+  CColumn: number;
+  DColumn: number;
+  EColumn: number;
+  columnsOrder?: string[];
   textColor: string;
   textFontFamily: string;
   textFontSettings?: { fontWeight: number; fontStyle: string };
