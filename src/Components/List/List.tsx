@@ -767,7 +767,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                     }}
                   />
                 )}
-                <div className={`${P}-list-cols-row`} style={{ minHeight: scaled(cellMinHeight ?? 0) }}>
+                <div className={`${P}-list-cols-row`} style={{ ...columnsRowStyle, minHeight: scaled(cellMinHeight ?? 0) }}>
                   {listColumns.map((col, colIndex) => {
                     const isLastColumn = colIndex === listColumns.length - 1;
                     const columnWidth = resolvedColumnWidths[colIndex];
