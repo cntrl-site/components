@@ -133,7 +133,7 @@ const schema: ComponentSchemaV1 = {
       pauseOnHover: 'off',
       hoverEffect: 'off',
       imageFit: 'contain',
-      textFontFamily: 'Goudy Bookletter 1911',
+      textFontFamily: 'Arial',
       textFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -154,7 +154,7 @@ const schema: ComponentSchemaV1 = {
         imageMaxWidth: 0.8,
         imageMaxHeight: 0.21,
         textFontSize: 0.04,
-        textLineHeight: 0.05,
+        textLineHeight: 0.04,
         textMarginTop: 0.02,
       },
       d: {
@@ -162,8 +162,8 @@ const schema: ComponentSchemaV1 = {
         gap: 0.02,
         imageMaxWidth: 0.15,
         imageMaxHeight: 0.1,
-        textFontSize: 0.014,
-        textLineHeight: 0.018,
+        textFontSize: 0.01,
+        textLineHeight: 0.01,
         textMarginTop: 0.008,
       },
     },
@@ -207,17 +207,10 @@ const schema: ComponentSchemaV1 = {
             'textFontFamily',
             'textFontSettings',
             {
-              type: 'group',
-              title: '',
-              items: [
-                'text',
-                {
-                  type: 'row',
-                  items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'],
-                },
-                'textTextAppearance',
-              ],
+              type: 'row',
+              items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'],
             },
+            'textTextAppearance',
           ],
         },
       ],
@@ -243,11 +236,11 @@ const schema: ComponentSchemaV1 = {
           },
         },
         text: {
-          type: 'object',
+          placeholder: 'Add Text...',
           label: 'Text',
           display: {
             type: 'rich-text',
-          },
+          }
         },
         link: {
           label: 'URL',
@@ -264,7 +257,12 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
           name: '',
         },
-        text: [],
+        text: [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ],
         link: '',
       },
       {
@@ -272,7 +270,12 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
           name: '',
         },
-        text: [],
+        text: [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ],
         link: '',
       },
       {
@@ -280,7 +283,12 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
           name: '',
         },
-        text: [],
+        text: [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ],
         link: '',
       },
       {
@@ -288,7 +296,12 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
           name: '',
         },
-        text: [],
+        text: [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ],
         link: '',
       },
       {
@@ -296,7 +309,12 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
           name: '',
         },
-        text: [],
+        text: [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ],
         link: '',
       },
     ],
