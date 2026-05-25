@@ -132,7 +132,7 @@ const schema: ComponentSchemaV1 = {
       direction: 'left',
       pauseOnHover: 'off',
       hoverEffect: 'off',
-      imageFit: 'cover',
+      imageFit: 'contain',
       textFontFamily: 'Goudy Bookletter 1911',
       textFontSettings: {
         fontWeight: 400,
@@ -244,7 +244,7 @@ const schema: ComponentSchemaV1 = {
         },
         text: {
           type: 'object',
-          label: 'Title',
+          label: 'Text',
           display: {
             type: 'rich-text',
           },
@@ -264,12 +264,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
           name: '',
         },
-        text: [
-          {
-            type: 'paragraph',
-            children: [{ text: 'Flower' }],
-          },
-        ],
+        text: [],
         link: '',
       },
       {
@@ -277,12 +272,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
           name: '',
         },
-        text: [
-          {
-            type: 'paragraph',
-            children: [{ text: 'Flower' }],
-          },
-        ],
+        text: [],
         link: '',
       },
       {
@@ -290,10 +280,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
           name: '',
         },
-        text: [ {
-            type: 'paragraph',
-            children: [{ text: 'Flower' }],
-          }, ],
+        text: [],
         link: '',
       },
       {
@@ -301,10 +288,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
           name: '',
         },
-        text: [ {
-            type: 'paragraph',
-            children: [{ text: 'Flower' }],
-          }, ],
+        text: [],
         link: '',
       },
       {
@@ -312,12 +296,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
           name: '',
         },
-        text: [
-          {
-            type: 'paragraph',
-            children: [{ text: 'Flower' }],
-          },
-        ],
+        text: [],
         link: '',
       },
     ],
