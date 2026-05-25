@@ -546,8 +546,18 @@ export const OnelinerFormComponent = {
     url: 'https://cdn.cntrl.site/component-assets/onelinerImg.jpg',
   },
   defaultSize: {
-    width: 400,
-    height: 60,
+    d: {
+      width: 400,
+      height: 60
+    },
+    t: {
+      width: 453,
+      height: 60
+    },
+    m: {
+      width: 340,
+      height: 60
+    }
   },
   assetsPaths: {
     content: [],

@@ -10,8 +10,18 @@ export const LightboxComponent: Component = {
     url: 'https://cdn.cntrl.site/component-assets/lightboxImg.png',
   },
   defaultSize: {
-    width: 440,
-    height: 550
+    d: {
+      width: 440,
+      height: 550
+    },
+    t: {
+      width: 235,
+      height: 293
+    },
+    m: {
+      width: 265,
+      height: 331
+    }
   },
   fontSettingsPaths: {
     content: [],

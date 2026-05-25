@@ -7,10 +7,7 @@ export type Component = {
   name: string;
   category?: string;
   version?: number;
-  defaultSize?: {
-    width?: number | string;
-    height?: number | string;
-  };
+  defaultSize?: Record<string, { width?: number | string; height?: number | string }>;
   schema: any;
   preview?: {
     type: 'image' | 'video';

@@ -10,8 +10,18 @@ export const ControlSliderComponent: Component = {
     url: 'https://cdn.cntrl.site/component-assets/sliderImg.png',
   },
   defaultSize: {
-    width: 400,
-    height: 400
+    d: {
+      width: 400,
+      height: 400
+    },
+    t: {
+      width: 400,
+      height: 400
+    },
+    m: {
+      width: 300,
+      height: 300
+    }
   },
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],

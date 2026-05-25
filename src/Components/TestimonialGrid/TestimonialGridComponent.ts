@@ -482,8 +482,10 @@ export const TestimonialGridComponent = {
     url: 'https://cdn.cntrl.site/component-assets/testimonials.png',
   },
   defaultSize: {
-    width: '100%',
-    height: 320,
+    d: {
+      width: '100%',
+      height: 320
+    }    
   },
   schema,
   sourceCode: testimonialGridSourceRaw,

@@ -459,8 +459,18 @@ export const TestimonialSingleComponent = {
     url: 'https://cdn.cntrl.site/component-assets/testimonialsSingle.png',
   },
   defaultSize: {
-    width: 700,
-    height: 300,
+    d: {
+      width: 700,
+      height: 300
+    },
+    t: {
+      width: 373,
+      height: 300
+    },
+    m: {
+      width: 334,
+      height: 300
+    }
   },
   schema,
   sourceCode: testimonialSingleSourceRaw,

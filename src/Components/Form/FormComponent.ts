@@ -669,8 +669,18 @@ export const FormComponent = {
     url: 'https://cdn.cntrl.site/component-assets/formImg.jpg',
   },
   defaultSize: {
-    width: 300,
-    height: 42,
+    d: {
+      width: 300,
+      height: 42
+    },
+    t: {
+      width: 346,
+      height: 42
+    },
+    m: {
+      width: 300,
+      height: 42
+    }
   },
   schema,
   sourceCode: formSourceRaw,

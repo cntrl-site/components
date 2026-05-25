@@ -10,8 +10,18 @@ export const ControlImageRevealSliderComponent: Component = {
     url: 'https://cdn.cntrl.site/component-assets/clickGalleryImg.png',
   },
   defaultSize: {
-    width: '100%',
-    height: '100%'
+    d: {
+      width: '100%',
+      height: '100%'
+    },
+    t: {
+      width: '100%',
+      height: '100%'
+    },
+    m: {
+      width: '100%',
+      height: '100%'
+    }
   },
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
