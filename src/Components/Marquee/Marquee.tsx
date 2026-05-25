@@ -13,7 +13,6 @@ function getCSS(P: string): string {
   width: 100%;
   height: auto;
 }
-
 .${P}-marquee-track {
   display: flex;
   flex-direction: row;
@@ -24,22 +23,35 @@ function getCSS(P: string): string {
   -webkit-backface-visibility: hidden;
   -webkit-transform: translateZ(0);
   perspective: 1000px;
+  flex-wrap: nowrap;
 }
-
-.${P}-marquee-set {
+.${P}-marquee-row {
   display: flex;
   flex-direction: row;
-  flex: 0 0 auto;
-
+  align-items: flex-start;
 }
-
+.${P}-marquee-set {
+  flex: 0 0 auto;
+}
+.${P}-marquee-static {
+  justify-content: center;
+  overflow-x: auto;
+}
+.${P}-marquee-card {
+  position: relative;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+}
 .${P}-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
   order: 1;
 }
-
 .${P}-cover {
   position: absolute;
   width: 100%;
@@ -47,7 +59,6 @@ function getCSS(P: string): string {
   top: 0;
   left: 0;
 }
-
 .${P}-elements-overlay {
   position: relative;
   inset: 0;
@@ -55,13 +66,11 @@ function getCSS(P: string): string {
   flex-direction: column;
   pointer-events: none;
 }
-
 .${P}-control {
   position: relative;
   z-index: 2;
   width: 100%;
 }
-
 .${P}-control::before {
   content: "";
   position: absolute;
@@ -73,72 +82,30 @@ function getCSS(P: string): string {
   pointer-events: auto;
   z-index: 10;
 }
-
 .${P}-image-hover-brightness img {
   transition: filter 0.3s ease;
 }
-
 .${P}-image-hover-brightness:hover img {
   filter: brightness(1.25);
 }
-
 .${P}-image-hover-grayscale img {
   transition: filter 0.3s ease;
 }
-
 .${P}-image-hover-grayscale:hover img {
   filter: grayscale(100%);
 }
-
 .${P}-image-hover-saturate img {
   transition: filter 0.3s ease;
 }
-
 .${P}-image-hover-saturate:hover img {
   filter: saturate(2);
 }
 `;
 }
 
-export type MarqueeItem = {
-  image?: {
-    url?: string;
-    name?: string;
-  };
-  text?: any[];
-  link?: string;
-};
-
-export type MarqueeSettings = {
-  speed: number;
-  direction: 'left' | 'right';
-  pauseOnHover: 'on' | 'off';
-  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate';
-  gap: number;
-  imageMaxWidth: number;
-  imageMaxHeight: number;
-  imageFit?: 'cover' | 'contain';
-  textFontFamily?: string;
-  textFontSettings?: { fontWeight?: number; fontStyle?: string };
-  textFontSize?: number;
-  textLineHeight?: number;
-  textLetterSpacing?: number;
-  textWordSpacing?: number;
-  textTextAppearance?: {
-    textTransform?: string;
-    textDecoration?: string;
-    fontVariant?: string;
-  };
-  textColor?: string;
-  textMarginTop?: number;
-};
-
-type MarqueeProps = {
-  settings: MarqueeSettings;
-  content?: MarqueeItem[];
-  isEditor?: boolean;
-  isPreviewMode?: boolean;
-} & CommonComponentProps;
+const PX_PER_SEC_PER_SPEED_UNIT = 30;
+const SET_WIDTH_STREAK_MIN = 12;
+const SET_WIDTH_RAF_FALLBACK = 180;
 
 type MarqueeItemCardProps = {
   item: MarqueeItem;
@@ -313,10 +280,6 @@ const MarqueeItemCard = ({
   );
 };
 
-const PX_PER_SEC_PER_SPEED_UNIT = 30;
-const SET_WIDTH_STREAK_MIN = 12;
-const SET_WIDTH_RAF_FALLBACK = 180;
-
 const resolveTextStyle = (settings: MarqueeSettings): TextStyles => ({
   fontSettings: {
     fontFamily: settings.textFontFamily ?? 'Arial',
@@ -337,13 +300,10 @@ const resolveTextStyle = (settings: MarqueeSettings): TextStyles => ({
 
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
-  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, textMarginTop } =
-    settings;
-  const imageHoverClass =
-    settings.hoverEffect === 'off' ? undefined : `${P}-image-hover-${settings.hoverEffect}`;
+  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, textMarginTop } = settings;
+  const imageHoverClass = settings.hoverEffect === 'off' ? undefined : `${P}-image-hover-${settings.hoverEffect}`;
   const textStyle = useMemo(() => resolveTextStyle(settings), [settings]);
-  const imageFit: 'cover' | 'contain' =
-    settings.imageFit === 'cover' ? 'cover' : 'contain';
+  const imageFit: 'cover' | 'contain' = settings.imageFit === 'cover' ? 'cover' : 'contain';
   const autoplayEnabled = !isPreviewMode;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -362,14 +322,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const settleFramesRef = useRef(0);
   const loadedFirstSetImagesRef = useRef(0);
   const scheduleRemeasureRef = useRef<(() => void) | null>(null);
-  const contentImageUrlsKey = useMemo(
-    () => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),
-    [content],
-  );
-  const firstSetImageUrlCount = useMemo(
-    () => (content ?? []).filter((i) => Boolean(i.image?.url)).length,
-    [content],
-  );
+  const contentImageUrlsKey = useMemo(() => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),[content]);
+  const firstSetImageUrlCount = useMemo(() => (content ?? []).filter((i) => Boolean(i.image?.url)).length, [content]);
   const copies = useMemo(() => {
     if (!autoplayEnabled || content?.length === 0) return 1;
     if (setWidth <= 0 || containerWidth <= 0) return 2;
@@ -530,18 +484,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   };
 
   const renderCardWrapper = (item: MarqueeItem, key: string | number, isFirstSet?: boolean) => (
-    <div
-      key={key}
-      style={{
-        position: 'relative',
-        flex: '0 0 auto',
-        alignSelf: 'flex-start',
-        transform: 'translateZ(0)',
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
-        willChange: 'transform',
-      }}
-    >
+    <div key={key} className={`${P}-marquee-card`}>
       <MarqueeItemCard
         item={item}
         prefix={P}
@@ -580,11 +523,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         ref={wrapperRef}
         className={cn(`${P}-wrapper`, `${P}-marquee-wrapper`)}
         aria-label="Marquee"
-        style={{
-          overflow: 'hidden',
-          width: '100%',
-          ...(setWidth > 0 && trackHeight > 0 ? { height: trackHeight } : {}),
-        }}
+        style={setWidth > 0 && trackHeight > 0 ? { height: trackHeight } : undefined}
       >
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         <div
@@ -593,29 +532,13 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           data-direction={direction}
           onMouseEnter={onTrackEnter}
           onMouseLeave={onTrackLeave}
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'nowrap',
-            width: 'max-content',
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            transform: 'translateZ(0)',
-            WebkitTransform: 'translateZ(0)',
-            perspective: '1000px',
-          }}
         >
           {Array.from({ length: copies }, (_, copyIndex) => (
             <div
               key={`set-${copyIndex}`}
               ref={copyIndex === 0 ? setRef : undefined}
-              className={`${P}-marquee-set`}
+              className={cn(`${P}-marquee-row`, `${P}-marquee-set`)}
               style={{
-                display: 'flex',
-                flexDirection: 'row',
-                flex: '0 0 auto',
-                alignItems: 'flex-start',
                 gap: scaled(gap),
                 paddingRight: scaled(gap),
               }}
@@ -635,14 +558,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     <div className={`${P}-wrapper`}>
       <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <div
-        style={{
-          gap: scaled(gap),
-          justifyContent: 'center',
-          alignItems: 'flex-start',
-          overflowX: 'auto',
-          display: 'flex',
-          flexDirection: 'row',
-        }}
+        className={cn(`${P}-marquee-row`, `${P}-marquee-static`)}
+        style={{ gap: scaled(gap) }}
         aria-label="Marquee"
       >
         {content?.map((item: MarqueeItem, index: number) =>
@@ -652,3 +569,43 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     </div>
   );
 };
+
+export type MarqueeItem = {
+  image?: {
+    url?: string;
+    name?: string;
+  };
+  text?: any[];
+  link?: string;
+};
+
+export type MarqueeSettings = {
+  speed: number;
+  direction: 'left' | 'right';
+  pauseOnHover: 'on' | 'off';
+  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate';
+  gap: number;
+  imageMaxWidth: number;
+  imageMaxHeight: number;
+  imageFit?: 'cover' | 'contain';
+  textFontFamily?: string;
+  textFontSettings?: { fontWeight?: number; fontStyle?: string };
+  textFontSize?: number;
+  textLineHeight?: number;
+  textLetterSpacing?: number;
+  textWordSpacing?: number;
+  textTextAppearance?: {
+    textTransform?: string;
+    textDecoration?: string;
+    fontVariant?: string;
+  };
+  textColor?: string;
+  textMarginTop?: number;
+};
+
+type MarqueeProps = {
+  settings: MarqueeSettings;
+  content?: MarqueeItem[];
+  isEditor?: boolean;
+  isPreviewMode?: boolean;
+} & CommonComponentProps;
