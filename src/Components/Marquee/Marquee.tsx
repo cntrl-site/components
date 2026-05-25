@@ -3,6 +3,8 @@ import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function getCSS(P: string): string {
   return `
@@ -71,6 +73,30 @@ function getCSS(P: string): string {
   pointer-events: auto;
   z-index: 10;
 }
+
+.${P}-image-hover-brightness img {
+  transition: filter 0.3s ease;
+}
+
+.${P}-image-hover-brightness:hover img {
+  filter: brightness(1.25);
+}
+
+.${P}-image-hover-grayscale img {
+  transition: filter 0.3s ease;
+}
+
+.${P}-image-hover-grayscale:hover img {
+  filter: grayscale(100%);
+}
+
+.${P}-image-hover-saturate img {
+  transition: filter 0.3s ease;
+}
+
+.${P}-image-hover-saturate:hover img {
+  filter: saturate(2);
+}
 `;
 }
 
@@ -85,13 +111,34 @@ const PX_PER_SEC_PER_SPEED_UNIT = 30;
 const SET_WIDTH_STREAK_MIN = 12;
 const SET_WIDTH_RAF_FALLBACK = 180;
 
+const resolveTextStyle = (settings: MarqueeSettings): TextStyles => ({
+  fontSettings: {
+    fontFamily: settings.textFontFamily ?? 'Arial',
+    fontWeight: settings.textFontSettings?.fontWeight ?? 400,
+    fontStyle: settings.textFontSettings?.fontStyle ?? 'normal',
+  },
+  textAppearance: {
+    textTransform: settings.textTextAppearance?.textTransform ?? 'none',
+    textDecoration: settings.textTextAppearance?.textDecoration ?? 'none',
+    fontVariant: settings.textTextAppearance?.fontVariant ?? 'normal',
+  },
+  fontSize: settings.textFontSize ?? 0.01,
+  lineHeight: settings.textLineHeight ?? 0.01,
+  letterSpacing: settings.textLetterSpacing ?? 0,
+  wordSpacing: settings.textWordSpacing ?? 0,
+  color: settings.textColor ?? '#000000',
+});
+
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
-  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight } = settings;
+  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, textMarginTop } =
+    settings;
+  const imageHoverClass =
+    settings.hoverEffect === 'off' ? undefined : `${P}-image-hover-${settings.hoverEffect}`;
+  const textStyle = useMemo(() => resolveTextStyle(settings), [settings]);
   const imageFit: 'cover' | 'contain' =
     settings.imageFit === 'cover' ? 'cover' : 'contain';
   const autoplayEnabled = !isPreviewMode;
-  const isAnimating = autoplayEnabled;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -100,7 +147,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
   const [trackHeight, setTrackHeight] = useState(0);
-  const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
+  const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
   const isHoveringRef = useRef(false);
   const offsetRef = useRef(0);
@@ -132,7 +179,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
-    let raf = 0;
+    const rafState = { id: 0 };
     const measure = () => {
       const nextContainerWidth = wrapper.getBoundingClientRect().width;
       const rectW = set.getBoundingClientRect().width;
@@ -149,14 +196,9 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         firstSetImageUrlCount === 0 ||
         loadedFirstSetImagesRef.current >= firstSetImageUrlCount;
       setContainerWidth(nextContainerWidth);
-      const initialPending =
-        typeof nextRawSetWidth === 'number' && nextRawSetWidth > 0 && setWidth <= 0;
-      const updatePending =
-        typeof nextRawSetWidth === 'number' &&
-        nextRawSetWidth > 0 &&
-        setWidth > 0 &&
-        nextRawSetWidth !== setWidth;
-      if (initialPending) {
+      const needsWidthCommit =
+        nextRawSetWidth > 0 && (setWidth <= 0 || nextRawSetWidth !== setWidth);
+      if (needsWidthCommit) {
         settleFramesRef.current += 1;
         const canCommit =
           imagesOk &&
@@ -166,29 +208,15 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           setSetWidth(nextRawSetWidth);
           return;
         }
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(measure);
-        return;
-      }
-      if (updatePending) {
-        settleFramesRef.current += 1;
-        const canUpdate =
-          imagesOk &&
-          (streakOk || settleFramesRef.current > SET_WIDTH_RAF_FALLBACK);
-        if (canUpdate) {
-          settleFramesRef.current = 0;
-          setSetWidth(nextRawSetWidth);
-          return;
-        }
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(measure);
+        cancelAnimationFrame(rafState.id);
+        rafState.id = requestAnimationFrame(measure);
         return;
       }
       settleFramesRef.current = 0;
     };
     const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
+      cancelAnimationFrame(rafState.id);
+      rafState.id = requestAnimationFrame(measure);
     };
     scheduleRemeasureRef.current = schedule;
     schedule();
@@ -197,7 +225,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     ro.observe(set);
     return () => {
       scheduleRemeasureRef.current = null;
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(rafState.id);
       ro.disconnect();
     };
   }, [autoplayEnabled, firstSetImageUrlCount, setWidth, imageFit]);
@@ -207,7 +235,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   }, [isHovering]);
 
   useLayoutEffect(() => {
-    if (!autoplayEnabled || !isAnimating) return;
+    if (!autoplayEnabled) return;
     const track = trackRef.current;
     const set = setRef.current;
     if (!track || !set) return;
@@ -225,12 +253,11 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       offsetRef.current = 0;
     }
 
-    let raf = 0;
-    let lastTime = 0;
+    const animState = { raf: 0, lastTime: 0 };
     const tick = (now: number) => {
-      if (lastTime === 0) lastTime = now;
-      const dt = Math.min(100, now - lastTime) / 1000;
-      lastTime = now;
+      if (animState.lastTime === 0) animState.lastTime = now;
+      const dt = Math.min(100, now - animState.lastTime) / 1000;
+      animState.lastTime = now;
       const paused = hoverPauseEnabled && isHoveringRef.current;
       if (!paused) {
         const delta = pxPerSec * dt;
@@ -245,16 +272,16 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         }
         track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`;
       }
-      raf = requestAnimationFrame(tick);
+      animState.raf = requestAnimationFrame(tick);
     };
 
     track.style.transform = `translate3d(${offsetRef.current}px, 0, 0)`;
-    raf = requestAnimationFrame(tick);
+    animState.raf = requestAnimationFrame(tick);
 
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(animState.raf);
     };
-  }, [autoplayEnabled, isAnimating, pxPerSec, direction, setWidth, hoverPauseEnabled]);
+  }, [autoplayEnabled, pxPerSec, direction, setWidth, hoverPauseEnabled]);
 
   useLayoutEffect(() => {
     if (!autoplayEnabled) {
@@ -270,7 +297,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     const measure = () => {
       const next = track.getBoundingClientRect().height;
       setTrackHeight(next > 0 ? next : 0);
-
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -278,7 +304,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit]);
+  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit, textStyle, textMarginTop]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -307,44 +333,91 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           alt={item.image?.name ?? ''}
           style={{
             pointerEvents: 'auto',
-            height: '100%',
-            ...(imageFit === 'contain'
-              ? { width: 'auto', maxWidth: '100%' }
-              : { width: '100%' }),
             objectFit: imageFit,
+            objectPosition: 'top',
+            ...(imageFit === 'contain'
+              ? { width: 'auto', maxWidth: '100%', maxHeight: '100%', height: 'auto' }
+              : { width: '100%', height: '100%' }),
           }}
           onLoad={isFirstSet ? onFirstSetImageDone : undefined}
           onError={isFirstSet ? onFirstSetImageDone : undefined}
         />
       );
+    const hasText = (item.text?.length ?? 0) > 0;
+    const textNode = hasText && (
+      <>
+        <div
+          {...(isEditor
+            ? { 'data-controls': 'textMarginTop', 'data-controls-axis': 'y' as const }
+            : {})}
+          className={isEditor ? `${P}-control` : undefined}
+          style={{
+            width: '100%',
+            height: scaled(textMarginTop ?? 0),
+            flexShrink: 0,
+          }}
+        />
+        <div
+          style={{
+            ...textStylesToCss(textStyle, isEditor),
+            width: '100%',
+            flexShrink: 0,
+            pointerEvents: 'auto',
+          }}
+        >
+          <RichTextRenderer content={item.text!} />
+        </div>
+      </>
+    );
     return (
       <div
         key={key}
         style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'start',
           ...(imageFit === 'contain' ? { maxWidth: scaled(imageMaxWidth) } : { width: scaled(imageMaxWidth) }),
-          height: scaled(imageMaxHeight),
-          overflow: 'hidden',
         }}
       >
-        {imageNode &&
-          (linkHref ? (
-            <a
-              href={linkHref}
-              target='_blank'
-              rel='noopener noreferrer'
-              style={{
-                display: 'block',
-                height: '100%',
-                ...(imageFit === 'cover' ? { width: '100%' } : {}),
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
-            >
-              {imageNode}
-            </a>
-          ) : (
-            imageNode
-          ))}
+        <div
+          className={imageHoverClass}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            width: '100%',
+            height: scaled(imageMaxHeight),
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {imageNode &&
+            (linkHref ? (
+              <a
+                href={linkHref}
+                target='_blank'
+                rel='noopener noreferrer'
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-start',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  ...(imageFit === 'cover'
+                    ? { width: '100%', height: '100%' }
+                    : { height: 'auto', width: 'auto', maxWidth: '100%', maxHeight: '100%' }),
+                  textDecoration: 'none',
+                  color: 'inherit',
+                }}
+              >
+                {imageNode}
+              </a>
+            ) : (
+              imageNode
+            ))}
+        </div>
+        {textNode}
       </div>
     );
   };
@@ -355,7 +428,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       style={{
         position: 'relative',
         flex: '0 0 auto',
-        height: '100%',
+        alignSelf: 'flex-start',
         transform: 'translateZ(0)',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
@@ -422,6 +495,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
                 display: 'flex',
                 flexDirection: 'row',
                 flex: '0 0 auto',
+                alignItems: 'flex-start',
                 gap: scaled(gap),
                 paddingRight: scaled(gap),
               }}
@@ -444,6 +518,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         style={{
           gap: scaled(gap),
           justifyContent: 'center',
+          alignItems: 'flex-start',
           overflowX: 'auto',
           display: 'flex',
           flexDirection: 'row',
@@ -463,6 +538,7 @@ export type MarqueeItem = {
     url?: string;
     name?: string;
   };
+  text?: any[];
   link?: string;
 };
 
@@ -470,9 +546,22 @@ export type MarqueeSettings = {
   speed: number;
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
+  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate';
   gap: number;
   imageMaxWidth: number;
   imageMaxHeight: number;
-  /** `contain` is shown as "Fit" in the editor; same as CSS `object-fit: contain`. Legacy stored value `fit` is treated as `contain`. */
-  imageFit?: 'cover' | 'contain' | 'fit';
+  imageFit?: 'cover' | 'contain';
+  textFontFamily?: string;
+  textFontSettings?: { fontWeight?: number; fontStyle?: string };
+  textFontSize?: number;
+  textLineHeight?: number;
+  textLetterSpacing?: number;
+  textWordSpacing?: number;
+  textTextAppearance?: {
+    textTransform?: string;
+    textDecoration?: string;
+    fontVariant?: string;
+  };
+  textColor?: string;
+  textMarginTop?: number;
 };
