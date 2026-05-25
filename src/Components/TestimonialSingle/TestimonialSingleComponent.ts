@@ -39,7 +39,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Delay(s)',
-        display: { type: 'numeric-input'},
+        display: { type: 'percentage-input'},
         step: 1,
         min: 1,
         max: 8,
@@ -47,7 +47,7 @@ const schema: ComponentSchemaV1 = {
       align: {
         type: 'string',
         scope: 'common',
-        title: 'Align',
+        title: 'Alignment',
         display: {
           type: 'align-group',
           direction: 'horizontal',

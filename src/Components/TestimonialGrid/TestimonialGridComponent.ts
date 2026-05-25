@@ -58,7 +58,7 @@ const schema: ComponentSchemaV1 = {
       },
       align: {
         type: 'string',
-        title: 'Align',
+        title: 'Alignment',
         display: {
           type: 'align-group',
           direction: 'horizontal',
