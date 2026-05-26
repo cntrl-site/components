@@ -138,7 +138,6 @@ const MarqueeItemCard = ({
 }: MarqueeItemCardProps) => {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [imageWidth, setImageWidth] = useState<number | null>(null);
-  const linkHref = item.link?.trim();
   const hasText = (item.text ?? []).some((block) =>
     (block.children ?? []).some(
       (child: { text?: string }) => typeof child.text === 'string' && child.text.trim().length > 0,
@@ -159,14 +158,7 @@ const MarqueeItemCard = ({
 
   useLayoutEffect(() => {
     measureImage();
-  }, [
-    measureImage,
-    item.image?.url,
-    imageFit,
-    imageMaxWidth,
-    imageMaxHeight,
-    isEditor,
-  ]);
+  }, [ measureImage, item.image?.url, imageFit, imageMaxWidth, imageMaxHeight, isEditor ]);
 
   useLayoutEffect(() => {
     if (!shouldMatchTextToImage) return;
@@ -251,9 +243,9 @@ const MarqueeItemCard = ({
         }}
       >
         {imageNode &&
-          (linkHref ? (
+          (item.link ? (
             <a
-              href={linkHref}
+              href={item.link}
               target='_blank'
               rel='noopener noreferrer'
               style={{
@@ -300,10 +292,9 @@ const resolveTextStyle = (settings: MarqueeSettings): TextStyles => ({
 
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
-  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, textMarginTop } = settings;
+  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, textMarginTop, imageFit } = settings;
   const imageHoverClass = settings.hoverEffect === 'off' ? undefined : `${P}-image-hover-${settings.hoverEffect}`;
   const textStyle = useMemo(() => resolveTextStyle(settings), [settings]);
-  const imageFit: 'cover' | 'contain' = settings.imageFit === 'cover' ? 'cover' : 'contain';
   const autoplayEnabled = !isPreviewMode;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -587,7 +578,7 @@ export type MarqueeSettings = {
   gap: number;
   imageMaxWidth: number;
   imageMaxHeight: number;
-  imageFit?: 'cover' | 'contain';
+  imageFit: 'cover' | 'contain';
   textFontFamily?: string;
   textFontSettings?: { fontWeight?: number; fontStyle?: string };
   textFontSize?: number;
