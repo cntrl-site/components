@@ -22,7 +22,6 @@ function getCSS(P: string): string {
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   -webkit-transform: translateZ(0);
-  perspective: 1000px;
   flex-wrap: nowrap;
 }
 .${P}-marquee-row {
