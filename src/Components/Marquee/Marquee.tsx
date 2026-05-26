@@ -431,6 +431,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
 
     return () => {
       cancelAnimationFrame(animState.raf);
+      track.style.transform = '';
     };
   }, [autoplayEnabled, pxPerSec, direction, setWidth, hoverPauseEnabled]);
 
@@ -518,6 +519,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       >
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         <div
+          key="marquee-track"
           ref={trackRef}
           className={`${P}-marquee-track`}
           data-direction={direction}
@@ -549,8 +551,9 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     <div className={`${P}-wrapper`}>
       <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <div
+        key="marquee-static"
         className={cn(`${P}-marquee-row`, `${P}-marquee-static`)}
-        style={{ gap: scaled(gap) }}
+        style={{ gap: scaled(gap), transform: 'none' }}
         aria-label="Marquee"
       >
         {content?.map((item: MarqueeItem, index: number) =>
