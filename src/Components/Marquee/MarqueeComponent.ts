@@ -117,7 +117,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Text Color',
+        title: 'Fill Text',
       },
       textMarginTop: {
         type: 'number',

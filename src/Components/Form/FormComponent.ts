@@ -179,7 +179,7 @@ const schema = {
       inputColor: {
         type: 'string',
         scope: 'common',
-        title: 'Input Fill',
+        title: 'Fill Input',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
@@ -191,25 +191,25 @@ const schema = {
       inputBorderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Input Stroke',
+        title: 'Stroke Input',
         display: { type: 'palette-color-picker' },
       },
       placeholderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Filler text',
+        title: 'Filler Input',
         display: { type: 'palette-color-picker' },
       },
       buttonColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Fill',
+        title: 'Fill Button',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Label',
+        title: 'Label Button',
         display: { type: 'palette-color-picker' },
       },
       isButtonFullWidth: {
@@ -221,13 +221,13 @@ const schema = {
       buttonBorderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Stroke',
+        title: 'Stroke Button',
         display: { type: 'palette-color-picker' },
       },
       labelTextColor: {
         type: 'string',
         scope: 'common',
-        title: 'Label Color',
+        title: 'Label Button',
         display: { type: 'palette-color-picker', visible: false },
       },
       successColor: {
