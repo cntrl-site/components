@@ -1,10 +1,8 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
-import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function getCSS(P: string): string {
   return `
@@ -133,8 +131,6 @@ type MarqueeItemCardProps = {
   imageFit: 'cover' | 'contain';
   imageMaxWidth: number;
   imageMaxHeight: number;
-  textMarginTop?: number;
-  textStyle: TextStyles;
   imageHoverClass?: string;
   isEditor?: boolean;
   isFirstSet?: boolean;
@@ -148,8 +144,6 @@ const MarqueeItemCard = ({
   imageFit,
   imageMaxWidth,
   imageMaxHeight,
-  textMarginTop,
-  textStyle,
   imageHoverClass,
   isEditor,
   isFirstSet,
@@ -157,48 +151,12 @@ const MarqueeItemCard = ({
   onFirstSetImageDone,
 }: MarqueeItemCardProps) => {
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [imageWidth, setImageWidth] = useState<number | null>(null);
-  const hasText = (item.text ?? []).some((block) =>
-    (block.children ?? []).some(
-      (child: { text?: string }) => typeof child.text === 'string' && child.text.trim().length > 0,
-    ),
-  );
-  const shouldMatchTextToImage = imageFit === 'contain' && Boolean(item.image?.url) && hasText;
-
-  const measureImage = useCallback(() => {
-    if (!shouldMatchTextToImage) {
-      setImageWidth(null);
-      return;
-    }
-    const el = imageRef.current;
-    if (!el) return;
-    const w = el.getBoundingClientRect().width;
-    if (w > 0) setImageWidth(w);
-  }, [shouldMatchTextToImage]);
-
-  useLayoutEffect(() => {
-    measureImage();
-  }, [ measureImage, item.image?.url, imageFit, imageMaxWidth, imageMaxHeight, isEditor ]);
 
   useLayoutEffect(() => {
     if (!isFirstSet) return;
     const el = imageRef.current;
     if (el?.complete) onFirstSetImageDone?.();
   }, [isFirstSet, item.image?.url, onFirstSetImageDone]);
-
-  useLayoutEffect(() => {
-    if (!shouldMatchTextToImage) return;
-    const el = imageRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(measureImage);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [shouldMatchTextToImage, measureImage, item.image?.url]);
-
-  const handleImageDone = () => {
-    measureImage();
-    if (isFirstSet) onFirstSetImageDone?.();
-  };
 
   const imageNode =
     item.image?.url &&
@@ -210,41 +168,14 @@ const MarqueeItemCard = ({
         style={{
           pointerEvents: 'auto',
           objectFit: imageFit,
-          objectPosition: 'top',
           ...(imageFit === 'contain'
             ? { width: 'auto', maxWidth: '100%', maxHeight: '100%', height: 'auto' }
             : { width: '100%', height: '100%' }),
         }}
-        onLoad={isFirstSet ? handleImageDone : measureImage}
-        onError={isFirstSet ? handleImageDone : measureImage}
+        onLoad={isFirstSet ? onFirstSetImageDone : undefined}
+        onError={isFirstSet ? onFirstSetImageDone : undefined}
       />
     );
-
-  const textNode = hasText && (
-    <>
-      <div
-        {...(isEditor
-          ? { 'data-controls': 'textMarginTop', 'data-controls-axis': 'y' as const }
-          : {})}
-        className={isEditor ? `${P}-control` : undefined}
-        style={{
-          width: '100%',
-          height: scaled(textMarginTop ?? 0),
-          flexShrink: 0,
-        }}
-      />
-      <div
-        style={{
-          ...textStylesToCss(textStyle, isEditor),
-          width: imageWidth != null ? `${imageWidth}px` : '100%',
-          flexShrink: 0,
-          pointerEvents: 'auto',
-        }}
-      >
-        <RichTextRenderer content={item.text!} />
-      </div>
-    </>
-  );
 
   return (
     <div
@@ -293,34 +224,14 @@ const MarqueeItemCard = ({
             imageNode
           ))}
       </div>
-      {textNode}
     </div>
   );
 };
 
-const resolveTextStyle = (settings: MarqueeSettings): TextStyles => ({
-  fontSettings: {
-    fontFamily: settings.textFontFamily ?? 'Arial',
-    fontWeight: settings.textFontSettings?.fontWeight ?? 400,
-    fontStyle: settings.textFontSettings?.fontStyle ?? 'normal',
-  },
-  textAppearance: {
-    textTransform: settings.textTextAppearance?.textTransform ?? 'none',
-    textDecoration: settings.textTextAppearance?.textDecoration ?? 'none',
-    fontVariant: settings.textTextAppearance?.fontVariant ?? 'normal',
-  },
-  fontSize: settings.textFontSize ?? 0.01,
-  lineHeight: settings.textLineHeight ?? 0.01,
-  letterSpacing: settings.textLetterSpacing ?? 0,
-  wordSpacing: settings.textWordSpacing ?? 0,
-  color: settings.textColor ?? '#000000',
-});
-
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
-  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, textMarginTop, imageFit } = settings;
+  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, imageFit } = settings;
   const imageHoverClass = settings.hoverEffect === 'off' ? undefined : `${P}-image-hover-${settings.hoverEffect}`;
-  const textStyle = useMemo(() => resolveTextStyle(settings), [settings]);
   const autoplayEnabled = !isPreviewMode;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -418,7 +329,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit, textStyle, textMarginTop]);
+  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -445,8 +356,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         imageFit={imageFit}
         imageMaxWidth={imageMaxWidth}
         imageMaxHeight={imageMaxHeight}
-        textMarginTop={textMarginTop}
-        textStyle={textStyle}
         imageHoverClass={imageHoverClass}
         isEditor={isEditor}
         isFirstSet={isFirstSet}
@@ -536,7 +445,6 @@ export type MarqueeItem = {
     url?: string;
     name?: string;
   };
-  text?: any[];
   link?: string;
 };
 
@@ -545,23 +453,11 @@ export type MarqueeSettings = {
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
   hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate';
+  hoverRandomize: 'on' | 'off';
   gap: number;
   imageMaxWidth: number;
   imageMaxHeight: number;
   imageFit: 'cover' | 'contain';
-  textFontFamily?: string;
-  textFontSettings?: { fontWeight?: number; fontStyle?: string };
-  textFontSize?: number;
-  textLineHeight?: number;
-  textLetterSpacing?: number;
-  textWordSpacing?: number;
-  textTextAppearance?: {
-    textTransform?: string;
-    textDecoration?: string;
-    fontVariant?: string;
-  };
-  textColor?: string;
-  textMarginTop?: number;
 };
 
 type MarqueeProps = {
