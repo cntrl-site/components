@@ -32,6 +32,7 @@ function getCSS(P: string): string {
 
 .${P}-list-item {
   display: flex;
+  flex-direction: column;
   align-items: stretch;
   width: 100%;
   overflow: visible;
@@ -45,7 +46,7 @@ function getCSS(P: string): string {
 
 .${P}-list-cols-row {
   display: flex;
-  align-items: stretch;
+  align-items: start;
   width: 100%;
   box-sizing: border-box;
 }
@@ -87,9 +88,55 @@ a.${P}-list-item {
 }
 
 .${P}-col-resize-handle,
-.${P}-row-padding-handle,
-.${P}-wrapper-padding-handle {
+.${P}-padding-control-handle {
   background: transparent;
+}
+
+.${P}-row-padding-handle {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--${P}-background-color);
+}
+
+.${P}-row-padding-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 20px;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.${P}-col-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background: #FF5C02;
+  pointer-events: none;
+}
+
+.${P}-padding-control-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 12px;
+  background: #FF5C02;
+  border: 1px solid #FFFFFF;
+  border-radius: 5px;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item,
@@ -110,6 +157,15 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-item:hover,
 .${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item {
+  background: var(--${P}-background-hover-color);
+}
+
+.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:hover .${P}-row-padding-handle,
+.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item .${P}-row-padding-handle,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:hover .${P}-row-padding-handle,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item:hover) .${P}-row-padding-handle,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover) .${P}-row-padding-handle,
+.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item .${P}-row-padding-handle {
   background: var(--${P}-background-hover-color);
 }
 
@@ -197,55 +253,73 @@ a.${P}-list-item {
 `;
 }
 
+type ColumnPaddingLeftKey = typeof COLUMN_PADDING_LEFT_KEYS[number];
+type ColumnPaddingRightKey = typeof COLUMN_PADDING_RIGHT_KEYS[number];
+
 type ListItemColumn = {
   key: string;
   widthKey: ColumnWidthKey;
   width: number;
+  paddingLeftKey: ColumnPaddingLeftKey;
+  paddingRightKey: ColumnPaddingRightKey;
+  paddingLeft: number;
+  paddingRight: number;
 };
 
 const COLUMN_CONTENT_KEYS = [
   'AColumn',
-  'BColumn',
-  'CColumn',
-  'DColumn',
-  'EColumn',
+  'BColumnWidth',
+  'CColumnWidth',
+  'DColumnWidth',
+  'EColumnWidth',
 ] as const;
 
 const COLUMN_WIDTH_KEYS = [
   'AColumnWidth',
-  'BColumn',
-  'CColumn',
-  'DColumn',
-  'EColumn',
+  'BColumnWidth',
+  'CColumnWidth',
+  'DColumnWidth',
+  'EColumnWidth',
+] as const;
+
+const COLUMN_PADDING_LEFT_KEYS = [
+  'AColumnPaddingLeft',
+  'BColumnPaddingLeft',
+  'CColumnPaddingLeft',
+  'DColumnPaddingLeft',
+  'EColumnPaddingLeft',
+] as const;
+
+const COLUMN_PADDING_RIGHT_KEYS = [
+  'AColumnPaddingRight',
+  'BColumnPaddingRight',
+  'CColumnPaddingRight',
+  'DColumnPaddingRight',
+  'EColumnPaddingRight',
 ] as const;
 
 type ColumnWidthKey = typeof COLUMN_WIDTH_KEYS[number];
 
 const COL_RESIZE_HANDLE_WIDTH = 0.004;
-const ROW_PADDING_HANDLE_HEIGHT = 0.004;
-const WRAPPER_PADDING_HANDLE_WIDTH = 0.004;
+const COL_PADDING_HANDLE_WIDTH = 0.004;
 const MIN_COLUMN_WIDTH_PX = 50;
 const ARTICLE_DESIGN_WIDTH = 1440;
 const MIN_COLUMN_WIDTH = MIN_COLUMN_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
 
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnWidthKey, number> = {
   AColumnWidth: 0.02,
-  BColumn: 0.02,
-  CColumn: 0.02,
-  DColumn: 0.02,
-  EColumn: 0.02,
+  BColumnWidth: 0.02,
+  CColumnWidth: 0.02,
+  DColumnWidth: 0.02,
+  EColumnWidth: 0.02,
 };
 
 export function getListEffectiveContentWidth(
   settings: Record<string, unknown>,
 ): number {
   const wrapperWidth = typeof settings.wrapperWidth === 'number' ? settings.wrapperWidth : 1;
-  const paddingLeft =
-    typeof settings.wrapperPaddingLeft === 'number' ? settings.wrapperPaddingLeft : 0;
-  const paddingRight =
-    typeof settings.wrapperPaddingRight === 'number' ? settings.wrapperPaddingRight : 0;
 
-  return Math.max(0, wrapperWidth - paddingLeft - paddingRight);
+  return Math.max(0, wrapperWidth);
 }
 
 export function getEqualListColumnWidthUpdates(
@@ -258,7 +332,7 @@ export function getEqualListColumnWidthUpdates(
   ) as Record<ColumnWidthKey, number>;
 }
 
-function getStoredColumnWidths(
+function getStoreDColumnWidthWidths(
   settings: Record<string, unknown>,
 ): Record<ColumnWidthKey, number> {
   return Object.fromEntries(
@@ -269,6 +343,83 @@ function getStoredColumnWidths(
         : DEFAULT_COLUMN_WIDTHS[key],
     ]),
   ) as Record<ColumnWidthKey, number>;
+}
+
+export function resolveListColumnPadding(
+  columnWidth: number,
+  paddingLeft: number,
+  paddingRight: number,
+): { paddingLeft: number; paddingRight: number } {
+  const maxTotalPadding = columnWidth - MIN_COLUMN_WIDTH;
+  const totalPadding = paddingLeft + paddingRight;
+
+  if (totalPadding <= 0 || totalPadding <= maxTotalPadding) {
+    return { paddingLeft, paddingRight };
+  }
+
+  if (maxTotalPadding <= 0) {
+    return { paddingLeft: 0, paddingRight: 0 };
+  }
+
+  const scale = maxTotalPadding / totalPadding;
+
+  return {
+    paddingLeft: paddingLeft * scale,
+    paddingRight: paddingRight * scale,
+  };
+}
+
+export function getEffectiveListColumnWidths(
+  columns: number,
+  wrapperWidth: number,
+  storedWidths: Record<ColumnWidthKey, number>,
+): number[] {
+  const resolvedWidths = resolveListColumnWidths(columns, wrapperWidth, storedWidths);
+
+  if (columns <= 0) {
+    return [];
+  }
+
+  const sumFixed = resolvedWidths.slice(0, columns - 1).reduce((sum, width) => sum + width, 0);
+
+  return [
+    ...resolvedWidths.slice(0, columns - 1),
+    Math.max(0, wrapperWidth - sumFixed),
+  ];
+}
+
+function getListColumnPaddingUpdates(
+  columns: number,
+  effectiveWidths: number[],
+  settings: Record<string, unknown>,
+): Partial<Record<ColumnPaddingLeftKey | ColumnPaddingRightKey, number>> {
+  const updates: Partial<Record<ColumnPaddingLeftKey | ColumnPaddingRightKey, number>> = {};
+
+  for (let index = 0; index < columns; index += 1) {
+    const paddingLeftKey = COLUMN_PADDING_LEFT_KEYS[index];
+    const paddingRightKey = COLUMN_PADDING_RIGHT_KEYS[index];
+    const storedPaddingLeft = typeof settings[paddingLeftKey] === 'number'
+      ? settings[paddingLeftKey] as number
+      : 0;
+    const storedPaddingRight = typeof settings[paddingRightKey] === 'number'
+      ? settings[paddingRightKey] as number
+      : 0;
+    const resolvedPadding = resolveListColumnPadding(
+      effectiveWidths[index] ?? 0,
+      storedPaddingLeft,
+      storedPaddingRight,
+    );
+
+    if (resolvedPadding.paddingLeft !== storedPaddingLeft) {
+      updates[paddingLeftKey] = resolvedPadding.paddingLeft;
+    }
+
+    if (resolvedPadding.paddingRight !== storedPaddingRight) {
+      updates[paddingRightKey] = resolvedPadding.paddingRight;
+    }
+  }
+
+  return updates;
 }
 
 export function resolveListColumnWidths(
@@ -335,6 +486,66 @@ function getListColumnWidthUpdatesForWrapperWidth(
   return updates;
 }
 
+function getColumnsOrder(settings: Record<string, unknown>): string[] {
+  if (Array.isArray(settings.columnsOrder) && settings.columnsOrder.length > 0) {
+    return settings.columnsOrder as string[];
+  }
+
+  return [...COLUMN_CONTENT_KEYS];
+}
+
+function areStringArraysEqual(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
+}
+
+function getColumnLayoutUpdatesForOrderChange(
+  nextOrder: string[],
+  prevOrder: string[],
+  prevSettings: Record<string, unknown>,
+  columns: number,
+): Record<string, number> {
+  const count = Math.min(columns, nextOrder.length, COLUMN_WIDTH_KEYS.length);
+  const updates: Record<string, number> = {};
+
+  for (let index = 0; index < count; index += 1) {
+    const contentKey = nextOrder[index];
+    const prevSlotIndex = prevOrder.indexOf(contentKey);
+
+    if (prevSlotIndex === -1) {
+      continue;
+    }
+
+    const prevWidthKey = COLUMN_WIDTH_KEYS[prevSlotIndex];
+    const prevPaddingLeftKey = COLUMN_PADDING_LEFT_KEYS[prevSlotIndex];
+    const prevPaddingRightKey = COLUMN_PADDING_RIGHT_KEYS[prevSlotIndex];
+    const widthKey = COLUMN_WIDTH_KEYS[index];
+    const paddingLeftKey = COLUMN_PADDING_LEFT_KEYS[index];
+    const paddingRightKey = COLUMN_PADDING_RIGHT_KEYS[index];
+
+    const prevWidth = prevSettings[prevWidthKey];
+    const prevPaddingLeft = prevSettings[prevPaddingLeftKey];
+    const prevPaddingRight = prevSettings[prevPaddingRightKey];
+
+    if (typeof prevWidth === 'number') {
+      updates[widthKey] = prevWidth;
+    }
+
+    if (typeof prevPaddingLeft === 'number') {
+      updates[paddingLeftKey] = prevPaddingLeft;
+    }
+
+    if (typeof prevPaddingRight === 'number') {
+      updates[paddingRightKey] = prevPaddingRight;
+    }
+  }
+
+  return updates;
+}
+
 export function applyListSettingsChange(
   nextSettings: Record<string, unknown>,
   prevSettings: Record<string, unknown>,
@@ -343,30 +554,87 @@ export function applyListSettingsChange(
   const prevColumns = prevSettings.columns;
   const nextContentWidth = getListEffectiveContentWidth(nextSettings);
   const prevContentWidth = getListEffectiveContentWidth(prevSettings);
+  const columns =
+    typeof nextColumns === 'number'
+      ? nextColumns
+      : typeof prevColumns === 'number'
+        ? prevColumns
+        : COLUMN_CONTENT_KEYS.length;
+
+  const withColumnPaddingUpdates = (
+    settings: Record<string, unknown>,
+  ): Record<string, unknown> => {
+    const storedWidths = getStoreDColumnWidthWidths({ ...prevSettings, ...settings });
+    const contentWidth = getListEffectiveContentWidth(settings);
+    const effectiveWidths = getEffectiveListColumnWidths(columns, contentWidth, storedWidths);
+    const paddingUpdates = getListColumnPaddingUpdates(columns, effectiveWidths, {
+      ...prevSettings,
+      ...settings,
+    });
+
+    if (Object.keys(paddingUpdates).length === 0) {
+      return settings;
+    }
+
+    return {
+      ...settings,
+      ...paddingUpdates,
+    };
+  };
 
   if (typeof nextColumns === 'number' && nextColumns !== prevColumns) {
-    return {
+    return withColumnPaddingUpdates({
       ...nextSettings,
       ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
-    };
+    });
+  }
+
+  const nextOrder = getColumnsOrder(nextSettings);
+  const prevOrder = getColumnsOrder(prevSettings);
+
+  if (!areStringArraysEqual(nextOrder, prevOrder)) {
+    return withColumnPaddingUpdates({
+      ...nextSettings,
+      ...getColumnLayoutUpdatesForOrderChange(nextOrder, prevOrder, prevSettings, columns),
+    });
   }
 
   if (nextContentWidth < prevContentWidth) {
-    const columns =
-      typeof nextColumns === 'number'
-        ? nextColumns
-        : typeof prevColumns === 'number'
-          ? prevColumns
-          : undefined;
-
     if (typeof columns === 'number') {
-      const storedWidths = getStoredColumnWidths({ ...prevSettings, ...nextSettings });
+      const storedWidths = getStoreDColumnWidthWidths({ ...prevSettings, ...nextSettings });
 
-      return {
+      return withColumnPaddingUpdates({
         ...nextSettings,
         ...getListColumnWidthUpdatesForWrapperWidth(columns, nextContentWidth, storedWidths),
-      };
+      });
     }
+  }
+
+  const storedWidths = getStoreDColumnWidthWidths({ ...prevSettings, ...nextSettings });
+  const prevEffectiveWidths = getEffectiveListColumnWidths(
+    columns,
+    prevContentWidth,
+    getStoreDColumnWidthWidths(prevSettings),
+  );
+  const nextEffectiveWidths = getEffectiveListColumnWidths(
+    columns,
+    nextContentWidth,
+    storedWidths,
+  );
+  const columnWidthDecreased = nextEffectiveWidths.some(
+    (width, index) => width < (prevEffectiveWidths[index] ?? width),
+  );
+  const columnWidthSettingChanged = COLUMN_WIDTH_KEYS.some((key) => {
+    const nextWidth = nextSettings[key];
+    const prevWidth = prevSettings[key];
+
+    return typeof nextWidth === 'number'
+      && typeof prevWidth === 'number'
+      && nextWidth !== prevWidth;
+  });
+
+  if (columnWidthDecreased || columnWidthSettingChanged) {
+    return withColumnPaddingUpdates(nextSettings);
   }
 
   return nextSettings;
@@ -393,10 +661,10 @@ function getColumnMaxWidth(
 
 type ListContentItem = {
   AColumn?: string;
-  BColumn?: string;
-  CColumn?: string;
-  DColumn?: string;
-  EColumn?: string;
+  BColumnWidth?: string;
+  CColumnWidth?: string;
+  DColumnWidth?: string;
+  EColumnWidth?: string;
   image?: {
     objectFit?: 'cover' | 'contain';
     url: string;
@@ -435,6 +703,7 @@ type ListProps = {
 
 export function List({ settings, content, isEditor, isPreviewMode, metadata, activeEvent, layoutId, onUpdateSettings }: ListProps) {
   const { prefix: P } = useScopedStyles();
+  const showControls = Boolean(isEditor && isPreviewMode);
   const {
     columns,
     wrapperWidth,
@@ -450,13 +719,21 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     entryHoverEffect,
     rowPaddingTop,
     rowPaddingBottom,
-    wrapperPaddingLeft,
-    wrapperPaddingRight,
     AColumnWidth,
-    BColumn,
-    CColumn,
-    DColumn,
-    EColumn,
+    AColumnPaddingLeft,
+    AColumnPaddingRight,
+    BColumnWidth,
+    BColumnPaddingLeft,
+    BColumnPaddingRight,
+    CColumnWidth,
+    CColumnPaddingLeft,
+    CColumnPaddingRight,
+    DColumnWidth,
+    DColumnPaddingLeft,
+    DColumnPaddingRight,
+    EColumnWidth,
+    EColumnPaddingLeft,
+    EColumnPaddingRight,
     columnsOrder,
     textColor,
     textFontFamily,
@@ -548,13 +825,29 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
 
   const columnWidthByKey: Record<ColumnWidthKey, number> = {
     AColumnWidth: AColumnWidth ?? DEFAULT_COLUMN_WIDTHS.AColumnWidth,
-    BColumn: BColumn ?? DEFAULT_COLUMN_WIDTHS.BColumn,
-    CColumn: CColumn ?? DEFAULT_COLUMN_WIDTHS.CColumn,
-    DColumn: DColumn ?? DEFAULT_COLUMN_WIDTHS.DColumn,
-    EColumn: EColumn ?? DEFAULT_COLUMN_WIDTHS.EColumn,
+    BColumnWidth: BColumnWidth ?? DEFAULT_COLUMN_WIDTHS.BColumnWidth,
+    CColumnWidth: CColumnWidth ?? DEFAULT_COLUMN_WIDTHS.CColumnWidth,
+    DColumnWidth: DColumnWidth ?? DEFAULT_COLUMN_WIDTHS.DColumnWidth,
+    EColumnWidth: EColumnWidth ?? DEFAULT_COLUMN_WIDTHS.EColumnWidth,
   };
 
-  const resolvedColumnsOrder = useMemo(() => {
+  const columnPaddingLeftByKey: Record<ColumnPaddingLeftKey, number> = {
+    AColumnPaddingLeft: AColumnPaddingLeft ?? 0,
+    BColumnPaddingLeft: BColumnPaddingLeft ?? 0,
+    CColumnPaddingLeft: CColumnPaddingLeft ?? 0,
+    DColumnPaddingLeft: DColumnPaddingLeft ?? 0,
+    EColumnPaddingLeft: EColumnPaddingLeft ?? 0,
+  };
+
+  const columnPaddingRightByKey: Record<ColumnPaddingRightKey, number> = {
+    AColumnPaddingRight: AColumnPaddingRight ?? 0,
+    BColumnPaddingRight: BColumnPaddingRight ?? 0,
+    CColumnPaddingRight: CColumnPaddingRight ?? 0,
+    DColumnPaddingRight: DColumnPaddingRight ?? 0,
+    EColumnPaddingRight: EColumnPaddingRight ?? 0,
+  };
+
+  const resolveDColumnWidthsOrder = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
       return columnsOrder as typeof COLUMN_CONTENT_KEYS[number][];
     }
@@ -563,47 +856,87 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
 
   const listColumns: ListItemColumn[] = useMemo(
     () =>
-      resolvedColumnsOrder.slice(0, columns).map((key, index) => ({
-        key,
-        widthKey: COLUMN_WIDTH_KEYS[index],
-        width: columnWidthByKey[COLUMN_WIDTH_KEYS[index]],
-      })),
+      resolveDColumnWidthsOrder.slice(0, columns).map((key, index) => {
+        const paddingLeftKey = COLUMN_PADDING_LEFT_KEYS[index];
+        const paddingRightKey = COLUMN_PADDING_RIGHT_KEYS[index];
+        return {
+          key,
+          widthKey: COLUMN_WIDTH_KEYS[index],
+          width: columnWidthByKey[COLUMN_WIDTH_KEYS[index]],
+          paddingLeftKey,
+          paddingRightKey,
+          paddingLeft: columnPaddingLeftByKey[paddingLeftKey],
+          paddingRight: columnPaddingRightByKey[paddingRightKey],
+        };
+      }),
     [
       columns,
-      resolvedColumnsOrder,
+      resolveDColumnWidthsOrder,
       AColumnWidth,
-      BColumn,
-      CColumn,
-      DColumn,
-      EColumn,
+      BColumnWidth,
+      CColumnWidth,
+      DColumnWidth,
+      EColumnWidth,
+      AColumnPaddingLeft,
+      AColumnPaddingRight,
+      BColumnPaddingLeft,
+      BColumnPaddingRight,
+      CColumnPaddingLeft,
+      CColumnPaddingRight,
+      DColumnPaddingLeft,
+      DColumnPaddingRight,
+      EColumnPaddingLeft,
+      EColumnPaddingRight,
     ]
   );
 
-  const resolvedWrapperPaddingLeft = wrapperPaddingLeft ?? 0;
-  const resolvedWrapperPaddingRight = wrapperPaddingRight ?? 0;
   const resolvedContentWidth = getListEffectiveContentWidth(settings as Record<string, unknown>);
-  const storedColumnWidths = useMemo(
+  const storeDColumnWidthWidths = useMemo(
     () => COLUMN_WIDTH_KEYS.slice(0, columns).map((key) => columnWidthByKey[key]),
     [
       columns,
       AColumnWidth,
-      BColumn,
-      CColumn,
-      DColumn,
-      EColumn,
+      BColumnWidth,
+      CColumnWidth,
+      DColumnWidth,
+      EColumnWidth,
     ],
   );
-  const resolvedColumnWidths = useMemo(
+  const resolveDColumnWidthWidths = useMemo(
     () => resolveListColumnWidths(columns, resolvedContentWidth, columnWidthByKey),
     [
       columns,
       resolvedContentWidth,
       AColumnWidth,
-      BColumn,
-      CColumn,
-      DColumn,
-      EColumn,
+      BColumnWidth,
+      CColumnWidth,
+      DColumnWidth,
+      EColumnWidth,
     ],
+  );
+
+  const effectiveColumnWidths = useMemo(
+    () => getEffectiveListColumnWidths(columns, resolvedContentWidth, columnWidthByKey),
+    [
+      columns,
+      resolvedContentWidth,
+      AColumnWidth,
+      BColumnWidth,
+      CColumnWidth,
+      DColumnWidth,
+      EColumnWidth,
+    ],
+  );
+
+  const effectiveColumnPaddings = useMemo(
+    () =>
+      listColumns.map((col, index) =>
+        resolveListColumnPadding(
+          effectiveColumnWidths[index] ?? 0,
+          col.paddingLeft,
+          col.paddingRight,
+        )),
+    [listColumns, effectiveColumnWidths],
   );
 
   const allRows: ListItemRow[] = useMemo(() => {
@@ -645,14 +978,17 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const resolvedRowPaddingTop = rowPaddingTop ?? 0;
   const resolvedRowPaddingBottom = rowPaddingBottom ?? 0;
-  const topHandleHeight = Math.max(resolvedRowPaddingTop, ROW_PADDING_HANDLE_HEIGHT);
-  const bottomHandleHeight = Math.max(resolvedRowPaddingBottom, ROW_PADDING_HANDLE_HEIGHT);
-  const leftHandleWidth = Math.max(resolvedWrapperPaddingLeft, WRAPPER_PADDING_HANDLE_WIDTH);
-  const rightHandleWidth = Math.max(resolvedWrapperPaddingRight, WRAPPER_PADDING_HANDLE_WIDTH);
-  const columnsRowStyle: React.CSSProperties = {
-    paddingLeft: scaled(resolvedWrapperPaddingLeft),
-    paddingRight: scaled(resolvedWrapperPaddingRight),
-  };
+  const firstColumn = listColumns[0];
+  const lastColumn = listColumns[listColumns.length - 1];
+  const firstColumnEffectivePadding = effectiveColumnPaddings[0];
+  const lastColumnEffectivePadding = effectiveColumnPaddings[effectiveColumnPaddings.length - 1];
+  const firstColumnPaddingLeftWidth = firstColumn && firstColumnEffectivePadding
+    ? Math.max(firstColumnEffectivePadding.paddingLeft, COL_PADDING_HANDLE_WIDTH)
+    : 0;
+  const lastColumnPaddingRightWidth = lastColumn && lastColumnEffectivePadding
+    ? Math.max(lastColumnEffectivePadding.paddingRight, COL_PADDING_HANDLE_WIDTH)
+    : 0;
+  const columnsRightEdge = resolvedContentWidth;
 
   const handleRowMouseEnter = (row: ListItemRow) => {
     if (!showHoverImage) return;
@@ -693,50 +1029,11 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
           }}
           onMouseLeave={showHoverImage ? handleWrapperMouseLeave : undefined}
         >
-          {isEditor && (
-            <div
-              data-controls="wrapperPaddingLeft"
-              data-controls-axis="x"
-              data-controls-min="0"
-              data-controls-no-highlight=""
-              className={`${P}-wrapper-padding-handle`}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: scaled(leftHandleWidth),
-                height: '100%',
-                pointerEvents: 'auto',
-                zIndex: 4,
-              }}
-            />
-          )}
-          {isEditor && (
-            <div
-              data-controls="wrapperPaddingRight"
-              data-controls-axis="x"
-              data-controls-reverse=""
-              data-controls-min="0"
-              data-controls-no-highlight=""
-              className={`${P}-wrapper-padding-handle`}
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: scaled(rightHandleWidth),
-                height: '100%',
-                pointerEvents: 'auto',
-                zIndex: 4,
-              }}
-            />
-          )}
           <div style={{ width: '100%' }}>
             {visibleRows.map((row, rowIdx) => {
               const hasLink = (row.link?.length ?? 0) > 0;
               const RowElement = hasLink ? 'a' : 'div';
               const rowStyle = {
-                paddingTop: scaled(resolvedRowPaddingTop),
-                paddingBottom: scaled(resolvedRowPaddingBottom),
                 borderBottomWidth: scalingValue(dividerWidth ?? 0, isEditor),
                 ...(rowIdx === 0 ? { borderTopWidth: scalingValue(dividerWidth ?? 0, isEditor) } : {}),
               };
@@ -749,39 +1046,31 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                 style={rowStyle}
                 onMouseEnter={showHoverImage ? () => handleRowMouseEnter(row) : undefined}
               >
-                {isEditor && (
+                {(resolvedRowPaddingTop > 0 || showControls) && (
                   <div
-                    data-controls="rowPaddingTop"
-                    data-controls-axis="y"
-                    data-controls-min="0"
-                    data-controls-no-highlight=""
+                    {...(showControls ? {
+                      'data-controls': 'rowPaddingTop',
+                      'data-controls-axis': 'y',
+                      'data-controls-min': '0',
+                    } : {})}
                     className={`${P}-row-padding-handle`}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: scaled(topHandleHeight),
-                      pointerEvents: 'auto',
-                      zIndex: 3,
-                    }}
+                    style={{ height: scaled(resolvedRowPaddingTop) }}
                   />
                 )}
-                <div className={`${P}-list-cols-row`} style={{ ...columnsRowStyle, minHeight: scaled(cellMinHeight ?? 0) }}>
+                <div className={`${P}-list-cols-row`} style={{ minHeight: scaled(cellMinHeight ?? 0) }}>
                   {listColumns.map((col, colIndex) => {
                     const isLastColumn = colIndex === listColumns.length - 1;
-                    const columnWidth = resolvedColumnWidths[colIndex];
-                    const maxColumnWidth = getColumnMaxWidth(
-                      colIndex,
-                      resolvedColumnWidths,
-                      storedColumnWidths,
-                      resolvedContentWidth,
-                    );
+                    const columnWidth = effectiveColumnWidths[colIndex];
+                    const effectivePadding = effectiveColumnPaddings[colIndex];
                     return (
                       <div
                         key={col.key}
                         className={`${P}-list-col${isLastColumn ? ` ${P}-list-col-last` : ''}`}
-                        style={isLastColumn ? undefined : { width: scaled(columnWidth) }}
+                        style={{
+                          paddingLeft: scaled(effectivePadding.paddingLeft),
+                          paddingRight: scaled(effectivePadding.paddingRight),
+                          ...(isLastColumn ? {} : { width: scaled(columnWidth) }),
+                        }}
                         data-test={col.width}
                       >
                         <span
@@ -790,45 +1079,19 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                         >
                           {row.cells[col.key] ?? null}
                         </span>
-                        {isEditor && !isLastColumn && (
-                          <div
-                            data-controls={col.widthKey}
-                            data-controls-axis="x"
-                            data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
-                            data-controls-max-fraction={String(maxColumnWidth)}
-                            data-controls-no-highlight=""
-                            className={`${P}-col-resize-handle`}
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: `calc(100% - ${scaled(COL_RESIZE_HANDLE_WIDTH / 2)})`,
-                              width: scaled(COL_RESIZE_HANDLE_WIDTH),
-                              height: '100%',
-                              pointerEvents: 'auto',
-                              zIndex: 2,
-                            }}
-                          />
-                        )}
                       </div>
                     );
                   })}
                 </div>
-                {isEditor && (
+                {(resolvedRowPaddingBottom > 0 || showControls) && (
                   <div
-                    data-controls="rowPaddingBottom"
-                    data-controls-axis="y"
-                    data-controls-min="0"
-                    data-controls-no-highlight=""
+                    {...(showControls ? {
+                      'data-controls': 'rowPaddingBottom',
+                      'data-controls-axis': 'y',
+                      'data-controls-min': '0',
+                    } : {})}
                     className={`${P}-row-padding-handle`}
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      width: '100%',
-                      height: scaled(bottomHandleHeight),
-                      pointerEvents: 'auto',
-                      zIndex: 3,
-                    }}
+                    style={{ height: scaled(resolvedRowPaddingBottom) }}
                   />
                 )}
               </RowElement>
@@ -844,7 +1107,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               >
                 <div
                   className={`${P}-list-cols-row`}
-                  style={{ ...columnsRowStyle, justifyContent: 'center' }}
+                  style={{ justifyContent: 'center' }}
                 >
                   <button
                     type="button"
@@ -858,6 +1121,132 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               </div>
             )}
           </div>
+          {showControls && firstColumn && lastColumn && (
+            <div key="column-edge-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              <div
+                data-controls={firstColumn.paddingLeftKey}
+                data-controls-axis="x"
+                data-controls-min="0"
+                data-controls-max-fraction={String(
+                  effectiveColumnWidths[0] - (firstColumnEffectivePadding?.paddingRight ?? 0),
+                )}
+                data-controls-static-handle=""
+                className={`${P}-padding-control-handle`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: scaled(firstColumnPaddingLeftWidth),
+                  height: '100%',
+                  pointerEvents: 'auto',
+                  zIndex: 2,
+                }}
+              />
+              <div
+                data-controls={lastColumn.paddingRightKey}
+                data-controls-axis="x"
+                data-controls-reverse=""
+                data-controls-min="0"
+                data-controls-max-fraction={String(
+                  effectiveColumnWidths[listColumns.length - 1]
+                    - (lastColumnEffectivePadding?.paddingLeft ?? 0),
+                )}
+                data-controls-static-handle=""
+                className={`${P}-padding-control-handle`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: scaled(columnsRightEdge - lastColumnPaddingRightWidth),
+                  width: scaled(lastColumnPaddingRightWidth),
+                  height: '100%',
+                  pointerEvents: 'auto',
+                  zIndex: 2,
+                }}
+              />
+            </div>
+          )}
+          {showControls && listColumns.slice(0, -1).map((col, colIndex) => {
+            const nextCol = listColumns[colIndex + 1];
+            const maxColumnWidth = getColumnMaxWidth(
+              colIndex,
+              resolveDColumnWidthWidths,
+              storeDColumnWidthWidths,
+              resolvedContentWidth,
+            );
+            const boundaryLeft = resolveDColumnWidthWidths.slice(0, colIndex + 1).reduce((sum, width) => sum + width, 0);
+            const colEffectivePadding = effectiveColumnPaddings[colIndex];
+            const nextColEffectivePadding = effectiveColumnPaddings[colIndex + 1];
+            const paddingRightWidth = Math.max(
+              colEffectivePadding.paddingRight,
+              COL_PADDING_HANDLE_WIDTH,
+            );
+            const paddingLeftWidth = Math.max(
+              nextColEffectivePadding.paddingLeft,
+              COL_PADDING_HANDLE_WIDTH,
+            );
+            const columnWidthHandleLeft = boundaryLeft - COL_RESIZE_HANDLE_WIDTH / 2;
+
+            return (
+              <div key={`${col.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <div
+                  data-controls={col.paddingRightKey}
+                  data-controls-axis="x"
+                  data-controls-reverse=""
+                  data-controls-min="0"
+                  data-controls-max-fraction={String(
+                    effectiveColumnWidths[colIndex] - colEffectivePadding.paddingLeft,
+                  )}
+                  data-controls-static-handle=""
+                  className={`${P}-padding-control-handle`}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: scaled(boundaryLeft - paddingRightWidth),
+                    width: scaled(paddingRightWidth),
+                    height: '100%',
+                    pointerEvents: 'auto',
+                    zIndex: 2,
+                  }}
+                />
+                <div
+                  data-controls={col.widthKey}
+                  data-controls-axis="x"
+                  data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
+                  data-controls-max-fraction={String(maxColumnWidth)}
+                  data-controls-variant="column-width"
+                  className={`${P}-col-resize-handle`}
+                  style={{
+                    position: 'absolute',
+                    top: '0px',
+                    left: scaled(columnWidthHandleLeft),
+                    width: scaled(COL_RESIZE_HANDLE_WIDTH),
+                    height: 'calc(100%)',
+                    pointerEvents: 'auto',
+                    zIndex: 4,
+                  }}
+                />
+                <div
+                  data-controls={nextCol.paddingLeftKey}
+                  data-controls-axis="x"
+                  data-controls-min="0"
+                  data-controls-max-fraction={String(
+                    effectiveColumnWidths[colIndex + 1] - nextColEffectivePadding.paddingRight,
+                  )}
+                  data-controls-static-handle=""
+                  className={`${P}-padding-control-handle`}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: scaled(boundaryLeft),
+                    width: scaled(paddingLeftWidth),
+                    height: '100%',
+                    pointerEvents: 'auto',
+                    zIndex: 2,
+                  }}
+                />
+              </div>
+            );
+          })}
           {showHoverImage && hoverImage && (
             <img
               className={`${P}-hover-image`}
@@ -890,13 +1279,21 @@ type ListSettings = {
   entryHoverEffect: 'None' | 'Default' | 'Blinds';
   rowPaddingTop: number;
   rowPaddingBottom: number;
-  wrapperPaddingLeft: number;
-  wrapperPaddingRight: number;
   AColumnWidth: number;
-  BColumn: number;
-  CColumn: number;
-  DColumn: number;
-  EColumn: number;
+  AColumnPaddingLeft: number;
+  AColumnPaddingRight: number;
+  BColumnWidth: number;
+  BColumnPaddingLeft: number;
+  BColumnPaddingRight: number;
+  CColumnWidth: number;
+  CColumnPaddingLeft: number;
+  CColumnPaddingRight: number;
+  DColumnWidth: number;
+  DColumnPaddingLeft: number;
+  DColumnPaddingRight: number;
+  EColumnWidth: number;
+  EColumnPaddingLeft: number;
+  EColumnPaddingRight: number;
   columnsOrder?: string[];
   textColor: string;
   textFontFamily: string;
