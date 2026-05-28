@@ -9,6 +9,57 @@ function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
 }
 
+function hasListColumnText(value: unknown): boolean {
+  return String(value ?? '').trim().length > 0;
+}
+
+function getEntryDividerWidths(
+  rowIdx: number,
+  showDividerTop: boolean,
+  showDividerBottom: boolean,
+  dividerWidth: number,
+  isEditor: boolean,
+): { borderTopWidth: string; borderBottomWidth: string } {
+  const scaledDividerWidth = scalingValue(dividerWidth, isEditor);
+  const none = scalingValue(0, isEditor);
+
+  if (!showDividerTop && !showDividerBottom) {
+    return { borderTopWidth: none, borderBottomWidth: none };
+  }
+
+  if (showDividerTop && showDividerBottom) {
+    return {
+      borderTopWidth: rowIdx === 0 ? scaledDividerWidth : none,
+      borderBottomWidth: scaledDividerWidth,
+    };
+  }
+
+  if (showDividerTop) {
+    return { borderTopWidth: scaledDividerWidth, borderBottomWidth: none };
+  }
+
+  return { borderTopWidth: none, borderBottomWidth: scaledDividerWidth };
+}
+
+function getCutItemDividerWidths(
+  showDividerTop: boolean,
+  showDividerBottom: boolean,
+  dividerWidth: number,
+  isEditor: boolean,
+): { borderTopWidth: string; borderBottomWidth: string } {
+  const scaledDividerWidth = scalingValue(dividerWidth, isEditor);
+  const none = scalingValue(0, isEditor);
+
+  if (!showDividerTop && !showDividerBottom) {
+    return { borderTopWidth: none, borderBottomWidth: none };
+  }
+
+  return {
+    borderTopWidth: showDividerTop && !showDividerBottom ? scaledDividerWidth : none,
+    borderBottomWidth: showDividerBottom ? scaledDividerWidth : none,
+  };
+}
+
 function getCSS(P: string): string {
   return `
 .${P}-wrapper {
@@ -38,10 +89,18 @@ function getCSS(P: string): string {
   overflow: visible;
   position: relative;
   box-sizing: content-box;
-  border-bottom-style: solid;
-  border-bottom-color: var(--${P}-divider-color);
   user-select: none;
   background: var(--${P}-background-color);
+}
+
+.${P}-wrapper.${P}-divider-top .${P}-list-item {
+  border-top-style: solid;
+  border-top-color: var(--${P}-divider-color);
+}
+
+.${P}-wrapper.${P}-divider-bottom .${P}-list-item {
+  border-bottom-style: solid;
+  border-bottom-color: var(--${P}-divider-color);
 }
 
 .${P}-list-cols-row {
@@ -51,15 +110,31 @@ function getCSS(P: string): string {
   box-sizing: border-box;
 }
 
+.${P}-wrapper.${P}-type-b .${P}-list-cols-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.${P}-wrapper.${P}-type-b .${P}-list-col {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.${P}-wrapper.${P}-type-b .${P}-list-col-title {
+  text-align: center;
+}
+
+.${P}-wrapper.${P}-type-b .${P}-list-col-last {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
 a.${P}-list-item {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-}
-
-.${P}-list-item:first-child {
-  border-top-style: solid;
-  border-top-color: var(--${P}-divider-color);
 }
 
 .${P}-list-col {
@@ -97,7 +172,7 @@ a.${P}-list-item {
   z-index: 2;
   width: 100%;
   flex-shrink: 0;
-  background: var(--${P}-background-color);
+  background: transparent;
 }
 
 .${P}-row-padding-handle::before {
@@ -124,6 +199,14 @@ a.${P}-list-item {
   pointer-events: none;
 }
 
+.${P}-wrapper.${P}-type-b .${P}-col-resize-handle::after {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 2px;
+}
+
 .${P}-padding-control-handle::after {
   content: '';
   position: absolute;
@@ -137,6 +220,11 @@ a.${P}-list-item {
   border-radius: 5px;
   pointer-events: none;
   box-sizing: border-box;
+}
+
+.${P}-wrapper.${P}-type-b .${P}-padding-control-handle::after {
+  width: 12px;
+  height: 4px;
 }
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item,
@@ -160,34 +248,36 @@ a.${P}-list-item {
   background: var(--${P}-background-hover-color);
 }
 
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:hover .${P}-row-padding-handle,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item .${P}-row-padding-handle,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:hover .${P}-row-padding-handle,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item:hover) .${P}-row-padding-handle,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover) .${P}-row-padding-handle,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item .${P}-row-padding-handle {
-  background: var(--${P}-background-hover-color);
-}
-
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:hover,
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-list-item:hover),
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-cut-item:hover),
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item,
-.${P}-wrapper.${P}-entry-hover-default .${P}-cut-item:hover,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:hover,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item:hover),
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover),
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item {
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-list-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-cut-item:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-cut-item:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item {
   border-bottom-color: var(--${P}-divider-hover-color);
 }
 
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:hover:first-child,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item:first-child,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:hover:first-child,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item:first-child {
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default .${P}-list-item:hover,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default .${P}-cut-item:hover,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default.${P}-state-hover .${P}-cut-item,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds .${P}-list-item:hover,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds .${P}-cut-item:hover,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item {
+  border-top-color: var(--${P}-divider-hover-color);
+}
+
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:hover:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:hover:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
@@ -236,10 +326,18 @@ a.${P}-list-item {
   overflow: visible;
   position: relative;
   box-sizing: border-box;
-  border-bottom-style: solid;
-  border-bottom-color: var(--${P}-divider-color);
   user-select: none;
   background: var(--${P}-background-color);
+}
+
+.${P}-wrapper.${P}-divider-bottom .${P}-cut-item {
+  border-bottom-style: solid;
+  border-bottom-color: var(--${P}-divider-color);
+}
+
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom) .${P}-cut-item {
+  border-top-style: solid;
+  border-top-color: var(--${P}-divider-color);
 }
 
 .${P}-cut-label {
@@ -255,15 +353,18 @@ a.${P}-list-item {
 
 type ColumnPaddingLeftKey = typeof COLUMN_PADDING_LEFT_KEYS[number];
 type ColumnPaddingRightKey = typeof COLUMN_PADDING_RIGHT_KEYS[number];
+type ColumnPaddingBottomKey = typeof COLUMN_PADDING_BOTTOM_KEYS[number];
 
 type ListItemColumn = {
   key: string;
   widthKey: ColumnWidthKey;
-  width: number;
   paddingLeftKey: ColumnPaddingLeftKey;
   paddingRightKey: ColumnPaddingRightKey;
+  paddingBottomKey: ColumnPaddingBottomKey;
+  width: number;
   paddingLeft: number;
   paddingRight: number;
+  paddingBottom: number;
 };
 
 const COLUMN_CONTENT_KEYS = [
@@ -298,6 +399,14 @@ const COLUMN_PADDING_RIGHT_KEYS = [
   'EColumnPaddingRight',
 ] as const;
 
+const COLUMN_PADDING_BOTTOM_KEYS = [
+  'AColumnPaddingBottom',
+  'BColumnPaddingBottom',
+  'CColumnPaddingBottom',
+  'DColumnPaddingBottom',
+  'EColumnPaddingBottom',
+] as const;
+
 type ColumnWidthKey = typeof COLUMN_WIDTH_KEYS[number];
 
 const COL_RESIZE_HANDLE_WIDTH = 0.004;
@@ -330,6 +439,22 @@ export function getEqualListColumnWidthUpdates(
   return Object.fromEntries(
     COLUMN_WIDTH_KEYS.map((key) => [key, equalColumnWidth]),
   ) as Record<ColumnWidthKey, number>;
+}
+
+function getResetListColumnPaddingUpdates(): Record<
+  ColumnPaddingLeftKey | ColumnPaddingRightKey,
+  number
+> {
+  return Object.fromEntries([
+    ...COLUMN_PADDING_LEFT_KEYS.map((key) => [key, 0]),
+    ...COLUMN_PADDING_RIGHT_KEYS.map((key) => [key, 0]),
+  ]) as Record<ColumnPaddingLeftKey | ColumnPaddingRightKey, number>;
+}
+
+function getResetListColumnPaddingBottomUpdates(): Record<ColumnPaddingBottomKey, number> {
+  return Object.fromEntries(
+    COLUMN_PADDING_BOTTOM_KEYS.map((key) => [key, 0]),
+  ) as Record<ColumnPaddingBottomKey, number>;
 }
 
 function getStoreDColumnWidthWidths(
@@ -522,13 +647,16 @@ function getColumnLayoutUpdatesForOrderChange(
     const prevWidthKey = COLUMN_WIDTH_KEYS[prevSlotIndex];
     const prevPaddingLeftKey = COLUMN_PADDING_LEFT_KEYS[prevSlotIndex];
     const prevPaddingRightKey = COLUMN_PADDING_RIGHT_KEYS[prevSlotIndex];
+    const prevPaddingBottomKey = COLUMN_PADDING_BOTTOM_KEYS[prevSlotIndex];
     const widthKey = COLUMN_WIDTH_KEYS[index];
     const paddingLeftKey = COLUMN_PADDING_LEFT_KEYS[index];
     const paddingRightKey = COLUMN_PADDING_RIGHT_KEYS[index];
+    const paddingBottomKey = COLUMN_PADDING_BOTTOM_KEYS[index];
 
     const prevWidth = prevSettings[prevWidthKey];
     const prevPaddingLeft = prevSettings[prevPaddingLeftKey];
     const prevPaddingRight = prevSettings[prevPaddingRightKey];
+    const prevPaddingBottom = prevSettings[prevPaddingBottomKey];
 
     if (typeof prevWidth === 'number') {
       updates[widthKey] = prevWidth;
@@ -540,6 +668,10 @@ function getColumnLayoutUpdatesForOrderChange(
 
     if (typeof prevPaddingRight === 'number') {
       updates[paddingRightKey] = prevPaddingRight;
+    }
+
+    if (typeof prevPaddingBottom === 'number') {
+      updates[paddingBottomKey] = prevPaddingBottom;
     }
   }
 
@@ -554,6 +686,8 @@ export function applyListSettingsChange(
   const prevColumns = prevSettings.columns;
   const nextContentWidth = getListEffectiveContentWidth(nextSettings);
   const prevContentWidth = getListEffectiveContentWidth(prevSettings);
+  const isVerticalLayout = nextSettings.type === 'B'
+    || (nextSettings.type === undefined && prevSettings.type === 'B');
   const columns =
     typeof nextColumns === 'number'
       ? nextColumns
@@ -564,6 +698,10 @@ export function applyListSettingsChange(
   const withColumnPaddingUpdates = (
     settings: Record<string, unknown>,
   ): Record<string, unknown> => {
+    if (isVerticalLayout) {
+      return settings;
+    }
+
     const storedWidths = getStoreDColumnWidthWidths({ ...prevSettings, ...settings });
     const contentWidth = getListEffectiveContentWidth(settings);
     const effectiveWidths = getEffectiveListColumnWidths(columns, contentWidth, storedWidths);
@@ -583,10 +721,23 @@ export function applyListSettingsChange(
   };
 
   if (typeof nextColumns === 'number' && nextColumns !== prevColumns) {
-    return withColumnPaddingUpdates({
+    const updates: Record<string, unknown> = {
       ...nextSettings,
       ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
-    });
+      ...getResetListColumnPaddingUpdates(),
+    };
+
+    if (isVerticalLayout) {
+      for (const key of COLUMN_PADDING_BOTTOM_KEYS) {
+        if (typeof prevSettings[key] === 'number') {
+          updates[key] = prevSettings[key];
+        }
+      }
+    } else {
+      Object.assign(updates, getResetListColumnPaddingBottomUpdates());
+    }
+
+    return updates;
   }
 
   const nextOrder = getColumnsOrder(nextSettings);
@@ -600,7 +751,7 @@ export function applyListSettingsChange(
   }
 
   if (nextContentWidth < prevContentWidth) {
-    if (typeof columns === 'number') {
+    if (typeof columns === 'number' && !isVerticalLayout) {
       const storedWidths = getStoreDColumnWidthWidths({ ...prevSettings, ...nextSettings });
 
       return withColumnPaddingUpdates({
@@ -608,6 +759,10 @@ export function applyListSettingsChange(
         ...getListColumnWidthUpdatesForWrapperWidth(columns, nextContentWidth, storedWidths),
       });
     }
+  }
+
+  if (isVerticalLayout) {
+    return nextSettings;
   }
 
   const storedWidths = getStoreDColumnWidthWidths({ ...prevSettings, ...nextSettings });
@@ -706,10 +861,12 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
   const showControls = Boolean(isEditor && isPreviewMode);
   const {
     columns,
+    type,
     wrapperWidth,
     entriesCount,
     cellMinHeight,
     dividerWidth,
+    showVisibility,
     cut,
     showCut,
     cutCellMinHeight,
@@ -719,21 +876,27 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     entryHoverEffect,
     rowPaddingTop,
     rowPaddingBottom,
+    rowPaddingTopB,
     AColumnWidth,
     AColumnPaddingLeft,
     AColumnPaddingRight,
+    AColumnPaddingBottom,
     BColumnWidth,
     BColumnPaddingLeft,
     BColumnPaddingRight,
+    BColumnPaddingBottom,
     CColumnWidth,
     CColumnPaddingLeft,
     CColumnPaddingRight,
+    CColumnPaddingBottom,
     DColumnWidth,
     DColumnPaddingLeft,
     DColumnPaddingRight,
+    DColumnPaddingBottom,
     EColumnWidth,
     EColumnPaddingLeft,
     EColumnPaddingRight,
+    EColumnPaddingBottom,
     columnsOrder,
     textColor,
     textFontFamily,
@@ -754,6 +917,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
   const [hoverImage, setHoverImage] = useState<HoverImageState | null>(null);
   const showHoverImage = imageOnHover === 'On';
   const cutEnabled = (cut ?? 0) > 0;
+  const isVerticalLayout = type === 'B';
 
   useEffect(() => {
     setVisibleRowCount(undefined);
@@ -798,13 +962,27 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
         ? `${P}-entry-hover-blinds`
         : '';
   const wrapperStateClasses = `${entryHoverClass} ${stateClass}`.trim();
+  const showDividerTop = showVisibility?.[0] ?? false;
+  const showDividerBottom = showVisibility?.[1] ?? false;
+  const dividerClassNames = [
+    showDividerTop ? `${P}-divider-top` : '',
+    showDividerBottom ? `${P}-divider-bottom` : '',
+  ].filter(Boolean).join(' ');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const prevSettingsRef = useRef(settings);
+  const prevLayoutIdRef = useRef(layoutId);
 
   useEffect(() => {
     if (!onUpdateSettings || !isEditor) {
       prevSettingsRef.current = settings;
+      prevLayoutIdRef.current = layoutId;
+      return;
+    }
+
+    if (layoutId !== prevLayoutIdRef.current) {
+      prevSettingsRef.current = settings;
+      prevLayoutIdRef.current = layoutId;
       return;
     }
 
@@ -821,7 +999,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     }
 
     onUpdateSettings(updatedSettings);
-  }, [settings, onUpdateSettings, isEditor]);
+  }, [settings, onUpdateSettings, isEditor, layoutId]);
 
   const columnWidthByKey: Record<ColumnWidthKey, number> = {
     AColumnWidth: AColumnWidth ?? DEFAULT_COLUMN_WIDTHS.AColumnWidth,
@@ -847,6 +1025,14 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
     EColumnPaddingRight: EColumnPaddingRight ?? 0,
   };
 
+  const columnPaddingBottomByKey: Record<ColumnPaddingBottomKey, number> = {
+    AColumnPaddingBottom: AColumnPaddingBottom ?? 0,
+    BColumnPaddingBottom: BColumnPaddingBottom ?? 0,
+    CColumnPaddingBottom: CColumnPaddingBottom ?? 0,
+    DColumnPaddingBottom: DColumnPaddingBottom ?? 0,
+    EColumnPaddingBottom: EColumnPaddingBottom ?? 0,
+  };
+
   const resolveDColumnWidthsOrder = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
       return columnsOrder as typeof COLUMN_CONTENT_KEYS[number][];
@@ -859,14 +1045,17 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
       resolveDColumnWidthsOrder.slice(0, columns).map((key, index) => {
         const paddingLeftKey = COLUMN_PADDING_LEFT_KEYS[index];
         const paddingRightKey = COLUMN_PADDING_RIGHT_KEYS[index];
+        const paddingBottomKey = COLUMN_PADDING_BOTTOM_KEYS[index];
         return {
           key,
           widthKey: COLUMN_WIDTH_KEYS[index],
           width: columnWidthByKey[COLUMN_WIDTH_KEYS[index]],
           paddingLeftKey,
           paddingRightKey,
+          paddingBottomKey,
           paddingLeft: columnPaddingLeftByKey[paddingLeftKey],
           paddingRight: columnPaddingRightByKey[paddingRightKey],
+          paddingBottom: columnPaddingBottomByKey[paddingBottomKey],
         };
       }),
     [
@@ -879,14 +1068,19 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
       EColumnWidth,
       AColumnPaddingLeft,
       AColumnPaddingRight,
+      AColumnPaddingBottom,
       BColumnPaddingLeft,
       BColumnPaddingRight,
+      BColumnPaddingBottom,
       CColumnPaddingLeft,
       CColumnPaddingRight,
+      CColumnPaddingBottom,
       DColumnPaddingLeft,
       DColumnPaddingRight,
+      DColumnPaddingBottom,
       EColumnPaddingLeft,
       EColumnPaddingRight,
+      EColumnPaddingBottom,
     ]
   );
 
@@ -976,8 +1170,12 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
   };
 
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
-  const resolvedRowPaddingTop = rowPaddingTop ?? 0;
+  const resolvedRowPaddingTop = isVerticalLayout
+    ? (rowPaddingTopB ?? 0)
+    : (rowPaddingTop ?? 0);
   const resolvedRowPaddingBottom = rowPaddingBottom ?? 0;
+  const resolvedCellMinHeight = cellMinHeight ?? 0;
+  const rowPaddingTopControlKey = isVerticalLayout ? 'rowPaddingTopB' : 'rowPaddingTop';
   const firstColumn = listColumns[0];
   const lastColumn = listColumns[listColumns.length - 1];
   const firstColumnEffectivePadding = effectiveColumnPaddings[0];
@@ -1023,7 +1221,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${wrapperStateClasses}`.trim()}
+          className={`${P}-wrapper ${wrapperStateClasses}${dividerClassNames ? ` ${dividerClassNames}` : ''}${isVerticalLayout ? ` ${P}-type-b` : ''}`.trim()}
           style={{
             width: scalingValue(wrapperWidth ?? 0, isEditor),
           }}
@@ -1033,10 +1231,13 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
             {visibleRows.map((row, rowIdx) => {
               const hasLink = (row.link?.length ?? 0) > 0;
               const RowElement = hasLink ? 'a' : 'div';
-              const rowStyle = {
-                borderBottomWidth: scalingValue(dividerWidth ?? 0, isEditor),
-                ...(rowIdx === 0 ? { borderTopWidth: scalingValue(dividerWidth ?? 0, isEditor) } : {}),
-              };
+              const rowStyle = getEntryDividerWidths(
+                rowIdx,
+                showDividerTop,
+                showDividerBottom,
+                dividerWidth ?? 0,
+                isEditor ?? false,
+              );
 
               return (
               <RowElement
@@ -1049,7 +1250,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                 {(resolvedRowPaddingTop > 0 || showControls) && (
                   <div
                     {...(showControls ? {
-                      'data-controls': 'rowPaddingTop',
+                      'data-controls': rowPaddingTopControlKey,
                       'data-controls-axis': 'y',
                       'data-controls-min': '0',
                     } : {})}
@@ -1057,33 +1258,61 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                     style={{ height: scaled(resolvedRowPaddingTop) }}
                   />
                 )}
-                <div className={`${P}-list-cols-row`} style={{ minHeight: scaled(cellMinHeight ?? 0) }}>
+                <div
+                  className={`${P}-list-cols-row`}
+                  style={isVerticalLayout ? undefined : { minHeight: scaled(resolvedCellMinHeight) }}
+                >
                   {listColumns.map((col, colIndex) => {
                     const isLastColumn = colIndex === listColumns.length - 1;
-                    const columnWidth = effectiveColumnWidths[colIndex];
                     const effectivePadding = effectiveColumnPaddings[colIndex];
+                    const columnPaddingBottom = col.paddingBottom;
+                    const hasColumnText = hasListColumnText(row.cells[col.key]);
+                    const showColumnPaddingBottom = isVerticalLayout
+                      && hasColumnText
+                      && (columnPaddingBottom > 0 || showControls);
+                    const columnSizeStyle = isVerticalLayout
+                      ? { minHeight: scaled(resolvedCellMinHeight) }
+                      : (isLastColumn ? {} : { width: scaled(effectiveColumnWidths[colIndex]) });
+                    const columnPaddingStyle = isVerticalLayout
+                      ? {}
+                      : {
+                        paddingLeft: scaled(effectivePadding.paddingLeft),
+                        paddingRight: scaled(effectivePadding.paddingRight),
+                      };
+
                     return (
-                      <div
-                        key={col.key}
-                        className={`${P}-list-col${isLastColumn ? ` ${P}-list-col-last` : ''}`}
-                        style={{
-                          paddingLeft: scaled(effectivePadding.paddingLeft),
-                          paddingRight: scaled(effectivePadding.paddingRight),
-                          ...(isLastColumn ? {} : { width: scaled(columnWidth) }),
-                        }}
-                        data-test={col.width}
-                      >
-                        <span
-                          className={`${P}-list-col-title`}
-                          style={textFieldCss}
+                      <div key={col.key}>
+                        <div
+                          className={`${P}-list-col${isLastColumn ? ` ${P}-list-col-last` : ''}`}
+                          style={{
+                            ...columnPaddingStyle,
+                            ...columnSizeStyle,
+                          }}
+                          data-test={col.width}
                         >
-                          {row.cells[col.key] ?? null}
-                        </span>
+                          <span
+                            className={`${P}-list-col-title`}
+                            style={textFieldCss}
+                          >
+                            {row.cells[col.key] ?? null}
+                          </span>
+                        </div>
+                        {showColumnPaddingBottom && (
+                          <div
+                            {...(showControls ? {
+                              'data-controls': col.paddingBottomKey,
+                              'data-controls-axis': 'y',
+                              'data-controls-min': '0',
+                            } : {})}
+                            className={`${P}-row-padding-handle`}
+                            style={{ height: scaled(columnPaddingBottom) }}
+                          />
+                        )}
                       </div>
                     );
                   })}
                 </div>
-                {(resolvedRowPaddingBottom > 0 || showControls) && (
+                {!isVerticalLayout && (resolvedRowPaddingBottom > 0 || showControls) && (
                   <div
                     {...(showControls ? {
                       'data-controls': 'rowPaddingBottom',
@@ -1102,7 +1331,12 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                 className={`${P}-cut-item`}
                 style={{
                   minHeight: scaled(cutCellMinHeight ?? 0),
-                  borderBottomWidth: scalingValue(dividerWidth ?? 0, isEditor),
+                  ...getCutItemDividerWidths(
+                    showDividerTop,
+                    showDividerBottom,
+                    dividerWidth ?? 0,
+                    isEditor ?? false,
+                  ),
                 }}
               >
                 <div
@@ -1121,7 +1355,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               </div>
             )}
           </div>
-          {showControls && firstColumn && lastColumn && (
+          {showControls && !isVerticalLayout && firstColumn && lastColumn && (
             <div key="column-edge-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
               <div
                 data-controls={firstColumn.paddingLeftKey}
@@ -1165,7 +1399,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               />
             </div>
           )}
-          {showControls && listColumns.slice(0, -1).map((col, colIndex) => {
+          {showControls && !isVerticalLayout && listColumns.slice(0, -1).map((col, colIndex) => {
             const nextCol = listColumns[colIndex + 1];
             const maxColumnWidth = getColumnMaxWidth(
               colIndex,
@@ -1173,7 +1407,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               storeDColumnWidthWidths,
               resolvedContentWidth,
             );
-            const boundaryLeft = resolveDColumnWidthWidths.slice(0, colIndex + 1).reduce((sum, width) => sum + width, 0);
+            const boundaryOffset = resolveDColumnWidthWidths.slice(0, colIndex + 1).reduce((sum, width) => sum + width, 0);
             const colEffectivePadding = effectiveColumnPaddings[colIndex];
             const nextColEffectivePadding = effectiveColumnPaddings[colIndex + 1];
             const paddingRightWidth = Math.max(
@@ -1184,7 +1418,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
               nextColEffectivePadding.paddingLeft,
               COL_PADDING_HANDLE_WIDTH,
             );
-            const columnWidthHandleLeft = boundaryLeft - COL_RESIZE_HANDLE_WIDTH / 2;
+            const columnWidthHandleOffset = boundaryOffset - COL_RESIZE_HANDLE_WIDTH / 2;
 
             return (
               <div key={`${col.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
@@ -1201,7 +1435,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                   style={{
                     position: 'absolute',
                     top: 0,
-                    left: scaled(boundaryLeft - paddingRightWidth),
+                    left: scaled(boundaryOffset - paddingRightWidth),
                     width: scaled(paddingRightWidth),
                     height: '100%',
                     pointerEvents: 'auto',
@@ -1218,7 +1452,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                   style={{
                     position: 'absolute',
                     top: '0px',
-                    left: scaled(columnWidthHandleLeft),
+                    left: scaled(columnWidthHandleOffset),
                     width: scaled(COL_RESIZE_HANDLE_WIDTH),
                     height: 'calc(100%)',
                     pointerEvents: 'auto',
@@ -1237,7 +1471,7 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
                   style={{
                     position: 'absolute',
                     top: 0,
-                    left: scaled(boundaryLeft),
+                    left: scaled(boundaryOffset),
                     width: scaled(paddingLeftWidth),
                     height: '100%',
                     pointerEvents: 'auto',
@@ -1266,12 +1500,14 @@ export function List({ settings, content, isEditor, isPreviewMode, metadata, act
 
 type ListSettings = {
   columns: number;
+  type: 'A' | 'B';
   wrapperWidth: number;
   entriesCount: number;
   cellMinHeight: number;
   imageOnHover: 'On' | 'Off';
   imageSize?: { min: number; max: number };
   dividerWidth: number;
+  showVisibility: boolean[];
   cut: number;
   showCut: number;
   cutCellMinHeight: number;
@@ -1279,21 +1515,27 @@ type ListSettings = {
   entryHoverEffect: 'None' | 'Default' | 'Blinds';
   rowPaddingTop: number;
   rowPaddingBottom: number;
+  rowPaddingTopB: number;
   AColumnWidth: number;
   AColumnPaddingLeft: number;
   AColumnPaddingRight: number;
+  AColumnPaddingBottom: number;
   BColumnWidth: number;
   BColumnPaddingLeft: number;
   BColumnPaddingRight: number;
+  BColumnPaddingBottom: number;
   CColumnWidth: number;
   CColumnPaddingLeft: number;
   CColumnPaddingRight: number;
+  CColumnPaddingBottom: number;
   DColumnWidth: number;
   DColumnPaddingLeft: number;
   DColumnPaddingRight: number;
+  DColumnPaddingBottom: number;
   EColumnWidth: number;
   EColumnPaddingLeft: number;
   EColumnPaddingRight: number;
+  EColumnPaddingBottom: number;
   columnsOrder?: string[];
   textColor: string;
   textFontFamily: string;
