@@ -46,7 +46,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Pause on hover',
         type: 'string',
         scope: 'common',
-        display: { type: 'switch-toggle-2', enum: ['on', 'off'] },
+        display: { type: 'toggle', enum: ['on', 'off'] },
       },
       gap: {
         type: 'number',
@@ -58,7 +58,7 @@ const schema: ComponentSchemaV1 = {
       },
       align: {
         type: 'string',
-        title: 'Align',
+        title: 'Alignment',
         display: {
           type: 'align-group',
           direction: 'horizontal',
@@ -71,7 +71,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 400,
-        display: { type: 'range-control'  },
+        display: { type: 'numeric-input'  },
       },
       corners: {
         type: 'number',
@@ -79,7 +79,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Corners',
         min: 0,
         max: 100,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       stroke: {
         type: 'number',
@@ -87,7 +87,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Stroke',
         min: 0,
         max: 10,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       strokeColor: {
         type: 'string',
@@ -121,7 +121,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 200,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       logoHeight: {
         type: 'number',
@@ -129,7 +129,7 @@ const schema: ComponentSchemaV1 = {
         title: 'height',
         min: 0,
         max: 200,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       textColor: {
         type: 'string',
@@ -337,9 +337,9 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         {type: 'row', items: ['__componentName__', 'autoplay']},   
-        {type: 'row', items: ['speed', 'pauseOnHover']},
         {type: 'row', items: ['align', 'direction']},
-        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding']}]},
+        {type: 'row', items: ['speed', 'pauseOnHover']},
+        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'corners']}, {type: 'group', title: '', items: ['stroke', 'padding']}]},
         {type: 'row', title: 'Image Container', items: ['logoWidth', 'logoHeight']},
       ],
     },

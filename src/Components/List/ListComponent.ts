@@ -1,0 +1,790 @@
+import {
+  COLUMN_CONTENT_KEYS,
+  COLUMN_TEXT_PREFIXES,
+  getListColumnTextSettingKey,
+  List,
+  type ListGlobalTextStyleKey,
+} from './List';
+import { ComponentSchemaV1 } from '../../types/SchemaV1';
+import formSourceRaw from './List.tsx?raw';
+
+type GridSchema = ComponentSchemaV1 & {
+  properties: {
+    content: {
+      type: 'array';
+      settings?: { addItemFromFileExplorer?: boolean };
+      items: any;
+      default: any[];
+    };
+  };
+};
+
+const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
+
+const COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY = {
+  FontFamily: 'textFontFamily',
+  FontSettings: 'textFontSettings',
+  FontSize: 'textFontSize',
+  LineHeight: 'textLineHeight',
+  LetterSpacing: 'textLetterSpacing',
+  WordSpacing: 'textWordSpacing',
+  TextAppearance: 'textTextAppearance',
+} as const satisfies Record<string, ListGlobalTextStyleKey>;
+
+type ColumnTextSettingSuffix = keyof typeof COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY;
+
+function getColumnTextSettingKey(
+  prefix: typeof COLUMN_TEXT_PREFIXES[number],
+  suffix: ColumnTextSettingSuffix,
+): string {
+  return getListColumnTextSettingKey(prefix, COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY[suffix]);
+}
+
+const textStyleProperties = {
+  fontSettings: {
+    type: 'object' as const,
+    display: { type: 'font-settings-weight' },
+    properties: {
+      fontWeight: { type: 'number' as const },
+      fontStyle: { type: 'string' as const },
+    },
+  },
+  fontSize: {
+    type: 'number' as const,
+    display: { type: 'font-size' },
+  },
+  lineHeight: {
+    type: 'number' as const,
+    display: { type: 'line-height-input' },
+  },
+  letterSpacing: {
+    type: 'number' as const,
+    display: { type: 'letter-spacing-input' },
+  },
+  wordSpacing: {
+    type: 'number' as const,
+    display: { type: 'word-spacing-input' },
+  },
+  textAppearance: {
+    type: 'object' as const,
+    display: { type: 'text-appearance' },
+    properties: {
+      textTransform: { type: 'string' as const, enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
+      textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
+      fontVariant: { type: 'string' as const, enum: ['normal', 'small-caps'] },
+    },
+  },
+};
+
+function createTextInputContentProperty(label: string) {
+  return {
+    type: 'string' as const,
+    label,
+    placeholder: 'Add Title...',
+    display: { type: 'text-input' as const },
+  };
+}
+
+function createRangeControlLayoutProperty(title: string) {
+  return {
+    type: 'number' as const,
+    scope: 'layout' as const,
+    title,
+    min: 0,
+    max: 100,
+    display: { type: 'range-control' as const },
+  };
+}
+
+function createContentColumnProperties(): Record<string, unknown> {
+  return Object.fromEntries(
+    LIST_COLUMN_LETTERS.map((letter, index) => {
+      const key = COLUMN_CONTENT_KEYS[index];
+      const label = `${letter} column`;
+      return [key, createTextInputContentProperty(label)];
+    }),
+  );
+}
+
+function createColumnLayoutSchemaProperties(): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+
+  for (const letter of LIST_COLUMN_LETTERS) {
+    properties[`${letter}ColumnWidth`] = createRangeControlLayoutProperty(`${letter} column width`);
+    properties[`${letter}ColumnPaddingLeft`] = createRangeControlLayoutProperty(`${letter} column padding left`);
+    properties[`${letter}ColumnPaddingRight`] = createRangeControlLayoutProperty(`${letter} column padding right`);
+    properties[`${letter}ColumnPaddingBottom`] = createRangeControlLayoutProperty(`${letter} column padding bottom`);
+  }
+
+  return properties;
+}
+
+function createColumnLayoutDefaults(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const defaults: Record<string, unknown> = {
+    columns: 5,
+    wrapperWidth: 1,
+    columnsOrder: [...COLUMN_CONTENT_KEYS],
+  };
+
+  for (const letter of LIST_COLUMN_LETTERS) {
+    defaults[`${letter}ColumnWidth`] = 0.2;
+    defaults[`${letter}ColumnPaddingLeft`] = 0;
+    defaults[`${letter}ColumnPaddingRight`] = 0;
+    defaults[`${letter}ColumnPaddingBottom`] = 0;
+  }
+
+  return { ...defaults, ...overrides };
+}
+
+function createColumnTextStyleProperties(
+  prefix: typeof COLUMN_TEXT_PREFIXES[number],
+): Record<string, unknown> {
+  return {
+    [getColumnTextSettingKey(prefix, 'FontFamily')]: {
+      type: 'string',
+      scope: 'common',
+      title: 'Font family',
+      display: { type: 'font-family-select' },
+    },
+    [getColumnTextSettingKey(prefix, 'FontSettings')]: {
+      ...textStyleProperties.fontSettings,
+      scope: 'common',
+      title: '',
+      display: { type: 'font-settings-weight' },
+    },
+    [getColumnTextSettingKey(prefix, 'FontSize')]: {
+      ...textStyleProperties.fontSize,
+      scope: 'layout',
+      title: 'Font Size',
+      display: { type: 'font-size' },
+    },
+    [getColumnTextSettingKey(prefix, 'LineHeight')]: {
+      ...textStyleProperties.lineHeight,
+      scope: 'layout',
+      title: 'Line Height',
+      display: { type: 'line-height-input' },
+    },
+    [getColumnTextSettingKey(prefix, 'LetterSpacing')]: {
+      ...textStyleProperties.letterSpacing,
+      scope: 'layout',
+      title: 'Letter Spacing',
+      display: { type: 'letter-spacing-input' },
+    },
+    [getColumnTextSettingKey(prefix, 'WordSpacing')]: {
+      ...textStyleProperties.wordSpacing,
+      scope: 'layout',
+      title: 'Word Spacing',
+      display: { type: 'word-spacing-input' },
+    },
+    [getColumnTextSettingKey(prefix, 'TextAppearance')]: {
+      ...textStyleProperties.textAppearance,
+      scope: 'layout',
+      title: 'Text Appearance',
+      display: { type: 'text-appearance' },
+    },
+  };
+}
+
+const columnTextStyleProperties = COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>(
+  (properties, prefix) => ({
+    ...properties,
+    ...createColumnTextStyleProperties(prefix),
+  }),
+  {},
+);
+
+const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>(
+  (defaults, prefix) => ({
+    ...defaults,
+    [getColumnTextSettingKey(prefix, 'FontFamily')]: 'Arial',
+    [getColumnTextSettingKey(prefix, 'FontSettings')]: {
+      fontWeight: 400,
+      fontStyle: 'normal',
+    },
+    [getColumnTextSettingKey(prefix, 'LetterSpacing')]: 0,
+    [getColumnTextSettingKey(prefix, 'WordSpacing')]: 0,
+    [getColumnTextSettingKey(prefix, 'TextAppearance')]: {
+      textTransform: 'none',
+      textDecoration: 'none',
+      fontVariant: 'normal',
+    },
+  }),
+  {},
+);
+
+function createColumnTextLayoutDefaults(
+  layoutDefaults: Record<string, unknown>,
+): Record<string, unknown> {
+  const { textFontSize, textLineHeight } = layoutDefaults;
+  return COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>((defaults, prefix) => {
+    if (textFontSize !== undefined) {
+      defaults[getColumnTextSettingKey(prefix, 'FontSize')] = textFontSize;
+    }
+    if (textLineHeight !== undefined) {
+      defaults[getColumnTextSettingKey(prefix, 'LineHeight')] = textLineHeight;
+    }
+    return defaults;
+  }, {});
+}
+
+const COLUMN_TEXT_LABELS = LIST_COLUMN_LETTERS.map((letter) => `${letter} column`);
+
+const columnTextStylePanelGroups = COLUMN_TEXT_PREFIXES.map((prefix, index) => ({
+  type: 'group' as const,
+  title: COLUMN_TEXT_LABELS[index],
+  items: [
+    getColumnTextSettingKey(prefix, 'FontFamily'),
+    getColumnTextSettingKey(prefix, 'FontSettings'),
+    {
+      type: 'row' as const,
+      items: [
+        getColumnTextSettingKey(prefix, 'FontSize'),
+        getColumnTextSettingKey(prefix, 'LineHeight'),
+        getColumnTextSettingKey(prefix, 'LetterSpacing'),
+        getColumnTextSettingKey(prefix, 'WordSpacing'),
+      ],
+    },
+    getColumnTextSettingKey(prefix, 'TextAppearance'),
+  ],
+}));
+
+const paletteBookmarkItems = [
+  'textColor',
+  'backgroundColor',
+  'dividerColor',
+  'textHoverColor',
+  'backgroundHoverColor',
+  'dividerHoverColor',
+] as const;
+
+const CUT_DEPENDENT_PROPERTY_NAMES = ['cutLabel', 'cutCellMinHeight', 'showCut'] as const;
+
+const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
+  ...LIST_COLUMN_LETTERS.flatMap((letter) => [
+    `${letter}ColumnWidth`,
+    `${letter}ColumnPaddingLeft`,
+    `${letter}ColumnPaddingRight`,
+  ]),
+  'rowPaddingTop',
+  'rowPaddingBottom',
+] as const;
+
+function createHiddenWhenDisplayRules(
+  conditionSetting: string,
+  conditionValue: string | number,
+  propertyNames: readonly string[],
+) {
+  return propertyNames.map((name) => ({
+    if: { name: conditionSetting, value: conditionValue },
+    then: { name: `properties.${name}.display.visible`, value: false },
+  }));
+}
+
+function createDefaultContentItem(
+  labelSuffix: string,
+  image: { objectFit: 'cover'; url: string; name: string },
+) {
+  const suffix = labelSuffix ? ` ${labelSuffix}` : '';
+  return {
+    AColumn: `AColumn${suffix}`,
+    BColumnWidth: `BColumnWidth${suffix}`,
+    CColumnWidth: `CColumnWidth${suffix}`,
+    DColumnWidth: `DColumnWidth${suffix}`,
+    EColumnWidth: `EColumnWidth${suffix}`,
+    image,
+    link: '',
+  };
+}
+
+const DEFAULT_CONTENT_ITEMS = [
+  createDefaultContentItem('', {
+    objectFit: 'cover',
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png',
+    name: 'Slider-1.png',
+  }),
+  createDefaultContentItem('2', {
+    objectFit: 'cover',
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png',
+    name: 'Slider-2.png',
+  }),
+  createDefaultContentItem('3', {
+    objectFit: 'cover',
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png',
+    name: 'Slider-3.png',
+  }),
+];
+
+const COLUMN_LAYOUT_PANEL_ITEMS = [
+  ...LIST_COLUMN_LETTERS.flatMap((letter) => [
+    `${letter}ColumnWidth`,
+    `${letter}ColumnPaddingLeft`,
+    `${letter}ColumnPaddingRight`,
+    `${letter}ColumnPaddingBottom`,
+  ]),
+  'columnsOrder',
+] as const;
+
+const schema: GridSchema = {
+  type: 'object',
+  version: 1,
+  properties: {
+    content: {
+      type: 'array',
+      settings: {
+        addItemFromFileExplorer: true,
+      },
+      items: {
+        type: 'object',
+        properties: {
+          ...createContentColumnProperties(),
+          image: {
+            type: 'object',
+            label: 'Image',
+            display: {
+              isObjectFitEditable: false,
+              type: 'media-input',
+            },
+            properties: {
+              url: { type: 'string' },
+              name: { type: 'string' },
+              objectFit: { type: 'string', enum: ['cover', 'contain'] },
+            },
+            required: ['url', 'name'],
+          },
+          link: {
+            type: 'string',
+            label: 'Link',
+            placeholder: 'Add link...',
+            display: { type: 'text-input' },
+          },
+        },
+        required: ['image'],
+      },
+      default: DEFAULT_CONTENT_ITEMS,
+    },
+  },
+  settings: {
+    sizing: 'auto auto',
+    properties: {
+      type: {
+        type: 'string',
+        scope: 'layout',
+        title: '',
+        display: { type: 'radio-group' },
+        enum: ['A', 'B'],
+      },
+      columns: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Columns',
+        display: { type: 'count-number' },
+        min: 1,
+        max: 5,
+      },
+      wrapperWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Width',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      textPaddingLR: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Padding LR',
+        min: 0,
+        max: 9999,
+        display: { type: 'range-control' },
+      },
+      entriesCount: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Entries #',
+        display: { type: 'toggle-numeric-input', enum: ['Auto', 'Fixed'] },
+        min: 1,
+      },
+      cellMinHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Cell min height',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      imageOnHover: {
+        type: 'boolean',
+        scope: 'common',
+        title: 'Image On Hover',
+        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+      },
+      imageSize: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Image size',
+        display: { type: 'min-max-input' },
+        min: 1,
+        max: 1440,
+        properties: {
+          min: { type: 'number' },
+          max: { type: 'number' },
+        },
+      },
+      dividerWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Divider width',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      showVisibility: {
+        type: 'array',
+        scope: 'common',
+        title: 'Show',
+        display: { type: 'double-toggle', enum: ['Top', 'Bottom'] },
+        items: { type: 'boolean' },
+        default: [true, false],
+      },
+      cut: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Cut',
+        display: { type: 'toggle-numeric-input', enum: ['Off', 'On'] },
+        min: 1,
+      },
+      entryHoverEffect: {
+        type: 'string',
+        scope: 'common',
+        title: 'Entry Hover Effect',
+        display: { type: 'toggle-cycle', enum: ['None', 'Default', 'Blinds'] },
+      },
+      cutCellMinHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Cell min height',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      cutLabel: {
+        type: 'string',
+        scope: 'common',
+        title: 'Cut Label',
+        display: { type: 'label-input' },
+      },
+      showCut: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Show',
+        display: { type: 'toggle-numeric-input', enum: ['All', 'Custom'] },
+        min: 1,
+      },
+      rowPaddingTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Row Padding Top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      rowPaddingBottom: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Row Padding Bottom',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      rowPaddingTopB: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Row Padding Top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
+      },
+      ...createColumnLayoutSchemaProperties(),
+      columnsOrder: {
+        type: 'array',
+        scope: 'layout',
+        title: 'Columns Order',
+        display: { type: 'reorder-input' },
+        items: { type: 'string' },
+      },
+      textColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Text Default',
+        display: { type: 'palette-color-picker' },
+      },
+      textHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Text Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      textFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      textFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+      },
+      textFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Font Size',
+        display: { type: 'font-size' },
+      },
+      textLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Line Height',
+        display: { type: 'line-height-input' },
+      },
+      textLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      textWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      textTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Input Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      ...columnTextStyleProperties,
+      backgroundColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'BG Default',
+        display: { type: 'palette-color-picker' },
+      },
+      dividerColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Divider Default',
+        display: { type: 'palette-color-picker' },
+      },
+      backgroundHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'BG Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      dividerHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Divider Hover',
+        display: { type: 'palette-color-picker' },
+      },
+    },
+    defaults: {
+      imageOnHover: 'Off',
+      entryHoverEffect: 'None',
+      cutLabel: 'SEE ALL',
+      showVisibility: [true, true],
+      textColor: '#767676',
+      textHoverColor: '#767676',
+      textFontFamily: 'Arial',
+      textFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      textLetterSpacing: 0,
+      textWordSpacing: 0,
+      textTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      ...columnTextStyleDefaults,
+      backgroundColor: '#FFFFFF00',
+      dividerColor: '#767676',
+      backgroundHoverColor: '#FFFFFF00',
+      dividerHoverColor: '#767676',
+    },
+    layoutDefaults: {
+      m: createColumnLayoutDefaults({
+        type: 'B',
+        textPaddingLR: 0.0373,
+        entriesCount: 0,
+        cellMinHeight: 0.02,
+        imageSize: { min: 80, max: 320 },
+        dividerWidth: 0.002,
+        cut: 0,
+        showCut: 0,
+        cutCellMinHeight: 0.043,
+        rowPaddingTop: 0.01,
+        rowPaddingBottom: 0.01,
+        rowPaddingTopB: 0.01,
+        textStroke: 0.003,
+        textCorners: 0.192,
+        textPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
+        textFontSize: 0.043,
+        textLineHeight: 0.043,
+        ...createColumnTextLayoutDefaults({
+          textFontSize: 0.043,
+          textLineHeight: 0.043,
+        }),
+      }),
+      d: createColumnLayoutDefaults({
+        type: 'A',
+        textPaddingLR: 0.01,
+        entriesCount: 0,
+        cellMinHeight: 0.03,
+        imageSize: { min: 80, max: 320 },
+        dividerWidth: 0.0006,
+        cut: 0,
+        showCut: 0,
+        cutCellMinHeight: 0.03,
+        rowPaddingTop: 0.01,
+        rowPaddingBottom: 0.01,
+        rowPaddingTopB: 0.01,
+        textStroke: 0.001,
+        textCorners: 0.05,
+        textPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+        textFontSize: 0.01,
+        textLineHeight: 0.01,
+        ...createColumnTextLayoutDefaults({
+          textFontSize: 0.01,
+          textLineHeight: 0.01,
+        }),
+      }),
+    },
+    displayRules: [
+      ...createHiddenWhenDisplayRules('cut', 0, CUT_DEPENDENT_PROPERTY_NAMES),
+      ...createHiddenWhenDisplayRules('type', 'A', ['textPaddingLR']),
+      ...createHiddenWhenDisplayRules('type', 'B', HORIZONTAL_LAYOUT_PROPERTY_NAMES),
+      ...createHiddenWhenDisplayRules('type', 'A', ['rowPaddingTopB']),
+      ...createHiddenWhenDisplayRules(
+        'type',
+        'A',
+        LIST_COLUMN_LETTERS.map((letter) => `${letter}ColumnPaddingBottom`),
+      ),
+    ],
+    layout: [
+      '__componentName__',
+      'name',
+      'type',
+      'columns',
+      'wrapperWidth',
+      'textPaddingLR',
+      'entriesCount',
+      'cellMinHeight',
+      'imageOnHover',
+      'imageSize',
+      'dividerWidth',
+      'showVisibility',
+      'cut',
+      'showCut',
+      'cutCellMinHeight',
+      'entryHoverEffect',
+      'cutLabel',
+      'rowPaddingTop',
+      'rowPaddingBottom',
+      'rowPaddingTopB',
+      ...COLUMN_LAYOUT_PANEL_ITEMS,
+    ],
+  },
+  panels: [
+    {
+      id: 'general',
+      icon: 'cursor',
+      title: 'General',
+      tooltip: 'General Settings',
+      layout: [
+        { type: 'row', items: ['__componentName__', 'name'] },
+        'type',
+        { type: 'row', title: '', items: ['columns', 'wrapperWidth'] },
+        { type: 'row', title: '', items: ['entriesCount', 'cellMinHeight'] },
+        { type: 'row', title: '', items: ['imageOnHover', 'imageSize'] },
+        { type: 'row', title: '', items: ['entryHoverEffect'] },
+        { type: 'row', title: 'Divider Settings', items: ['dividerWidth', 'showVisibility'] },
+        { type: 'row', title: '', items: ['cut'] },
+        { type: 'row', title: 'Cut Settings', items: ['cutLabel', 'cutCellMinHeight'] },
+        { type: 'row', title: '', items: ['showCut'] },
+      ],
+    },
+    {
+      id: 'fields',
+      icon: 'layers',
+      title: 'Fields',
+      tooltip: 'Fields',
+      layout: ['columnsOrder'],
+    },
+    {
+      id: 'typeStyle',
+      icon: 'text-icon',
+      title: 'Type Style',
+      tooltip: 'Typography',
+      layout: [
+        {
+          type: 'group',
+          title: 'All text',
+          items: [
+            'textFontFamily',
+            'textFontSettings',
+            {
+              type: 'row',
+              items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'],
+            },
+            'textTextAppearance',
+          ],
+        },
+        ...columnTextStylePanelGroups,
+      ],
+    },
+  ],
+  paletteBookmark: {
+    items: [...paletteBookmarkItems],
+    panelIds: ['general', 'typeStyle'],
+    stateItems: {
+      default: [
+        'textColor',
+        'backgroundColor',
+        'dividerColor',
+        'textHoverColor',
+        'backgroundHoverColor',
+        'dividerHoverColor',
+      ],
+    },
+  },
+};
+
+export const ListComponent = {
+  element: List,
+  id: 'list',
+  name: 'Default List',
+  category: 'lists',
+  preview: {
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/formImg.png',
+  },
+  version: 1,
+  defaultSize: {
+    width: 720,
+    height: 540,
+  },
+  assetsPaths: {
+    content: [{ path: 'image.url', placeholderEnabled: true }],
+    parameters: [],
+  },
+  schema,
+  sourceCode: formSourceRaw,
+};

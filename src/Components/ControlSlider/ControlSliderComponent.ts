@@ -280,7 +280,8 @@ export const ControlSliderComponent: Component = {
                   type: 'setting-toggle',
                 }
               },
-              alignment: {                type: 'string',
+              alignment: {                
+                type: 'string',
                 display: {
                   type: 'align-grid'
                 },

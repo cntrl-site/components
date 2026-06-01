@@ -12,6 +12,7 @@ import { getColorAlpha } from '../utils/getColorAlpha';
 import { getAnimationClasses } from './getAnimationClasses';
 import { CommonComponentProps } from '../props';
 import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
+import { TextElementStyles } from '../../types/TextElementStyles';
 
 type LightboxProps = {
   isOpen: boolean;
@@ -912,30 +913,5 @@ type LightboxSettings = {
 };
 
 type LightboxStyles = {
-  imageCaption: CaptionStyles;
+  imageCaption: TextElementStyles;
 }
-
-type CaptionStyles = {
-  fontSettings: {
-    fontFamily: string;
-    fontWeight: number;
-    fontStyle: string;
-  },
-  widthSettings: {
-    width: number;
-    sizing: 'auto' | 'manual';
-  };
-  letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right';
-  wordSpacing: number;
-  fontSizeLineHeight: {
-    fontSize: number;
-    lineHeight: number;
-  };
-  textAppearance: {
-    textTransform: 'none' | 'uppercase' | 'lowercase';
-    textDecoration: 'none' | 'underline';
-    fontVariant: 'normal' | 'small-caps';
-  };
-  color: string;
-};

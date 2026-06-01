@@ -39,7 +39,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Delay(s)',
-        display: { type: 'step-control'},
+        display: { type: 'percentage-input'},
         step: 1,
         min: 1,
         max: 8,
@@ -47,7 +47,7 @@ const schema: ComponentSchemaV1 = {
       align: {
         type: 'string',
         scope: 'common',
-        title: 'Align',
+        title: 'Alignment',
         display: {
           type: 'align-group',
           direction: 'horizontal',
@@ -60,7 +60,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 1000,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       imageWidth: {
         type: 'number',
@@ -68,7 +68,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 300,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       imageHeight: {
         type: 'number',
@@ -76,7 +76,7 @@ const schema: ComponentSchemaV1 = {
         title: 'height',
         min: 0,
         max: 300,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       imageMarginTop: {
         type: 'number',
@@ -117,7 +117,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Controls width',
         min: 0,
         max: 100,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       controlsColor: {
         type: 'string',
@@ -315,8 +315,9 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'autoplay'] },
-        { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['delay', 'width']}] },
-        { type: 'row', items: ['controlsWidth', 'align'] },
+        { type: 'row', items: ['width', 'align'] },
+        { type: 'row', items: ['controls'] },
+        { type: 'row', items: ['controlsWidth', 'delay'] },
         { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
       ],
     },

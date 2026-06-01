@@ -134,20 +134,20 @@ const schema = {
       inputPadding: {
         type: 'object',
         scope: 'layout',
-        title: '',
+        title: 'Input Padding',
         display: { type: 'padding-controls' },
       },
       buttonPadding: {
         type: 'object',
         scope: 'layout',
-        title: '',
+        title: 'Button Padding',
         display: { type: 'padding-controls' },
       },
       minHeight: {
         type: 'number',
         scope: 'layout',
         title: 'min Height',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 200,
       },
@@ -155,7 +155,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 100,
       },
@@ -163,7 +163,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Stroke',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 20,
       },
@@ -468,19 +468,11 @@ const schema = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__', 'fieldsToShow'] },
-        {type: 'row', items: ['minHeight', 'corners']},
-        {type: 'row', items: [
-          {type: 'group', title: '', items: ['stroke', 'buttonIcon']},
-          {
-          type: 'switcher',
-          title: 'Padding',
-          options: {
-            'Input': ['inputPadding'],
-            'Button': ['buttonPadding'],
-          },
-        },
-      ]},
-      'iconMaxWidth'
+        {type: 'row', items: ['minHeight']},
+        {type: 'row', items: ['corners', 'stroke']},
+        {type: 'row', title: '', items: ['inputPadding', 'buttonPadding']},
+        {type: 'row', title: '', items: ['buttonIcon']},
+        'iconMaxWidth',
       ],
     },
     {

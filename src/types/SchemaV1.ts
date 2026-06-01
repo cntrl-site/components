@@ -6,7 +6,7 @@ export type SchemaDisplay = {
 };
 
 export type SchemaProperty = {
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'];
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'] | 'grid-layout';
   scope?: PropertyScope;
   title?: string;
   message?: string;
@@ -17,6 +17,7 @@ export type SchemaProperty = {
   properties?: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   items?: SchemaProperty;
+  gridParams?: SchemaProperty;
   default?: unknown;
   min?: number;
   max?: number;
