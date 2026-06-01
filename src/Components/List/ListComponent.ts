@@ -772,14 +772,17 @@ export const ListComponent = {
   id: 'list',
   name: 'Default List',
   category: 'lists',
+  layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/formImg.png',
   },
   version: 1,
   defaultSize: {
-    width: 720,
-    height: 540,
+    d: {
+      width: 720,
+      height: 540,
+    }
   },
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],

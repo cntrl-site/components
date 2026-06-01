@@ -7,6 +7,7 @@ export type Component = {
   name: string;
   category?: string;
   version?: number;
+  layoutMode?: 'freeform' | 'structured';
   defaultSize?: Record<string, { width?: number | string; height?: number | string }>;
   schema: any;
   preview?: {
