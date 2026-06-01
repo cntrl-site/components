@@ -1694,6 +1694,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
               <div
                 data-controls={firstColumn.paddingLeftKey}
                 data-controls-axis="x"
+                data-controls-variant="column-padding"
                 data-controls-min="0"
                 data-controls-max-fraction={String(
                   effectiveColumnWidths[0] - (firstColumnEffectivePadding?.paddingRight ?? 0),
@@ -1713,6 +1714,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
               <div
                 data-controls={lastColumn.paddingRightKey}
                 data-controls-axis="x"
+                data-controls-variant="column-padding"
                 data-controls-reverse=""
                 data-controls-min="0"
                 data-controls-max-fraction={String(
@@ -1759,6 +1761,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                 <div
                   data-controls={col.paddingRightKey}
                   data-controls-axis="x"
+                  data-controls-variant="column-padding"
                   data-controls-reverse=""
                   data-controls-min="0"
                   data-controls-max-fraction={String(
@@ -1796,6 +1799,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                 <div
                   data-controls={nextCol.paddingLeftKey}
                   data-controls-axis="x"
+                  data-controls-variant="column-padding"
                   data-controls-min="0"
                   data-controls-max-fraction={String(
                     effectiveColumnWidths[colIndex + 1] - nextColEffectivePadding.paddingRight,
