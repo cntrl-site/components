@@ -1,4 +1,10 @@
-import { List } from './List';
+import {
+  COLUMN_CONTENT_KEYS,
+  COLUMN_TEXT_PREFIXES,
+  getListColumnTextSettingKey,
+  List,
+  type ListGlobalTextStyleKey,
+} from './List';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './List.tsx?raw';
 
@@ -12,6 +18,27 @@ type GridSchema = ComponentSchemaV1 & {
     };
   };
 };
+
+const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
+
+const COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY = {
+  FontFamily: 'textFontFamily',
+  FontSettings: 'textFontSettings',
+  FontSize: 'textFontSize',
+  LineHeight: 'textLineHeight',
+  LetterSpacing: 'textLetterSpacing',
+  WordSpacing: 'textWordSpacing',
+  TextAppearance: 'textTextAppearance',
+} as const satisfies Record<string, ListGlobalTextStyleKey>;
+
+type ColumnTextSettingSuffix = keyof typeof COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY;
+
+function getColumnTextSettingKey(
+  prefix: typeof COLUMN_TEXT_PREFIXES[number],
+  suffix: ColumnTextSettingSuffix,
+): string {
+  return getListColumnTextSettingKey(prefix, COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY[suffix]);
+}
 
 const textStyleProperties = {
   fontSettings: {
@@ -46,8 +73,182 @@ const textStyleProperties = {
       textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
       fontVariant: { type: 'string' as const, enum: ['normal', 'small-caps'] },
     },
-  }
+  },
 };
+
+function createTextInputContentProperty(label: string) {
+  return {
+    type: 'string' as const,
+    label,
+    placeholder: 'Add Title...',
+    display: { type: 'text-input' as const },
+  };
+}
+
+function createRangeControlLayoutProperty(title: string) {
+  return {
+    type: 'number' as const,
+    scope: 'layout' as const,
+    title,
+    min: 0,
+    max: 100,
+    display: { type: 'range-control' as const },
+  };
+}
+
+function createContentColumnProperties(): Record<string, unknown> {
+  return Object.fromEntries(
+    LIST_COLUMN_LETTERS.map((letter, index) => {
+      const key = COLUMN_CONTENT_KEYS[index];
+      const label = `${letter} column`;
+      return [key, createTextInputContentProperty(label)];
+    }),
+  );
+}
+
+function createColumnLayoutSchemaProperties(): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+
+  for (const letter of LIST_COLUMN_LETTERS) {
+    properties[`${letter}ColumnWidth`] = createRangeControlLayoutProperty(`${letter} column width`);
+    properties[`${letter}ColumnPaddingLeft`] = createRangeControlLayoutProperty(`${letter} column padding left`);
+    properties[`${letter}ColumnPaddingRight`] = createRangeControlLayoutProperty(`${letter} column padding right`);
+    properties[`${letter}ColumnPaddingBottom`] = createRangeControlLayoutProperty(`${letter} column padding bottom`);
+  }
+
+  return properties;
+}
+
+function createColumnLayoutDefaults(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const defaults: Record<string, unknown> = {
+    columns: 5,
+    wrapperWidth: 1,
+    columnsOrder: [...COLUMN_CONTENT_KEYS],
+  };
+
+  for (const letter of LIST_COLUMN_LETTERS) {
+    defaults[`${letter}ColumnWidth`] = 0.2;
+    defaults[`${letter}ColumnPaddingLeft`] = 0;
+    defaults[`${letter}ColumnPaddingRight`] = 0;
+    defaults[`${letter}ColumnPaddingBottom`] = 0;
+  }
+
+  return { ...defaults, ...overrides };
+}
+
+function createColumnTextStyleProperties(
+  prefix: typeof COLUMN_TEXT_PREFIXES[number],
+): Record<string, unknown> {
+  return {
+    [getColumnTextSettingKey(prefix, 'FontFamily')]: {
+      type: 'string',
+      scope: 'common',
+      title: 'Font family',
+      display: { type: 'font-family-select' },
+    },
+    [getColumnTextSettingKey(prefix, 'FontSettings')]: {
+      ...textStyleProperties.fontSettings,
+      scope: 'common',
+      title: '',
+      display: { type: 'font-settings-weight' },
+    },
+    [getColumnTextSettingKey(prefix, 'FontSize')]: {
+      ...textStyleProperties.fontSize,
+      scope: 'layout',
+      title: 'Font Size',
+      display: { type: 'font-size' },
+    },
+    [getColumnTextSettingKey(prefix, 'LineHeight')]: {
+      ...textStyleProperties.lineHeight,
+      scope: 'layout',
+      title: 'Line Height',
+      display: { type: 'line-height-input' },
+    },
+    [getColumnTextSettingKey(prefix, 'LetterSpacing')]: {
+      ...textStyleProperties.letterSpacing,
+      scope: 'layout',
+      title: 'Letter Spacing',
+      display: { type: 'letter-spacing-input' },
+    },
+    [getColumnTextSettingKey(prefix, 'WordSpacing')]: {
+      ...textStyleProperties.wordSpacing,
+      scope: 'layout',
+      title: 'Word Spacing',
+      display: { type: 'word-spacing-input' },
+    },
+    [getColumnTextSettingKey(prefix, 'TextAppearance')]: {
+      ...textStyleProperties.textAppearance,
+      scope: 'layout',
+      title: 'Text Appearance',
+      display: { type: 'text-appearance' },
+    },
+  };
+}
+
+const columnTextStyleProperties = COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>(
+  (properties, prefix) => ({
+    ...properties,
+    ...createColumnTextStyleProperties(prefix),
+  }),
+  {},
+);
+
+const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>(
+  (defaults, prefix) => ({
+    ...defaults,
+    [getColumnTextSettingKey(prefix, 'FontFamily')]: 'Arial',
+    [getColumnTextSettingKey(prefix, 'FontSettings')]: {
+      fontWeight: 400,
+      fontStyle: 'normal',
+    },
+    [getColumnTextSettingKey(prefix, 'LetterSpacing')]: 0,
+    [getColumnTextSettingKey(prefix, 'WordSpacing')]: 0,
+    [getColumnTextSettingKey(prefix, 'TextAppearance')]: {
+      textTransform: 'none',
+      textDecoration: 'none',
+      fontVariant: 'normal',
+    },
+  }),
+  {},
+);
+
+function createColumnTextLayoutDefaults(
+  layoutDefaults: Record<string, unknown>,
+): Record<string, unknown> {
+  const { textFontSize, textLineHeight } = layoutDefaults;
+  return COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>((defaults, prefix) => {
+    if (textFontSize !== undefined) {
+      defaults[getColumnTextSettingKey(prefix, 'FontSize')] = textFontSize;
+    }
+    if (textLineHeight !== undefined) {
+      defaults[getColumnTextSettingKey(prefix, 'LineHeight')] = textLineHeight;
+    }
+    return defaults;
+  }, {});
+}
+
+const COLUMN_TEXT_LABELS = LIST_COLUMN_LETTERS.map((letter) => `${letter} column`);
+
+const columnTextStylePanelGroups = COLUMN_TEXT_PREFIXES.map((prefix, index) => ({
+  type: 'group' as const,
+  title: COLUMN_TEXT_LABELS[index],
+  items: [
+    getColumnTextSettingKey(prefix, 'FontFamily'),
+    getColumnTextSettingKey(prefix, 'FontSettings'),
+    {
+      type: 'row' as const,
+      items: [
+        getColumnTextSettingKey(prefix, 'FontSize'),
+        getColumnTextSettingKey(prefix, 'LineHeight'),
+        getColumnTextSettingKey(prefix, 'LetterSpacing'),
+        getColumnTextSettingKey(prefix, 'WordSpacing'),
+      ],
+    },
+    getColumnTextSettingKey(prefix, 'TextAppearance'),
+  ],
+}));
 
 const paletteBookmarkItems = [
   'textColor',
@@ -55,7 +256,74 @@ const paletteBookmarkItems = [
   'dividerColor',
   'textHoverColor',
   'backgroundHoverColor',
-  'dividerHoverColor'
+  'dividerHoverColor',
+] as const;
+
+const CUT_DEPENDENT_PROPERTY_NAMES = ['cutLabel', 'cutCellMinHeight', 'showCut'] as const;
+
+const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
+  ...LIST_COLUMN_LETTERS.flatMap((letter) => [
+    `${letter}ColumnWidth`,
+    `${letter}ColumnPaddingLeft`,
+    `${letter}ColumnPaddingRight`,
+  ]),
+  'rowPaddingTop',
+  'rowPaddingBottom',
+] as const;
+
+function createHiddenWhenDisplayRules(
+  conditionSetting: string,
+  conditionValue: string | number,
+  propertyNames: readonly string[],
+) {
+  return propertyNames.map((name) => ({
+    if: { name: conditionSetting, value: conditionValue },
+    then: { name: `properties.${name}.display.visible`, value: false },
+  }));
+}
+
+function createDefaultContentItem(
+  labelSuffix: string,
+  image: { objectFit: 'cover'; url: string; name: string },
+) {
+  const suffix = labelSuffix ? ` ${labelSuffix}` : '';
+  return {
+    AColumn: `AColumn${suffix}`,
+    BColumnWidth: `BColumnWidth${suffix}`,
+    CColumnWidth: `CColumnWidth${suffix}`,
+    DColumnWidth: `DColumnWidth${suffix}`,
+    EColumnWidth: `EColumnWidth${suffix}`,
+    image,
+    link: '',
+  };
+}
+
+const DEFAULT_CONTENT_ITEMS = [
+  createDefaultContentItem('', {
+    objectFit: 'cover',
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png',
+    name: 'Slider-1.png',
+  }),
+  createDefaultContentItem('2', {
+    objectFit: 'cover',
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png',
+    name: 'Slider-2.png',
+  }),
+  createDefaultContentItem('3', {
+    objectFit: 'cover',
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png',
+    name: 'Slider-3.png',
+  }),
+];
+
+const COLUMN_LAYOUT_PANEL_ITEMS = [
+  ...LIST_COLUMN_LETTERS.flatMap((letter) => [
+    `${letter}ColumnWidth`,
+    `${letter}ColumnPaddingLeft`,
+    `${letter}ColumnPaddingRight`,
+    `${letter}ColumnPaddingBottom`,
+  ]),
+  'columnsOrder',
 ] as const;
 
 const schema: GridSchema = {
@@ -70,46 +338,7 @@ const schema: GridSchema = {
       items: {
         type: 'object',
         properties: {
-          AColumn: {
-            type: 'string',
-            label: 'A column',
-            placeholder: 'Add Title...',
-            display: {
-              type: 'text-input',
-            },
-          },
-          BColumnWidth: {
-            type: 'string',
-            label: 'B column',
-            placeholder: 'Add Title...',
-            display: {
-              type: 'text-input',
-            },
-          },
-          CColumnWidth: {
-            type: 'string',
-            label: 'C column',
-            placeholder: 'Add Title...',
-            display: {
-              type: 'text-input',
-            },
-          },
-          DColumnWidth: {
-            type: 'string',
-            label: 'D column',
-            placeholder: 'Add Title...',
-            display: {
-              type: 'text-input',
-            },
-          },
-          EColumnWidth: {
-            type: 'string',
-            label: 'E column',
-            placeholder: 'Add Title...',
-            display: {
-              type: 'text-input',
-            },
-          },
+          ...createContentColumnProperties(),
           image: {
             type: 'object',
             label: 'Image',
@@ -118,71 +347,22 @@ const schema: GridSchema = {
               type: 'media-input',
             },
             properties: {
-              url: {
-                type: 'string',
-              },
-              name: {
-                type: 'string',
-              },
-              objectFit: {
-                type: 'string',
-                enum: ['cover', 'contain'],
-              }
+              url: { type: 'string' },
+              name: { type: 'string' },
+              objectFit: { type: 'string', enum: ['cover', 'contain'] },
             },
-            required: ['url', 'name']
+            required: ['url', 'name'],
           },
           link: {
             type: 'string',
             label: 'Link',
             placeholder: 'Add link...',
-            display: {
-              type: 'text-input',
-            },
+            display: { type: 'text-input' },
           },
         },
         required: ['image'],
       },
-      default: [
-        {
-          AColumn: 'AColumn',
-          BColumnWidth: 'BColumnWidth',
-          CColumnWidth: 'CColumnWidth',
-          DColumnWidth: 'DColumnWidth',
-          EColumnWidth: 'EColumnWidth',
-          image: {
-            objectFit: "cover",
-            url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png",
-            name: "Slider-1.png"
-          },
-          link: "",
-        },
-        {
-          AColumn: 'AColumn 2',
-          BColumnWidth: 'BColumnWidth 2',
-          CColumnWidth: 'CColumnWidth 2',
-          DColumnWidth: 'DColumnWidth 2',
-          EColumnWidth: 'EColumnWidth 2',
-          image: {
-            objectFit: "cover",
-            url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png",
-            name: "Slider-2.png"
-          },
-          link: "",
-        },
-        {
-          AColumn: 'AColumn 3',
-          BColumnWidth: 'BColumnWidth 3',
-          CColumnWidth: 'CColumnWidth 3',
-          DColumnWidth: 'DColumnWidth 3',
-          EColumnWidth: 'EColumnWidth 3',
-          image: {
-            objectFit: "cover",
-            url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png",
-            name: "Slider-3.png"
-          },
-          link: "",
-        },
-      ],
+      default: DEFAULT_CONTENT_ITEMS,
     },
   },
   settings: {
@@ -210,6 +390,14 @@ const schema: GridSchema = {
         display: { type: 'numeric-input' },
         min: 0,
         max: 9999,
+      },
+      textPaddingLR: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Padding LR',
+        min: 0,
+        max: 9999,
+        display: { type: 'range-control' },
       },
       entriesCount: {
         type: 'number',
@@ -294,7 +482,6 @@ const schema: GridSchema = {
         display: { type: 'toggle-numeric-input', enum: ['All', 'Custom'] },
         min: 1,
       },
-
       rowPaddingTop: {
         type: 'number',
         scope: 'layout',
@@ -319,166 +506,7 @@ const schema: GridSchema = {
         max: 100,
         display: { type: 'range-control' },
       },
-      AColumnWidth: {
-        type: 'number',
-        scope: 'layout',
-        title: 'A column width',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      AColumnPaddingLeft: {
-        type: 'number',
-        scope: 'layout',
-        title: 'A column padding left',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      AColumnPaddingRight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'A column padding right',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      BColumnWidth: {
-        type: 'number',
-        scope: 'layout',
-        title: 'B column width',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      BColumnPaddingLeft: {
-        type: 'number',
-        scope: 'layout',
-        title: 'B column padding left',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      BColumnPaddingRight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'B column padding right',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      CColumnWidth: {
-        type: 'number',
-        scope: 'layout',
-        title: 'C column width',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      CColumnPaddingLeft: {
-        type: 'number',
-        scope: 'layout',
-        title: 'C column padding left',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      CColumnPaddingRight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'C column padding right',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      DColumnWidth: {
-        type: 'number',
-        scope: 'layout',
-        title: 'D column width',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      DColumnPaddingLeft: {
-        type: 'number',
-        scope: 'layout',
-        title: 'D column padding left',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      DColumnPaddingRight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'D column padding right',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      EColumnWidth: {
-        type: 'number',
-        scope: 'layout',
-        title: 'E column width',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      EColumnPaddingLeft: {
-        type: 'number',
-        scope: 'layout',
-        title: 'E column padding left',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      EColumnPaddingRight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'E column padding right',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      AColumnPaddingBottom: {
-        type: 'number',
-        scope: 'layout',
-        title: 'A column padding bottom',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      BColumnPaddingBottom: {
-        type: 'number',
-        scope: 'layout',
-        title: 'B column padding bottom',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      CColumnPaddingBottom: {
-        type: 'number',
-        scope: 'layout',
-        title: 'C column padding bottom',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      DColumnPaddingBottom: {
-        type: 'number',
-        scope: 'layout',
-        title: 'D column padding bottom',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
-      EColumnPaddingBottom: {
-        type: 'number',
-        scope: 'layout',
-        title: 'E column padding bottom',
-        min: 0,
-        max: 100,
-        display: { type: 'range-control' },
-      },
+      ...createColumnLayoutSchemaProperties(),
       columnsOrder: {
         type: 'array',
         scope: 'layout',
@@ -486,7 +514,6 @@ const schema: GridSchema = {
         display: { type: 'reorder-input' },
         items: { type: 'string' },
       },
-
       textColor: {
         type: 'string',
         scope: 'common',
@@ -541,7 +568,7 @@ const schema: GridSchema = {
         title: 'Input Text Appearance',
         display: { type: 'text-appearance' },
       },
-
+      ...columnTextStyleProperties,
       backgroundColor: {
         type: 'string',
         scope: 'common',
@@ -571,7 +598,7 @@ const schema: GridSchema = {
       imageOnHover: 'Off',
       entryHoverEffect: 'None',
       cutLabel: 'SEE ALL',
-      showVisibility: [false, true],
+      showVisibility: [true, true],
       textColor: '#767676',
       textHoverColor: '#767676',
       textFontFamily: 'Arial',
@@ -586,57 +613,39 @@ const schema: GridSchema = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
+      ...columnTextStyleDefaults,
       backgroundColor: '#FFFFFF00',
       dividerColor: '#767676',
       backgroundHoverColor: '#FFFFFF00',
-      dividerHoverColor: '#767676'
+      dividerHoverColor: '#767676',
     },
     layoutDefaults: {
-      m: {
-        columns: 5,
+      m: createColumnLayoutDefaults({
         type: 'B',
-        wrapperWidth: 1,
+        textPaddingLR: 0.0373,
         entriesCount: 0,
         cellMinHeight: 0.02,
         imageSize: { min: 80, max: 320 },
         dividerWidth: 0.002,
         cut: 0,
         showCut: 0,
-        cutCellMinHeight: 0.02,
+        cutCellMinHeight: 0.043,
         rowPaddingTop: 0.01,
         rowPaddingBottom: 0.01,
         rowPaddingTopB: 0.01,
-        AColumnWidth: 0.2,
-        AColumnPaddingLeft: 0,
-        AColumnPaddingRight: 0,
-        BColumnWidth: 0.2,
-        BColumnPaddingLeft: 0,
-        BColumnPaddingRight: 0,
-        CColumnWidth: 0.2,
-        CColumnPaddingLeft: 0,
-        CColumnPaddingRight: 0,
-        DColumnWidth: 0.2,
-        DColumnPaddingLeft: 0,
-        DColumnPaddingRight: 0,
-        EColumnWidth: 0.2,
-        EColumnPaddingLeft: 0,
-        EColumnPaddingRight: 0,
-        AColumnPaddingBottom: 0,
-        BColumnPaddingBottom: 0,
-        CColumnPaddingBottom: 0,
-        DColumnPaddingBottom: 0,
-        EColumnPaddingBottom: 0,
-        columnsOrder: ['AColumn', 'BColumnWidth', 'CColumnWidth', 'DColumnWidth', 'EColumnWidth'],
         textStroke: 0.003,
         textCorners: 0.192,
         textPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         textFontSize: 0.043,
         textLineHeight: 0.043,
-      },
-      d: {
-        columns: 5,
+        ...createColumnTextLayoutDefaults({
+          textFontSize: 0.043,
+          textLineHeight: 0.043,
+        }),
+      }),
+      d: createColumnLayoutDefaults({
         type: 'A',
-        wrapperWidth: 1,
+        textPaddingLR: 0.01,
         entriesCount: 0,
         cellMinHeight: 0.03,
         imageSize: { min: 80, max: 320 },
@@ -647,139 +656,27 @@ const schema: GridSchema = {
         rowPaddingTop: 0.01,
         rowPaddingBottom: 0.01,
         rowPaddingTopB: 0.01,
-        AColumnWidth: 0.2,
-        AColumnPaddingLeft: 0,
-        AColumnPaddingRight: 0,
-        BColumnWidth: 0.2,
-        BColumnPaddingLeft: 0,
-        BColumnPaddingRight: 0,
-        CColumnWidth: 0.2,
-        CColumnPaddingLeft: 0,
-        CColumnPaddingRight: 0,
-        DColumnWidth: 0.2,
-        DColumnPaddingLeft: 0,
-        DColumnPaddingRight: 0,
-        EColumnWidth: 0.2,
-        EColumnPaddingLeft: 0,
-        EColumnPaddingRight: 0,
-        AColumnPaddingBottom: 0,
-        BColumnPaddingBottom: 0,
-        CColumnPaddingBottom: 0,
-        DColumnPaddingBottom: 0,
-        EColumnPaddingBottom: 0,
-        columnsOrder: ['AColumn', 'BColumnWidth', 'CColumnWidth', 'DColumnWidth', 'EColumnWidth'],
         textStroke: 0.001,
         textCorners: 0.05,
         textPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         textFontSize: 0.01,
         textLineHeight: 0.01,
-      }
+        ...createColumnTextLayoutDefaults({
+          textFontSize: 0.01,
+          textLineHeight: 0.01,
+        }),
+      }),
     },
     displayRules: [
-      {
-        if: { name: 'cut', value: 0 },
-        then: { name: 'properties.cutLabel.display.visible', value: false },
-      },
-      {
-        if: { name: 'cut', value: 0 },
-        then: { name: 'properties.cutCellMinHeight.display.visible', value: false },
-      },
-      {
-        if: { name: 'cut', value: 0 },
-        then: { name: 'properties.showCut.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.AColumnWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.AColumnPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.AColumnPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.BColumnWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.BColumnPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.BColumnPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.CColumnWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.CColumnPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.CColumnPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.DColumnWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.DColumnPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.DColumnPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.EColumnWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.EColumnPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.EColumnPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.rowPaddingTop.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.rowPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'A' },
-        then: { name: 'properties.rowPaddingTopB.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'A' },
-        then: { name: 'properties.AColumnPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'A' },
-        then: { name: 'properties.BColumnPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'A' },
-        then: { name: 'properties.CColumnPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'A' },
-        then: { name: 'properties.DColumnPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'A' },
-        then: { name: 'properties.EColumnPaddingBottom.display.visible', value: false },
-      },
+      ...createHiddenWhenDisplayRules('cut', 0, CUT_DEPENDENT_PROPERTY_NAMES),
+      ...createHiddenWhenDisplayRules('type', 'A', ['textPaddingLR']),
+      ...createHiddenWhenDisplayRules('type', 'B', HORIZONTAL_LAYOUT_PROPERTY_NAMES),
+      ...createHiddenWhenDisplayRules('type', 'A', ['rowPaddingTopB']),
+      ...createHiddenWhenDisplayRules(
+        'type',
+        'A',
+        LIST_COLUMN_LETTERS.map((letter) => `${letter}ColumnPaddingBottom`),
+      ),
     ],
     layout: [
       '__componentName__',
@@ -787,6 +684,7 @@ const schema: GridSchema = {
       'type',
       'columns',
       'wrapperWidth',
+      'textPaddingLR',
       'entriesCount',
       'cellMinHeight',
       'imageOnHover',
@@ -801,27 +699,7 @@ const schema: GridSchema = {
       'rowPaddingTop',
       'rowPaddingBottom',
       'rowPaddingTopB',
-      'AColumnWidth',
-      'AColumnPaddingLeft',
-      'AColumnPaddingRight',
-      'AColumnPaddingBottom',
-      'BColumnWidth',
-      'BColumnPaddingLeft',
-      'BColumnPaddingRight',
-      'BColumnPaddingBottom',
-      'CColumnWidth',
-      'CColumnPaddingLeft',
-      'CColumnPaddingRight',
-      'CColumnPaddingBottom',
-      'DColumnWidth',
-      'DColumnPaddingLeft',
-      'DColumnPaddingRight',
-      'DColumnPaddingBottom',
-      'EColumnWidth',
-      'EColumnPaddingLeft',
-      'EColumnPaddingRight',
-      'EColumnPaddingBottom',
-      'columnsOrder',
+      ...COLUMN_LAYOUT_PANEL_ITEMS,
     ],
   },
   panels: [
@@ -833,48 +711,22 @@ const schema: GridSchema = {
       layout: [
         { type: 'row', items: ['__componentName__', 'name'] },
         'type',
-        {
-          type: 'row',
-          title: '',
-          items: ['columns', 'wrapperWidth']
-        },
-        {
-          type: 'row',
-          title: '',
-          items: ['entriesCount', 'cellMinHeight']
-        },
-        {
-          type: 'row',
-          title: '',
-          items: ['imageOnHover', 'imageSize']
-        },
-        {type: 'row', title: '', items: ['entryHoverEffect']},
-        {
-          type: 'row',
-          title: 'Divider Settings',
-          items: ['dividerWidth', 'showVisibility']
-        },
-        {type: 'row', title: '', items: ['cut']},
-        {
-          type: 'row',
-          title: 'Cut Settings',
-          items: ['cutLabel', 'cutCellMinHeight']
-        },
-        {
-          type: 'row',
-          title: '',
-          items: ['showCut']
-        }
+        { type: 'row', title: '', items: ['columns', 'wrapperWidth'] },
+        { type: 'row', title: '', items: ['entriesCount', 'cellMinHeight'] },
+        { type: 'row', title: '', items: ['imageOnHover', 'imageSize'] },
+        { type: 'row', title: '', items: ['entryHoverEffect'] },
+        { type: 'row', title: 'Divider Settings', items: ['dividerWidth', 'showVisibility'] },
+        { type: 'row', title: '', items: ['cut'] },
+        { type: 'row', title: 'Cut Settings', items: ['cutLabel', 'cutCellMinHeight'] },
+        { type: 'row', title: '', items: ['showCut'] },
       ],
     },
-    { 
+    {
       id: 'fields',
       icon: 'layers',
       title: 'Fields',
       tooltip: 'Fields',
-      layout: [
-        'columnsOrder',
-      ],
+      layout: ['columnsOrder'],
     },
     {
       id: 'typeStyle',
@@ -884,9 +736,18 @@ const schema: GridSchema = {
       layout: [
         {
           type: 'group',
-          title: 'Text',
-          items: ['textFontFamily', 'textFontSettings', { type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'] }, 'textTextAppearance'],
+          title: 'All text',
+          items: [
+            'textFontFamily',
+            'textFontSettings',
+            {
+              type: 'row',
+              items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'],
+            },
+            'textTextAppearance',
+          ],
         },
+        ...columnTextStylePanelGroups,
       ],
     },
   ],
@@ -900,7 +761,7 @@ const schema: GridSchema = {
         'dividerColor',
         'textHoverColor',
         'backgroundHoverColor',
-        'dividerHoverColor'
+        'dividerHoverColor',
       ],
     },
   },
