@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
@@ -105,25 +105,45 @@ function getCSS(P: string): string {
 .${P}-image-hover-brightness img {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-brightness:hover img {
+.${P}-image-hover-brightness:hover img,
+.${P}-image-hover-brightness-active img {
   filter: brightness(1.25);
 }
 .${P}-image-hover-grayscale img {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-grayscale:hover img {
+.${P}-image-hover-grayscale:hover img,
+.${P}-image-hover-grayscale-active img {
   filter: grayscale(100%);
 }
 .${P}-image-hover-saturate img {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-saturate:hover img {
+.${P}-image-hover-saturate:hover img,
+.${P}-image-hover-saturate-active img {
   filter: saturate(2);
 }
 `;
 }
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
+const TRACK_CONTENT_SEQUENCE_REPEAT = 3;
+
+const expandTrackContent = (items: MarqueeItem[]) =>
+  Array.from({ length: TRACK_CONTENT_SEQUENCE_REPEAT }, () => items).flat();
+
+const getMarqueeCardKey = (copyIndex: number, itemIndex: number) => `${copyIndex}-${itemIndex}`;
+
+const isCardInMarqueeView = (card: Element, wrapper: Element): boolean => {
+  const wrapperRect = wrapper.getBoundingClientRect();
+  const rect = card.getBoundingClientRect();
+  return rect.right > wrapperRect.left && rect.left < wrapperRect.right;
+};
+
+const isAnyCopyOfSlotInView = (wrapper: Element, itemIndex: number): boolean => {
+  const cards = wrapper.querySelectorAll<HTMLElement>(`[data-marquee-item-index="${itemIndex}"]`);
+  return Array.from(cards).some((card) => isCardInMarqueeView(card, wrapper));
+};
 
 type MarqueeItemCardProps = {
   item: MarqueeItem;
@@ -243,11 +263,23 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const [trackHeight, setTrackHeight] = useState(0);
   const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
+  const hoverRandomizeEnabled = settings.hoverRandomize === 'on';
+  const [swappedSlots, setSwappedSlots] = useState<Record<number, MarqueeItem>>({});
+  const swappedSlotsRef = useRef(swappedSlots);
+  swappedSlotsRef.current = swappedSlots;
   const stableCandidateRef = useRef<number | null>(null);
   const loadedFirstSetImagesRef = useRef(0);
   const scheduleRemeasureRef = useRef<(() => void) | null>(null);
   const contentImageUrlsKey = useMemo(() => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),[content]);
-  const firstSetImageUrlCount = useMemo(() => (content ?? []).filter((i) => Boolean(i.image?.url)).length, [content]);
+  const trackContent = useMemo(() => {
+    const items = content ?? [];
+    if (!autoplayEnabled || items.length === 0) return items;
+    return expandTrackContent(items);
+  }, [content, autoplayEnabled]);
+  const firstSetImageUrlCount = useMemo(
+    () => trackContent.filter((i) => Boolean(i.image?.url)).length,
+    [trackContent],
+  );
   const copies = useMemo(() => {
     if (!autoplayEnabled || content?.length === 0) return 1;
     if (setWidth <= 0 || containerWidth <= 0) return 2;
@@ -256,7 +288,63 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
 
   useLayoutEffect(() => {
     loadedFirstSetImagesRef.current = 0;
+    setSwappedSlots({});
   }, [contentImageUrlsKey]);
+
+  useEffect(() => {
+    if (!hoverRandomizeEnabled) return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const revertSwappedSlotsOutOfView = (itemIndices: Iterable<number>) => {
+      setSwappedSlots((prev) => {
+        let next: Record<number, MarqueeItem> | null = null;
+        for (const itemIndex of itemIndices) {
+          if (!(itemIndex in prev)) continue;
+          if (isAnyCopyOfSlotInView(wrapper, itemIndex)) continue;
+          if (!next) next = { ...prev };
+          delete next[itemIndex];
+        }
+        return next ?? prev;
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const itemIndices = new Set<number>();
+        for (const entry of entries) {
+          const raw = (entry.target as HTMLElement).dataset.marqueeItemIndex;
+          const itemIndex = raw !== undefined ? Number(raw) : NaN;
+          if (!Number.isNaN(itemIndex)) itemIndices.add(itemIndex);
+        }
+        if (itemIndices.size > 0) revertSwappedSlotsOutOfView(itemIndices);
+      },
+      { root: wrapper, threshold: 0 },
+    );
+
+    Object.keys(swappedSlots).forEach((rawItemIndex) => {
+      const itemIndex = Number(rawItemIndex);
+      wrapper
+        .querySelectorAll<HTMLDivElement>(`[data-marquee-item-index="${itemIndex}"]`)
+        .forEach((card) => observer.observe(card));
+    });
+
+    let raf = 0;
+    const tick = () => {
+      const swappedKeys = Object.keys(swappedSlotsRef.current);
+      if (swappedKeys.length === 0) return;
+      revertSwappedSlotsOutOfView(swappedKeys.map(Number));
+      raf = requestAnimationFrame(tick);
+    };
+    if (Object.keys(swappedSlotsRef.current).length > 0) {
+      raf = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [hoverRandomizeEnabled, swappedSlots]);
 
   useLayoutEffect(() => {
     if (!autoplayEnabled) return;
@@ -329,7 +417,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit]);
+  }, [autoplayEnabled, copies, trackContent, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -348,37 +436,57 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     scheduleRemeasureRef.current?.();
   };
 
-  const renderCardWrapper = (item: MarqueeItem, key: string | number, isFirstSet?: boolean) => (
-    <div key={key} className={`${P}-marquee-card`}>
-      <MarqueeItemCard
-        item={item}
-        prefix={P}
-        imageFit={imageFit}
-        imageMaxWidth={imageMaxWidth}
-        imageMaxHeight={imageMaxHeight}
-        imageHoverClass={imageHoverClass}
-        isEditor={isEditor}
-        isFirstSet={isFirstSet}
-        scaled={scaled}
-        onFirstSetImageDone={onFirstSetImageDone}
-      />
-      {isEditor && (
-        <div
-          data-controls="gap"
-          data-controls-axis="x"
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: `calc(-1 * ${scaled(gap)})`,
-            width: scaled(gap),
-            height: '100%',
-            pointerEvents: 'auto',
-            zIndex: 2,
-          }}
+  const renderCardWrapper = (item: MarqueeItem, copyIndex: number, itemIndex: number, isFirstSet?: boolean) => {
+    const cardKey = getMarqueeCardKey(copyIndex, itemIndex);
+    const displayItem = hoverRandomizeEnabled ? (swappedSlots[itemIndex] ?? item) : item;
+    const onCardEnter = hoverRandomizeEnabled
+      ? () => {
+          const current = swappedSlots[itemIndex] ?? item;
+          const candidates = (content ?? []).filter((c) => c !== current);
+          if (candidates.length === 0) return;
+          const next = candidates[Math.floor(Math.random() * candidates.length)];
+          setSwappedSlots((prev) => ({ ...prev, [itemIndex]: next }));
+        }
+      : undefined;
+    return (
+      <div
+        key={cardKey}
+        className={`${P}-marquee-card`}
+        data-marquee-card-key={cardKey}
+        data-marquee-item-index={itemIndex}
+        data-marquee-copy-index={copyIndex}
+        onMouseEnter={onCardEnter}
+      >
+        <MarqueeItemCard
+          item={displayItem}
+          prefix={P}
+          imageFit={imageFit}
+          imageMaxWidth={imageMaxWidth}
+          imageMaxHeight={imageMaxHeight}
+          imageHoverClass={imageHoverClass}
+          isEditor={isEditor}
+          isFirstSet={isFirstSet}
+          scaled={scaled}
+          onFirstSetImageDone={onFirstSetImageDone}
         />
-      )}
-    </div>
-  );
+        {isEditor && (
+          <div
+            data-controls="gap"
+            data-controls-axis="x"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: `calc(-1 * ${scaled(gap)})`,
+              width: scaled(gap),
+              height: '100%',
+              pointerEvents: 'auto',
+              zIndex: 2,
+            }}
+          />
+        )}
+      </div>
+    );
+  };
 
   if (autoplayEnabled && (content?.length ?? 0) > 0) {
     return (
@@ -397,6 +505,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           onMouseEnter={onTrackEnter}
           onMouseLeave={onTrackLeave}
           style={{
+            ...(setWidth <= 0 ? { animationName: 'none' } : {}),
             ...(hoverPauseEnabled
               ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
               : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
@@ -413,8 +522,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
               }}
               aria-hidden={copyIndex > 0}
             >
-              {content?.map((item: MarqueeItem, index: number) =>
-                renderCardWrapper(item, `${copyIndex}-${index}`, copyIndex === 0)
+              {trackContent.map((item: MarqueeItem, index: number) =>
+                renderCardWrapper(item, copyIndex, index, copyIndex === 0)
               )}
             </div>
           ))}
@@ -424,7 +533,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   }
 
   return (
-    <div className={`${P}-wrapper`}>
+    <div ref={wrapperRef} className={`${P}-wrapper`}>
       <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <div
         key="marquee-static"
@@ -433,7 +542,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         aria-label="Marquee"
       >
         {content?.map((item: MarqueeItem, index: number) =>
-          renderCardWrapper(item, index)
+          renderCardWrapper(item, 0, index)
         )}
       </div>
     </div>
