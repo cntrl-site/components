@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
@@ -91,6 +91,18 @@ function getCSS(P: string): string {
   z-index: 2;
   width: 100%;
 }
+
+.${P}-marquee-link {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
 .${P}-control::before {
   content: "";
   position: absolute;
@@ -105,34 +117,30 @@ function getCSS(P: string): string {
 .${P}-image-hover-brightness img {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-brightness:hover img,
-.${P}-image-hover-brightness-active img {
+.${P}-image-hover-brightness:hover img {
   filter: brightness(1.25);
 }
 .${P}-image-hover-grayscale img {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-grayscale:hover img,
-.${P}-image-hover-grayscale-active img {
+.${P}-image-hover-grayscale:hover img {
   filter: grayscale(100%);
 }
 .${P}-image-hover-saturate img {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-saturate:hover img,
-.${P}-image-hover-saturate-active img {
+.${P}-image-hover-saturate:hover img {
   filter: saturate(2);
 }
 `;
 }
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
-const TRACK_CONTENT_SEQUENCE_REPEAT = 3;
+const MIN_CONTENT_SEQUENCE_REPEAT = 2;
+const OUTER_SET_COPIES = 2;
 
-const expandTrackContent = (items: MarqueeItem[]) =>
-  Array.from({ length: TRACK_CONTENT_SEQUENCE_REPEAT }, () => items).flat();
-
-const getMarqueeCardKey = (copyIndex: number, itemIndex: number) => `${copyIndex}-${itemIndex}`;
+const expandSetContent = (items: MarqueeItem[], repeat: number) =>
+  Array.from({ length: repeat }, () => items).flat();
 
 const isCardInMarqueeView = (card: Element, wrapper: Element): boolean => {
   const wrapperRect = wrapper.getBoundingClientRect();
@@ -187,10 +195,10 @@ const MarqueeItemCard = ({
         alt={item.image?.name ?? ''}
         style={{
           pointerEvents: 'auto',
+          display: 'block',
+          width: '100%',
+          height: '100%',
           objectFit: imageFit,
-          ...(imageFit === 'contain'
-            ? { width: 'auto', maxWidth: '100%', maxHeight: '100%', height: 'auto' }
-            : { width: '100%', height: '100%' }),
         }}
         onLoad={isFirstSet ? onFirstSetImageDone : undefined}
         onError={isFirstSet ? onFirstSetImageDone : undefined}
@@ -203,7 +211,7 @@ const MarqueeItemCard = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'start',
-        ...(imageFit === 'contain' ? { maxWidth: scaled(imageMaxWidth) } : { width: scaled(imageMaxWidth) }),
+        width: scaled(imageMaxWidth),
       }}
     >
       <div
@@ -211,7 +219,7 @@ const MarqueeItemCard = ({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-start',
+          justifyContent: 'center',
           alignItems: 'center',
           width: '100%',
           height: scaled(imageMaxHeight),
@@ -225,18 +233,7 @@ const MarqueeItemCard = ({
               href={item.link}
               target='_blank'
               rel='noopener noreferrer'
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-start',
-                alignItems: 'center',
-                alignSelf: 'flex-start',
-                ...(imageFit === 'cover'
-                  ? { width: '100%', height: '100%' }
-                  : { height: 'auto', width: 'auto', maxWidth: '100%', maxHeight: '100%' }),
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
+              className={`${P}-marquee-link`}
             >
               {imageNode}
             </a>
@@ -250,8 +247,11 @@ const MarqueeItemCard = ({
 
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
-  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, imageFit } = settings;
-  const imageHoverClass = settings.hoverEffect === 'off' ? undefined : `${P}-image-hover-${settings.hoverEffect}`;
+  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, imageFit, hoverEffect } = settings;
+  const imageHoverClass =
+    hoverEffect === 'off' || hoverEffect === 'randomize'
+      ? undefined
+      : `${P}-image-hover-${hoverEffect}`;
   const autoplayEnabled = !isPreviewMode;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -263,36 +263,42 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const [trackHeight, setTrackHeight] = useState(0);
   const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
-  const hoverRandomizeEnabled = settings.hoverRandomize === 'on';
   const [swappedSlots, setSwappedSlots] = useState<Record<number, MarqueeItem>>({});
   const swappedSlotsRef = useRef(swappedSlots);
   swappedSlotsRef.current = swappedSlots;
   const stableCandidateRef = useRef<number | null>(null);
   const loadedFirstSetImagesRef = useRef(0);
   const scheduleRemeasureRef = useRef<(() => void) | null>(null);
-  const contentImageUrlsKey = useMemo(() => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),[content]);
-  const trackContent = useMemo(() => {
+  const contentImageUrlsKey = useMemo(
+    () => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),
+    [content],
+  );
+  const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
+  const setContent = useMemo(() => {
     const items = content ?? [];
     if (!autoplayEnabled || items.length === 0) return items;
-    return expandTrackContent(items);
-  }, [content, autoplayEnabled]);
+    return expandSetContent(items, contentSequenceRepeat);
+  }, [content, autoplayEnabled, contentSequenceRepeat]);
   const firstSetImageUrlCount = useMemo(
-    () => trackContent.filter((i) => Boolean(i.image?.url)).length,
-    [trackContent],
+    () => setContent.filter((i) => Boolean(i.image?.url)).length,
+    [setContent],
   );
   const copies = useMemo(() => {
-    if (!autoplayEnabled || content?.length === 0) return 1;
-    if (setWidth <= 0 || containerWidth <= 0) return 2;
-    return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [autoplayEnabled, content?.length, setWidth, containerWidth, imageFit]);
+    if (!autoplayEnabled || (content?.length ?? 0) === 0) return 1;
+    return OUTER_SET_COPIES;
+  }, [autoplayEnabled, content?.length]);
 
   useLayoutEffect(() => {
     loadedFirstSetImagesRef.current = 0;
     setSwappedSlots({});
+    stableCandidateRef.current = null;
+    setContentSequenceRepeat(MIN_CONTENT_SEQUENCE_REPEAT);
+    setSetWidth(0);
+    setContainerWidth(0);
   }, [contentImageUrlsKey]);
 
   useEffect(() => {
-    if (!hoverRandomizeEnabled) return;
+    if (hoverEffect !== 'randomize') return;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
@@ -344,7 +350,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       cancelAnimationFrame(raf);
       observer.disconnect();
     };
-  }, [hoverRandomizeEnabled, swappedSlots]);
+  }, [hoverEffect, swappedSlots]);
 
   useLayoutEffect(() => {
     if (!autoplayEnabled) return;
@@ -356,10 +362,25 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       const nextContainerWidth = wrapper.getBoundingClientRect().width;
       const nextRawSetWidth = set.getBoundingClientRect().width;
       const prevCandidate = stableCandidateRef.current;
-      const isStableNow = typeof prevCandidate === 'number' && Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
+      const isStableNow =
+        typeof prevCandidate === 'number' &&
+        Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
       stableCandidateRef.current = nextRawSetWidth;
       setContainerWidth(nextContainerWidth);
-      if (typeof nextRawSetWidth === 'number' && nextRawSetWidth > 0 && setWidth <= 0) {
+      if (nextRawSetWidth > 0 && contentSequenceRepeat > 0) {
+        const singleCycleWidth = nextRawSetWidth / contentSequenceRepeat;
+        if (singleCycleWidth > 0 && nextContainerWidth > 0) {
+          const targetRepeat = Math.max(
+            MIN_CONTENT_SEQUENCE_REPEAT,
+            Math.ceil(nextContainerWidth / singleCycleWidth) + 1,
+          );
+          if (targetRepeat !== contentSequenceRepeat) {
+            setContentSequenceRepeat(targetRepeat);
+            return;
+          }
+        }
+      }
+      if (nextRawSetWidth > 0 && setWidth <= 0) {
         setSetWidth(nextRawSetWidth);
         return;
       }
@@ -384,7 +405,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplayEnabled, setWidth]);
+  }, [autoplayEnabled, setWidth, contentImageUrlsKey, contentSequenceRepeat]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
@@ -414,10 +435,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(track);
-    return () => {
-      ro.disconnect();
-    };
-  }, [autoplayEnabled, copies, trackContent, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit]);
+    return () => ro.disconnect();
+  }, [autoplayEnabled, copies, setContent, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit, swappedSlots]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -428,33 +447,44 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     setIsHovering(false);
   };
 
-  const onFirstSetImageDone = () => {
+  const onFirstSetImageDone = useCallback(() => {
     loadedFirstSetImagesRef.current = Math.min(
       firstSetImageUrlCount,
       loadedFirstSetImagesRef.current + 1,
     );
     scheduleRemeasureRef.current?.();
-  };
+  }, [firstSetImageUrlCount]);
 
-  const renderCardWrapper = (item: MarqueeItem, copyIndex: number, itemIndex: number, isFirstSet?: boolean) => {
-    const cardKey = getMarqueeCardKey(copyIndex, itemIndex);
-    const displayItem = hoverRandomizeEnabled ? (swappedSlots[itemIndex] ?? item) : item;
-    const onCardEnter = hoverRandomizeEnabled
-      ? () => {
-          const current = swappedSlots[itemIndex] ?? item;
-          const candidates = (content ?? []).filter((c) => c !== current);
-          if (candidates.length === 0) return;
-          const next = candidates[Math.floor(Math.random() * candidates.length)];
-          setSwappedSlots((prev) => ({ ...prev, [itemIndex]: next }));
-        }
-      : undefined;
+  const handleRandomizeEnter = useCallback(
+    (slotIndex: number, item: MarqueeItem) => {
+      setSwappedSlots((prev) => {
+        const current = prev[slotIndex] ?? item;
+        const candidates = (content ?? []).filter((c) => c !== current);
+        if (candidates.length === 0) return prev;
+        const next = candidates[Math.floor(Math.random() * candidates.length)];
+        return { ...prev, [slotIndex]: next };
+      });
+    },
+    [content],
+  );
+
+  const renderCardWrapper = (
+    item: MarqueeItem,
+    copyIndex: number,
+    slotIndex: number,
+    isFirstSet?: boolean,
+  ) => {
+    const displayItem = hoverEffect === 'randomize' ? (swappedSlots[slotIndex] ?? item) : item;
+    const onCardEnter =
+      hoverEffect === 'randomize'
+        ? () => handleRandomizeEnter(slotIndex, item)
+        : undefined;
+
     return (
       <div
-        key={cardKey}
+        key={`${copyIndex}-${slotIndex}`}
         className={`${P}-marquee-card`}
-        data-marquee-card-key={cardKey}
-        data-marquee-item-index={itemIndex}
-        data-marquee-copy-index={copyIndex}
+        data-marquee-item-index={slotIndex}
         onMouseEnter={onCardEnter}
       >
         <MarqueeItemCard
@@ -505,7 +535,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           onMouseEnter={onTrackEnter}
           onMouseLeave={onTrackLeave}
           style={{
-            ...(setWidth <= 0 ? { animationName: 'none' } : {}),
             ...(hoverPauseEnabled
               ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
               : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
@@ -522,8 +551,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
               }}
               aria-hidden={copyIndex > 0}
             >
-              {trackContent.map((item: MarqueeItem, index: number) =>
-                renderCardWrapper(item, copyIndex, index, copyIndex === 0)
+              {setContent.map((marqueeItem, slotIndex) =>
+                renderCardWrapper(marqueeItem, copyIndex, slotIndex, copyIndex === 0),
               )}
             </div>
           ))}
@@ -541,8 +570,8 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         style={{ gap: scaled(gap), transform: 'none' }}
         aria-label="Marquee"
       >
-        {content?.map((item: MarqueeItem, index: number) =>
-          renderCardWrapper(item, 0, index)
+        {content?.map((marqueeItem, itemIndex) =>
+          renderCardWrapper(marqueeItem, 0, itemIndex),
         )}
       </div>
     </div>
@@ -561,8 +590,7 @@ export type MarqueeSettings = {
   speed: number;
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
-  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate';
-  hoverRandomize: 'on' | 'off';
+  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate' | 'randomize';
   gap: number;
   imageMaxWidth: number;
   imageMaxHeight: number;

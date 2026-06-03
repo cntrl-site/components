@@ -33,13 +33,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Effect',
-        display: { type: 'switch-toggle', enum: ['off', 'brightness', 'grayscale', 'saturate'] },
-      },
-      hoverRandomize: {
-        type: 'string',
-        scope: 'common',
-        title: 'Randomize',
-        display: { type: 'switch-toggle', enum: ['on', 'off'] },
+        display: { type: 'switch-toggle', enum: ['off', 'brightness', 'grayscale', 'saturate', 'randomize'] },
       },
       gap: {
         type: 'number',
@@ -96,7 +90,7 @@ const schema: ComponentSchemaV1 = {
     displayRules: [
       {
         if: { name: 'imageFit', value: 'contain' },
-        then: { name: 'properties.hoverRandomize.display.visible', value: false },
+        then: { name: 'properties.hoverEffect.display.enum', value: ['off', 'brightness', 'grayscale', 'saturate'] },
       },
     ],
     layout: [
@@ -123,8 +117,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: [ 'imageMaxWidth', 'imageMaxHeight'] },
         { type: 'row', items: ['direction' ] },
         { type: 'group', title: 'Hover Settings', items: [
-          {type: 'row', title: '', items: ['pauseOnHover', 'hoverEffect']},
-          {type: 'row', title: '', items: ['hoverRandomize']}
+          {type: 'row', title: '', items: ['pauseOnHover', 'hoverEffect']}
         ]},
       ],
     },
