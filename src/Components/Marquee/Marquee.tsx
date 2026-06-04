@@ -173,7 +173,6 @@ const MarqueeItemCard = ({
   imageMaxWidth,
   imageMaxHeight,
   imageHoverClass,
-  isEditor,
   isFirstSet,
   scaled,
   onFirstSetImageDone,
@@ -204,14 +203,13 @@ const MarqueeItemCard = ({
         onError={isFirstSet ? onFirstSetImageDone : undefined}
       />
     );
-
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'start',
-        width: scaled(imageMaxWidth),
+        ...(imageFit === 'cover' ? { width: scaled(imageMaxWidth) } : { maxWidth: scaled(imageMaxWidth) }),
       }}
     >
       <div
@@ -227,19 +225,10 @@ const MarqueeItemCard = ({
           flexShrink: 0,
         }}
       >
-        {imageNode &&
-          (item.link ? (
-            <a
-              href={item.link}
-              target='_blank'
-              rel='noopener noreferrer'
-              className={`${P}-marquee-link`}
-            >
-              {imageNode}
-            </a>
-          ) : (
-            imageNode
-          ))}
+        {imageNode && item.link 
+          ? <a href={item.link} target='_blank' rel='noopener noreferrer' className={`${P}-marquee-link`}>{imageNode}</a>
+          : imageNode
+        }
       </div>
     </div>
   );
@@ -248,17 +237,13 @@ const MarqueeItemCard = ({
 export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
   const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, imageFit, hoverEffect } = settings;
-  const imageHoverClass =
-    hoverEffect === 'off' || hoverEffect === 'randomize'
-      ? undefined
-      : `${P}-image-hover-${hoverEffect}`;
+  const imageHoverClass = hoverEffect === 'off' || hoverEffect === 'randomize' ? undefined : `${P}-image-hover-${hoverEffect}`;
   const autoplayEnabled = !isPreviewMode;
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const setRef = useRef<HTMLDivElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
   const [trackHeight, setTrackHeight] = useState(0);
   const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
@@ -269,10 +254,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   const stableCandidateRef = useRef<number | null>(null);
   const loadedFirstSetImagesRef = useRef(0);
   const scheduleRemeasureRef = useRef<(() => void) | null>(null);
-  const contentImageUrlsKey = useMemo(
-    () => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),
-    [content],
-  );
+  const contentImageUrlsKey = useMemo(() => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),[content]);
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
   const setContent = useMemo(() => {
     const items = content ?? [];
@@ -294,7 +276,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     stableCandidateRef.current = null;
     setContentSequenceRepeat(MIN_CONTENT_SEQUENCE_REPEAT);
     setSetWidth(0);
-    setContainerWidth(0);
   }, [contentImageUrlsKey]);
 
   useEffect(() => {
@@ -315,18 +296,15 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
       });
     };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const itemIndices = new Set<number>();
-        for (const entry of entries) {
-          const raw = (entry.target as HTMLElement).dataset.marqueeItemIndex;
-          const itemIndex = raw !== undefined ? Number(raw) : NaN;
-          if (!Number.isNaN(itemIndex)) itemIndices.add(itemIndex);
-        }
-        if (itemIndices.size > 0) revertSwappedSlotsOutOfView(itemIndices);
-      },
-      { root: wrapper, threshold: 0 },
-    );
+    const observer = new IntersectionObserver((entries) => {
+      const itemIndices = new Set<number>();
+      for (const entry of entries) {
+        const raw = (entry.target as HTMLElement).dataset.marqueeItemIndex;
+        const itemIndex = raw !== undefined ? Number(raw) : NaN;
+        if (!Number.isNaN(itemIndex)) itemIndices.add(itemIndex);
+      }
+      if (itemIndices.size > 0) revertSwappedSlotsOutOfView(itemIndices);
+    }, { root: wrapper, threshold: 0 });
 
     Object.keys(swappedSlots).forEach((rawItemIndex) => {
       const itemIndex = Number(rawItemIndex);
@@ -366,7 +344,6 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
         typeof prevCandidate === 'number' &&
         Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
       stableCandidateRef.current = nextRawSetWidth;
-      setContainerWidth(nextContainerWidth);
       if (nextRawSetWidth > 0 && contentSequenceRepeat > 0) {
         const singleCycleWidth = nextRawSetWidth / contentSequenceRepeat;
         if (singleCycleWidth > 0 && nextContainerWidth > 0) {
@@ -455,37 +432,24 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
     scheduleRemeasureRef.current?.();
   }, [firstSetImageUrlCount]);
 
-  const handleRandomizeEnter = useCallback(
-    (slotIndex: number, item: MarqueeItem) => {
-      setSwappedSlots((prev) => {
-        const current = prev[slotIndex] ?? item;
-        const candidates = (content ?? []).filter((c) => c !== current);
-        if (candidates.length === 0) return prev;
-        const next = candidates[Math.floor(Math.random() * candidates.length)];
-        return { ...prev, [slotIndex]: next };
-      });
-    },
-    [content],
-  );
+  const handleRandomizeEnter = useCallback((slotIndex: number, item: MarqueeItem) => {
+    setSwappedSlots((prev) => {
+      const current = prev[slotIndex] ?? item;
+      const candidates = (content ?? []).filter((c) => c !== current);
+      if (candidates.length === 0) return prev;
+      const next = candidates[Math.floor(Math.random() * candidates.length)];
+      return { ...prev, [slotIndex]: next };
+    });
+  }, [content]);
 
-  const renderCardWrapper = (
-    item: MarqueeItem,
-    copyIndex: number,
-    slotIndex: number,
-    isFirstSet?: boolean,
-  ) => {
-    const displayItem = hoverEffect === 'randomize' ? (swappedSlots[slotIndex] ?? item) : item;
-    const onCardEnter =
-      hoverEffect === 'randomize'
-        ? () => handleRandomizeEnter(slotIndex, item)
-        : undefined;
-
+  const renderCardWrapper = (item: MarqueeItem, copyIndex: number, slotIndex: number, isFirstSet?: boolean) => {
+    const displayItem = hoverEffect === 'randomize' && imageFit === 'cover' ? (swappedSlots[slotIndex] ?? item) : item;
     return (
       <div
         key={`${copyIndex}-${slotIndex}`}
         className={`${P}-marquee-card`}
         data-marquee-item-index={slotIndex}
-        onMouseEnter={onCardEnter}
+        onMouseEnter={hoverEffect === 'randomize' && imageFit === 'cover' ? () => handleRandomizeEnter(slotIndex, item) : undefined}
       >
         <MarqueeItemCard
           item={displayItem}
