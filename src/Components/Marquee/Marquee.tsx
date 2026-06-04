@@ -102,6 +102,10 @@ function getCSS(P: string): string {
   text-decoration: none;
   color: inherit;
 }
+.${P}-marquee-link-contain {
+  width: auto;
+  height: auto;
+}
 
 .${P}-control::before {
   content: "";
@@ -185,6 +189,7 @@ const MarqueeItemCard = ({
     if (el?.complete) onFirstSetImageDone?.();
   }, [isFirstSet, item.image?.url, onFirstSetImageDone]);
 
+  const isCover = imageFit === 'cover';
   const imageNode =
     item.image?.url &&
     (
@@ -192,13 +197,24 @@ const MarqueeItemCard = ({
         ref={imageRef}
         src={item.image.url}
         alt={item.image?.name ?? ''}
-        style={{
-          pointerEvents: 'auto',
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          objectFit: imageFit,
-        }}
+        style={
+          isCover
+            ? {
+                pointerEvents: 'auto',
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }
+            : {
+                pointerEvents: 'auto',
+                display: 'block',
+                height: '100%',
+                width: 'auto',
+                maxWidth: scaled(imageMaxWidth),
+                objectFit: 'contain',
+              }
+        }
         onLoad={isFirstSet ? onFirstSetImageDone : undefined}
         onError={isFirstSet ? onFirstSetImageDone : undefined}
       />
@@ -209,7 +225,9 @@ const MarqueeItemCard = ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'start',
-        ...(imageFit === 'cover' ? { width: scaled(imageMaxWidth) } : { maxWidth: scaled(imageMaxWidth) }),
+        ...(isCover
+          ? { width: scaled(imageMaxWidth) }
+          : { width: 'fit-content', maxWidth: scaled(imageMaxWidth), minWidth: 0 }),
       }}
     >
       <div
@@ -219,14 +237,27 @@ const MarqueeItemCard = ({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          width: '100%',
-          height: scaled(imageMaxHeight),
-          overflow: 'hidden',
           flexShrink: 0,
+          ...(isCover
+            ? { width: '100%', height: scaled(imageMaxHeight), overflow: 'hidden' }
+            : {
+                width: 'fit-content',
+                maxWidth: scaled(imageMaxWidth),
+                height: scaled(imageMaxHeight),
+              }),
         }}
       >
-        {imageNode && item.link 
-          ? <a href={item.link} target='_blank' rel='noopener noreferrer' className={`${P}-marquee-link`}>{imageNode}</a>
+        {imageNode && item.link
+          ? (
+            <a
+              href={item.link}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}
+            >
+              {imageNode}
+            </a>
+          )
           : imageNode
         }
       </div>
