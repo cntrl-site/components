@@ -92,11 +92,11 @@ const schema: ComponentSchemaV1 = {
       strokeColor: {
         type: 'string',
         scope: 'common',
-        title: 'Stroke color',
+        title: 'Stroke Card',
         display: { type: 'palette-color-picker', visible: true },
       },
       bgColor: {
-        title: 'BG color',
+        title: 'BG card',
         type: 'string',
         scope: 'common',
         display: { type: 'palette-color-picker' },
@@ -112,7 +112,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Logo margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       logoWidth: {
@@ -134,13 +134,13 @@ const schema: ComponentSchemaV1 = {
       textColor: {
         type: 'string',
         scope: 'common',
-        title: 'Text color',
+        title: 'Fill Text',
         display: { type: 'palette-color-picker' },
       },
       captionColor: {
         type: 'string',
         scope: 'common',
-        title: 'Caption color',
+        title: 'Fill Caption',
         display: { type: 'palette-color-picker' },
       },
       captionMarginTop: {
@@ -148,7 +148,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Caption margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       captionFontFamily: {

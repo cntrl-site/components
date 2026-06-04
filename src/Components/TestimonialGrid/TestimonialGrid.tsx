@@ -229,19 +229,29 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       setTrackHeight(0);
       return;
     }
+    const set = setRef.current;
     const track = trackRef.current;
-    if (!track) return;
+    if (!set || !track) return;
     const measure = () => {
-      const next = track.getBoundingClientRect().height;
+      let next = 0;
+      for (let i = 0; i < set.children.length; i++) {
+        const wrapper = set.children[i] as HTMLElement;
+        const card = wrapper.firstElementChild as HTMLElement | null;
+        if (card) next = Math.max(next, card.offsetHeight);
+      }
+      if (next <= 0) {
+        next = track.offsetHeight;
+      }
       setTrackHeight(next > 0 ? next : 0);
     };
     measure();
     const ro = new ResizeObserver(measure);
+    ro.observe(set);
     ro.observe(track);
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight]);
+  }, [autoplayEnabled, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight, measuredTextMinPx, measuredCaptionMinPx]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -317,7 +327,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         key={key}
         style={{
           padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
-          width: scaled(cardWidth + stroke * 2),
+          width: scaled(cardWidth + (stroke * 2)),
           height: '100%',
           borderRadius: scaled(corners),
           border: `${scaled(stroke)} solid ${strokeColor}`,

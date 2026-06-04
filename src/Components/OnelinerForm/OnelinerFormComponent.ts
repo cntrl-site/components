@@ -170,13 +170,13 @@ const schema = {
       strokeColor: {
         type: 'string',
         scope: 'common',
-        title: 'Stroke',
+        title: 'Stroke All',
         display: { type: 'palette-color-picker' },
       },
       inputColor: {
         type: 'string',
         scope: 'common',
-        title: 'Input Fill',
+        title: 'Fill Input',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
@@ -188,19 +188,19 @@ const schema = {
       placeholderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Filler Text',
+        title: 'Filler Input',
         display: { type: 'palette-color-picker' },
       },
       buttonColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Fill',
+        title: 'Fill Button',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Label',
+        title: 'Label Button',
         display: { type: 'palette-color-picker' },
       },
       successColor: {
@@ -346,11 +346,11 @@ const schema = {
         icon: onelinerDefaultSubmitIconUrl,
       },
       fontFamily: 'Arial',
-      strokeColor: '#0A00F8',
+      strokeColor: '#000000',
       inputColor: '#ffffff',
       inputTextColor: '#0A00F8',
       placeholderColor: '#000000',
-      buttonColor: '#0088D7',
+      buttonColor: '#000000',
       buttonTextColor: '#ffffff',
       errorColor: '#ef4444',
       successColor: '#22c55e',
@@ -399,7 +399,7 @@ const schema = {
       m: {
         minHeight: 0.1,
         iconMaxWidth: 0.1,
-        stroke: 0,
+        stroke: 0.001,
         corners: 0,
         buttonPadding: { top: 0.02, right: 0.04, bottom: 0.02, left: 0.04 },
         inputPadding: { top: 0.01, right: 0.03, bottom: 0.01, left: 0.03 },
@@ -413,7 +413,7 @@ const schema = {
       d: {
         minHeight: 0.028,
         iconMaxWidth: 0.028,
-        stroke: 0,
+        stroke: 0.001,
         corners: 0,
         buttonPadding: { right: 0.0175, left: 0.0175, top: 0.005, bottom: 0.004,},
         inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },

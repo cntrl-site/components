@@ -83,7 +83,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Image margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       textMarginTop: {
@@ -91,7 +91,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Text margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       controls: {
@@ -122,13 +122,13 @@ const schema: ComponentSchemaV1 = {
       controlsColor: {
         type: 'string',
         scope: 'common',
-        title: 'Controls Color',
+        title: 'Fill Controls',
         display: { type: 'settings-color-picker' },
       },
       controlsHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Controls Hover',
+        title: 'Hover Controls',
         display: { type: 'settings-color-picker' },
       },
       captionMarginTop: {
@@ -136,7 +136,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Caption margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       captionFontFamily: {
@@ -185,7 +185,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Caption Color',
+        title: 'Fill Caption',
       },
       textFontFamily: {
         type: 'string',
@@ -233,7 +233,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Text Color',
+        title: 'Fill Text',
       },
     },
     defaults: {
@@ -254,7 +254,7 @@ const schema: ComponentSchemaV1 = {
       textWordSpacing: 0,
       textTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
       textColor: '#000000',
-      captionFontFamily: 'Charter',
+      captionFontFamily: 'Goudy Bookletter 1911',
       captionFontSettings: { fontWeight: 400, fontStyle: 'normal' },
       captionLetterSpacing: 0,
       captionWordSpacing: 0,
