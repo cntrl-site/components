@@ -1,18 +1,122 @@
 import {
   COLUMN_CONTENT_KEYS,
   COLUMN_TEXT_PREFIXES,
+  COLUMN_VALIGN_BASIC_OPTIONS,
   getListColumnTextSettingKey,
   List,
   type ListGlobalTextStyleKey,
 } from './List';
-import { ComponentSchemaV1 } from '../../types/SchemaV1';
+import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
 import formSourceRaw from './List.tsx?raw';
+
+type ListFontSettings = { fontWeight: number; fontStyle: string };
+
+type ListTextAppearanceSettings = {
+  textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textDecoration: 'none' | 'underline';
+  fontVariant: 'normal' | 'small-caps';
+};
+
+type ListSchemaDefaultValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | ListFontSettings
+  | ListTextAppearanceSettings;
+
+type ListColumnLayoutDefaults = {
+  columns: number;
+  wrapperWidth: number;
+  columnsOrder: string[];
+  AColumnWidth: number;
+  AColumnPaddingLeft: number;
+  AColumnPaddingRight: number;
+  AColumnPaddingBottom: number;
+  BColumnWidth: number;
+  BColumnPaddingLeft: number;
+  BColumnPaddingRight: number;
+  BColumnPaddingBottom: number;
+  CColumnWidth: number;
+  CColumnPaddingLeft: number;
+  CColumnPaddingRight: number;
+  CColumnPaddingBottom: number;
+  DColumnWidth: number;
+  DColumnPaddingLeft: number;
+  DColumnPaddingRight: number;
+  DColumnPaddingBottom: number;
+  EColumnWidth: number;
+  EColumnPaddingLeft: number;
+  EColumnPaddingRight: number;
+  EColumnPaddingBottom: number;
+};
+
+type ListColumnLayoutDefaultsOverrides = {
+  columns?: number;
+  wrapperWidth?: number;
+  columnsOrder?: string[];
+  AColumnWidth?: number;
+  AColumnPaddingLeft?: number;
+  AColumnPaddingRight?: number;
+  AColumnPaddingBottom?: number;
+  BColumnWidth?: number;
+  BColumnPaddingLeft?: number;
+  BColumnPaddingRight?: number;
+  BColumnPaddingBottom?: number;
+  CColumnWidth?: number;
+  CColumnPaddingLeft?: number;
+  CColumnPaddingRight?: number;
+  CColumnPaddingBottom?: number;
+  DColumnWidth?: number;
+  DColumnPaddingLeft?: number;
+  DColumnPaddingRight?: number;
+  DColumnPaddingBottom?: number;
+  EColumnWidth?: number;
+  EColumnPaddingLeft?: number;
+  EColumnPaddingRight?: number;
+  EColumnPaddingBottom?: number;
+  type?: 'A' | 'B';
+  textPaddingLR?: number;
+  entriesCount?: number;
+  cellMinHeight?: number;
+  imageSize?: { min: number; max: number };
+  dividerWidth?: number;
+  cut?: number;
+  showCut?: number;
+  cutCellMinHeight?: number;
+  rowPaddingTop?: number;
+  rowPaddingBottom?: number;
+  rowPaddingTopB?: number;
+  textStroke?: number;
+  textCorners?: number;
+  textPadding?: { top: number; right: number; bottom: number; left: number };
+  textFontSize?: number;
+  textLineHeight?: number;
+};
+
+type ListColumnTextLayoutDefaultsInput = {
+  textFontSize?: number;
+  textLineHeight?: number;
+};
+
+type ListColumnTextLayoutDefaults = {
+  AColumnTextFontSize?: number;
+  BColumnTextFontSize?: number;
+  CColumnTextFontSize?: number;
+  DColumnTextFontSize?: number;
+  EColumnTextFontSize?: number;
+  AColumnTextLineHeight?: number;
+  BColumnTextLineHeight?: number;
+  CColumnTextLineHeight?: number;
+  DColumnTextLineHeight?: number;
+  EColumnTextLineHeight?: number;
+};
 
 type GridSchema = ComponentSchemaV1 & {
   properties: {
     content: {
       type: 'array';
-      settings?: { addItemFromFileExplorer?: boolean };
+      settings?: { addItemFromFileExplorer?: boolean; addItemWithoutImage?: boolean };
       items: any;
       default: any[];
     };
@@ -20,6 +124,15 @@ type GridSchema = ComponentSchemaV1 & {
 };
 
 const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
+
+const COLUMN_VALIGN_OPTIONS = [
+  ...COLUMN_VALIGN_BASIC_OPTIONS,
+  'Baseline A',
+  'Baseline B',
+  'Baseline C',
+  'Baseline D',
+  'Baseline E',
+] as const;
 
 const COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY = {
   FontFamily: 'textFontFamily',
@@ -96,7 +209,7 @@ function createRangeControlLayoutProperty(title: string) {
   };
 }
 
-function createContentColumnProperties(): Record<string, unknown> {
+function createContentColumnProperties(): Record<string, SchemaProperty> {
   return Object.fromEntries(
     LIST_COLUMN_LETTERS.map((letter, index) => {
       const key = COLUMN_CONTENT_KEYS[index];
@@ -106,8 +219,8 @@ function createContentColumnProperties(): Record<string, unknown> {
   );
 }
 
-function createColumnLayoutSchemaProperties(): Record<string, unknown> {
-  const properties: Record<string, unknown> = {};
+function createColumnLayoutSchemaProperties(): Record<string, SchemaProperty> {
+  const properties: Record<string, SchemaProperty> = {};
 
   for (const letter of LIST_COLUMN_LETTERS) {
     properties[`${letter}ColumnWidth`] = createRangeControlLayoutProperty(`${letter} column width`);
@@ -120,13 +233,13 @@ function createColumnLayoutSchemaProperties(): Record<string, unknown> {
 }
 
 function createColumnLayoutDefaults(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
-  const defaults: Record<string, unknown> = {
+  overrides: ListColumnLayoutDefaultsOverrides = {},
+): ListColumnLayoutDefaults & ListColumnLayoutDefaultsOverrides {
+  const defaults = {
     columns: 5,
     wrapperWidth: 1,
     columnsOrder: [...COLUMN_CONTENT_KEYS],
-  };
+  } as ListColumnLayoutDefaults;
 
   for (const letter of LIST_COLUMN_LETTERS) {
     defaults[`${letter}ColumnWidth`] = 0.2;
@@ -140,8 +253,21 @@ function createColumnLayoutDefaults(
 
 function createColumnTextStyleProperties(
   prefix: typeof COLUMN_TEXT_PREFIXES[number],
-): Record<string, unknown> {
+): Record<string, SchemaProperty> {
+  const columnLetter = prefix.charAt(0);
   return {
+    [`${prefix}VerticalAlign`]: {
+      type: 'string',
+      scope: 'layout',
+      title: 'Vertical align',
+      display: {
+        type: 'drop-down',
+        enum: [...COLUMN_VALIGN_OPTIONS],
+        filterBaselineByTopAnchor: true,
+        columnLetter,
+      },
+      enum: [...COLUMN_VALIGN_OPTIONS],
+    },
     [getColumnTextSettingKey(prefix, 'FontFamily')]: {
       type: 'string',
       scope: 'common',
@@ -187,7 +313,7 @@ function createColumnTextStyleProperties(
   };
 }
 
-const columnTextStyleProperties = COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>(
+const columnTextStyleProperties = COLUMN_TEXT_PREFIXES.reduce<Record<string, SchemaProperty>>(
   (properties, prefix) => ({
     ...properties,
     ...createColumnTextStyleProperties(prefix),
@@ -195,9 +321,10 @@ const columnTextStyleProperties = COLUMN_TEXT_PREFIXES.reduce<Record<string, unk
   {},
 );
 
-const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>(
+const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, ListSchemaDefaultValue>>(
   (defaults, prefix) => ({
     ...defaults,
+    [`${prefix}VerticalAlign`]: 'Top',
     [getColumnTextSettingKey(prefix, 'FontFamily')]: 'Arial',
     [getColumnTextSettingKey(prefix, 'FontSettings')]: {
       fontWeight: 400,
@@ -215,15 +342,15 @@ const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, unkno
 );
 
 function createColumnTextLayoutDefaults(
-  layoutDefaults: Record<string, unknown>,
-): Record<string, unknown> {
+  layoutDefaults: ListColumnTextLayoutDefaultsInput,
+): ListColumnTextLayoutDefaults {
   const { textFontSize, textLineHeight } = layoutDefaults;
-  return COLUMN_TEXT_PREFIXES.reduce<Record<string, unknown>>((defaults, prefix) => {
+  return COLUMN_TEXT_PREFIXES.reduce<ListColumnTextLayoutDefaults>((defaults, prefix) => {
     if (textFontSize !== undefined) {
-      defaults[getColumnTextSettingKey(prefix, 'FontSize')] = textFontSize;
+      defaults[`${prefix}TextFontSize` as keyof ListColumnTextLayoutDefaults] = textFontSize;
     }
     if (textLineHeight !== undefined) {
-      defaults[getColumnTextSettingKey(prefix, 'LineHeight')] = textLineHeight;
+      defaults[`${prefix}TextLineHeight` as keyof ListColumnTextLayoutDefaults] = textLineHeight;
     }
     return defaults;
   }, {});
@@ -247,6 +374,7 @@ const columnTextStylePanelGroups = COLUMN_TEXT_PREFIXES.map((prefix, index) => (
       ],
     },
     getColumnTextSettingKey(prefix, 'TextAppearance'),
+    `${prefix}VerticalAlign`,
   ],
 }));
 
@@ -270,17 +398,6 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
   'rowPaddingTop',
   'rowPaddingBottom',
 ] as const;
-
-function createHiddenWhenDisplayRules(
-  conditionSetting: string,
-  conditionValue: string | number,
-  propertyNames: readonly string[],
-) {
-  return propertyNames.map((name) => ({
-    if: { name: conditionSetting, value: conditionValue },
-    then: { name: `properties.${name}.display.visible`, value: false },
-  }));
-}
 
 function createDefaultContentItem(
   labelSuffix: string,
@@ -333,7 +450,7 @@ const schema: GridSchema = {
     content: {
       type: 'array',
       settings: {
-        addItemFromFileExplorer: true,
+        addItemWithoutImage: true,
       },
       items: {
         type: 'object',
@@ -668,15 +785,30 @@ const schema: GridSchema = {
       }),
     },
     displayRules: [
-      ...createHiddenWhenDisplayRules('cut', 0, CUT_DEPENDENT_PROPERTY_NAMES),
-      ...createHiddenWhenDisplayRules('type', 'A', ['textPaddingLR']),
-      ...createHiddenWhenDisplayRules('type', 'B', HORIZONTAL_LAYOUT_PROPERTY_NAMES),
-      ...createHiddenWhenDisplayRules('type', 'A', ['rowPaddingTopB']),
-      ...createHiddenWhenDisplayRules(
-        'type',
-        'A',
-        LIST_COLUMN_LETTERS.map((letter) => `${letter}ColumnPaddingBottom`),
-      ),
+      ...CUT_DEPENDENT_PROPERTY_NAMES.map((name) => ({
+        if: { name: 'cut', value: 0 },
+        then: { name: `properties.${name}.display.visible`, value: false },
+      })),
+      {
+        if: { name: 'type', value: 'A' },
+        then: { name: 'properties.textPaddingLR.display.visible', value: false },
+      },
+      ...HORIZONTAL_LAYOUT_PROPERTY_NAMES.map((name) => ({
+        if: { name: 'type', value: 'B' },
+        then: { name: `properties.${name}.display.visible`, value: false },
+      })),
+      {
+        if: { name: 'type', value: 'A' },
+        then: { name: 'properties.rowPaddingTopB.display.visible', value: false },
+      },
+      ...LIST_COLUMN_LETTERS.map((letter) => ({
+        if: { name: 'type', value: 'A' },
+        then: { name: `properties.${letter}ColumnPaddingBottom.display.visible`, value: false },
+      })),
+      ...LIST_COLUMN_LETTERS.map((letter) => ({
+        if: { name: 'type', value: 'B' },
+        then: { name: `properties.${letter}ColumnVerticalAlign.display.visible`, value: false },
+      })),
     ],
     layout: [
       '__componentName__',

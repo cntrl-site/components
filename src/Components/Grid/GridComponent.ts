@@ -6,7 +6,7 @@ type GridSchema = ComponentSchemaV1 & {
   properties: {
     content: {
       type: 'array';
-      settings?: { addItemFromFileExplorer?: boolean };
+      settings?: { addItemFromFileExplorer?: boolean; addItemWithoutImage?: boolean };
       items: any;
       default: any[];
     };
@@ -61,7 +61,7 @@ const schema: GridSchema = {
     content: {
       type: 'array',
       settings: {
-        addItemFromFileExplorer: true,
+        addItemWithoutImage: true,
       },
       items: {
         type: 'object',
@@ -190,7 +190,6 @@ const schema: GridSchema = {
         title: 'Text Width (%)',
         display: { type: 'percentage-input' },
         min: 0,
-        max: 200,
       },
       verticalGap: {
         type: 'number',

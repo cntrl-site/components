@@ -3,7 +3,102 @@ import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 
-type ListSettings = {
+type ListFontSettings = { fontWeight: number; fontStyle: string };
+
+type ListColumnPrefix = 'AColumn' | 'BColumn' | 'CColumn' | 'DColumn' | 'EColumn';
+
+type ListColumnTextStyleOverrides = {
+  AColumnVerticalAlign?: string;
+  AColumnTextFontFamily?: string;
+  AColumnTextFontSettings?: ListFontSettings;
+  AColumnTextFontSize?: number;
+  AColumnTextLineHeight?: number;
+  AColumnTextLetterSpacing?: number;
+  AColumnTextWordSpacing?: number;
+  AColumnTextTextAppearance?: TextStyles['textAppearance'];
+  BColumnVerticalAlign?: string;
+  BColumnTextFontFamily?: string;
+  BColumnTextFontSettings?: ListFontSettings;
+  BColumnTextFontSize?: number;
+  BColumnTextLineHeight?: number;
+  BColumnTextLetterSpacing?: number;
+  BColumnTextWordSpacing?: number;
+  BColumnTextTextAppearance?: TextStyles['textAppearance'];
+  CColumnVerticalAlign?: string;
+  CColumnTextFontFamily?: string;
+  CColumnTextFontSettings?: ListFontSettings;
+  CColumnTextFontSize?: number;
+  CColumnTextLineHeight?: number;
+  CColumnTextLetterSpacing?: number;
+  CColumnTextWordSpacing?: number;
+  CColumnTextTextAppearance?: TextStyles['textAppearance'];
+  DColumnVerticalAlign?: string;
+  DColumnTextFontFamily?: string;
+  DColumnTextFontSettings?: ListFontSettings;
+  DColumnTextFontSize?: number;
+  DColumnTextLineHeight?: number;
+  DColumnTextLetterSpacing?: number;
+  DColumnTextWordSpacing?: number;
+  DColumnTextTextAppearance?: TextStyles['textAppearance'];
+  EColumnVerticalAlign?: string;
+  EColumnTextFontFamily?: string;
+  EColumnTextFontSettings?: ListFontSettings;
+  EColumnTextFontSize?: number;
+  EColumnTextLineHeight?: number;
+  EColumnTextLetterSpacing?: number;
+  EColumnTextWordSpacing?: number;
+  EColumnTextTextAppearance?: TextStyles['textAppearance'];
+};
+
+export type ListColumnVerticalAlignKey = `${ListColumnPrefix}VerticalAlign`;
+
+type ListColumnVerticalAlignUpdates = {
+  AColumnVerticalAlign?: string;
+  BColumnVerticalAlign?: string;
+  CColumnVerticalAlign?: string;
+  DColumnVerticalAlign?: string;
+  EColumnVerticalAlign?: string;
+};
+
+type ListColumnTextStyleSyncUpdates = {
+  AColumnTextFontFamily?: string;
+  AColumnTextFontSettings?: ListFontSettings;
+  AColumnTextFontSize?: number;
+  AColumnTextLineHeight?: number;
+  AColumnTextLetterSpacing?: number;
+  AColumnTextWordSpacing?: number;
+  AColumnTextTextAppearance?: TextStyles['textAppearance'];
+  BColumnTextFontFamily?: string;
+  BColumnTextFontSettings?: ListFontSettings;
+  BColumnTextFontSize?: number;
+  BColumnTextLineHeight?: number;
+  BColumnTextLetterSpacing?: number;
+  BColumnTextWordSpacing?: number;
+  BColumnTextTextAppearance?: TextStyles['textAppearance'];
+  CColumnTextFontFamily?: string;
+  CColumnTextFontSettings?: ListFontSettings;
+  CColumnTextFontSize?: number;
+  CColumnTextLineHeight?: number;
+  CColumnTextLetterSpacing?: number;
+  CColumnTextWordSpacing?: number;
+  CColumnTextTextAppearance?: TextStyles['textAppearance'];
+  DColumnTextFontFamily?: string;
+  DColumnTextFontSettings?: ListFontSettings;
+  DColumnTextFontSize?: number;
+  DColumnTextLineHeight?: number;
+  DColumnTextLetterSpacing?: number;
+  DColumnTextWordSpacing?: number;
+  DColumnTextTextAppearance?: TextStyles['textAppearance'];
+  EColumnTextFontFamily?: string;
+  EColumnTextFontSettings?: ListFontSettings;
+  EColumnTextFontSize?: number;
+  EColumnTextLineHeight?: number;
+  EColumnTextLetterSpacing?: number;
+  EColumnTextWordSpacing?: number;
+  EColumnTextTextAppearance?: TextStyles['textAppearance'];
+};
+
+export type ListSettings = {
   columns: number;
   type: 'A' | 'B';
   wrapperWidth: number;
@@ -45,7 +140,7 @@ type ListSettings = {
   textPaddingLR?: number;
   textColor: string;
   textFontFamily: string;
-  textFontSettings?: { fontWeight: number; fontStyle: string };
+  textFontSettings?: ListFontSettings;
   textFontSize?: number;
   textLineHeight?: number;
   textLetterSpacing?: number;
@@ -56,7 +151,7 @@ type ListSettings = {
   textHoverColor: string;
   backgroundHoverColor: string;
   dividerHoverColor: string;
-};
+} & ListColumnTextStyleOverrides;
 
 type ListContentItem = {
   AColumn?: string;
@@ -100,7 +195,7 @@ function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
 }
 
-function hasListColumnText(value: unknown): boolean {
+function hasListColumnText(value: React.ReactNode): boolean {
   return String(value ?? '').trim().length > 0;
 }
 
@@ -189,6 +284,29 @@ function getCSS(P: string): string {
   box-sizing: border-box;
 }
 
+.${P}-list-cols-row-h {
+  align-items: stretch;
+}
+
+.${P}-list-cols-row-h [data-list-col] {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 100%;
+}
+
+.${P}-list-cols-row-h .${P}-list-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.${P}-list-cols-row-h .${P}-list-col-title {
+  flex: 0 1 auto;
+  align-self: stretch;
+}
+
 .${P}-wrapper.${P}-type-b .${P}-list-cols-row {
   flex-direction: column;
   align-items: stretch;
@@ -235,7 +353,7 @@ a.${P}-list-item {
   min-width: ${sv(50)};
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .${P}-list-col-last {
@@ -251,6 +369,15 @@ a.${P}-list-item {
   flex: 1;
   min-width: 0;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.${P}-baseline-probe {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  vertical-align: baseline;
 }
 
 .${P}-col-resize-handle,
@@ -471,6 +598,171 @@ export const COLUMN_TEXT_PREFIXES = [
   'EColumn',
 ] as const;
 
+export const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
+
+export function getListColumnVerticalAlignSettingKey(columnLetter: string): string {
+  return `${columnLetter}ColumnVerticalAlign`;
+}
+
+export const COLUMN_VALIGN_BASIC_OPTIONS = ['Top', 'Center', 'Bottom'] as const;
+
+export function isTopColumnVerticalAlign(value: string | undefined): boolean {
+  const raw = String(value ?? 'Top').trim();
+  if (raw.toLowerCase().startsWith('baseline')) {
+    return false;
+  }
+  return raw === 'Top';
+}
+
+export function parseBaselineAnchorLetter(value: string | undefined): string | null {
+  const raw = String(value ?? '').trim();
+  if (!raw.toLowerCase().startsWith('baseline')) {
+    return null;
+  }
+  const anchorLetter = raw.slice(-1).toUpperCase();
+  return LIST_COLUMN_LETTERS.includes(anchorLetter as typeof LIST_COLUMN_LETTERS[number])
+    ? anchorLetter
+    : null;
+}
+
+export function isValidColumnBaselineVAlign(
+  value: string | undefined,
+  forColumnLetter: string,
+  settings: ListSettings,
+): boolean {
+  const anchorLetter = parseBaselineAnchorLetter(value);
+  if (!anchorLetter) {
+    return true;
+  }
+  if (anchorLetter === forColumnLetter) {
+    return false;
+  }
+  return isTopColumnVerticalAlign(settings[getListColumnVerticalAlignSettingKey(anchorLetter) as ListColumnVerticalAlignKey]);
+}
+
+export function getColumnVerticalAlignOptionsForLetter(
+  columnLetter: string,
+  settings: ListSettings,
+): string[] {
+  const baselineOptions = LIST_COLUMN_LETTERS
+    .filter((letter) => letter !== columnLetter)
+    .filter((letter) => isTopColumnVerticalAlign(settings[getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey]))
+    .map((letter) => `Baseline ${letter}`);
+
+  return [...COLUMN_VALIGN_BASIC_OPTIONS, ...baselineOptions];
+}
+
+type ColumnVerticalAlign =
+  | { kind: 'top' | 'center' | 'bottom' }
+  | { kind: 'baseline'; anchorLetter: string };
+
+function parseColumnVerticalAlign(value: string | undefined): ColumnVerticalAlign {
+  const raw = String(value ?? 'Top').trim();
+  if (raw.toLowerCase().startsWith('baseline')) {
+    const anchorLetter = raw.slice(-1).toUpperCase();
+    if (LIST_COLUMN_LETTERS.includes(anchorLetter as typeof LIST_COLUMN_LETTERS[number])) {
+      return { kind: 'baseline', anchorLetter };
+    }
+    return { kind: 'top' };
+  }
+  if (raw === 'Center') return { kind: 'center' };
+  if (raw === 'Bottom') return { kind: 'bottom' };
+  return { kind: 'top' };
+}
+
+function resolveColumnVerticalAlign(
+  value: string | undefined,
+  settings: ListSettings,
+  columnLetter: string,
+): ColumnVerticalAlign {
+  if (isActiveBaselineVAlign(value, settings, columnLetter)) {
+    return parseColumnVerticalAlign(value);
+  }
+
+  const parsed = parseColumnVerticalAlign(value);
+  if (parsed.kind === 'baseline') {
+    return { kind: 'top' };
+  }
+
+  return parsed;
+}
+
+function isActiveBaselineVAlign(
+  value: string | undefined,
+  settings: ListSettings,
+  forColumnLetter: string,
+): boolean {
+  if (!isValidColumnBaselineVAlign(value, forColumnLetter, settings)) {
+    return false;
+  }
+  return parseColumnVerticalAlign(value).kind === 'baseline';
+}
+
+function getListColumnVerticalAlignSanitizeUpdates(
+  settings: ListSettings,
+): ListColumnVerticalAlignUpdates | null {
+  if (settings.type === 'B') {
+    return null;
+  }
+
+  const updates: ListColumnVerticalAlignUpdates = {};
+  let hasUpdates = false;
+
+  for (const letter of LIST_COLUMN_LETTERS) {
+    const key = getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey;
+    const value = settings[key];
+    if (!isValidColumnBaselineVAlign(value, letter, settings)) {
+      updates[key] = 'Top';
+      hasUpdates = true;
+    }
+  }
+
+  return hasUpdates ? updates : null;
+}
+
+function vAlignToJustifyContent(
+  kind: ColumnVerticalAlign['kind'],
+): 'flex-start' | 'center' | 'flex-end' {
+  if (kind === 'center') return 'center';
+  if (kind === 'bottom') return 'flex-end';
+  return 'flex-start';
+}
+
+function getTitleBaselinePageY(titleEl: HTMLElement | null, probeClassName: string): number {
+  if (!titleEl) return 0;
+
+  const probe = document.createElement('i');
+  probe.className = probeClassName;
+  probe.setAttribute('data-baseline-probe', '');
+  probe.setAttribute('aria-hidden', 'true');
+
+  titleEl.insertBefore(probe, titleEl.firstChild);
+  const baselineY = probe.getBoundingClientRect().bottom;
+  probe.remove();
+
+  return baselineY;
+}
+
+function applyBaselineTitleShift(titleEl: HTMLElement | null, shift: number): number {
+  if (!titleEl || !shift) {
+    if (titleEl) {
+      titleEl.style.paddingTop = '';
+      titleEl.style.marginTop = '';
+    }
+    return 0;
+  }
+
+  if (shift > 0) {
+    titleEl.style.paddingTop = `${shift}px`;
+    titleEl.style.marginTop = '';
+  } else {
+    titleEl.style.paddingTop = '';
+    titleEl.style.marginTop = `${shift}px`;
+  }
+
+  return shift;
+}
+
 const COLUMN_CONTENT_KEY_TO_TEXT_PREFIX: Record<
   typeof COLUMN_CONTENT_KEYS[number],
   typeof COLUMN_TEXT_PREFIXES[number]
@@ -542,12 +834,12 @@ function resolveListGlobalTextFields(
 }
 
 function resolveListColumnTextFields(
-  settings: ListTextStyleFields & Record<string, unknown>,
+  settings: ListSettings,
   textPrefix: typeof COLUMN_TEXT_PREFIXES[number],
 ): ResolvedListTextFields {
   const read = <K extends ListGlobalTextStyleKey>(globalKey: K) => {
     const columnKey = getListColumnTextSettingKey(textPrefix, globalKey);
-    const columnValue = settings[columnKey];
+    const columnValue = settings[columnKey as keyof ListSettings];
     if (columnValue !== undefined) {
       return columnValue as ListTextStyleFields[K];
     }
@@ -573,17 +865,14 @@ function listColumnTextFieldsToCss(
   fields: ResolvedListTextFields,
   isEditor?: boolean,
 ): React.CSSProperties {
-  const resolvedFontSize = fields.textFontSize ?? 0.01;
-  const minLineHeight = resolvedFontSize * 1.2;
-  const resolvedLineHeight = Math.max(fields.textLineHeight ?? resolvedFontSize, minLineHeight);
   const resolvedTextStyle: TextStyles = {
     fontSettings: {
       fontFamily: fields.textFontFamily,
       fontWeight: fields.textFontSettings?.fontWeight ?? 400,
       fontStyle: fields.textFontSettings?.fontStyle ?? 'normal',
     },
-    fontSize: resolvedFontSize,
-    lineHeight: resolvedLineHeight,
+    fontSize: fields.textFontSize ?? 0.01,
+    lineHeight: fields.textLineHeight,
     letterSpacing: fields.textLetterSpacing,
     wordSpacing: fields.textWordSpacing,
     textAppearance: fields.textTextAppearance,
@@ -594,10 +883,10 @@ function listColumnTextFieldsToCss(
 }
 
 function getListGlobalTextSyncUpdates(
-  nextSettings: Record<string, unknown>,
-  prevSettings: Record<string, unknown>,
-): Record<string, unknown> | null {
-  const updates: Record<string, unknown> = {};
+  nextSettings: ListSettings,
+  prevSettings: ListSettings,
+): ListColumnTextStyleSyncUpdates | null {
+  const updates: ListColumnTextStyleSyncUpdates = {};
   let hasChanges = false;
 
   for (const globalKey of LIST_GLOBAL_TEXT_STYLE_KEYS) {
@@ -610,7 +899,9 @@ function getListGlobalTextSyncUpdates(
 
     hasChanges = true;
     for (const prefix of COLUMN_TEXT_PREFIXES) {
-      updates[getListColumnTextSettingKey(prefix, globalKey)] = nextSettings[globalKey];
+      Object.assign(updates, {
+        [getListColumnTextSettingKey(prefix, globalKey)]: nextSettings[globalKey],
+      });
     }
   }
 
@@ -653,6 +944,27 @@ type ColumnWidthKey = typeof COLUMN_WIDTH_KEYS[number];
 type ColumnPaddingLeftKey = typeof COLUMN_PADDING_LEFT_KEYS[number];
 type ColumnPaddingRightKey = typeof COLUMN_PADDING_RIGHT_KEYS[number];
 type ColumnPaddingBottomKey = typeof COLUMN_PADDING_BOTTOM_KEYS[number];
+
+type ListColumnPaddingUpdates = {
+  AColumnPaddingLeft?: number;
+  AColumnPaddingRight?: number;
+  BColumnPaddingLeft?: number;
+  BColumnPaddingRight?: number;
+  CColumnPaddingLeft?: number;
+  CColumnPaddingRight?: number;
+  DColumnPaddingLeft?: number;
+  DColumnPaddingRight?: number;
+  EColumnPaddingLeft?: number;
+  EColumnPaddingRight?: number;
+};
+
+type ListColumnWidthUpdates = {
+  AColumnWidth?: number;
+  BColumnWidth?: number;
+  CColumnWidth?: number;
+  DColumnWidth?: number;
+  EColumnWidth?: number;
+};
 
 type ListItemColumn = {
   key: string;
@@ -735,7 +1047,7 @@ const DEFAULT_COLUMN_WIDTHS: Record<ColumnWidthKey, number> = {
 };
 
 export function getListEffectiveContentWidth(
-  settings: Record<string, unknown>,
+  settings: ListSettings,
 ): number {
   const wrapperWidth = typeof settings.wrapperWidth === 'number' ? settings.wrapperWidth : 1;
 
@@ -769,7 +1081,7 @@ function getResetListColumnPaddingBottomUpdates(): Record<ColumnPaddingBottomKey
 }
 
 function getStoredColumnWidths(
-  settings: Record<string, unknown>,
+  settings: ListSettings,
 ): Record<ColumnWidthKey, number> {
   return Object.fromEntries(
     COLUMN_WIDTH_KEYS.map((key) => [
@@ -827,9 +1139,9 @@ export function getEffectiveListColumnWidths(
 function getListColumnPaddingUpdates(
   columns: number,
   effectiveWidths: number[],
-  settings: Record<string, unknown>,
-): Partial<Record<ColumnPaddingLeftKey | ColumnPaddingRightKey, number>> {
-  const updates: Partial<Record<ColumnPaddingLeftKey | ColumnPaddingRightKey, number>> = {};
+  settings: ListSettings,
+): ListColumnPaddingUpdates {
+  const updates: ListColumnPaddingUpdates = {};
 
   for (let index = 0; index < columns; index += 1) {
     const paddingLeftKey = COLUMN_PADDING_LEFT_KEYS[index];
@@ -904,13 +1216,13 @@ function getListColumnWidthUpdatesForWrapperWidth(
   columns: number,
   wrapperWidth: number,
   storedWidths: Record<ColumnWidthKey, number>,
-): Partial<Record<ColumnWidthKey, number>> {
+): ListColumnWidthUpdates {
   if (columns <= 1) {
     return {};
   }
 
   const resolvedWidths = resolveListColumnWidths(columns, wrapperWidth, storedWidths);
-  const updates: Partial<Record<ColumnWidthKey, number>> = {};
+  const updates: ListColumnWidthUpdates = {};
 
   for (let index = 0; index < columns - 1; index += 1) {
     const key = COLUMN_WIDTH_KEYS[index];
@@ -922,7 +1234,7 @@ function getListColumnWidthUpdatesForWrapperWidth(
   return updates;
 }
 
-function getColumnsOrder(settings: Record<string, unknown>): string[] {
+function getColumnsOrder(settings: ListSettings): string[] {
   if (Array.isArray(settings.columnsOrder) && settings.columnsOrder.length > 0) {
     return settings.columnsOrder as string[];
   }
@@ -941,7 +1253,7 @@ function areStringArraysEqual(left: string[], right: string[]): boolean {
 function getColumnLayoutUpdatesForOrderChange(
   nextOrder: string[],
   prevOrder: string[],
-  prevSettings: Record<string, unknown>,
+  prevSettings: ListSettings,
   columns: number,
 ): Record<string, number> {
   const count = Math.min(columns, nextOrder.length, COLUMN_WIDTH_KEYS.length);
@@ -990,13 +1302,18 @@ function getColumnLayoutUpdatesForOrderChange(
 }
 
 export function applyListSettingsChange(
-  nextSettings: Record<string, unknown>,
-  prevSettings: Record<string, unknown>,
+  nextSettings: ListSettings,
+  prevSettings: ListSettings,
   options?: { designWidth?: number },
-): Record<string, unknown> {
+): ListSettings {
   const textSyncUpdates = getListGlobalTextSyncUpdates(nextSettings, prevSettings);
   if (textSyncUpdates) {
     nextSettings = { ...nextSettings, ...textSyncUpdates };
+  }
+
+  const valignSanitizeUpdates = getListColumnVerticalAlignSanitizeUpdates(nextSettings);
+  if (valignSanitizeUpdates) {
+    nextSettings = { ...nextSettings, ...valignSanitizeUpdates };
   }
 
   const minColumnWidth = getListMinColumnWidth(options?.designWidth);
@@ -1014,8 +1331,8 @@ export function applyListSettingsChange(
         : COLUMN_CONTENT_KEYS.length;
 
   const withColumnPaddingUpdates = (
-    settings: Record<string, unknown>,
-  ): Record<string, unknown> => {
+    settings: ListSettings,
+  ): ListSettings => {
     if (isVerticalLayout) {
       return settings;
     }
@@ -1039,7 +1356,7 @@ export function applyListSettingsChange(
   };
 
   if (typeof nextColumns === 'number' && nextColumns !== prevColumns) {
-    const updates: Record<string, unknown> = {
+    const updates: ListSettings = {
       ...nextSettings,
       ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
       ...getResetListColumnPaddingUpdates(),
@@ -1146,7 +1463,7 @@ function randomBetween(min: number, max: number): number {
 }
 
 function getColumnWidthsFromSettings(
-  settings: Record<string, unknown>,
+  settings: ListSettings,
 ): Record<ColumnWidthKey, number> {
   return Object.fromEntries(
     COLUMN_WIDTH_KEYS.map((key) => [
@@ -1156,8 +1473,8 @@ function getColumnWidthsFromSettings(
   ) as Record<ColumnWidthKey, number>;
 }
 
-function getNumericSettingValues<K extends string>(
-  settings: Record<string, unknown>,
+function getNumericSettingValues<K extends ColumnPaddingLeftKey | ColumnPaddingRightKey | ColumnPaddingBottomKey>(
+  settings: ListSettings,
   keys: readonly K[],
   fallback = 0,
 ): Record<K, number> {
@@ -1345,10 +1662,10 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
 
     const prevSettings = prevSettingsRef.current;
     const updatedSettings = applyListSettingsChange(
-      settings as Record<string, unknown>,
-      prevSettings as Record<string, unknown>,
+      settings,
+      prevSettings,
       { designWidth },
-    ) as ListSettings;
+    );
 
     prevSettingsRef.current = settings;
 
@@ -1360,7 +1677,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
   }, [settings, onUpdateSettings, isEditor, layoutId, designWidth]);
 
   const columnWidthByKey = useMemo(
-    () => getColumnWidthsFromSettings(settings as Record<string, unknown>),
+    () => getColumnWidthsFromSettings(settings),
     [
       settings.AColumnWidth,
       settings.BColumnWidth,
@@ -1371,7 +1688,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
   );
 
   const columnPaddingLeftByKey = useMemo(
-    () => getNumericSettingValues(settings as Record<string, unknown>, COLUMN_PADDING_LEFT_KEYS),
+    () => getNumericSettingValues(settings, COLUMN_PADDING_LEFT_KEYS),
     [
       settings.AColumnPaddingLeft,
       settings.BColumnPaddingLeft,
@@ -1382,7 +1699,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
   );
 
   const columnPaddingRightByKey = useMemo(
-    () => getNumericSettingValues(settings as Record<string, unknown>, COLUMN_PADDING_RIGHT_KEYS),
+    () => getNumericSettingValues(settings, COLUMN_PADDING_RIGHT_KEYS),
     [
       settings.AColumnPaddingRight,
       settings.BColumnPaddingRight,
@@ -1393,7 +1710,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
   );
 
   const columnPaddingBottomByKey = useMemo(
-    () => getNumericSettingValues(settings as Record<string, unknown>, COLUMN_PADDING_BOTTOM_KEYS),
+    () => getNumericSettingValues(settings, COLUMN_PADDING_BOTTOM_KEYS),
     [
       settings.AColumnPaddingBottom,
       settings.BColumnPaddingBottom,
@@ -1422,7 +1739,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     [columnContentOrder, columns, columnWidthByKey, columnPaddingLeftByKey, columnPaddingRightByKey, columnPaddingBottomByKey],
   );
 
-  const resolvedContentWidth = getListEffectiveContentWidth(settings as Record<string, unknown>);
+  const resolvedContentWidth = getListEffectiveContentWidth(settings);
 
   const storedColumnWidths = useMemo(
     () => COLUMN_WIDTH_KEYS.slice(0, columns).map((key) => columnWidthByKey[key]),
@@ -1538,6 +1855,137 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     setHoverImage(null);
   };
 
+  const hasBaselineColumn = useMemo(
+    () =>
+      !isVerticalLayout &&
+      COLUMN_TEXT_PREFIXES.some((prefix) => {
+        const columnLetter = prefix.charAt(0);
+        const valign = settings[`${prefix}VerticalAlign` as ListColumnVerticalAlignKey];
+        return isActiveBaselineVAlign(valign, settings, columnLetter);
+      }),
+    [
+      isVerticalLayout,
+      settings,
+      settings.AColumnVerticalAlign,
+      settings.BColumnVerticalAlign,
+      settings.CColumnVerticalAlign,
+      settings.DColumnVerticalAlign,
+      settings.EColumnVerticalAlign,
+    ],
+  );
+  
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const clearBaselineStyles = () => {
+      container.querySelectorAll<HTMLElement>('[data-list-col]').forEach((el) => {
+        el.style.transform = '';
+        const title = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
+        if (title) {
+          title.style.paddingTop = '';
+          title.style.marginTop = '';
+        }
+      });
+    };
+
+    if (isVerticalLayout || !hasBaselineColumn) {
+      clearBaselineStyles();
+      return;
+    }
+
+    const applyBaselines = () => {
+      container.querySelectorAll<HTMLElement>('[data-list-row]').forEach((rowEl) => {
+        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
+        cols.forEach((el) => {
+          el.style.transform = '';
+          const title = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
+          if (title) {
+            title.style.paddingTop = '';
+            title.style.marginTop = '';
+          }
+        });
+
+        type ColInfo = {
+          el: HTMLElement;
+          titleEl: HTMLElement | null;
+          letter: string;
+          kind: string;
+          anchor: string | null;
+        };
+
+        const probeClassName = `${P}-baseline-probe`;
+        const byLetter = new Map<string, ColInfo>();
+        const infos: ColInfo[] = cols.map((el) => {
+          const titleEl = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
+          const info: ColInfo = {
+            el,
+            titleEl,
+            letter: el.getAttribute('data-col-letter') ?? '',
+            kind: el.getAttribute('data-valign') ?? 'top',
+            anchor: el.getAttribute('data-valign-anchor'),
+          };
+          byLetter.set(info.letter, info);
+          return info;
+        });
+
+        const finalBaseline = new Map<string, number>();
+        const resolve = (info: ColInfo, stack: Set<string>): number => {
+          const cached = finalBaseline.get(info.letter);
+          if (cached !== undefined) return cached;
+
+          const anchor = info.anchor ? byLetter.get(info.anchor) : undefined;
+          if (info.kind !== 'baseline' || !anchor || stack.has(info.letter)) {
+            const baseline = getTitleBaselinePageY(info.titleEl, probeClassName);
+            finalBaseline.set(info.letter, baseline);
+            return baseline;
+          }
+
+          stack.add(info.letter);
+          const anchorBaseline = resolve(anchor, stack);
+          stack.delete(info.letter);
+
+          const followerNatural = getTitleBaselinePageY(info.titleEl, probeClassName);
+          const shift = anchorBaseline - followerNatural;
+          applyBaselineTitleShift(info.titleEl, shift);
+
+          const result = getTitleBaselinePageY(info.titleEl, probeClassName);
+          finalBaseline.set(info.letter, result);
+          return result;
+        };
+
+        infos.forEach((info) => resolve(info, new Set<string>()));
+      });
+    };
+
+    applyBaselines();
+
+    const observer = new ResizeObserver(() => applyBaselines());
+    observer.observe(container);
+
+    let cancelled = false;
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (!cancelled) applyBaselines();
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      clearBaselineStyles();
+    };
+  }, [
+    hasBaselineColumn,
+    isVerticalLayout,
+    settings,
+    content,
+    designWidth,
+    visibleRows,
+    effectiveColumnWidths,
+    columnTextCssByPrefix,
+  ]);
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
@@ -1584,7 +2032,8 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                   />
                 )}
                 <div
-                  className={`${P}-list-cols-row`}
+                  className={`${P}-list-cols-row${isVerticalLayout ? '' : ` ${P}-list-cols-row-h`}`}
+                  {...(isVerticalLayout ? {} : { 'data-list-row': '' })}
                   style={isVerticalLayout ? undefined : { minHeight: scaled(resolvedCellMinHeight) }}
                 >
                   {listColumns.map((col, colIndex) => {
@@ -1607,14 +2056,37 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                         paddingLeft: scaled(effectivePadding.paddingLeft),
                         paddingRight: scaled(effectivePadding.paddingRight),
                       };
+                    const columnLetter = col.textPrefix.charAt(0);
+                    const vAlign = isVerticalLayout
+                      ? { kind: 'top' as const }
+                      : resolveColumnVerticalAlign(
+                        settings[`${col.textPrefix}VerticalAlign` as ListColumnVerticalAlignKey],
+                        settings,
+                        columnLetter,
+                      );
 
                     return (
-                      <div key={col.key}>
+                      <div
+                        key={col.key}
+                        {...(isVerticalLayout
+                          ? {}
+                          : {
+                            'data-list-col': '',
+                            'data-col-letter': columnLetter,
+                            'data-valign': vAlign.kind,
+                            ...(vAlign.kind === 'baseline'
+                              ? { 'data-valign-anchor': vAlign.anchorLetter }
+                              : {}),
+                          })}
+                      >
                         <div
                           className={`${P}-list-col${isLastColumn ? ` ${P}-list-col-last` : ''}`}
                           style={{
                             ...columnPaddingStyle,
                             ...columnSizeStyle,
+                            ...(!isVerticalLayout
+                              ? { justifyContent: vAlignToJustifyContent(vAlign.kind) }
+                              : {}),
                           }}
                           data-test={col.width}
                         >
