@@ -479,7 +479,7 @@ export const TestimonialGridComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/testimonials.png',
+    url: 'https://cdn.cntrl.site/component-assets/Testimonials_Grid.mp4',
   },
   defaultSize: {
     d: {

@@ -907,7 +907,7 @@ export const ListComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/formImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/Programme_List.png ',
   },
   version: 1,
   defaultSize: {

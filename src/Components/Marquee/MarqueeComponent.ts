@@ -203,7 +203,7 @@ export const MarqueeComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/marquee.png',
+    url: 'https://cdn.cntrl.site/component-assets/Simple_Marquee.mp4',
   },
   schema,
   sourceCode: marqueeSourceRaw,

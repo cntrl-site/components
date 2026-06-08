@@ -457,7 +457,7 @@ export const TestimonialSingleComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/testimonialsSingle.png',
+    url: 'https://cdn.cntrl.site/component-assets/Testimonials_Single.png',
   },
   defaultSize: {
     d: {

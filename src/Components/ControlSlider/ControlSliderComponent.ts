@@ -7,7 +7,7 @@ export const ControlSliderComponent: Component = {
   name: 'Slider',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/sliderImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/Slider.mp4',
   },
   defaultSize: {
     d: {
