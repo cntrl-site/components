@@ -1,0 +1,574 @@
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { CommonComponentProps } from '../props';
+import { scalingValue } from '../utils/scalingValue';
+import { useScopedStyles } from '../utils/useScopedStyles';
+
+const LIGHTBOX_ANIM_MS = 300;
+const THUMB_MAX_SIZE_PX = 40;
+const THUMB_GAP_PX = 8;
+
+function getCSS(P: string): string {
+  return `
+.${P}-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.${P}-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.${P}-cover-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.${P}-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.${P}-lightbox-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.${P}-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 31, 34, 0.9);
+  pointer-events: none;
+}
+
+.${P}-lightbox-strip {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+
+.${P}-lightbox-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.${P}-lightbox-strip[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.${P}-strip-item {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+}
+
+.${P}-thumbnails {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: ${THUMB_GAP_PX}px;
+  max-width: calc(100% - 32px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  pointer-events: auto;
+}
+
+.${P}-thumbnails::-webkit-scrollbar {
+  display: none;
+}
+
+.${P}-thumb {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.${P}-thumb[data-active="true"] {
+  opacity: 1;
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.${P}-thumb-image {
+  display: block;
+  max-width: ${THUMB_MAX_SIZE_PX}px;
+  max-height: ${THUMB_MAX_SIZE_PX}px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+`;
+}
+
+type LightboxOverlayProps = {
+  prefix: string;
+  images: LightboxStripItem[];
+  gap: string;
+  imageWidth: string;
+  imageHeight: string;
+  objectFit: 'cover' | 'contain';
+  closeIcon: string | null;
+  closeIconMaxWidth: number;
+  isEditor?: boolean;
+  onClose: () => void;
+};
+
+const DRAG_THRESHOLD_PX = 3;
+const LOOP_COPIES = 3;
+
+const LightboxOverlay = ({
+  prefix: P,
+  images,
+  gap,
+  imageWidth,
+  imageHeight,
+  objectFit,
+  isEditor,
+  closeIcon,
+  closeIconMaxWidth,
+  onClose,
+}: LightboxOverlayProps) => {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const setWidthRef = useRef(0);
+  const dragRef = useRef({
+    isActive: false,
+    startX: 0,
+    scrollLeft: 0,
+    hasMoved: false,
+  });
+  const isLoopEnabled = images.length > 1;
+  const loopCopies = isLoopEnabled ? LOOP_COPIES : 1;
+  const flatItems = useMemo(
+    () => Array.from({ length: loopCopies }, () => images).flat(),
+    [images, loopCopies],
+  );
+  const [isDragging, setIsDragging] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const isClosingRef = useRef(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    setIsVisible(false);
+    closeTimeoutRef.current = setTimeout(() => {
+      onClose();
+    }, LIGHTBOX_ANIM_MS);
+  }, [onClose]);
+
+  const measureSetWidth = () => {
+    if (!isLoopEnabled || images.length === 0) {
+      setWidthRef.current = 0;
+      return 0;
+    }
+    const firstItem = itemRefs.current[0];
+    const firstMiddleSetItem = itemRefs.current[images.length];
+    if (!firstItem || !firstMiddleSetItem) return setWidthRef.current;
+    const nextSetWidth = firstMiddleSetItem.offsetLeft - firstItem.offsetLeft;
+    if (nextSetWidth > 0) {
+      setWidthRef.current = nextSetWidth;
+    }
+    return setWidthRef.current;
+  };
+
+  const normalizeInfiniteScroll = (adjustDragAnchor = false) => {
+    if (!isLoopEnabled) return;
+    const strip = stripRef.current;
+    const setWidth = measureSetWidth();
+    if (!strip || setWidth <= 0) return;
+
+    if (strip.scrollLeft <= 0) {
+      strip.scrollLeft += setWidth;
+      if (adjustDragAnchor) {
+        dragRef.current.scrollLeft += setWidth;
+      }
+    } else if (strip.scrollLeft >= setWidth * 2) {
+      strip.scrollLeft -= setWidth;
+      if (adjustDragAnchor) {
+        dragRef.current.scrollLeft -= setWidth;
+      }
+    }
+  };
+
+  const updateActiveIndex = () => {
+    const strip = stripRef.current;
+    if (!strip || images.length === 0) return;
+    const stripCenter = strip.scrollLeft + strip.clientWidth / 2;
+    let closestFlatIndex = 0;
+    let closestDistance = Infinity;
+    itemRefs.current.forEach((item, flatIndex) => {
+      if (!item) return;
+      const itemCenter = item.offsetLeft + item.offsetWidth / 2;
+      const distance = Math.abs(itemCenter - stripCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestFlatIndex = flatIndex;
+      }
+    });
+    setActiveIndex(closestFlatIndex % images.length);
+  };
+
+  const scrollToIndex = (index: number) => {
+    const strip = stripRef.current;
+    const flatIndex = isLoopEnabled ? images.length + index : index;
+    const item = itemRefs.current[flatIndex];
+    if (!strip || !item) return;
+    const scrollTarget = item.offsetLeft - (strip.clientWidth - item.offsetWidth) / 2;
+    strip.scrollTo({
+      left: Math.max(0, scrollTarget),
+      behavior: 'smooth',
+    });
+    setActiveIndex(index);
+  };
+
+  const onStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-controls="gap"]')) return;
+    const strip = stripRef.current;
+    if (!strip) return;
+    dragRef.current = {
+      isActive: true,
+      startX: event.clientX,
+      scrollLeft: strip.scrollLeft,
+      hasMoved: false,
+    };
+    strip.setPointerCapture(event.pointerId);
+  };
+
+  const onStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const strip = stripRef.current;
+    if (!strip || !dragRef.current.isActive) return;
+    const deltaX = event.clientX - dragRef.current.startX;
+    if (Math.abs(deltaX) > DRAG_THRESHOLD_PX) {
+      dragRef.current.hasMoved = true;
+      setIsDragging(true);
+    }
+    if (dragRef.current.hasMoved) {
+      event.preventDefault();
+      strip.scrollLeft = dragRef.current.scrollLeft - deltaX;
+      normalizeInfiniteScroll(true);
+      updateActiveIndex();
+    }
+  };
+
+  const endStripDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    dragRef.current.isActive = false;
+    setIsDragging(false);
+    if (strip.hasPointerCapture(event.pointerId)) {
+      strip.releasePointerCapture(event.pointerId);
+    }
+    normalizeInfiniteScroll();
+    updateActiveIndex();
+  };
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setIsVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleClose]);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    measureSetWidth();
+    if (isLoopEnabled && setWidthRef.current > 0) {
+      strip.scrollLeft = setWidthRef.current;
+    }
+    updateActiveIndex();
+  }, [images.length, imageWidth, gap, isLoopEnabled]);
+
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const onScroll = () => {
+      normalizeInfiniteScroll();
+      updateActiveIndex();
+    };
+    strip.addEventListener('scroll', onScroll, { passive: true });
+    const observer = new ResizeObserver(() => {
+      measureSetWidth();
+      normalizeInfiniteScroll();
+      updateActiveIndex();
+    });
+    observer.observe(strip);
+    return () => {
+      strip.removeEventListener('scroll', onScroll);
+      observer.disconnect();
+    };
+  }, [images.length, isLoopEnabled]);
+
+  return (
+    <div
+      className={`${P}-lightbox`}
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image gallery"
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transition: `opacity ${LIGHTBOX_ANIM_MS}ms ease`,
+        pointerEvents: isVisible ? 'auto' : 'none',
+      }}
+    >
+      <div className={`${P}-lightbox-backdrop`} />
+      <div
+        className={`${P}-lightbox-content`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div
+          ref={stripRef}
+          className={`${P}-lightbox-strip`}
+          style={{ gap }}
+          data-dragging={isDragging ? 'true' : 'false'}
+          onPointerDown={onStripPointerDown}
+          onPointerMove={onStripPointerMove}
+          onPointerUp={endStripDrag}
+          onPointerCancel={endStripDrag}
+        >
+          {flatItems.map((item, flatIndex) => {
+            const itemObjectFit = item.image.objectFit ?? objectFit;
+            const sourceIndex = flatIndex % images.length;
+            const copyIndex = Math.floor(flatIndex / images.length);
+            const isMiddleCopy = copyIndex === 1;
+
+            return (
+              <div
+                key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
+                ref={(element) => {
+                  itemRefs.current[flatIndex] = element;
+                }}
+                className={`${P}-strip-item`}
+                style={{
+                  width: imageWidth,
+                }}
+                aria-hidden={!isMiddleCopy}
+              >
+                <img
+                  src={item.image.url}
+                  alt={isMiddleCopy ? (item.image.name ?? '') : ''}
+                  draggable={false}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: itemObjectFit,
+                  }}
+                />
+                {isEditor && isMiddleCopy && sourceIndex < images.length - 1 && (
+                  <div
+                    data-controls="gap"
+                    data-controls-axis="x"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: `calc(-1 * ${gap})`,
+                      width: gap,
+                      height: '100%',
+                      pointerEvents: 'auto',
+                      zIndex: 2,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {images.length > 1 && (
+          <div className={`${P}-thumbnails`}>
+            {images.map((item, index) => (
+              <button
+                key={`thumb-${item.image.url}-${index}`}
+                type="button"
+                className={`${P}-thumb`}
+                data-active={activeIndex === index ? 'true' : 'false'}
+                onClick={() => scrollToIndex(index)}
+                aria-label={item.image.name ? `View ${item.image.name}` : `View image ${index + 1}`}
+                aria-current={activeIndex === index ? 'true' : undefined}
+              >
+                <img
+                  className={`${P}-thumb-image`}
+                  src={item.image.url}
+                  alt=""
+                  draggable={false}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+          {closeIcon && (
+          <button
+            type="button"
+            className={`${P}-close-icon`}
+            onClick={handleClose}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: closeIconMaxWidth,
+            }}
+          >
+            <img src={closeIcon} style={{ width: closeIconMaxWidth }} alt="Close" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+type LightboxStripProps = {
+  settings: LightboxStripSettings;
+  content?: LightboxStripItem[];
+  isEditor?: boolean;
+} & CommonComponentProps;
+
+export const LightboxStrip = ({ settings, content, isEditor }: LightboxStripProps) => {
+  const { prefix: P } = useScopedStyles();
+  const { gap, imageWidth, imageHeight, objectFit, closeIcon, closeIconMaxWidth } = settings;
+  const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const items = content ?? [];
+  const coverItem = items[0];
+
+  const openLightbox = () => {
+    if (items.length === 0) return;
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  return (
+    <>
+      <div className={`${P}-wrapper`}>
+        <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+        {coverItem?.image?.url ? (
+          <button
+            type="button"
+            className={`${P}-cover`}
+            onClick={openLightbox}
+            style={{
+              display: 'block',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+            }}
+            aria-label={coverItem.image.name ? `Open ${coverItem.image.name}` : 'Open image gallery'}
+          >
+            <img
+              className={`${P}-cover-image`}
+              src={coverItem.image.url}
+              alt={coverItem.image.name ?? ''}
+              style={{ objectFit: coverItem.image.objectFit ?? objectFit }}
+            />
+          </button>
+        ) : null}
+      </div>
+
+      {lightboxOpen && typeof document !== 'undefined' &&
+        createPortal(
+          <LightboxOverlay
+            prefix={P}
+            images={items}
+            gap={scaled(gap)}
+            imageWidth={scaled(imageWidth)}
+            imageHeight={scaled(imageHeight)}
+            objectFit={objectFit}
+            isEditor={isEditor}
+            closeIcon={closeIcon}
+            closeIconMaxWidth={closeIconMaxWidth}
+            onClose={closeLightbox}
+          />,
+          document.body,
+        )}
+    </>
+  );
+};
+
+export type LightboxStripItem = {
+  image: {
+    url: string;
+    name?: string;
+    objectFit?: 'cover' | 'contain';
+  };
+};
+
+export type LightboxStripSettings = {
+  gap: number;
+  imageWidth: number;
+  imageHeight: number;
+  objectFit: 'cover' | 'contain';
+  closeIcon: string | null;
+  closeIconMaxWidth: number;
+};
