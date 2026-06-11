@@ -48,15 +48,20 @@ export function omitTextColors(styles: React.CSSProperties): React.CSSProperties
   return rest;
 }
 
-export function textStylesToCss(textStyles: TextStyles, isEditor?: boolean): React.CSSProperties {
+export function textStylesToCss(
+  textStyles: TextStyles,
+  isEditor?: boolean,
+): React.CSSProperties {
+  const { fontSize, lineHeight } = textStyles;
+
   return {
     fontFamily: normalizeFontFamilyCssValue(textStyles.fontSettings.fontFamily),
     fontWeight: textStyles.fontSettings.fontWeight,
     fontStyle: textStyles.fontSettings.fontStyle,
     letterSpacing: scalingValue(textStyles.letterSpacing, isEditor),
     wordSpacing: scalingValue(textStyles.wordSpacing, isEditor),
-    fontSize: scalingValue(textStyles.fontSize, isEditor),
-    lineHeight: textStyles.lineHeight !== undefined ? scalingValue(textStyles.lineHeight, isEditor) : undefined,
+    fontSize: scalingValue(fontSize, isEditor),
+    lineHeight: lineHeight !== undefined ? scalingValue(lineHeight, isEditor) : undefined,
     textTransform: textStyles.textAppearance?.textTransform,
     textDecoration: textStyles.textAppearance?.textDecoration,
     fontVariant: textStyles.textAppearance?.fontVariant,

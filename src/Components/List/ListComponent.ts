@@ -1,12 +1,14 @@
 import {
   COLUMN_CONTENT_KEYS,
   COLUMN_TEXT_PREFIXES,
+  CUT_LABEL_TEXT_PREFIX,
   COLUMN_VALIGN_BASIC_OPTIONS,
   getListColumnTextSettingKey,
+  LIST_TEXT_STYLE_PREFIXES,
   List,
-  type ListGlobalTextStyleKey,
+  type ListTextStylePrefix,
 } from './List';
-import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
+import { ComponentSchemaV1, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
 import formSourceRaw from './List.tsx?raw';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
@@ -112,17 +114,6 @@ type ListColumnTextLayoutDefaults = {
   EColumnTextLineHeight?: number;
 };
 
-type GridSchema = ComponentSchemaV1 & {
-  properties: {
-    content: {
-      type: 'array';
-      settings?: { addItemFromFileExplorer?: boolean; addItemWithoutImage?: boolean };
-      items: any;
-      default: any[];
-    };
-  };
-};
-
 const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
 
 const COLUMN_VALIGN_OPTIONS = [
@@ -133,25 +124,6 @@ const COLUMN_VALIGN_OPTIONS = [
   'Baseline D',
   'Baseline E',
 ] as const;
-
-const COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY = {
-  FontFamily: 'textFontFamily',
-  FontSettings: 'textFontSettings',
-  FontSize: 'textFontSize',
-  LineHeight: 'textLineHeight',
-  LetterSpacing: 'textLetterSpacing',
-  WordSpacing: 'textWordSpacing',
-  TextAppearance: 'textTextAppearance',
-} as const satisfies Record<string, ListGlobalTextStyleKey>;
-
-type ColumnTextSettingSuffix = keyof typeof COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY;
-
-function getColumnTextSettingKey(
-  prefix: typeof COLUMN_TEXT_PREFIXES[number],
-  suffix: ColumnTextSettingSuffix,
-): string {
-  return getListColumnTextSettingKey(prefix, COLUMN_TEXT_SUFFIX_TO_GLOBAL_KEY[suffix]);
-}
 
 const textStyleProperties = {
   fontSettings: {
@@ -232,9 +204,7 @@ function createColumnLayoutSchemaProperties(): Record<string, SchemaProperty> {
   return properties;
 }
 
-function createColumnLayoutDefaults(
-  overrides: ListColumnLayoutDefaultsOverrides = {},
-): ListColumnLayoutDefaults & ListColumnLayoutDefaultsOverrides {
+function createColumnLayoutDefaults(overrides: ListColumnLayoutDefaultsOverrides = {}): ListColumnLayoutDefaults & ListColumnLayoutDefaultsOverrides {
   const defaults = {
     columns: 5,
     wrapperWidth: 1,
@@ -251,12 +221,12 @@ function createColumnLayoutDefaults(
   return { ...defaults, ...overrides };
 }
 
-function createColumnTextStyleProperties(
-  prefix: typeof COLUMN_TEXT_PREFIXES[number],
-): Record<string, SchemaProperty> {
-  const columnLetter = prefix.charAt(0);
-  return {
-    [`${prefix}VerticalAlign`]: {
+function createTextStyleProperties(prefix: ListTextStylePrefix): Record<string, SchemaProperty> {
+  const properties: Record<string, SchemaProperty> = {};
+
+  if (prefix !== CUT_LABEL_TEXT_PREFIX) {
+    const columnLetter = prefix.charAt(0);
+    properties[`${prefix}VerticalAlign`] = {
       type: 'string',
       scope: 'layout',
       title: 'Vertical align',
@@ -267,72 +237,75 @@ function createColumnTextStyleProperties(
         columnLetter,
       },
       enum: [...COLUMN_VALIGN_OPTIONS],
-    },
-    [getColumnTextSettingKey(prefix, 'FontFamily')]: {
-      type: 'string',
-      scope: 'common',
-      title: 'Font family',
-      display: { type: 'font-family-select' },
-    },
-    [getColumnTextSettingKey(prefix, 'FontSettings')]: {
-      ...textStyleProperties.fontSettings,
-      scope: 'common',
-      title: '',
-      display: { type: 'font-settings-weight' },
-    },
-    [getColumnTextSettingKey(prefix, 'FontSize')]: {
-      ...textStyleProperties.fontSize,
-      scope: 'layout',
-      title: 'Font Size',
-      display: { type: 'font-size' },
-    },
-    [getColumnTextSettingKey(prefix, 'LineHeight')]: {
-      ...textStyleProperties.lineHeight,
-      scope: 'layout',
-      title: 'Line Height',
-      display: { type: 'line-height-input' },
-    },
-    [getColumnTextSettingKey(prefix, 'LetterSpacing')]: {
-      ...textStyleProperties.letterSpacing,
-      scope: 'layout',
-      title: 'Letter Spacing',
-      display: { type: 'letter-spacing-input' },
-    },
-    [getColumnTextSettingKey(prefix, 'WordSpacing')]: {
-      ...textStyleProperties.wordSpacing,
-      scope: 'layout',
-      title: 'Word Spacing',
-      display: { type: 'word-spacing-input' },
-    },
-    [getColumnTextSettingKey(prefix, 'TextAppearance')]: {
-      ...textStyleProperties.textAppearance,
-      scope: 'layout',
-      title: 'Text Appearance',
-      display: { type: 'text-appearance' },
-    },
+    };
+  }
+
+  properties[getListColumnTextSettingKey(prefix, 'textFontFamily')] = {
+    type: 'string',
+    scope: 'common',
+    title: 'Font family',
+    display: { type: 'font-family-select' },
   };
+  properties[getListColumnTextSettingKey(prefix, 'textFontSettings')] = {
+    ...textStyleProperties.fontSettings,
+    scope: 'common',
+    title: '',
+    display: { type: 'font-settings-weight' },
+  };
+  properties[getListColumnTextSettingKey(prefix, 'textFontSize')] = {
+    ...textStyleProperties.fontSize,
+    scope: 'layout',
+    title: 'Font Size',
+    display: { type: 'font-size' },
+  };
+  properties[getListColumnTextSettingKey(prefix, 'textLineHeight')] = {
+    ...textStyleProperties.lineHeight,
+    scope: 'layout',
+    title: 'Line Height',
+    display: { type: 'line-height-input' },
+  };
+  properties[getListColumnTextSettingKey(prefix, 'textLetterSpacing')] = {
+    ...textStyleProperties.letterSpacing,
+    scope: 'layout',
+    title: 'Letter Spacing',
+    display: { type: 'letter-spacing-input' },
+  };
+  properties[getListColumnTextSettingKey(prefix, 'textWordSpacing')] = {
+    ...textStyleProperties.wordSpacing,
+    scope: 'layout',
+    title: 'Word Spacing',
+    display: { type: 'word-spacing-input' },
+  };
+  properties[getListColumnTextSettingKey(prefix, 'textTextAppearance')] = {
+    ...textStyleProperties.textAppearance,
+    scope: 'layout',
+    title: 'Text Appearance',
+    display: { type: 'text-appearance' },
+  };
+
+  return properties;
 }
 
-const columnTextStyleProperties = COLUMN_TEXT_PREFIXES.reduce<Record<string, SchemaProperty>>(
+const textStylePropertiesByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<string, SchemaProperty>>(
   (properties, prefix) => ({
     ...properties,
-    ...createColumnTextStyleProperties(prefix),
+    ...createTextStyleProperties(prefix),
   }),
   {},
 );
 
-const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, ListSchemaDefaultValue>>(
+const textStyleDefaultsByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<string, ListSchemaDefaultValue>>(
   (defaults, prefix) => ({
     ...defaults,
-    [`${prefix}VerticalAlign`]: 'Top',
-    [getColumnTextSettingKey(prefix, 'FontFamily')]: 'Arial',
-    [getColumnTextSettingKey(prefix, 'FontSettings')]: {
+    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? { [`${prefix}VerticalAlign`]: 'Top' } : {}),
+    [getListColumnTextSettingKey(prefix, 'textFontFamily')]: 'Arial',
+    [getListColumnTextSettingKey(prefix, 'textFontSettings')]: {
       fontWeight: 400,
       fontStyle: 'normal',
     },
-    [getColumnTextSettingKey(prefix, 'LetterSpacing')]: 0,
-    [getColumnTextSettingKey(prefix, 'WordSpacing')]: 0,
-    [getColumnTextSettingKey(prefix, 'TextAppearance')]: {
+    [getListColumnTextSettingKey(prefix, 'textLetterSpacing')]: 0,
+    [getListColumnTextSettingKey(prefix, 'textWordSpacing')]: 0,
+    [getListColumnTextSettingKey(prefix, 'textTextAppearance')]: {
       textTransform: 'none',
       textDecoration: 'none',
       fontVariant: 'normal',
@@ -341,11 +314,19 @@ const columnTextStyleDefaults = COLUMN_TEXT_PREFIXES.reduce<Record<string, ListS
   {},
 );
 
-function createColumnTextLayoutDefaults(
+function createTextStyleLayoutDefaults(
   layoutDefaults: ListColumnTextLayoutDefaultsInput,
-): ListColumnTextLayoutDefaults {
+): ListColumnTextLayoutDefaults & {
+  cutLabelTextFontSize?: number;
+  cutLabelTextLineHeight?: number;
+} {
   const { textFontSize, textLineHeight } = layoutDefaults;
-  return COLUMN_TEXT_PREFIXES.reduce<ListColumnTextLayoutDefaults>((defaults, prefix) => {
+  return LIST_TEXT_STYLE_PREFIXES.reduce<
+    ListColumnTextLayoutDefaults & {
+      cutLabelTextFontSize?: number;
+      cutLabelTextLineHeight?: number;
+    }
+  >((defaults, prefix) => {
     if (textFontSize !== undefined) {
       defaults[`${prefix}TextFontSize` as keyof ListColumnTextLayoutDefaults] = textFontSize;
     }
@@ -356,27 +337,81 @@ function createColumnTextLayoutDefaults(
   }, {});
 }
 
-const COLUMN_TEXT_LABELS = LIST_COLUMN_LETTERS.map((letter) => `${letter} column`);
+const TEXT_STYLE_PANEL_LABELS: Record<ListTextStylePrefix, string> = {
+  AColumn: 'A column',
+  BColumn: 'B column',
+  CColumn: 'C column',
+  DColumn: 'D column',
+  EColumn: 'E column',
+  cutLabel: 'See all',
+};
 
-const columnTextStylePanelGroups = COLUMN_TEXT_PREFIXES.map((prefix, index) => ({
+const textStylePanelGroups = LIST_TEXT_STYLE_PREFIXES.map((prefix) => ({
   type: 'group' as const,
-  title: COLUMN_TEXT_LABELS[index],
+  title: TEXT_STYLE_PANEL_LABELS[prefix],
   items: [
-    getColumnTextSettingKey(prefix, 'FontFamily'),
-    getColumnTextSettingKey(prefix, 'FontSettings'),
+    getListColumnTextSettingKey(prefix, 'textFontFamily'),
+    getListColumnTextSettingKey(prefix, 'textFontSettings'),
     {
       type: 'row' as const,
       items: [
-        getColumnTextSettingKey(prefix, 'FontSize'),
-        getColumnTextSettingKey(prefix, 'LineHeight'),
-        getColumnTextSettingKey(prefix, 'LetterSpacing'),
-        getColumnTextSettingKey(prefix, 'WordSpacing'),
+        getListColumnTextSettingKey(prefix, 'textFontSize'),
+        getListColumnTextSettingKey(prefix, 'textLineHeight'),
+        getListColumnTextSettingKey(prefix, 'textLetterSpacing'),
+        getListColumnTextSettingKey(prefix, 'textWordSpacing'),
       ],
     },
-    getColumnTextSettingKey(prefix, 'TextAppearance'),
-    `${prefix}VerticalAlign`,
+    getListColumnTextSettingKey(prefix, 'textTextAppearance'),
+    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
   ],
 }));
+
+function getTextStylePropertyNames(
+  prefix: ListTextStylePrefix,
+): string[] {
+  return [
+    getListColumnTextSettingKey(prefix, 'textFontFamily'),
+    getListColumnTextSettingKey(prefix, 'textFontSettings'),
+    getListColumnTextSettingKey(prefix, 'textFontSize'),
+    getListColumnTextSettingKey(prefix, 'textLineHeight'),
+    getListColumnTextSettingKey(prefix, 'textLetterSpacing'),
+    getListColumnTextSettingKey(prefix, 'textWordSpacing'),
+    getListColumnTextSettingKey(prefix, 'textTextAppearance'),
+    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
+  ];
+}
+
+function createColumnTextVisibilityDisplayRules(): SchemaDisplayRule[] {
+  const rules: SchemaDisplayRule[] = [];
+
+  COLUMN_TEXT_PREFIXES.forEach((prefix, columnIndex) => {
+    const contentKey = COLUMN_CONTENT_KEYS[columnIndex];
+    const propertyNames = getTextStylePropertyNames(prefix);
+
+    for (let columnsCount = 1; columnsCount < COLUMN_CONTENT_KEYS.length; columnsCount += 1) {
+      const conditions: SchemaDisplayRule['if'] = [
+        { name: 'columns', value: columnsCount },
+        ...Array.from({ length: columnsCount }, (_, position) => ({
+          name: `columnsOrder.${position}`,
+          value: contentKey,
+          isNotEqual: true as const,
+        })),
+      ];
+
+      propertyNames.forEach((propertyName) => {
+        rules.push({
+          if: conditions,
+          then: {
+            name: `properties.${propertyName}.display.visible`,
+            value: false,
+          },
+        });
+      });
+    }
+  });
+
+  return rules;
+}
 
 const paletteBookmarkItems = [
   'textColor',
@@ -388,6 +423,13 @@ const paletteBookmarkItems = [
 ] as const;
 
 const CUT_DEPENDENT_PROPERTY_NAMES = ['cutLabel', 'cutCellMinHeight', 'showCut'] as const;
+
+const CUT_LABEL_TEXT_STYLE_PROPERTY_NAMES = getTextStylePropertyNames(CUT_LABEL_TEXT_PREFIX);
+
+const CUT_DEPENDENT_DISPLAY_RULE_NAMES = [
+  ...CUT_DEPENDENT_PROPERTY_NAMES,
+  ...CUT_LABEL_TEXT_STYLE_PROPERTY_NAMES,
+] as const;
 
 const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
   ...LIST_COLUMN_LETTERS.flatMap((letter) => [
@@ -443,14 +485,20 @@ const COLUMN_LAYOUT_PANEL_ITEMS = [
   'columnsOrder',
 ] as const;
 
-const schema: GridSchema = {
+const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
-  properties: {
-    content: {
+  content: {
       type: 'array',
       settings: {
         addItemWithoutImage: true,
+      },
+      display: {
+        type: 'array',
+        ref: { 
+          columnsOrder: 'settings.properties.columnsOrder', 
+          columnsCount: 'settings.properties.columns' 
+        },
       },
       items: {
         type: 'object',
@@ -480,7 +528,6 @@ const schema: GridSchema = {
         required: ['image'],
       },
       default: DEFAULT_CONTENT_ITEMS,
-    },
   },
   settings: {
     sizing: 'auto auto',
@@ -685,7 +732,7 @@ const schema: GridSchema = {
         title: 'Input Text Appearance',
         display: { type: 'text-appearance' },
       },
-      ...columnTextStyleProperties,
+      ...textStylePropertiesByPrefix,
       backgroundColor: {
         type: 'string',
         scope: 'common',
@@ -730,7 +777,7 @@ const schema: GridSchema = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      ...columnTextStyleDefaults,
+      ...textStyleDefaultsByPrefix,
       backgroundColor: '#FFFFFF00',
       dividerColor: '#767676',
       backgroundHoverColor: '#FFFFFF00',
@@ -755,7 +802,7 @@ const schema: GridSchema = {
         textPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         textFontSize: 0.043,
         textLineHeight: 0.043,
-        ...createColumnTextLayoutDefaults({
+        ...createTextStyleLayoutDefaults({
           textFontSize: 0.043,
           textLineHeight: 0.043,
         }),
@@ -778,14 +825,15 @@ const schema: GridSchema = {
         textPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         textFontSize: 0.01,
         textLineHeight: 0.01,
-        ...createColumnTextLayoutDefaults({
+        ...createTextStyleLayoutDefaults({
           textFontSize: 0.01,
           textLineHeight: 0.01,
         }),
       }),
     },
     displayRules: [
-      ...CUT_DEPENDENT_PROPERTY_NAMES.map((name) => ({
+      ...createColumnTextVisibilityDisplayRules(),
+      ...CUT_DEPENDENT_DISPLAY_RULE_NAMES.map((name) => ({
         if: { name: 'cut', value: 0 },
         then: { name: `properties.${name}.display.visible`, value: false },
       })),
@@ -854,10 +902,10 @@ const schema: GridSchema = {
       ],
     },
     {
-      id: 'fields',
+      id: 'columnsOrder',
       icon: 'layers',
-      title: 'Fields',
-      tooltip: 'Fields',
+      title: 'Columns Order',
+      tooltip: 'Columns order',
       layout: ['columnsOrder'],
     },
     {
@@ -879,7 +927,7 @@ const schema: GridSchema = {
             'textTextAppearance',
           ],
         },
-        ...columnTextStylePanelGroups,
+        ...textStylePanelGroups,
       ],
     },
   ],

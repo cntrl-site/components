@@ -2,17 +2,6 @@ import { Grid } from './Grid';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Grid.tsx?raw';
 
-type GridSchema = ComponentSchemaV1 & {
-  properties: {
-    content: {
-      type: 'array';
-      settings?: { addItemFromFileExplorer?: boolean; addItemWithoutImage?: boolean };
-      items: any;
-      default: any[];
-    };
-  };
-};
-
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
@@ -54,14 +43,22 @@ const paletteBookmarkItems = [
   'subtitleColor',
 ] as const;
 
-const schema: GridSchema = {
+const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
-  properties: {
-    content: {
+  content: {
       type: 'array',
       settings: {
         addItemWithoutImage: true,
+      },
+      display: {
+        type: 'array',
+        rules: [
+          {
+            if: { name: 'type', value: 'A' },
+            then: { name: 'subtitle', value: false },
+          }
+        ]
       },
       items: {
         type: 'object',
@@ -141,7 +138,6 @@ const schema: GridSchema = {
           link: ''
         },
       ],
-    },
   },
   settings: {
     sizing: 'auto auto',

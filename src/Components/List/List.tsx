@@ -48,6 +48,13 @@ type ListColumnTextStyleOverrides = {
   EColumnTextLetterSpacing?: number;
   EColumnTextWordSpacing?: number;
   EColumnTextTextAppearance?: TextStyles['textAppearance'];
+  cutLabelTextFontFamily?: string;
+  cutLabelTextFontSettings?: ListFontSettings;
+  cutLabelTextFontSize?: number;
+  cutLabelTextLineHeight?: number;
+  cutLabelTextLetterSpacing?: number;
+  cutLabelTextWordSpacing?: number;
+  cutLabelTextTextAppearance?: TextStyles['textAppearance'];
 };
 
 export type ListColumnVerticalAlignKey = `${ListColumnPrefix}VerticalAlign`;
@@ -96,6 +103,13 @@ type ListColumnTextStyleSyncUpdates = {
   EColumnTextLetterSpacing?: number;
   EColumnTextWordSpacing?: number;
   EColumnTextTextAppearance?: TextStyles['textAppearance'];
+  cutLabelTextFontFamily?: string;
+  cutLabelTextFontSettings?: ListFontSettings;
+  cutLabelTextFontSize?: number;
+  cutLabelTextLineHeight?: number;
+  cutLabelTextLetterSpacing?: number;
+  cutLabelTextWordSpacing?: number;
+  cutLabelTextTextAppearance?: TextStyles['textAppearance'];
 };
 
 export type ListSettings = {
@@ -179,6 +193,8 @@ type HoverImageState = {
   url: string;
   objectFit: 'cover' | 'contain';
   widthPx: number;
+  x: number;
+  y: number;
 };
 
 type ListProps = {
@@ -234,6 +250,8 @@ function getCutItemDividerWidths(
   };
 }
 
+const HOVER_IMAGE_CURSOR_OFFSET = 10;
+
 function getCSS(P: string): string {
   return `
 .${P}-wrapper {
@@ -247,8 +265,8 @@ function getCSS(P: string): string {
 
 .${P}-hover-image {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  left: 0;
+  top: 0;
   z-index: 10;
   pointer-events: none;
   display: block;
@@ -289,22 +307,32 @@ function getCSS(P: string): string {
 }
 
 .${P}-list-cols-row-h [data-list-col] {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   align-self: stretch;
-  min-height: 100%;
+  min-height: min-content;
 }
 
 .${P}-list-cols-row-h .${P}-list-col {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 0;
 }
 
 .${P}-list-cols-row-h .${P}-list-col-title {
-  flex: 0 1 auto;
+  display: block;
+  flex: 0 0 auto;
   align-self: stretch;
+}
+
+.${P}-text-tight-leading {
+  display: block;
+  flex-shrink: 0;
+  padding-top: var(--${P}-title-leading-gap, 0);
+  padding-bottom: var(--${P}-title-leading-gap, 0);
 }
 
 .${P}-wrapper.${P}-type-b .${P}-list-cols-row {
@@ -315,11 +343,16 @@ function getCSS(P: string): string {
 .${P}-wrapper.${P}-type-b .${P}-list-col {
   width: 100%;
   min-width: 0;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: flex-start;
+  min-height: min-content;
 }
 
 .${P}-wrapper.${P}-type-b .${P}-list-col-title {
+  display: block;
+  flex: 0 0 auto;
+  align-self: stretch;
   text-align: center;
 }
 
@@ -464,68 +497,68 @@ a.${P}-list-item {
   box-sizing: border-box;
 }
 
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item,
+.${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-item,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item {
   transition: background-color 250ms, border-color 250ms;
 }
 
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-col-title,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-label,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-label {
   transition: color 250ms;
 }
 
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:hover,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link:hover,
+.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-item:hover,
 .${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item {
   background: var(--${P}-background-hover-color);
 }
 
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:hover,
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-list-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item-has-link:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-cut-item:hover),
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-cut-item:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item,
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:hover,
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item-has-link:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover),
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-cut-item:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item {
   border-bottom-color: var(--${P}-divider-hover-color);
 }
 
-.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default .${P}-list-item:hover:first-child,
-.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default.${P}-state-hover .${P}-list-item:first-child,
-.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds .${P}-list-item:hover:first-child,
-.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item:first-child {
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
-.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:hover:first-child,
-.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item:first-child,
-.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:hover:first-child,
-.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item:first-child {
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
-.${P}-wrapper.${P}-entry-hover-default .${P}-list-item:hover .${P}-list-col-title,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link:hover .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-item:hover .${P}-cut-label,
 .${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item .${P}-cut-label,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:hover .${P}-list-col-title,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link:hover .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover .${P}-cut-label,
 .${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item .${P}-cut-label {
   color: var(--${P}-text-hover-color);
 }
 
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item::before,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link::before,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item::before {
   content: '';
   position: absolute;
@@ -544,8 +577,8 @@ a.${P}-list-item {
   z-index: 1;
 }
 
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item:hover::before,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item::before,
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link:hover::before,
+.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link::before,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover::before,
 .${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item::before {
   transform: scaleY(1);
@@ -562,6 +595,19 @@ a.${P}-list-item {
   box-sizing: border-box;
   user-select: none;
   background: var(--${P}-background-color);
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  font: inherit;
+  text-align: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.${P}-cut-item .${P}-list-cols-row {
+  flex: 1;
+  min-height: 100%;
+  align-items: center;
 }
 
 .${P}-wrapper.${P}-divider-bottom .${P}-cut-item {
@@ -570,10 +616,10 @@ a.${P}-list-item {
 }
 
 .${P}-cut-label {
-  all: unset;
-  cursor: pointer;
+  display: block;
   position: relative;
   z-index: 1;
+  margin: 0;
   color: var(--${P}-text-color);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -598,6 +644,15 @@ export const COLUMN_TEXT_PREFIXES = [
   'EColumn',
 ] as const;
 
+export const CUT_LABEL_TEXT_PREFIX = 'cutLabel' as const;
+
+export const LIST_TEXT_STYLE_PREFIXES = [
+  ...COLUMN_TEXT_PREFIXES,
+  CUT_LABEL_TEXT_PREFIX,
+] as const;
+
+export type ListTextStylePrefix = typeof LIST_TEXT_STYLE_PREFIXES[number];
+
 export const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
 
 export function getListColumnVerticalAlignSettingKey(columnLetter: string): string {
@@ -606,12 +661,12 @@ export function getListColumnVerticalAlignSettingKey(columnLetter: string): stri
 
 export const COLUMN_VALIGN_BASIC_OPTIONS = ['Top', 'Center', 'Bottom'] as const;
 
-export function isTopColumnVerticalAlign(value: string | undefined): boolean {
+export function isBaselineAnchorColumnVerticalAlign(value: string | undefined): boolean {
   const raw = String(value ?? 'Top').trim();
   if (raw.toLowerCase().startsWith('baseline')) {
     return false;
   }
-  return raw === 'Top';
+  return raw === 'Top' || raw === 'Center' || raw === 'Bottom';
 }
 
 export function parseBaselineAnchorLetter(value: string | undefined): string | null {
@@ -637,7 +692,7 @@ export function isValidColumnBaselineVAlign(
   if (anchorLetter === forColumnLetter) {
     return false;
   }
-  return isTopColumnVerticalAlign(settings[getListColumnVerticalAlignSettingKey(anchorLetter) as ListColumnVerticalAlignKey]);
+  return isBaselineAnchorColumnVerticalAlign(settings[getListColumnVerticalAlignSettingKey(anchorLetter) as ListColumnVerticalAlignKey]);
 }
 
 export function getColumnVerticalAlignOptionsForLetter(
@@ -646,7 +701,7 @@ export function getColumnVerticalAlignOptionsForLetter(
 ): string[] {
   const baselineOptions = LIST_COLUMN_LETTERS
     .filter((letter) => letter !== columnLetter)
-    .filter((letter) => isTopColumnVerticalAlign(settings[getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey]))
+    .filter((letter) => isBaselineAnchorColumnVerticalAlign(settings[getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey]))
     .map((letter) => `Baseline ${letter}`);
 
   return [...COLUMN_VALIGN_BASIC_OPTIONS, ...baselineOptions];
@@ -720,46 +775,100 @@ function getListColumnVerticalAlignSanitizeUpdates(
   return hasUpdates ? updates : null;
 }
 
-function vAlignToJustifyContent(
+function vAlignToTitleStyle(
   kind: ColumnVerticalAlign['kind'],
-): 'flex-start' | 'center' | 'flex-end' {
-  if (kind === 'center') return 'center';
-  if (kind === 'bottom') return 'flex-end';
-  return 'flex-start';
+): React.CSSProperties {
+  if (kind === 'center') {
+    return { marginTop: 'auto', marginBottom: 'auto' };
+  }
+  if (kind === 'bottom') {
+    return { marginTop: 'auto' };
+  }
+  return {};
 }
 
-function getTitleBaselinePageY(titleEl: HTMLElement | null, probeClassName: string): number {
-  if (!titleEl) return 0;
-
+function getFirstLineBaselineOffsetInTitle(
+  titleEl: HTMLElement,
+  probeClassName: string,
+): number {
   const probe = document.createElement('i');
   probe.className = probeClassName;
-  probe.setAttribute('data-baseline-probe', '');
   probe.setAttribute('aria-hidden', 'true');
+  titleEl.prepend(probe);
 
-  titleEl.insertBefore(probe, titleEl.firstChild);
-  const baselineY = probe.getBoundingClientRect().bottom;
+  const { top: titleTop } = titleEl.getBoundingClientRect();
+  const { bottom: probeBottom } = probe.getBoundingClientRect();
+  const baselineOffset = probeBottom - titleTop;
   probe.remove();
 
-  return baselineY;
+  return baselineOffset;
+}
+
+function measureColumnFirstLineBaselineOffset(
+  info: {
+    titleEl: HTMLElement | null;
+    kind: string;
+  },
+  rowTop: number,
+  listColClassName: string,
+  probeClassName: string,
+): number {
+  const titleEl = info.titleEl;
+  if (!titleEl) return 0;
+
+  const listCol = titleEl.closest<HTMLElement>(`.${listColClassName}`);
+  if (!listCol) return 0;
+
+  const baselineInTitle = getFirstLineBaselineOffsetInTitle(titleEl, probeClassName);
+
+  if (info.kind === 'baseline') {
+    return titleEl.getBoundingClientRect().top - rowTop + baselineInTitle;
+  }
+
+  const listColRect = listCol.getBoundingClientRect();
+  const titleHeight = titleEl.getBoundingClientRect().height;
+  let valignOffset = 0;
+
+  if (info.kind === 'center') {
+    valignOffset = (listColRect.height - titleHeight) / 2;
+  } else if (info.kind === 'bottom') {
+    valignOffset = listColRect.height - titleHeight;
+  }
+
+  return (listColRect.top - rowTop) + valignOffset + baselineInTitle;
+}
+
+function syncRowListColHeights(
+  rowEl: HTMLElement,
+  cols: HTMLElement[],
+  listColClassName: string,
+): number {
+  const rowHeight = rowEl.getBoundingClientRect().height;
+  if (rowHeight <= 0) {
+    return 0;
+  }
+
+  cols.forEach((colEl) => {
+    const listCol = colEl.querySelector<HTMLElement>(`.${listColClassName}`);
+    if (listCol) {
+      listCol.style.minHeight = `${rowHeight}px`;
+      listCol.style.height = `${rowHeight}px`;
+    }
+  });
+
+  void rowEl.offsetHeight;
+  return rowHeight;
 }
 
 function applyBaselineTitleShift(titleEl: HTMLElement | null, shift: number): number {
   if (!titleEl || !shift) {
     if (titleEl) {
-      titleEl.style.paddingTop = '';
-      titleEl.style.marginTop = '';
+      titleEl.style.transform = '';
     }
     return 0;
   }
 
-  if (shift > 0) {
-    titleEl.style.paddingTop = `${shift}px`;
-    titleEl.style.marginTop = '';
-  } else {
-    titleEl.style.paddingTop = '';
-    titleEl.style.marginTop = `${shift}px`;
-  }
-
+  titleEl.style.transform = `translateY(${shift}px)`;
   return shift;
 }
 
@@ -787,7 +896,7 @@ export const LIST_GLOBAL_TEXT_STYLE_KEYS = [
 export type ListGlobalTextStyleKey = typeof LIST_GLOBAL_TEXT_STYLE_KEYS[number];
 
 export function getListColumnTextSettingKey(
-  prefix: typeof COLUMN_TEXT_PREFIXES[number],
+  prefix: ListTextStylePrefix,
   globalKey: ListGlobalTextStyleKey,
 ): string {
   return `${prefix}${globalKey.replace(/^text/, 'Text')}`;
@@ -835,7 +944,7 @@ function resolveListGlobalTextFields(
 
 function resolveListColumnTextFields(
   settings: ListSettings,
-  textPrefix: typeof COLUMN_TEXT_PREFIXES[number],
+  textPrefix: ListTextStylePrefix,
 ): ResolvedListTextFields {
   const read = <K extends ListGlobalTextStyleKey>(globalKey: K) => {
     const columnKey = getListColumnTextSettingKey(textPrefix, globalKey);
@@ -882,6 +991,41 @@ function listColumnTextFieldsToCss(
   return omitTextColors(textStylesToCss(resolvedTextStyle, isEditor));
 }
 
+function getListColumnTitleClassName(
+  settings: ListSettings,
+  prefix: ListTextStylePrefix,
+  baseClassName: string,
+  tightLeadingClassName: string,
+): string {
+  const fields = resolveListColumnTextFields(settings, prefix);
+  const fontSize = fields.textFontSize ?? 0.01;
+  const lineHeight = fields.textLineHeight;
+  const needsTightLeading = lineHeight !== undefined && lineHeight < fontSize;
+
+  return needsTightLeading
+    ? `${baseClassName} ${tightLeadingClassName}`
+    : baseClassName;
+}
+
+function getListColumnTitleVars(
+  settings: ListSettings,
+  prefix: ListTextStylePrefix,
+  titleVarPrefix: string,
+  isEditor?: boolean,
+): React.CSSProperties {
+  const fields = resolveListColumnTextFields(settings, prefix);
+  const fontSize = fields.textFontSize ?? 0.01;
+  const lineHeight = fields.textLineHeight;
+
+  if (lineHeight === undefined || lineHeight >= fontSize) {
+    return {};
+  }
+
+  return {
+    [`--${titleVarPrefix}-title-leading-gap`]: scalingValue((fontSize - lineHeight) / 2, isEditor),
+  } as React.CSSProperties;
+}
+
 function getListGlobalTextSyncUpdates(
   nextSettings: ListSettings,
   prevSettings: ListSettings,
@@ -898,7 +1042,7 @@ function getListGlobalTextSyncUpdates(
     }
 
     hasChanges = true;
-    for (const prefix of COLUMN_TEXT_PREFIXES) {
+    for (const prefix of LIST_TEXT_STYLE_PREFIXES) {
       Object.assign(updates, {
         [getListColumnTextSettingKey(prefix, globalKey)]: nextSettings[globalKey],
       });
@@ -1601,29 +1745,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     setVisibleRowCount(undefined);
   }, [cut, showCut, content, entriesCount]);
 
-  const textFieldCss = listColumnTextFieldsToCss(resolveListGlobalTextFields(settings), isEditor);
-
-  const columnTextCssByPrefix = useMemo(
-    () => Object.fromEntries(
-      COLUMN_TEXT_PREFIXES.map((prefix) => [
-        prefix,
-        listColumnTextFieldsToCss(resolveListColumnTextFields(settings, prefix), isEditor),
-      ]),
-    ),
-    [
-      settings,
-      textFontFamily,
-      textFontSettings,
-      textFontSize,
-      textLineHeight,
-      textLetterSpacing,
-      textWordSpacing,
-      textTextAppearance,
-      textColor,
-      isEditor,
-    ],
-  );
-
   const colorVars = buildColorVars(P, {
     textColor,
     backgroundColor,
@@ -1828,7 +1949,20 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     : 0;
   const columnsRightEdge = resolvedContentWidth;
 
-  const handleRowMouseEnter = (row: ListItemRow) => {
+  const getHoverImagePosition = (event: React.MouseEvent) => {
+    const container = containerRef.current;
+    if (!container) {
+      return { x: 0, y: 0 };
+    }
+
+    const rect = container.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left + HOVER_IMAGE_CURSOR_OFFSET,
+      y: event.clientY - rect.top + HOVER_IMAGE_CURSOR_OFFSET,
+    };
+  };
+
+  const handleRowMouseEnter = (row: ListItemRow, event: React.MouseEvent) => {
     if (!showHoverImage) return;
 
     const image = row.image;
@@ -1837,17 +1971,31 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
       return;
     }
 
-    if (hoverImage?.rowId === row.id) {
-      return;
-    }
-
+    const { x, y } = getHoverImagePosition(event);
     const minWidth = imageSize?.min ?? 80;
     const maxWidth = imageSize?.max ?? 320;
+    const widthPx = hoverImage?.rowId === row.id
+      ? hoverImage.widthPx
+      : randomBetween(minWidth, maxWidth);
+
     setHoverImage({
       rowId: row.id,
       url: image.url,
       objectFit: image.objectFit ?? 'cover',
-      widthPx: randomBetween(minWidth, maxWidth),
+      widthPx,
+      x,
+      y,
+    });
+  };
+
+  const handleWrapperMouseMove = (event: React.MouseEvent) => {
+    if (!showHoverImage || !hoverImage) return;
+
+    const { x, y } = getHoverImagePosition(event);
+    setHoverImage((prev) => {
+      if (!prev) return prev;
+      if (prev.x === x && prev.y === y) return prev;
+      return { ...prev, x, y };
     });
   };
 
@@ -1881,10 +2029,14 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     const clearBaselineStyles = () => {
       container.querySelectorAll<HTMLElement>('[data-list-col]').forEach((el) => {
         el.style.transform = '';
+        const listCol = el.querySelector<HTMLElement>(`.${P}-list-col`);
+        if (listCol) {
+          listCol.style.minHeight = '';
+          listCol.style.height = '';
+        }
         const title = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
         if (title) {
-          title.style.paddingTop = '';
-          title.style.marginTop = '';
+          title.style.transform = '';
         }
       });
     };
@@ -1899,12 +2051,20 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
         const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
         cols.forEach((el) => {
           el.style.transform = '';
+          const listCol = el.querySelector<HTMLElement>(`.${P}-list-col`);
+          if (listCol) {
+            listCol.style.minHeight = '';
+            listCol.style.height = '';
+          }
           const title = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
           if (title) {
-            title.style.paddingTop = '';
-            title.style.marginTop = '';
+            title.style.transform = '';
           }
         });
+
+        syncRowListColHeights(rowEl, cols, `${P}-list-col`);
+        void rowEl.offsetHeight;
+        const rowTop = rowEl.getBoundingClientRect().top;
 
         type ColInfo = {
           el: HTMLElement;
@@ -1936,7 +2096,12 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
 
           const anchor = info.anchor ? byLetter.get(info.anchor) : undefined;
           if (info.kind !== 'baseline' || !anchor || stack.has(info.letter)) {
-            const baseline = getTitleBaselinePageY(info.titleEl, probeClassName);
+            const baseline = measureColumnFirstLineBaselineOffset(
+              info,
+              rowTop,
+              `${P}-list-col`,
+              probeClassName,
+            );
             finalBaseline.set(info.letter, baseline);
             return baseline;
           }
@@ -1945,11 +2110,21 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
           const anchorBaseline = resolve(anchor, stack);
           stack.delete(info.letter);
 
-          const followerNatural = getTitleBaselinePageY(info.titleEl, probeClassName);
+          const followerNatural = measureColumnFirstLineBaselineOffset(
+            info,
+            rowTop,
+            `${P}-list-col`,
+            probeClassName,
+          );
           const shift = anchorBaseline - followerNatural;
           applyBaselineTitleShift(info.titleEl, shift);
 
-          const result = getTitleBaselinePageY(info.titleEl, probeClassName);
+          const result = measureColumnFirstLineBaselineOffset(
+            info,
+            rowTop,
+            `${P}-list-col`,
+            probeClassName,
+          );
           finalBaseline.set(info.letter, result);
           return result;
         };
@@ -1983,7 +2158,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     designWidth,
     visibleRows,
     effectiveColumnWidths,
-    columnTextCssByPrefix,
   ]);
 
   return (
@@ -1996,6 +2170,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
           style={{
             width: scalingValue(wrapperWidth ?? 0, isEditor),
           }}
+          onMouseMove={showHoverImage ? handleWrapperMouseMove : undefined}
           onMouseLeave={showHoverImage ? handleWrapperMouseLeave : undefined}
         >
           <div style={{ width: '100%' }}>
@@ -2015,10 +2190,10 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
               return (
               <RowElement
                 key={row.id}
-                className={`${P}-list-item`}
+                className={`${P}-list-item${hasLink ? ` ${P}-list-item-has-link` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
-                onMouseEnter={showHoverImage ? () => handleRowMouseEnter(row) : undefined}
+                onMouseEnter={showHoverImage ? (event) => handleRowMouseEnter(row, event) : undefined}
               >
                 {(resolvedRowPaddingTop > 0 || showControls) && (
                   <div
@@ -2084,15 +2259,21 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                           style={{
                             ...columnPaddingStyle,
                             ...columnSizeStyle,
-                            ...(!isVerticalLayout
-                              ? { justifyContent: vAlignToJustifyContent(vAlign.kind) }
-                              : {}),
                           }}
                           data-test={col.width}
                         >
                           <span
-                            className={`${P}-list-col-title`}
-                            style={columnTextCssByPrefix[col.textPrefix] ?? textFieldCss}
+                            className={getListColumnTitleClassName(
+                              settings,
+                              col.textPrefix,
+                              `${P}-list-col-title`,
+                              `${P}-text-tight-leading`,
+                            )}
+                            style={{
+                              ...listColumnTextFieldsToCss(resolveListColumnTextFields(settings, col.textPrefix), isEditor),
+                              ...getListColumnTitleVars(settings, col.textPrefix, P, isEditor),
+                              ...(!isVerticalLayout ? vAlignToTitleStyle(vAlign.kind) : {}),
+                            }}
                           >
                             {row.cells[col.key] ?? null}
                           </span>
@@ -2127,7 +2308,8 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
             );
             })}
             {showCutLabel && (
-              <div
+              <button
+                type="button"
                 className={`${P}-cut-item`}
                 style={{
                   minHeight: scaled(cutCellMinHeight ?? 0),
@@ -2137,6 +2319,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                     isEditor ?? false,
                   ),
                 }}
+                onClick={handleShowMore}
               >
                 <div
                   className={`${P}-list-cols-row`}
@@ -2149,16 +2332,22 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                       : { justifyContent: 'center' }
                   }
                 >
-                  <button
-                    type="button"
-                    className={`${P}-cut-label`}
-                    style={textFieldCss}
-                    onClick={handleShowMore}
+                  <span
+                    className={getListColumnTitleClassName(
+                      settings,
+                      CUT_LABEL_TEXT_PREFIX,
+                      `${P}-cut-label`,
+                      `${P}-text-tight-leading`,
+                    )}
+                    style={{
+                      ...listColumnTextFieldsToCss(resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX), isEditor),
+                      ...getListColumnTitleVars(settings, CUT_LABEL_TEXT_PREFIX, P, isEditor),
+                    }}
                   >
                     {cutLabel}
-                  </button>
+                  </span>
                 </div>
-              </div>
+              </button>
             )}
           </div>
           {showControls && !isVerticalLayout && firstColumn && lastColumn && (
@@ -2340,6 +2529,8 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
               style={{
                 width: sv(hoverImage.widthPx),
                 objectFit: hoverImage.objectFit,
+                left: hoverImage.x,
+                top: hoverImage.y,
               }}
             />
           )}
