@@ -1698,7 +1698,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
 
   const [visibleRowCount, setVisibleRowCount] = useState<number | undefined>(undefined);
   const [hoverImage, setHoverImage] = useState<HoverImageState | null>(null);
-  const showHoverImage = imageOnHover === 'On';
+  const showHoverImage = imageOnHover === 'On' && (!isEditor || isPreviewMode);
   const cutEnabled = (cut ?? 0) > 0;
   const isVerticalLayout = type === 'B';
   const containerRef = useRef<HTMLDivElement>(null);
