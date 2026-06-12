@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { getPositionStyles } from '../utils/getPositionStyles';
 
 const LIGHTBOX_ANIM_MS = 300;
 const THUMB_MAX_SIZE_PX = 40;
-const THUMB_GAP_PX = 8;
 
 function getCSS(P: string): string {
   return `
@@ -39,6 +40,13 @@ function getCSS(P: string): string {
   justify-content: center;
 }
 
+.${P}-lightbox-editor {
+  width: var(--cntrl-article-width, 100vw) !important;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 1;
+}
+
 .${P}-lightbox-content {
   position: relative;
   z-index: 1;
@@ -54,7 +62,6 @@ function getCSS(P: string): string {
 .${P}-lightbox-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(28, 31, 34, 0.9);
   pointer-events: none;
 }
 
@@ -69,26 +76,31 @@ function getCSS(P: string): string {
   align-items: center;
   max-width: 100%;
   overflow-x: auto;
+  scroll-snap-type: x mandatory;
   box-sizing: border-box;
-  cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
   touch-action: pan-x;
   scrollbar-width: none;
+}
+
+.${P}-lightbox-strip[data-mouse-dragging="true"] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.${P}-lightbox-strip[data-mouse-draggable="true"] {
+  cursor: grab;
 }
 
 .${P}-lightbox-strip::-webkit-scrollbar {
   display: none;
 }
 
-.${P}-lightbox-strip[data-dragging="true"] {
-  cursor: grabbing;
-}
-
 .${P}-strip-item {
   position: relative;
   flex: 0 0 auto;
   height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .${P}-thumbnails {
@@ -96,16 +108,20 @@ function getCSS(P: string): string {
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 2;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: ${THUMB_GAP_PX}px;
   max-width: calc(100% - 32px);
   overflow-x: auto;
   scrollbar-width: none;
   pointer-events: auto;
+}
+
+.${P}-lightbox-editor .${P}-thumbnails {
+  overflow: visible;
 }
 
 .${P}-thumbnails::-webkit-scrollbar {
@@ -122,12 +138,27 @@ function getCSS(P: string): string {
   background: transparent;
   cursor: pointer;
   opacity: 0.5;
-  transition: opacity 0.2s ease, border-color 0.2s ease;
+  transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .${P}-thumb[data-active="true"] {
   opacity: 1;
-  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.${P}-thumbnails[data-thumbnail-active="invert"] .${P}-thumb[data-active="true"] .${P}-thumb-image {
+  filter: invert(1);
+}
+
+.${P}-thumbnails[data-thumbnail-active="grayscale"] .${P}-thumb:not([data-active="true"]) .${P}-thumb-image {
+  filter: grayscale(1);
+}
+
+.${P}-thumbnails[data-thumbnail-active="scale-up"] .${P}-thumb[data-active="true"] {
+  transform: scale(1.15);
+}
+
+.${P}-thumbnails[data-thumbnail-active="opacity"] .${P}-thumb:not([data-active="true"]) {
+  opacity: 0.5;
 }
 
 .${P}-thumb-image {
@@ -137,42 +168,99 @@ function getCSS(P: string): string {
   width: auto;
   height: auto;
   object-fit: contain;
+  transition: filter 0.2s ease;
+}
+.${P}-close-icon {
+  position: absolute;
+  pointer-events: auto;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  padding: 0;
+}
+
+.${P}-close-icon-inner {
+  all: unset;
+  position: relative;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+.${P}-close-icon-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 `;
 }
 
+const getArticleWidthCSSValue = (start: HTMLElement | null): string | undefined => {
+  let el = start;
+  while (el) {
+    const inline = el.style.getPropertyValue('--cntrl-article-width').trim();
+    if (inline) return inline;
+    const computed = getComputedStyle(el).getPropertyValue('--cntrl-article-width').trim();
+    if (computed) return computed;
+    el = el.parentElement;
+  }
+  return undefined;
+};
+
 type LightboxOverlayProps = {
   prefix: string;
   images: LightboxStripItem[];
-  gap: string;
-  imageWidth: string;
-  imageHeight: string;
-  objectFit: 'cover' | 'contain';
-  closeIcon: string | null;
+  backgroundColor: string;
+  thumbnailGap: string;
+  closeIcon: LightboxStripSettings['closeIcon'];
+  closeIconPosition: Alignment;
   closeIconMaxWidth: number;
+  closeIconColor: string;
+  closeIconHoverColor: string;
+  thumbnailVisibility: 'on' | 'off';
+  thumbnailSize: number;
+  thumbnailObjectFit: 'cover' | 'contain';
+  thumbnailTrigger: 'click' | 'hover';
+  thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
+  textPosition: Alignment;
+  textPadding: number;
+  articleWidthCss?: string;
   isEditor?: boolean;
   onClose: () => void;
 };
 
-const DRAG_THRESHOLD_PX = 3;
+const MOUSE_DRAG_THRESHOLD_PX = 3;
 const LOOP_COPIES = 3;
 
 const LightboxOverlay = ({
   prefix: P,
   images,
-  gap,
-  imageWidth,
-  imageHeight,
-  objectFit,
+  backgroundColor,
+  thumbnailGap,
   isEditor,
   closeIcon,
   closeIconMaxWidth,
+  closeIconPosition,
+  closeIconColor,
+  closeIconHoverColor,
+  thumbnailTrigger,
+  thumbnailVisibility,
+  thumbnailSize,
+  thumbnailObjectFit,
+  thumbnailActive,
+  articleWidthCss,
   onClose,
 }: LightboxOverlayProps) => {
+  const closeIconControl = closeIcon ?? { mode: 'Off', icon: null };
   const stripRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
-  const dragRef = useRef({
+  const mouseDragRef = useRef({
     isActive: false,
     startX: 0,
     scrollLeft: 0,
@@ -184,9 +272,10 @@ const LightboxOverlay = ({
     () => Array.from({ length: loopCopies }, () => images).flat(),
     [images, loopCopies],
   );
-  const [isDragging, setIsDragging] = useState(false);
+  const [isMouseDragging, setIsMouseDragging] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const lockedActiveIndexRef = useRef<number | null>(null);
   const isClosingRef = useRef(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -214,7 +303,7 @@ const LightboxOverlay = ({
     return setWidthRef.current;
   };
 
-  const normalizeInfiniteScroll = (adjustDragAnchor = false) => {
+  const normalizeInfiniteScroll = (adjustMouseDragAnchor = false) => {
     if (!isLoopEnabled) return;
     const strip = stripRef.current;
     const setWidth = measureSetWidth();
@@ -222,54 +311,79 @@ const LightboxOverlay = ({
 
     if (strip.scrollLeft <= 0) {
       strip.scrollLeft += setWidth;
-      if (adjustDragAnchor) {
-        dragRef.current.scrollLeft += setWidth;
+      if (adjustMouseDragAnchor) {
+        mouseDragRef.current.scrollLeft += setWidth;
       }
     } else if (strip.scrollLeft >= setWidth * 2) {
       strip.scrollLeft -= setWidth;
-      if (adjustDragAnchor) {
-        dragRef.current.scrollLeft -= setWidth;
+      if (adjustMouseDragAnchor) {
+        mouseDragRef.current.scrollLeft -= setWidth;
       }
     }
   };
 
-  const updateActiveIndex = () => {
-    const strip = stripRef.current;
-    if (!strip || images.length === 0) return;
-    const stripCenter = strip.scrollLeft + strip.clientWidth / 2;
+  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
     let closestFlatIndex = 0;
     let closestDistance = Infinity;
     itemRefs.current.forEach((item, flatIndex) => {
       if (!item) return;
-      const itemCenter = item.offsetLeft + item.offsetWidth / 2;
-      const distance = Math.abs(itemCenter - stripCenter);
+      const distance = Math.abs(item.offsetLeft - scrollLeft);
       if (distance < closestDistance) {
         closestDistance = distance;
         closestFlatIndex = flatIndex;
       }
     });
-    setActiveIndex(closestFlatIndex % images.length);
+    return closestFlatIndex;
   };
 
-  const scrollToIndex = (index: number) => {
+  const updateActiveIndex = () => {
+    if (!stripRef.current || images.length === 0) return;
+    if (lockedActiveIndexRef.current !== null) return;
+    setActiveIndex(getNearestFlatIndex() % images.length);
+  };
+
+  const releaseActiveIndexLock = () => {
+    lockedActiveIndexRef.current = null;
+    updateActiveIndex();
+  };
+
+  const snapToNearestItem = (behavior: ScrollBehavior = 'smooth') => {
+    const strip = stripRef.current;
+    if (!strip || images.length === 0) return;
+    const flatIndex = getNearestFlatIndex();
+    const item = itemRefs.current[flatIndex];
+    if (!item) return;
+    strip.scrollTo({
+      left: item.offsetLeft,
+      behavior,
+    });
+    setActiveIndex(flatIndex % images.length);
+  };
+
+  const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
     const strip = stripRef.current;
     const flatIndex = isLoopEnabled ? images.length + index : index;
     const item = itemRefs.current[flatIndex];
     if (!strip || !item) return;
-    const scrollTarget = item.offsetLeft - (strip.clientWidth - item.offsetWidth) / 2;
-    strip.scrollTo({
-      left: Math.max(0, scrollTarget),
-      behavior: 'smooth',
-    });
+    if (behavior === 'smooth') {
+      lockedActiveIndexRef.current = index;
+    } else {
+      lockedActiveIndexRef.current = null;
+    }
     setActiveIndex(index);
+    strip.scrollTo({
+      left: item.offsetLeft,
+      behavior,
+    });
   };
 
   const onStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse') return;
     const target = event.target as HTMLElement;
-    if (target.closest('[data-controls="gap"]')) return;
+    if (target.closest('[data-controls="thumbnailGap"]')) return;
     const strip = stripRef.current;
     if (!strip) return;
-    dragRef.current = {
+    mouseDragRef.current = {
       isActive: true,
       startX: event.clientX,
       scrollLeft: strip.scrollLeft,
@@ -279,31 +393,38 @@ const LightboxOverlay = ({
   };
 
   const onStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
-    if (!strip || !dragRef.current.isActive) return;
-    const deltaX = event.clientX - dragRef.current.startX;
-    if (Math.abs(deltaX) > DRAG_THRESHOLD_PX) {
-      dragRef.current.hasMoved = true;
-      setIsDragging(true);
+    if (!strip || !mouseDragRef.current.isActive) return;
+    const deltaX = event.clientX - mouseDragRef.current.startX;
+    if (Math.abs(deltaX) > MOUSE_DRAG_THRESHOLD_PX) {
+      mouseDragRef.current.hasMoved = true;
+      setIsMouseDragging(true);
     }
-    if (dragRef.current.hasMoved) {
+    if (mouseDragRef.current.hasMoved) {
       event.preventDefault();
-      strip.scrollLeft = dragRef.current.scrollLeft - deltaX;
+      strip.scrollLeft = mouseDragRef.current.scrollLeft - deltaX;
       normalizeInfiniteScroll(true);
       updateActiveIndex();
     }
   };
 
-  const endStripDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+  const endStripMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
     if (!strip) return;
-    dragRef.current.isActive = false;
-    setIsDragging(false);
+    const hadMoved = mouseDragRef.current.hasMoved;
+    mouseDragRef.current.isActive = false;
+    setIsMouseDragging(false);
     if (strip.hasPointerCapture(event.pointerId)) {
       strip.releasePointerCapture(event.pointerId);
     }
     normalizeInfiniteScroll();
-    updateActiveIndex();
+    if (hadMoved) {
+      snapToNearestItem();
+    } else {
+      updateActiveIndex();
+    }
   };
 
   useEffect(() => {
@@ -338,23 +459,37 @@ const LightboxOverlay = ({
   }, []);
 
   useLayoutEffect(() => {
-    const strip = stripRef.current;
-    if (!strip) return;
     measureSetWidth();
-    if (isLoopEnabled && setWidthRef.current > 0) {
-      strip.scrollLeft = setWidthRef.current;
-    }
-    updateActiveIndex();
-  }, [images.length, imageWidth, gap, isLoopEnabled]);
+    scrollToIndex(0, 'auto');
+  }, [images.length, isLoopEnabled]);
 
   useEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
+    let scrollEndTimer: ReturnType<typeof setTimeout> | null = null;
     const onScroll = () => {
       normalizeInfiniteScroll();
       updateActiveIndex();
+      if (lockedActiveIndexRef.current !== null) {
+        if (scrollEndTimer) clearTimeout(scrollEndTimer);
+        scrollEndTimer = setTimeout(() => {
+          if (lockedActiveIndexRef.current !== null) {
+            releaseActiveIndexLock();
+          }
+        }, 150);
+      }
+    };
+    const onScrollEnd = () => {
+      if (lockedActiveIndexRef.current !== null) {
+        if (scrollEndTimer) {
+          clearTimeout(scrollEndTimer);
+          scrollEndTimer = null;
+        }
+        releaseActiveIndexLock();
+      }
     };
     strip.addEventListener('scroll', onScroll, { passive: true });
+    strip.addEventListener('scrollend', onScrollEnd);
     const observer = new ResizeObserver(() => {
       measureSetWidth();
       normalizeInfiniteScroll();
@@ -362,14 +497,17 @@ const LightboxOverlay = ({
     });
     observer.observe(strip);
     return () => {
+      if (scrollEndTimer) clearTimeout(scrollEndTimer);
       strip.removeEventListener('scroll', onScroll);
+      strip.removeEventListener('scrollend', onScrollEnd);
       observer.disconnect();
     };
   }, [images.length, isLoopEnabled]);
 
   return (
     <div
-      className={`${P}-lightbox`}
+      data-selection="none"
+      className={`${P}-lightbox${isEditor ? ` ${P}-lightbox-editor` : ''}`}
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
@@ -378,9 +516,10 @@ const LightboxOverlay = ({
         opacity: isVisible ? 1 : 0,
         transition: `opacity ${LIGHTBOX_ANIM_MS}ms ease`,
         pointerEvents: isVisible ? 'auto' : 'none',
+        ...(articleWidthCss ? { ['--cntrl-article-width' as string]: articleWidthCss } : {}),
       }}
     >
-      <div className={`${P}-lightbox-backdrop`} />
+      <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor }} />
       <div
         className={`${P}-lightbox-content`}
         onClick={(event) => event.stopPropagation()}
@@ -388,15 +527,15 @@ const LightboxOverlay = ({
         <div
           ref={stripRef}
           className={`${P}-lightbox-strip`}
-          style={{ gap }}
-          data-dragging={isDragging ? 'true' : 'false'}
+          data-mouse-draggable={images.length > 0 ? 'true' : 'false'}
+          data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
           onPointerDown={onStripPointerDown}
           onPointerMove={onStripPointerMove}
-          onPointerUp={endStripDrag}
-          onPointerCancel={endStripDrag}
+          onPointerUp={endStripMouseDrag}
+          onPointerCancel={endStripMouseDrag}
         >
           {flatItems.map((item, flatIndex) => {
-            const itemObjectFit = item.image.objectFit ?? objectFit;
+            const itemObjectFit = item.image.objectFit ?? 'contain';
             const sourceIndex = flatIndex % images.length;
             const copyIndex = Math.floor(flatIndex / images.length);
             const isMiddleCopy = copyIndex === 1;
@@ -409,7 +548,7 @@ const LightboxOverlay = ({
                 }}
                 className={`${P}-strip-item`}
                 style={{
-                  width: imageWidth,
+                  height: '100%',
                 }}
                 aria-hidden={!isMiddleCopy}
               >
@@ -424,62 +563,91 @@ const LightboxOverlay = ({
                     objectFit: itemObjectFit,
                   }}
                 />
-                {isEditor && isMiddleCopy && sourceIndex < images.length - 1 && (
-                  <div
-                    data-controls="gap"
-                    data-controls-axis="x"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: `calc(-1 * ${gap})`,
-                      width: gap,
-                      height: '100%',
-                      pointerEvents: 'auto',
-                      zIndex: 2,
-                    }}
-                  />
-                )}
               </div>
             );
           })}
         </div>
 
-        {images.length > 1 && (
-          <div className={`${P}-thumbnails`}>
+        {images.length > 1 && thumbnailVisibility === 'on' && (
+          <div
+            className={`${P}-thumbnails`}
+            data-thumbnail-active={thumbnailActive}
+            style={{ gap: thumbnailGap }}
+          >
             {images.map((item, index) => (
-              <button
+              <div
                 key={`thumb-${item.image.url}-${index}`}
-                type="button"
-                className={`${P}-thumb`}
-                data-active={activeIndex === index ? 'true' : 'false'}
-                onClick={() => scrollToIndex(index)}
-                aria-label={item.image.name ? `View ${item.image.name}` : `View image ${index + 1}`}
-                aria-current={activeIndex === index ? 'true' : undefined}
+                style={{ position: 'relative', flex: '0 0 auto' }}
               >
-                <img
-                  className={`${P}-thumb-image`}
-                  src={item.image.url}
-                  alt=""
-                  draggable={false}
-                />
-              </button>
+                <button
+                  type="button"
+                  className={`${P}-thumb`}
+                  data-active={activeIndex === index ? 'true' : 'false'}
+                  onClick={() => {
+                    if (thumbnailTrigger === 'click') {
+                      scrollToIndex(index);
+                    }
+                  }}
+                  onMouseEnter={() => {
+                    if (thumbnailTrigger === 'hover') {
+                      scrollToIndex(index);
+                    }
+                  }}
+                  aria-label={item.image.name ? `View ${item.image.name}` : `View image ${index + 1}`}
+                  aria-current={activeIndex === index ? 'true' : undefined}
+                >
+                  <img
+                    className={`${P}-thumb-image`}
+                    src={item.image.url}
+                    alt=""
+                    draggable={false}
+                  />
+                </button>
+                {isEditor && index < images.length - 1 && (
+                  <div
+                    data-controls="thumbnailGap"
+                    data-controls-axis="x"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: `calc(-1 * ${thumbnailGap})`,
+                      width: thumbnailGap,
+                      height: '100%',
+                      pointerEvents: 'auto',
+                      zIndex: 3,
+                    }}
+                  />
+                )}
+              </div>
             ))}
           </div>
         )}
-          {closeIcon && (
-          <button
-            type="button"
+        {closeIconControl.mode === 'On' && (
+          <div
             className={`${P}-close-icon`}
-            onClick={handleClose}
             style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: closeIconMaxWidth,
+              ...getPositionStyles(closeIconPosition, { x: 0, y: 0 }, isEditor),
+              width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+              height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+              ['--close-icon-hover-color' as string]: closeIconHoverColor,
             }}
           >
-            <img src={closeIcon} style={{ width: closeIconMaxWidth }} alt="Close" />
-          </button>
+            <button
+              type="button"
+              className={`${P}-close-icon-inner`}
+              onClick={handleClose}
+              aria-label="Close"
+            >
+              {closeIconControl.icon && (
+                <SvgImage
+                  url={closeIconControl.icon}
+                  fill={closeIconColor}
+                  hoverFill={closeIconHoverColor}
+                  className={`${P}-close-icon-img`}
+                />
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -490,18 +658,24 @@ type LightboxStripProps = {
   settings: LightboxStripSettings;
   content?: LightboxStripItem[];
   isEditor?: boolean;
+  portalId?: string;
 } & CommonComponentProps;
 
-export const LightboxStrip = ({ settings, content, isEditor }: LightboxStripProps) => {
+export const LightboxStrip = ({ settings, content, isEditor, portalId }: LightboxStripProps) => {
   const { prefix: P } = useScopedStyles();
-  const { gap, imageWidth, imageHeight, objectFit, closeIcon, closeIconMaxWidth } = settings;
+  const { backgroundColor, thumbnailVisibility, thumbnailSize, thumbnailObjectFit, thumbnailTrigger, thumbnailActive, thumbnailGap, textPosition, textPadding, closeIcon, closeIconPosition, closeIconMaxWidth, closeIconColor, closeIconHoverColor } = settings;
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [articleWidthCss, setArticleWidthCss] = useState<string | undefined>();
   const items = content ?? [];
   const coverItem = items[0];
 
   const openLightbox = () => {
     if (items.length === 0) return;
+    if (isEditor && wrapperRef.current) {
+      setArticleWidthCss(getArticleWidthCSSValue(wrapperRef.current));
+    }
     setLightboxOpen(true);
   };
 
@@ -511,7 +685,7 @@ export const LightboxStrip = ({ settings, content, isEditor }: LightboxStripProp
 
   return (
     <>
-      <div className={`${P}-wrapper`}>
+      <div ref={wrapperRef} className={`${P}-wrapper`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         {coverItem?.image?.url ? (
           <button
@@ -530,28 +704,39 @@ export const LightboxStrip = ({ settings, content, isEditor }: LightboxStripProp
               className={`${P}-cover-image`}
               src={coverItem.image.url}
               alt={coverItem.image.name ?? ''}
-              style={{ objectFit: coverItem.image.objectFit ?? objectFit }}
+              style={{ objectFit: coverItem.image.objectFit ?? 'contain' }}
             />
           </button>
         ) : null}
       </div>
 
-      {lightboxOpen && typeof document !== 'undefined' &&
-        createPortal(
+      {lightboxOpen && typeof document !== 'undefined' && (() => {
+        const portalTarget = (portalId ? document.getElementById(portalId) : null) ?? document.body;
+        return createPortal(
           <LightboxOverlay
             prefix={P}
             images={items}
-            gap={scaled(gap)}
-            imageWidth={scaled(imageWidth)}
-            imageHeight={scaled(imageHeight)}
-            objectFit={objectFit}
-            isEditor={isEditor}
+            backgroundColor={backgroundColor}
+            thumbnailGap={scaled(thumbnailGap)}
+            thumbnailVisibility={thumbnailVisibility}
+            thumbnailSize={thumbnailSize}
+            thumbnailObjectFit={thumbnailObjectFit}
+            thumbnailTrigger={thumbnailTrigger}
+            thumbnailActive={thumbnailActive}
+            textPosition={textPosition}
+            textPadding={textPadding}
             closeIcon={closeIcon}
+            closeIconPosition={closeIconPosition}
             closeIconMaxWidth={closeIconMaxWidth}
+            closeIconColor={closeIconColor}
+            closeIconHoverColor={closeIconHoverColor}
+            articleWidthCss={articleWidthCss}
+            isEditor={isEditor}
             onClose={closeLightbox}
           />,
-          document.body,
-        )}
+          portalTarget,
+        );
+      })()}
     </>
   );
 };
@@ -564,11 +749,24 @@ export type LightboxStripItem = {
   };
 };
 
+type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
 export type LightboxStripSettings = {
-  gap: number;
-  imageWidth: number;
-  imageHeight: number;
-  objectFit: 'cover' | 'contain';
-  closeIcon: string | null;
+  backgroundColor: string;
+  thumbnailVisibility: 'on' | 'off';
+  thumbnailSize: number;
+  thumbnailObjectFit: 'cover' | 'contain';
+  thumbnailTrigger: 'click' | 'hover';
+  thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
+  thumbnailGap: number;
+  textPosition: Alignment;
+  textPadding: number;
+  closeIcon: {
+    mode?: 'On' | 'Off';
+    icon?: string | null;
+  };
   closeIconMaxWidth: number;
+  closeIconPosition: Alignment;
+  closeIconColor: string;
+  closeIconHoverColor: string;
 };
