@@ -55,12 +55,6 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 1,
       },
-      closeIconPosition: {
-        type: 'string',
-        scope: 'common',
-        title: 'Icon Position',
-        display: { type: 'toggle-cycle', enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'] },
-      },
       closeIconColor: {
         type: 'string',
         scope: 'common',
@@ -79,16 +73,10 @@ const schema: ComponentSchemaV1 = {
         title: 'Visibility',
         display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
-      thumbnailSize: {
-        type: 'number',
-        scope: 'common',
-        title: 'Size',
-        display: { type: 'toggle-cycle', enum: ['S', 'M', 'L'] },
-      },
       thumbnailObjectFit: {
         type: 'string',
         scope: 'common',
-        title: 'Object Fit',
+        title: 'Display',
         display: { type: 'toggle-cycle', enum: ['cover', 'contain'] },
       },
       thumbnailTrigger: {
@@ -103,17 +91,13 @@ const schema: ComponentSchemaV1 = {
         title: 'Active',
         display: { type: 'toggle-cycle', enum: ['invert', 'grayscale', 'scale-up'] },
       },
-      textPosition: {
+      textMaxWidth: {
         type: 'string',
         scope: 'common',
-        title: 'Text Position',
-        display: { type: 'toggle-cycle', enum: ['top-left', 'top-center', 'top-right', 'middle-left', 'middle-center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'] },
-      },
-      textPadding: {
-        type: 'number',
-        scope: 'common',
-        title: 'Text Padding',
-        display: { type: 'padding-controls' },
+        title: 'Max Width',
+        display: { type: 'full-width-input' },
+        min: 0,
+        max: 1,
       },
       textColor: {
         type: 'string',
@@ -166,7 +150,6 @@ const schema: ComponentSchemaV1 = {
         mode: 'On',
         icon: defaultCloseIconUrl,
       },
-      closeIconPosition: 'top-right',
       closeIconColor: '#ffffff',
       closeIconHoverColor: '#cccccc',
       thumbnailVisibility: 'on',
@@ -174,13 +157,6 @@ const schema: ComponentSchemaV1 = {
       thumbnailObjectFit: 'contain',
       thumbnailTrigger: 'click',
       thumbnailActive: 'invert',
-      textPosition: 'top-left',
-      textPadding: {
-        top: 0.02,
-        left: 0.02,
-        right: 0.02,
-        bottom: 0.02,
-      },
       textColor: '#000000',
       textFontSize: 0.04,
       textFontWeight: 400,
@@ -197,11 +173,13 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         thumbnailGap: 0.04,
+        textMaxWidth: 0.4,
         closeIconMaxWidth: 0.06,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
       },
       d: {
         thumbnailGap: 0.02,
+        textMaxWidth: 0.4,
         closeIconMaxWidth: 0.06,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
       },
@@ -220,13 +198,11 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__'] },
-        { type: 'row', items: ['timing'] },
-        { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailSize']},
-        { type: 'row', items: ['thumbnailObjectFit', 'thumbnailTrigger']},
-         'thumbnailActive',
-        { type: 'row', title: 'Text', items: ['textPosition', 'textPadding'] },
+        { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailObjectFit']},
+        { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
+        { type: 'row', title: 'Text', items: ['textMaxWidth'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon'] },
-        { type: 'row', items: ['closeIconPosition', 'closeIconMaxWidth'] }
+        { type: 'row', items: ['closeIconMaxWidth'] }
       ],
     },
     {
@@ -258,6 +234,7 @@ const schema: ComponentSchemaV1 = {
           label: 'Image',
           display: {
             type: 'media-input',
+            supportsMainImage: true,
           },
         },
         text: {
@@ -275,6 +252,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
           name: '',
           objectFit: 'contain',
+          isMainImage: true,
         },
         text: 'Image 1',
       },
@@ -283,6 +261,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
           name: '',
           objectFit: 'contain',
+          isMainImage: false,
         },
         text: 'Image 2',
       },
@@ -291,6 +270,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
           name: '',
           objectFit: 'contain',
+          isMainImage: false,
         },
         text: 'Image 3',
       },
@@ -299,6 +279,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
           name: '',
           objectFit: 'contain',
+          isMainImage: false,
         },
         text: 'Image 4',
       },

@@ -5,6 +5,7 @@ import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { getPositionStyles } from '../utils/getPositionStyles';
+import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 
 const LIGHTBOX_ANIM_MS = 300;
 const THUMB_MAX_SIZE_PX = 40;
@@ -218,17 +219,14 @@ type LightboxOverlayProps = {
   backgroundColor: string;
   thumbnailGap: string;
   closeIcon: LightboxStripSettings['closeIcon'];
-  closeIconPosition: Alignment;
   closeIconMaxWidth: number;
   closeIconColor: string;
   closeIconHoverColor: string;
   thumbnailVisibility: 'on' | 'off';
-  thumbnailSize: number;
   thumbnailObjectFit: 'cover' | 'contain';
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
-  textPosition: Alignment;
-  textPadding: number;
+  textMaxWidth: number;
   articleWidthCss?: string;
   isEditor?: boolean;
   onClose: () => void;
@@ -245,15 +243,14 @@ const LightboxOverlay = ({
   isEditor,
   closeIcon,
   closeIconMaxWidth,
-  closeIconPosition,
   closeIconColor,
   closeIconHoverColor,
   thumbnailTrigger,
   thumbnailVisibility,
-  thumbnailSize,
   thumbnailObjectFit,
   thumbnailActive,
   articleWidthCss,
+  textMaxWidth,
   onClose,
 }: LightboxOverlayProps) => {
   const closeIconControl = closeIcon ?? { mode: 'Off', icon: null };
@@ -626,7 +623,6 @@ const LightboxOverlay = ({
           <div
             className={`${P}-close-icon`}
             style={{
-              ...getPositionStyles(closeIconPosition, { x: 0, y: 0 }, isEditor),
               width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
               height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
               ['--close-icon-hover-color' as string]: closeIconHoverColor,
@@ -649,6 +645,12 @@ const LightboxOverlay = ({
             </button>
           </div>
         )}
+        {/* <div
+          className={`${P}-text`}
+          style={{ maxWidth: textMaxWidth }}
+        >
+          <RichTextRenderer content={images[activeIndex].text } />
+        </div> */}
       </div>
     </div>
   );
@@ -663,13 +665,13 @@ type LightboxStripProps = {
 
 export const LightboxStrip = ({ settings, content, isEditor, portalId }: LightboxStripProps) => {
   const { prefix: P } = useScopedStyles();
-  const { backgroundColor, thumbnailVisibility, thumbnailSize, thumbnailObjectFit, thumbnailTrigger, thumbnailActive, thumbnailGap, textPosition, textPadding, closeIcon, closeIconPosition, closeIconMaxWidth, closeIconColor, closeIconHoverColor } = settings;
+  const { backgroundColor, thumbnailVisibility, thumbnailObjectFit, thumbnailTrigger, thumbnailActive, thumbnailGap, textMaxWidth, closeIcon, closeIconMaxWidth, closeIconColor, closeIconHoverColor } = settings;
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [articleWidthCss, setArticleWidthCss] = useState<string | undefined>();
   const items = content ?? [];
-  const coverItem = items[0];
+  const coverItem = items.find((item) => item.image.isMainImage) ?? items[0];
 
   const openLightbox = () => {
     if (items.length === 0) return;
@@ -719,14 +721,11 @@ export const LightboxStrip = ({ settings, content, isEditor, portalId }: Lightbo
             backgroundColor={backgroundColor}
             thumbnailGap={scaled(thumbnailGap)}
             thumbnailVisibility={thumbnailVisibility}
-            thumbnailSize={thumbnailSize}
             thumbnailObjectFit={thumbnailObjectFit}
             thumbnailTrigger={thumbnailTrigger}
             thumbnailActive={thumbnailActive}
-            textPosition={textPosition}
-            textPadding={textPadding}
+            textMaxWidth={textMaxWidth}
             closeIcon={closeIcon}
-            closeIconPosition={closeIconPosition}
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
             closeIconHoverColor={closeIconHoverColor}
@@ -746,27 +745,23 @@ export type LightboxStripItem = {
     url: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
+    isMainImage?: boolean;
   };
 };
-
-type Alignment = 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
 
 export type LightboxStripSettings = {
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
-  thumbnailSize: number;
   thumbnailObjectFit: 'cover' | 'contain';
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
   thumbnailGap: number;
-  textPosition: Alignment;
-  textPadding: number;
+  textMaxWidth: number;
   closeIcon: {
     mode?: 'On' | 'Off';
     icon?: string | null;
   };
   closeIconMaxWidth: number;
-  closeIconPosition: Alignment;
   closeIconColor: string;
   closeIconHoverColor: string;
 };
