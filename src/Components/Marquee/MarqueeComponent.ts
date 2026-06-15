@@ -33,7 +33,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Effect',
-        display: { type: 'toggle-cycle', enum: ['off', 'brightness', 'grayscale', 'saturate', 'randomize'] },
+        display: { type: 'toggle-cycle', enum: ['off', 'brightness', 'grayscale'] },
       },
       gap: {
         type: 'number',
@@ -60,17 +60,34 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'numeric-input' },
       },
       imageFit: {
-        type: 'string',
+        type: 'object',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'contain'] },
+        display: { type: 'image-ratio-control' },
+        properties: {
+          display: {
+            type: 'string',
+            enum: ['Fit', 'Cover'],
+          },
+          ratioValue: {
+            type: 'string',
+            enum: ['1:1', '2:3', '3:4', '4:5', '16:9'],
+          },
+          reversed: {
+            type: 'boolean',
+          },
+        },
       },
     },
     defaults: {
       direction: 'left',
       pauseOnHover: 'off',
       hoverEffect: 'off',
-      imageFit: 'contain',
+      imageFit: {
+        display: 'Fit',
+        ratioValue: '16:9',
+        reversed: false,
+      },
     },
     layoutDefaults: {
       m: {
@@ -88,9 +105,9 @@ const schema: ComponentSchemaV1 = {
     },
     displayRules: [
       {
-        if: { name: 'imageFit', value: 'contain' },
-        then: { name: 'properties.hoverEffect.display.enum', value: ['off', 'brightness', 'grayscale', 'saturate'] },
-      },
+        if: { name: 'imageFit.display', value: 'Cover' },
+        then: { name: 'properties.hoverEffect.display.enum', value: ['off', 'brightness', 'grayscale', 'randomize'] },
+      }
     ],
     layout: [
       '__componentName__',
