@@ -426,16 +426,8 @@ a.${P}-list-item {
   background: transparent;
 }
 
-.${P}-row-padding-handle::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.${P}-row-padding-handle[data-controls] {
   min-height: 20px;
-  pointer-events: auto;
-  z-index: 10;
 }
 
 .${P}-col-resize-handle::after {
@@ -458,43 +450,8 @@ a.${P}-list-item {
   height: 2px;
 }
 
-.${P}-padding-control-handle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 12px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  pointer-events: none;
-  box-sizing: border-box;
-}
-
-.${P}-wrapper.${P}-type-b .${P}-padding-control-handle::after {
-  width: 12px;
-  height: 4px;
-}
-
 .${P}-text-padding-lr-handle {
   background: transparent;
-}
-
-.${P}-text-padding-lr-handle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 12px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  pointer-events: none;
-  box-sizing: border-box;
 }
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link,
@@ -2200,6 +2157,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                     {...(showControls ? {
                       'data-controls': rowPaddingTopControlKey,
                       'data-controls-axis': 'y',
+                      'data-controls-variant': 'row-padding',
                       'data-controls-min': '0',
                     } : {})}
                     className={`${P}-row-padding-handle`}
@@ -2298,6 +2256,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                     {...(showControls ? {
                       'data-controls': 'rowPaddingBottom',
                       'data-controls-axis': 'y',
+                      'data-controls-variant': 'row-padding',
                       'data-controls-min': '0',
                     } : {})}
                     className={`${P}-row-padding-handle`}
@@ -2360,7 +2319,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                 data-controls-max-fraction={String(
                   effectiveColumnWidths[0] - (firstColumnEffectivePadding?.paddingRight ?? 0),
                 )}
-                data-controls-static-handle=""
                 className={`${P}-padding-control-handle`}
                 style={{
                   position: 'absolute',
@@ -2382,7 +2340,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                   effectiveColumnWidths[listColumns.length - 1]
                     - (lastColumnEffectivePadding?.paddingLeft ?? 0),
                 )}
-                data-controls-static-handle=""
                 className={`${P}-padding-control-handle`}
                 style={{
                   position: 'absolute',
@@ -2428,7 +2385,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                   data-controls-max-fraction={String(
                     effectiveColumnWidths[colIndex] - colEffectivePadding.paddingLeft,
                   )}
-                  data-controls-static-handle=""
                   className={`${P}-padding-control-handle`}
                   style={{
                     position: 'absolute',
@@ -2465,7 +2421,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                   data-controls-max-fraction={String(
                     effectiveColumnWidths[colIndex + 1] - nextColEffectivePadding.paddingRight,
                   )}
-                  data-controls-static-handle=""
                   className={`${P}-padding-control-handle`}
                   style={{
                     position: 'absolute',
@@ -2486,9 +2441,9 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                 data-controls="textPaddingLR"
                 data-controls-paired=""
                 data-controls-axis="x"
+                data-controls-variant="column-padding"
                 data-controls-min="0"
                 data-controls-max-fraction={String(textPaddingLRMaxFraction)}
-                data-controls-static-handle=""
                 className={`${P}-text-padding-lr-handle`}
                 style={{
                   position: 'absolute',
@@ -2504,10 +2459,10 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                 data-controls="textPaddingLR"
                 data-controls-paired=""
                 data-controls-axis="x"
+                data-controls-variant="column-padding"
                 data-controls-reverse=""
                 data-controls-min="0"
                 data-controls-max-fraction={String(textPaddingLRMaxFraction)}
-                data-controls-static-handle=""
                 className={`${P}-text-padding-lr-handle`}
                 style={{
                   position: 'absolute',
