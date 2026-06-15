@@ -41,6 +41,7 @@ const textStyleProperties = {
 const paletteBookmarkItems = [
   'titleColor',
   'subtitleColor',
+  'lightboxCounterColor',
 ] as const;
 
 const schema: ComponentSchemaV1 = {
@@ -281,6 +282,12 @@ const schema: ComponentSchemaV1 = {
         title: 'Subtitle Color',
         display: { type: 'palette-color-picker', visible: false },
       },
+      lightboxCounterColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Lightbox Counter Color',
+        display: { type: 'palette-color-picker' },
+      },
       titleFontFamily: {
         type: 'string',
         scope: 'common',
@@ -365,6 +372,48 @@ const schema: ComponentSchemaV1 = {
         title: 'Subtitle Text Appearance',
         display: { type: 'text-appearance' },
       },
+      lightboxCounterFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      lightboxCounterFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+      },
+      lightboxCounterFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Font Size',
+        display: { type: 'font-size' },
+      },
+      lightboxCounterLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Line Height',
+        display: { type: 'line-height-input' },
+      },
+      lightboxCounterLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      lightboxCounterWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      lightboxCounterTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Input Text Appearance',
+        display: { type: 'text-appearance' },
+      },
     },
     defaults: {
       lightbox: 'Off',
@@ -380,6 +429,7 @@ const schema: ComponentSchemaV1 = {
       transition: 'Slide',
       titleColor: '#767676',
       subtitleColor: '#DEDDDD',
+      lightboxCounterColor: '#DEDDDD',
       titleFontFamily: 'Arial',
       titleFontSettings: {
         fontWeight: 400,
@@ -400,6 +450,18 @@ const schema: ComponentSchemaV1 = {
       subtitleLetterSpacing: 0,
       subtitleWordSpacing: 0,
       subtitleTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      lightboxCounterFontFamily: 'Arial',
+      lightboxCounterFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      lightboxCounterLetterSpacing: 0,
+      lightboxCounterWordSpacing: 0,
+      lightboxCounterTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
         fontVariant: 'normal',
@@ -427,6 +489,8 @@ const schema: ComponentSchemaV1 = {
         titleLineHeight: 0.043,
         subtitleFontSize: 0.0373,
         subtitleLineHeight: 0.0373,
+        lightboxCounterFontSize: 0.0373,
+        lightboxCounterLineHeight: 0.0373,
       },
       d: {
         gridLayout: {
@@ -449,6 +513,8 @@ const schema: ComponentSchemaV1 = {
         titleLineHeight: 0.01,
         subtitleFontSize: 0.01,
         subtitleLineHeight: 0.01,
+        lightboxCounterFontSize: 0.01,
+        lightboxCounterLineHeight: 0.01,
       }
     },
     displayRules: [
@@ -533,6 +599,11 @@ const schema: ComponentSchemaV1 = {
           title: 'Subtitle',
           items: ['subtitleFontFamily', 'subtitleFontSettings', { type: 'row', items: ['subtitleFontSize', 'subtitleLineHeight', 'subtitleLetterSpacing', 'subtitleWordSpacing'] }, 'subtitleTextAppearance'],
         },
+        {
+          type: 'group',
+          title: 'Lightbox Counter',
+          items: ['lightboxCounterFontFamily', 'lightboxCounterFontSettings', { type: 'row', items: ['lightboxCounterFontSize', 'lightboxCounterLineHeight', 'lightboxCounterLetterSpacing', 'lightboxCounterWordSpacing'] }, 'lightboxCounterTextAppearance'],
+        },
       ],
     },
   ],
@@ -540,7 +611,7 @@ const schema: ComponentSchemaV1 = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['titleColor', 'subtitleColor'],
+      default: ['titleColor', 'subtitleColor', 'lightboxCounterColor'],
     },
   },
 };
