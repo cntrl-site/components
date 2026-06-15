@@ -459,7 +459,7 @@ const schema: ComponentSchemaV1 = {
         caption: [
           {
             type: 'paragraph',
-            children: [{ text: 'Pia' }],
+            children: [{ text: 'Pia,' }],
           },
           {
             type: 'paragraph',

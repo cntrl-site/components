@@ -118,6 +118,13 @@ function getCSS(P: string): string {
   pointer-events: auto;
   z-index: 10;
 }
+
+.${P}-gap-control {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  height: 100%;
+}
 .${P}-image-hover-brightness img {
   transition: filter 0.3s ease;
 }
@@ -130,16 +137,11 @@ function getCSS(P: string): string {
 .${P}-image-hover-grayscale:hover img {
   filter: grayscale(100%);
 }
-.${P}-image-hover-saturate img {
-  transition: filter 0.3s ease;
-}
-.${P}-image-hover-saturate:hover img {
-  filter: saturate(2);
-}
 `;
 }
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
+const GAP_LABEL_AREA_PX = 20;
 const MIN_CONTENT_SEQUENCE_REPEAT = 2;
 const OUTER_SET_COPIES = 2;
 
@@ -160,7 +162,11 @@ const isAnyCopyOfSlotInView = (wrapper: Element, itemIndex: number): boolean => 
 type MarqueeItemCardProps = {
   item: MarqueeItem;
   prefix: string;
-  imageFit: 'cover' | 'contain';
+  imageFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   imageMaxWidth: number;
   imageMaxHeight: number;
   imageHoverClass?: string;
@@ -189,7 +195,22 @@ const MarqueeItemCard = ({
     if (el?.complete) onFirstSetImageDone?.();
   }, [isFirstSet, item.image?.url, onFirstSetImageDone]);
 
-  const isCover = imageFit === 'cover';
+  const isCover = imageFit.display === 'Cover';
+  const ratioValue = imageFit.ratioValue ?? '1:1';
+  const ratioReversed = imageFit.reversed ?? false;
+  const [rW, rH] = ratioValue.split(':').map(Number);
+  const effW = ratioReversed ? rH : rW;
+  const effH = ratioReversed ? rW : rH;
+  const ratio = effW / effH;
+  let coverWidth = imageMaxWidth;
+  let coverHeight = coverWidth / ratio;
+  if (coverHeight > imageMaxHeight) {
+    coverHeight = imageMaxHeight;
+    coverWidth = coverHeight * ratio;
+  }
+  const coverWidthScaled = scaled(coverWidth);
+  const coverHeightScaled = scaled(coverHeight);
+
   const imageNode =
     item.image?.url &&
     (
@@ -226,7 +247,7 @@ const MarqueeItemCard = ({
         flexDirection: 'column',
         alignItems: 'start',
         ...(isCover
-          ? { width: scaled(imageMaxWidth) }
+          ? { width: coverWidthScaled }
           : { width: 'fit-content', maxWidth: scaled(imageMaxWidth), minWidth: 0 }),
       }}
     >
@@ -239,7 +260,7 @@ const MarqueeItemCard = ({
           alignItems: 'center',
           flexShrink: 0,
           ...(isCover
-            ? { width: '100%', height: scaled(imageMaxHeight), overflow: 'hidden' }
+            ? { width: coverWidthScaled, height: coverHeightScaled, overflow: 'hidden'}
             : {
                 width: 'fit-content',
                 maxWidth: scaled(imageMaxWidth),
@@ -474,13 +495,15 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
   }, [content]);
 
   const renderCardWrapper = (item: MarqueeItem, copyIndex: number, slotIndex: number, isFirstSet?: boolean) => {
-    const displayItem = hoverEffect === 'randomize' && imageFit === 'cover' ? (swappedSlots[slotIndex] ?? item) : item;
+    const displayItem = hoverEffect === 'randomize' && imageFit.display === 'Cover' ? (swappedSlots[slotIndex] ?? item) : item;
+    const gapLabelSize = `max(${scaled(gap)}, ${GAP_LABEL_AREA_PX}px)`;
+    const gapControlRight = `calc(-0.5 * (${gapLabelSize} + ${scaled(gap)}))`;
     return (
       <div
         key={`${copyIndex}-${slotIndex}`}
         className={`${P}-marquee-card`}
         data-marquee-item-index={slotIndex}
-        onMouseEnter={hoverEffect === 'randomize' && imageFit === 'cover' ? () => handleRandomizeEnter(slotIndex, item) : undefined}
+        onMouseEnter={hoverEffect === 'randomize' && imageFit.display === 'Cover' ? () => handleRandomizeEnter(slotIndex, item) : undefined}
       >
         <MarqueeItemCard
           item={displayItem}
@@ -498,14 +521,13 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           <div
             data-controls="gap"
             data-controls-axis="x"
+            className={`${P}-gap-control`}
             style={{
               position: 'absolute',
               top: 0,
-              right: `calc(-1 * ${scaled(gap)})`,
-              width: scaled(gap),
+              right: gapControlRight,
+              width: gapLabelSize,
               height: '100%',
-              pointerEvents: 'auto',
-              zIndex: 2,
             }}
           />
         )}
@@ -585,11 +607,15 @@ export type MarqueeSettings = {
   speed: number;
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
-  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'saturate' | 'randomize';
+  hoverEffect: 'off' | 'brightness' | 'grayscale' | 'randomize';
   gap: number;
   imageMaxWidth: number;
   imageMaxHeight: number;
-  imageFit: 'cover' | 'contain';
+  imageFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
 };
 
 type MarqueeProps = {
