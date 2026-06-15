@@ -5,6 +5,7 @@ import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { getPositionStyles } from '../utils/getPositionStyles';
+import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 
 const LIGHTBOX_ANIM_MS = 300;
@@ -198,6 +199,17 @@ function getCSS(P: string): string {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.${P}-text {
+  position: relative;
+  z-index: 2;
+  margin: 16px auto 0;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+  pointer-events: none;
+  word-break: break-word;
+}
 `;
 }
 
@@ -218,7 +230,7 @@ type LightboxOverlayProps = {
   images: LightboxStripItem[];
   backgroundColor: string;
   thumbnailGap: string;
-  closeIcon: LightboxStripSettings['closeIcon'];
+  closeIcon: string | null;
   closeIconMaxWidth: number;
   closeIconColor: string;
   closeIconHoverColor: string;
@@ -226,7 +238,9 @@ type LightboxOverlayProps = {
   thumbnailObjectFit: 'cover' | 'contain';
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
-  textMaxWidth: number;
+  text: any[];
+  textMaxWidth: string;
+  textStyle: React.CSSProperties;
   articleWidthCss?: string;
   isEditor?: boolean;
   onClose: () => void;
@@ -250,10 +264,11 @@ const LightboxOverlay = ({
   thumbnailObjectFit,
   thumbnailActive,
   articleWidthCss,
+  text,
   textMaxWidth,
+  textStyle,
   onClose,
 }: LightboxOverlayProps) => {
-  const closeIconControl = closeIcon ?? { mode: 'Off', icon: null };
   const stripRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
@@ -619,7 +634,7 @@ const LightboxOverlay = ({
             ))}
           </div>
         )}
-        {closeIconControl.mode === 'On' && (
+        {closeIcon && (
           <div
             className={`${P}-close-icon`}
             style={{
@@ -628,29 +643,31 @@ const LightboxOverlay = ({
               ['--close-icon-hover-color' as string]: closeIconHoverColor,
             }}
           >
-            <button
+            {/* <button
               type="button"
               className={`${P}-close-icon-inner`}
               onClick={handleClose}
               aria-label="Close"
             >
-              {closeIconControl.icon && (
+              {closeIcon && (
                 <SvgImage
-                  url={closeIconControl.icon}
+                  url={closeIcon}
                   fill={closeIconColor}
                   hoverFill={closeIconHoverColor}
                   className={`${P}-close-icon-img`}
                 />
               )}
-            </button>
+            </button> */}
           </div>
         )}
-        {/* <div
-          className={`${P}-text`}
-          style={{ maxWidth: textMaxWidth }}
-        >
-          <RichTextRenderer content={images[activeIndex].text } />
-        </div> */}
+        {text.length > 0 && (
+          <div
+            className={`${P}-text`}
+            style={{ ...textStyle, maxWidth: textMaxWidth }}
+          >
+            <RichTextRenderer content={text} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -665,13 +682,20 @@ type LightboxStripProps = {
 
 export const LightboxStrip = ({ settings, content, isEditor, portalId }: LightboxStripProps) => {
   const { prefix: P } = useScopedStyles();
-  const { backgroundColor, thumbnailVisibility, thumbnailObjectFit, thumbnailTrigger, thumbnailActive, thumbnailGap, textMaxWidth, closeIcon, closeIconMaxWidth, closeIconColor, closeIconHoverColor } = settings;
+  const { cover,backgroundColor, thumbnailVisibility, thumbnailObjectFit, thumbnailTrigger, thumbnailActive, thumbnailGap, textMaxWidth, textColor, textFontSize, textFontWeight, textFontFamily, textLineHeight, textLetterSpacing, closeIcon, closeIconMaxWidth, closeIconColor, closeIconHoverColor } = settings;
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const textStyle: React.CSSProperties = {
+    color: textColor,
+    fontFamily: normalizeFontFamilyCssValue(textFontFamily),
+    fontSize: scaled(textFontSize),
+    fontWeight: textFontWeight,
+    lineHeight: textLineHeight,
+    letterSpacing: scaled(textLetterSpacing),
+  };
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [articleWidthCss, setArticleWidthCss] = useState<string | undefined>();
   const items = content ?? [];
-  const coverItem = items.find((item) => item.image.isMainImage) ?? items[0];
 
   const openLightbox = () => {
     if (items.length === 0) return;
@@ -689,7 +713,7 @@ export const LightboxStrip = ({ settings, content, isEditor, portalId }: Lightbo
     <>
       <div ref={wrapperRef} className={`${P}-wrapper`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
-        {coverItem?.image?.url ? (
+        {cover ? (
           <button
             type="button"
             className={`${P}-cover`}
@@ -700,13 +724,13 @@ export const LightboxStrip = ({ settings, content, isEditor, portalId }: Lightbo
               border: 'none',
               background: 'transparent',
             }}
-            aria-label={coverItem.image.name ? `Open ${coverItem.image.name}` : 'Open image gallery'}
+            aria-label='Open image gallery'
           >
             <img
               className={`${P}-cover-image`}
-              src={coverItem.image.url}
-              alt={coverItem.image.name ?? ''}
-              style={{ objectFit: coverItem.image.objectFit ?? 'contain' }}
+              src={cover}
+              alt='cover'
+              style={{ objectFit: 'cover' }}
             />
           </button>
         ) : null}
@@ -724,7 +748,9 @@ export const LightboxStrip = ({ settings, content, isEditor, portalId }: Lightbo
             thumbnailObjectFit={thumbnailObjectFit}
             thumbnailTrigger={thumbnailTrigger}
             thumbnailActive={thumbnailActive}
-            textMaxWidth={textMaxWidth}
+            text={items.find((item) => Array.isArray(item.text) && item.text.length > 0)?.text ?? []}
+            textMaxWidth={scaled(textMaxWidth)}
+            textStyle={textStyle}
             closeIcon={closeIcon}
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
@@ -745,11 +771,12 @@ export type LightboxStripItem = {
     url: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
-    isMainImage?: boolean;
   };
+  text?: any[];
 };
 
 export type LightboxStripSettings = {
+  cover: string | null;
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
   thumbnailObjectFit: 'cover' | 'contain';
@@ -757,10 +784,13 @@ export type LightboxStripSettings = {
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
   thumbnailGap: number;
   textMaxWidth: number;
-  closeIcon: {
-    mode?: 'On' | 'Off';
-    icon?: string | null;
-  };
+  textColor: string;
+  textFontSize: number;
+  textFontWeight: number;
+  textFontFamily: string;
+  textLineHeight: number;
+  textLetterSpacing: number;
+  closeIcon:  string | null;
   closeIconMaxWidth: number;
   closeIconColor: string;
   closeIconHoverColor: string;

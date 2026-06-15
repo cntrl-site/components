@@ -8,8 +8,14 @@ const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
-    sizing: 'auto manual',
+    // sizing: 'auto manual',
     properties: {
+      cover: {
+        type: 'string',
+        scope: 'common',
+        title: '',
+        display: { type: 'settings-image-input' },
+      },
       thumbnailGap: {
         type: 'number',
         scope: 'layout',
@@ -36,10 +42,6 @@ const schema: ComponentSchemaV1 = {
         title: 'Visibility',
         display: { type: 'button-icon-switch' },
         properties: {
-          mode: {
-            type: 'string',
-            enum: ['On', 'Off'],
-          },
           icon: {
             type: ['string', 'null'] as const,
             title: 'Icon',
@@ -145,9 +147,9 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
+      cover: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
       objectFit: 'cover',
       closeIcon: {
-        mode: 'On',
         icon: defaultCloseIconUrl,
       },
       closeIconColor: '#ffffff',
@@ -157,7 +159,7 @@ const schema: ComponentSchemaV1 = {
       thumbnailObjectFit: 'contain',
       thumbnailTrigger: 'click',
       thumbnailActive: 'invert',
-      textColor: '#000000',
+      textColor: '#ffffff',
       textFontSize: 0.04,
       textFontWeight: 400,
       textFontFamily: 'Arial',
@@ -200,9 +202,9 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailObjectFit']},
         { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
+        { type: 'row', title: 'Cover', items: ['cover'] },
         { type: 'row', title: 'Text', items: ['textMaxWidth'] },
-        { type: 'row', title: 'Close icon', items: ['closeIcon'] },
-        { type: 'row', items: ['closeIconMaxWidth'] }
+        { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
       ],
     },
     {
@@ -212,8 +214,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'Typography',
       layout: [
         'textFontFamily',
-        'textFontSettings',
-        { type: 'group', title: '', items: [ 'text', {type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing']}, 'textTextAppearance']},
+        { type: 'group', title: '', items: ['textColor', { type: 'row', items: ['textFontSize', 'textLineHeight'] }, { type: 'row', items: ['textFontWeight', 'textLetterSpacing'] }] },
       ],
     },
   ],
@@ -240,8 +241,9 @@ const schema: ComponentSchemaV1 = {
         text: {
           type: 'string',
           label: 'Text',
+          placeholder: 'Add Text...',
           display: {
-            type: 'text-input',
+            type: 'rich-text',
           },
         },
       },
@@ -252,36 +254,34 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
           name: '',
           objectFit: 'contain',
-          isMainImage: true,
         },
-        text: 'Image 1',
+        text: [
+          {
+            type: 'paragraph',
+            children: [{ text: '' }],
+          },
+        ],
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
           name: '',
           objectFit: 'contain',
-          isMainImage: false,
         },
-        text: 'Image 2',
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
           name: '',
           objectFit: 'contain',
-          isMainImage: false,
         },
-        text: 'Image 3',
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
           name: '',
           objectFit: 'contain',
-          isMainImage: false,
         },
-        text: 'Image 4',
       },
     ],
   },
