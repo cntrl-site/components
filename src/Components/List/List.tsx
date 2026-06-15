@@ -62,6 +62,7 @@ type ListColumnTextStyleOverrides = {
   cutLabelTextWordSpacing?: number;
   cutLabelTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   cutLabelTextTextAppearance?: TextStyles['textAppearance'];
+  cutLabelVerticalAlign?: string;
 };
 
 export type ListColumnVerticalAlignKey = `${ListColumnPrefix}VerticalAlign`;
@@ -313,13 +314,9 @@ function getCSS(P: string): string {
 
 .${P}-wrapper.${P}-type-b .${P}-cut-item .${P}-list-cols-row {
   flex-direction: row;
-  align-items: center;
-  justify-content: center;
 }
 
 .${P}-wrapper.${P}-type-b .${P}-cut-label {
-  text-align: center;
-  width: 100%;
   box-sizing: border-box;
 }
 
@@ -498,8 +495,7 @@ a.${P}-list-item {
 
 .${P}-cut-item {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   width: 100%;
   overflow: visible;
   position: relative;
@@ -519,7 +515,8 @@ a.${P}-list-item {
 .${P}-cut-item .${P}-list-cols-row {
   flex: 1;
   min-height: 100%;
-  align-items: center;
+  width: 100%;
+  display: flex;
 }
 
 .${P}-wrapper.${P}-divider-bottom .${P}-cut-item {
@@ -654,6 +651,14 @@ function resolveColumnVerticalAlign(
   return parsed;
 }
 
+function resolveBasicColumnVerticalAlign(value: string | undefined): ColumnVerticalAlign {
+  const parsed = parseColumnVerticalAlign(value);
+  if (parsed.kind === 'baseline') {
+    return { kind: 'top' };
+  }
+  return parsed;
+}
+
 function isActiveBaselineVAlign(
   value: string | undefined,
   settings: ListSettings,
@@ -668,16 +673,22 @@ function isActiveBaselineVAlign(
 function getListColumnVerticalAlignSanitizeUpdates(
   settings: ListSettings,
 ): ListColumnVerticalAlignUpdates | null {
-  if (settings.type === 'B') {
-    return null;
-  }
-
   const updates: ListColumnVerticalAlignUpdates = {};
   let hasUpdates = false;
 
   for (const letter of LIST_COLUMN_LETTERS) {
     const key = getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey;
     const value = settings[key];
+
+    if (settings.type === 'B') {
+      const raw = String(value ?? 'Top').trim();
+      if (raw !== 'Top' && raw !== 'Center' && raw !== 'Bottom') {
+        updates[key] = 'Top';
+        hasUpdates = true;
+      }
+      continue;
+    }
+
     if (!isValidColumnBaselineVAlign(value, letter, settings)) {
       updates[key] = 'Top';
       hasUpdates = true;
@@ -697,6 +708,40 @@ function vAlignToTitleStyle(
     return { flex: '0 0 auto', marginTop: 'auto' };
   }
   return {};
+}
+
+function resolveCutLabelVerticalAlignKind(
+  value: string | undefined,
+): ColumnVerticalAlign['kind'] {
+  const kind = parseColumnVerticalAlign(value).kind;
+  return kind === 'baseline' ? 'center' : kind;
+}
+
+function textAlignToJustifyContent(
+  textAlign: 'left' | 'center' | 'right' | 'justify',
+): React.CSSProperties['justifyContent'] {
+  if (textAlign === 'right') {
+    return 'flex-end';
+  }
+  if (textAlign === 'center') {
+    return 'center';
+  }
+  if (textAlign === 'left') {
+    return 'flex-start';
+  }
+  return 'flex-start';
+}
+
+function cutVerticalAlignKindToFlexAlign(
+  kind: ColumnVerticalAlign['kind'],
+): React.CSSProperties['alignItems'] {
+  if (kind === 'center') {
+    return 'center';
+  }
+  if (kind === 'bottom') {
+    return 'flex-end';
+  }
+  return 'flex-start';
 }
 
 function getFirstLineBaselineOffsetInTitle(
@@ -839,7 +884,7 @@ export function createListTextStyleTabContentItems(prefix: ListTextStylePrefix):
     },
     getListColumnTextSettingKey(prefix, 'textTextAlign'),
     getListColumnTextSettingKey(prefix, 'textTextAppearance'),
-    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
+    `${prefix}VerticalAlign`,
   ];
 }
 
@@ -899,7 +944,8 @@ function resolveListColumnTextFields(
     textLineHeight: read('textLineHeight') as number | undefined,
     textLetterSpacing: (read('textLetterSpacing') as number | undefined) ?? 0,
     textWordSpacing: (read('textWordSpacing') as number | undefined) ?? 0,
-    textTextAlign: (read('textTextAlign') as ListTextStyleFields['textTextAlign']) ?? 'left',
+    textTextAlign: (read('textTextAlign') as ListTextStyleFields['textTextAlign'])
+      ?? (textPrefix === CUT_LABEL_TEXT_PREFIX ? 'center' : 'left'),
     textTextAppearance: read('textTextAppearance') as ListTextStyleFields['textTextAppearance'],
     textColor: settings.textColor,
   };
@@ -1680,6 +1726,12 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     }
 
     const prevSettings = prevSettingsRef.current;
+    const settingsChanged = prevSettings !== settings;
+
+    if (!settingsChanged) {
+      return;
+    }
+
     const updatedSettings = applyListSettingsChange(
       settings,
       prevSettings,
@@ -1898,6 +1950,11 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
   };
 
   const handleWrapperMouseLeave = () => {
+    setHoverImage(null);
+  };
+
+  const handleCutItemMouseEnter = () => {
+    if (!showHoverImage) return;
     setHoverImage(null);
   };
 
@@ -2132,7 +2189,9 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                       };
                     const columnLetter = col.textPrefix.charAt(0);
                     const vAlign = isVerticalLayout
-                      ? { kind: 'top' as const }
+                      ? resolveBasicColumnVerticalAlign(
+                        settings[`${col.textPrefix}VerticalAlign` as ListColumnVerticalAlignKey],
+                      )
                       : resolveColumnVerticalAlign(
                         settings[`${col.textPrefix}VerticalAlign` as ListColumnVerticalAlignKey],
                         settings,
@@ -2158,6 +2217,9 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                           style={{
                             ...columnPaddingStyle,
                             ...columnSizeStyle,
+                            ...(isVerticalLayout
+                              ? { justifyContent: cutVerticalAlignKindToFlexAlign(vAlign.kind) }
+                              : {}),
                           }}
                           data-test={col.width}
                         >
@@ -2207,7 +2269,12 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
               </RowElement>
             );
             })}
-            {showCutLabel && (
+            {showCutLabel && (() => {
+              const cutLabelFields = resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX);
+              const cutLabelVerticalAlignKind = resolveCutLabelVerticalAlignKind(settings.cutLabelVerticalAlign);
+              const cutLabelUsesFullWidth = cutLabelFields.textTextAlign === 'justify' || isVerticalLayout;
+
+              return (
               <button
                 type="button"
                 className={`${P}-cut-item`}
@@ -2220,17 +2287,20 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                   ),
                 }}
                 onClick={handleShowMore}
+                onMouseEnter={showHoverImage ? handleCutItemMouseEnter : undefined}
               >
                 <div
                   className={`${P}-list-cols-row`}
-                  style={
-                    isVerticalLayout
+                  style={{
+                    ...(isVerticalLayout
                       ? {
                         paddingLeft: scaled(effectiveTextPaddingLR),
                         paddingRight: scaled(effectiveTextPaddingLR),
                       }
-                      : { justifyContent: 'center' }
-                  }
+                      : {}),
+                    justifyContent: textAlignToJustifyContent(cutLabelFields.textTextAlign),
+                    alignItems: cutVerticalAlignKindToFlexAlign(cutLabelVerticalAlignKind),
+                  }}
                 >
                   <span
                     className={getListColumnTitleClassName(
@@ -2240,15 +2310,17 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                       `${P}-text-tight-leading`,
                     )}
                     style={{
-                      ...listColumnTextFieldsToCss(resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX), isEditor),
+                      ...listColumnTextFieldsToCss(cutLabelFields, isEditor),
                       ...getListColumnTitleVars(settings, CUT_LABEL_TEXT_PREFIX, P, isEditor),
+                      ...(cutLabelUsesFullWidth ? { width: '100%' } : {}),
                     }}
                   >
                     {cutLabel}
                   </span>
                 </div>
               </button>
-            )}
+              );
+            })()}
           </div>
           {showControls && !isVerticalLayout && firstColumn && lastColumn && (
             <div key="column-edge-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>

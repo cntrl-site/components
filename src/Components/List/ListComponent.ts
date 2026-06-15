@@ -98,6 +98,7 @@ type ListColumnLayoutDefaultsOverrides = {
 type ListColumnTextLayoutDefaultsInput = {
   textFontSize?: number;
   textLineHeight?: number;
+  textTextAlign?: 'left' | 'center' | 'right' | 'justify';
 };
 
 type ListColumnTextLayoutDefaults = {
@@ -111,6 +112,12 @@ type ListColumnTextLayoutDefaults = {
   CColumnTextLineHeight?: number;
   DColumnTextLineHeight?: number;
   EColumnTextLineHeight?: number;
+  AColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
+  BColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
+  CColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
+  DColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
+  EColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
+  cutLabelTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
 };
 
 const LIST_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
@@ -228,7 +235,20 @@ function createColumnLayoutDefaults(overrides: ListColumnLayoutDefaultsOverrides
 function createTextStyleProperties(prefix: ListTextStylePrefix): Record<string, SchemaProperty> {
   const properties: Record<string, SchemaProperty> = {};
 
-  if (prefix !== CUT_LABEL_TEXT_PREFIX) {
+  if (prefix === CUT_LABEL_TEXT_PREFIX) {
+    properties[`${prefix}VerticalAlign`] = {
+      type: 'string',
+      scope: 'layout',
+      title: '',
+      display: {
+        type: 'drop-down',
+        label: 'Vertical alignment',
+        enum: [...COLUMN_VALIGN_BASIC_OPTIONS],
+        useTabDesign: true,
+      },
+      enum: [...COLUMN_VALIGN_BASIC_OPTIONS],
+    };
+  } else {
     const columnLetter = prefix.charAt(0);
     properties[`${prefix}VerticalAlign`] = {
       type: 'string',
@@ -309,7 +329,7 @@ const textStylePropertiesByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<strin
 const textStyleDefaultsByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<string, ListSchemaDefaultValue>>(
   (defaults, prefix) => ({
     ...defaults,
-    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? { [`${prefix}VerticalAlign`]: 'Top' } : {}),
+    [`${prefix}VerticalAlign`]: prefix === CUT_LABEL_TEXT_PREFIX ? 'Center' : 'Top',
     [getListColumnTextSettingKey(prefix, 'textFontFamily')]: 'Arial',
     [getListColumnTextSettingKey(prefix, 'textFontSettings')]: {
       fontWeight: 400,
@@ -317,7 +337,8 @@ const textStyleDefaultsByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<string,
     },
     [getListColumnTextSettingKey(prefix, 'textLetterSpacing')]: 0,
     [getListColumnTextSettingKey(prefix, 'textWordSpacing')]: 0,
-    [getListColumnTextSettingKey(prefix, 'textTextAlign')]: 'left',
+    [getListColumnTextSettingKey(prefix, 'textTextAlign')]:
+      prefix === CUT_LABEL_TEXT_PREFIX ? 'center' : 'left',
     [getListColumnTextSettingKey(prefix, 'textTextAppearance')]: {
       textTransform: 'none',
       textDecoration: 'none',
@@ -329,25 +350,20 @@ const textStyleDefaultsByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<string,
 
 function createTextStyleLayoutDefaults(
   layoutDefaults: ListColumnTextLayoutDefaultsInput,
-): ListColumnTextLayoutDefaults & {
-  cutLabelTextFontSize?: number;
-  cutLabelTextLineHeight?: number;
-} {
-  const { textFontSize, textLineHeight } = layoutDefaults;
-  return LIST_TEXT_STYLE_PREFIXES.reduce<
-    ListColumnTextLayoutDefaults & {
-      cutLabelTextFontSize?: number;
-      cutLabelTextLineHeight?: number;
-    }
-  >((defaults, prefix) => {
+): Partial<ListColumnTextLayoutDefaults> {
+  const { textFontSize, textLineHeight, textTextAlign } = layoutDefaults;
+  return LIST_TEXT_STYLE_PREFIXES.reduce<Record<string, any>>((defaults, prefix) => {
     if (textFontSize !== undefined) {
-      defaults[`${prefix}TextFontSize` as keyof ListColumnTextLayoutDefaults] = textFontSize;
+      defaults[`${prefix}TextFontSize`] = textFontSize;
     }
     if (textLineHeight !== undefined) {
-      defaults[`${prefix}TextLineHeight` as keyof ListColumnTextLayoutDefaults] = textLineHeight;
+      defaults[`${prefix}TextLineHeight`] = textLineHeight;
+    }
+    if (textTextAlign !== undefined) {
+      defaults[getListColumnTextSettingKey(prefix, 'textTextAlign')] = textTextAlign;
     }
     return defaults;
-  }, {});
+  }, {}) as Partial<ListColumnTextLayoutDefaults>;
 }
 
 const textStylePanelTab = createListTextStylePanelTab();
@@ -364,7 +380,7 @@ function getTextStylePropertyNames(
     getListColumnTextSettingKey(prefix, 'textWordSpacing'),
     getListColumnTextSettingKey(prefix, 'textTextAlign'),
     getListColumnTextSettingKey(prefix, 'textTextAppearance'),
-    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
+    `${prefix}VerticalAlign`,
   ];
 }
 
@@ -736,6 +752,7 @@ const schema: ComponentSchemaV1 = {
         ...createTextStyleLayoutDefaults({
           textFontSize: 0.043,
           textLineHeight: 0.043,
+          textTextAlign: 'center',
         }),
       }),
       d: createColumnLayoutDefaults({
@@ -781,10 +798,6 @@ const schema: ComponentSchemaV1 = {
       ...LIST_COLUMN_LETTERS.map((letter) => ({
         if: { name: 'type', value: 'A' },
         then: { name: `properties.${letter}ColumnPaddingBottom.display.visible`, value: false },
-      })),
-      ...LIST_COLUMN_LETTERS.map((letter) => ({
-        if: { name: 'type', value: 'B' },
-        then: { name: `properties.${letter}ColumnVerticalAlign.display.visible`, value: false },
       })),
     ],
     layout: [
