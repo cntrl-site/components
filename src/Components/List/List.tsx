@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
+import type { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
 
@@ -15,6 +16,7 @@ type ListColumnTextStyleOverrides = {
   AColumnTextLineHeight?: number;
   AColumnTextLetterSpacing?: number;
   AColumnTextWordSpacing?: number;
+  AColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   AColumnTextTextAppearance?: TextStyles['textAppearance'];
   BColumnVerticalAlign?: string;
   BColumnTextFontFamily?: string;
@@ -23,6 +25,7 @@ type ListColumnTextStyleOverrides = {
   BColumnTextLineHeight?: number;
   BColumnTextLetterSpacing?: number;
   BColumnTextWordSpacing?: number;
+  BColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   BColumnTextTextAppearance?: TextStyles['textAppearance'];
   CColumnVerticalAlign?: string;
   CColumnTextFontFamily?: string;
@@ -31,6 +34,7 @@ type ListColumnTextStyleOverrides = {
   CColumnTextLineHeight?: number;
   CColumnTextLetterSpacing?: number;
   CColumnTextWordSpacing?: number;
+  CColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   CColumnTextTextAppearance?: TextStyles['textAppearance'];
   DColumnVerticalAlign?: string;
   DColumnTextFontFamily?: string;
@@ -39,6 +43,7 @@ type ListColumnTextStyleOverrides = {
   DColumnTextLineHeight?: number;
   DColumnTextLetterSpacing?: number;
   DColumnTextWordSpacing?: number;
+  DColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   DColumnTextTextAppearance?: TextStyles['textAppearance'];
   EColumnVerticalAlign?: string;
   EColumnTextFontFamily?: string;
@@ -47,6 +52,7 @@ type ListColumnTextStyleOverrides = {
   EColumnTextLineHeight?: number;
   EColumnTextLetterSpacing?: number;
   EColumnTextWordSpacing?: number;
+  EColumnTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   EColumnTextTextAppearance?: TextStyles['textAppearance'];
   cutLabelTextFontFamily?: string;
   cutLabelTextFontSettings?: ListFontSettings;
@@ -54,6 +60,7 @@ type ListColumnTextStyleOverrides = {
   cutLabelTextLineHeight?: number;
   cutLabelTextLetterSpacing?: number;
   cutLabelTextWordSpacing?: number;
+  cutLabelTextTextAlign?: 'left' | 'center' | 'right' | 'justify';
   cutLabelTextTextAppearance?: TextStyles['textAppearance'];
 };
 
@@ -65,51 +72,6 @@ type ListColumnVerticalAlignUpdates = {
   CColumnVerticalAlign?: string;
   DColumnVerticalAlign?: string;
   EColumnVerticalAlign?: string;
-};
-
-type ListColumnTextStyleSyncUpdates = {
-  AColumnTextFontFamily?: string;
-  AColumnTextFontSettings?: ListFontSettings;
-  AColumnTextFontSize?: number;
-  AColumnTextLineHeight?: number;
-  AColumnTextLetterSpacing?: number;
-  AColumnTextWordSpacing?: number;
-  AColumnTextTextAppearance?: TextStyles['textAppearance'];
-  BColumnTextFontFamily?: string;
-  BColumnTextFontSettings?: ListFontSettings;
-  BColumnTextFontSize?: number;
-  BColumnTextLineHeight?: number;
-  BColumnTextLetterSpacing?: number;
-  BColumnTextWordSpacing?: number;
-  BColumnTextTextAppearance?: TextStyles['textAppearance'];
-  CColumnTextFontFamily?: string;
-  CColumnTextFontSettings?: ListFontSettings;
-  CColumnTextFontSize?: number;
-  CColumnTextLineHeight?: number;
-  CColumnTextLetterSpacing?: number;
-  CColumnTextWordSpacing?: number;
-  CColumnTextTextAppearance?: TextStyles['textAppearance'];
-  DColumnTextFontFamily?: string;
-  DColumnTextFontSettings?: ListFontSettings;
-  DColumnTextFontSize?: number;
-  DColumnTextLineHeight?: number;
-  DColumnTextLetterSpacing?: number;
-  DColumnTextWordSpacing?: number;
-  DColumnTextTextAppearance?: TextStyles['textAppearance'];
-  EColumnTextFontFamily?: string;
-  EColumnTextFontSettings?: ListFontSettings;
-  EColumnTextFontSize?: number;
-  EColumnTextLineHeight?: number;
-  EColumnTextLetterSpacing?: number;
-  EColumnTextWordSpacing?: number;
-  EColumnTextTextAppearance?: TextStyles['textAppearance'];
-  cutLabelTextFontFamily?: string;
-  cutLabelTextFontSettings?: ListFontSettings;
-  cutLabelTextFontSize?: number;
-  cutLabelTextLineHeight?: number;
-  cutLabelTextLetterSpacing?: number;
-  cutLabelTextWordSpacing?: number;
-  cutLabelTextTextAppearance?: TextStyles['textAppearance'];
 };
 
 export type ListSettings = {
@@ -153,13 +115,6 @@ export type ListSettings = {
   columnsOrder?: string[];
   textPaddingLR?: number;
   textColor: string;
-  textFontFamily: string;
-  textFontSettings?: ListFontSettings;
-  textFontSize?: number;
-  textLineHeight?: number;
-  textLetterSpacing?: number;
-  textWordSpacing?: number;
-  textTextAppearance?: TextStyles['textAppearance'];
   backgroundColor: string;
   dividerColor: string;
   textHoverColor: string;
@@ -736,10 +691,10 @@ function vAlignToTitleStyle(
   kind: ColumnVerticalAlign['kind'],
 ): React.CSSProperties {
   if (kind === 'center') {
-    return { marginTop: 'auto', marginBottom: 'auto' };
+    return { flex: '0 0 auto', marginTop: 'auto', marginBottom: 'auto' };
   }
   if (kind === 'bottom') {
-    return { marginTop: 'auto' };
+    return { flex: '0 0 auto', marginTop: 'auto' };
   }
   return {};
 }
@@ -847,6 +802,7 @@ export const LIST_GLOBAL_TEXT_STYLE_KEYS = [
   'textLineHeight',
   'textLetterSpacing',
   'textWordSpacing',
+  'textTextAlign',
   'textTextAppearance',
 ] as const;
 
@@ -859,6 +815,47 @@ export function getListColumnTextSettingKey(
   return `${prefix}${globalKey.replace(/^text/, 'Text')}`;
 }
 
+export const LIST_TEXT_STYLE_TAB_LABELS: Record<ListTextStylePrefix, string> = {
+  AColumn: 'A',
+  BColumn: 'B',
+  CColumn: 'C',
+  DColumn: 'D',
+  EColumn: 'E',
+  cutLabel: 'CUT',
+};
+
+export function createListTextStyleTabContentItems(prefix: ListTextStylePrefix): LayoutItem[] {
+  return [
+    getListColumnTextSettingKey(prefix, 'textFontFamily'),
+    getListColumnTextSettingKey(prefix, 'textFontSettings'),
+    {
+      type: 'row',
+      items: [
+        getListColumnTextSettingKey(prefix, 'textFontSize'),
+        getListColumnTextSettingKey(prefix, 'textLineHeight'),
+        getListColumnTextSettingKey(prefix, 'textLetterSpacing'),
+        getListColumnTextSettingKey(prefix, 'textWordSpacing'),
+      ],
+    },
+    getListColumnTextSettingKey(prefix, 'textTextAlign'),
+    getListColumnTextSettingKey(prefix, 'textTextAppearance'),
+    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
+  ];
+}
+
+export function createListTextStylePanelTab(): LayoutTab {
+  return {
+    type: 'tab',
+    id: 'listColumnTextStyle',
+    tabs: Object.fromEntries(
+      LIST_TEXT_STYLE_PREFIXES.map((prefix) => [
+        LIST_TEXT_STYLE_TAB_LABELS[prefix],
+        createListTextStyleTabContentItems(prefix),
+      ]),
+    ),
+  };
+}
+
 type ListTextStyleFields = {
   textFontFamily?: string;
   textFontSettings?: { fontWeight: number; fontStyle: string };
@@ -866,6 +863,7 @@ type ListTextStyleFields = {
   textLineHeight?: number;
   textLetterSpacing?: number;
   textWordSpacing?: number;
+  textTextAlign?: 'left' | 'center' | 'right' | 'justify';
   textTextAppearance?: TextStyles['textAppearance'];
   textColor?: string;
 };
@@ -877,27 +875,10 @@ type ResolvedListTextFields = {
   textLineHeight?: number;
   textLetterSpacing: number;
   textWordSpacing: number;
+  textTextAlign: 'left' | 'center' | 'right' | 'justify';
   textTextAppearance?: TextStyles['textAppearance'];
   textColor?: string;
 };
-
-function resolveListGlobalTextFields(
-  settings: ListTextStyleFields,
-): ResolvedListTextFields {
-  return {
-    textFontFamily: settings.textFontFamily ?? 'Arial',
-    textFontSettings: settings.textFontSettings ?? {
-      fontWeight: 400,
-      fontStyle: 'normal',
-    },
-    textFontSize: settings.textFontSize,
-    textLineHeight: settings.textLineHeight,
-    textLetterSpacing: settings.textLetterSpacing ?? 0,
-    textWordSpacing: settings.textWordSpacing ?? 0,
-    textTextAppearance: settings.textTextAppearance,
-    textColor: settings.textColor,
-  };
-}
 
 function resolveListColumnTextFields(
   settings: ListSettings,
@@ -905,11 +886,7 @@ function resolveListColumnTextFields(
 ): ResolvedListTextFields {
   const read = <K extends ListGlobalTextStyleKey>(globalKey: K) => {
     const columnKey = getListColumnTextSettingKey(textPrefix, globalKey);
-    const columnValue = settings[columnKey as keyof ListSettings];
-    if (columnValue !== undefined) {
-      return columnValue as ListTextStyleFields[K];
-    }
-    return settings[globalKey];
+    return settings[columnKey as keyof ListSettings] as ListTextStyleFields[K] | undefined;
   };
 
   return {
@@ -922,6 +899,7 @@ function resolveListColumnTextFields(
     textLineHeight: read('textLineHeight') as number | undefined,
     textLetterSpacing: (read('textLetterSpacing') as number | undefined) ?? 0,
     textWordSpacing: (read('textWordSpacing') as number | undefined) ?? 0,
+    textTextAlign: (read('textTextAlign') as ListTextStyleFields['textTextAlign']) ?? 'left',
     textTextAppearance: read('textTextAppearance') as ListTextStyleFields['textTextAppearance'],
     textColor: settings.textColor,
   };
@@ -941,6 +919,7 @@ function listColumnTextFieldsToCss(
     lineHeight: fields.textLineHeight,
     letterSpacing: fields.textLetterSpacing,
     wordSpacing: fields.textWordSpacing,
+    textAlign: fields.textTextAlign,
     textAppearance: fields.textTextAppearance,
     color: fields.textColor ?? '#767676',
   };
@@ -981,32 +960,6 @@ function getListColumnTitleVars(
   return {
     [`--${titleVarPrefix}-title-leading-gap`]: scalingValue((fontSize - lineHeight) / 2, isEditor),
   } as React.CSSProperties;
-}
-
-function getListGlobalTextSyncUpdates(
-  nextSettings: ListSettings,
-  prevSettings: ListSettings,
-): ListColumnTextStyleSyncUpdates | null {
-  const updates: ListColumnTextStyleSyncUpdates = {};
-  let hasChanges = false;
-
-  for (const globalKey of LIST_GLOBAL_TEXT_STYLE_KEYS) {
-    if (nextSettings[globalKey] === prevSettings[globalKey]) {
-      continue;
-    }
-    if (nextSettings[globalKey] === undefined) {
-      continue;
-    }
-
-    hasChanges = true;
-    for (const prefix of LIST_TEXT_STYLE_PREFIXES) {
-      Object.assign(updates, {
-        [getListColumnTextSettingKey(prefix, globalKey)]: nextSettings[globalKey],
-      });
-    }
-  }
-
-  return hasChanges ? updates : null;
 }
 
 const COLUMN_WIDTH_KEYS = [
@@ -1407,11 +1360,6 @@ export function applyListSettingsChange(
   prevSettings: ListSettings,
   options?: { designWidth?: number },
 ): ListSettings {
-  const textSyncUpdates = getListGlobalTextSyncUpdates(nextSettings, prevSettings);
-  if (textSyncUpdates) {
-    nextSettings = { ...nextSettings, ...textSyncUpdates };
-  }
-
   const valignSanitizeUpdates = getListColumnVerticalAlignSanitizeUpdates(nextSettings);
   if (valignSanitizeUpdates) {
     nextSettings = { ...nextSettings, ...valignSanitizeUpdates };
@@ -1639,13 +1587,6 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
     columnsOrder,
     textPaddingLR,
     textColor,
-    textFontFamily,
-    textFontSettings,
-    textFontSize,
-    textLineHeight,
-    textLetterSpacing,
-    textWordSpacing,
-    textTextAppearance,
     backgroundColor,
     dividerColor,
     textHoverColor,
@@ -2179,7 +2120,7 @@ export function List({ settings, content, isEditor, isPreviewMode, activeEvent, 
                       && (columnPaddingBottom > 0 || showControls);
                     const columnSizeStyle = isVerticalLayout
                       ? { minHeight: scaled(resolvedCellMinHeight) }
-                      : (isLastColumn ? {} : { width: scaled(effectiveColumnWidths[colIndex]) });
+                      : { width: scaled(effectiveColumnWidths[colIndex]) };
                     const columnPaddingStyle = isVerticalLayout
                       ? {
                         paddingLeft: scaled(effectiveTextPaddingLR),

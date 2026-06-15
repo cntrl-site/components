@@ -3,6 +3,7 @@ import {
   COLUMN_TEXT_PREFIXES,
   CUT_LABEL_TEXT_PREFIX,
   COLUMN_VALIGN_BASIC_OPTIONS,
+  createListTextStylePanelTab,
   getListColumnTextSettingKey,
   LIST_TEXT_STYLE_PREFIXES,
   List,
@@ -92,8 +93,6 @@ type ListColumnLayoutDefaultsOverrides = {
   textStroke?: number;
   textCorners?: number;
   textPadding?: { top: number; right: number; bottom: number; left: number };
-  textFontSize?: number;
-  textLineHeight?: number;
 };
 
 type ListColumnTextLayoutDefaultsInput = {
@@ -150,9 +149,14 @@ const textStyleProperties = {
     type: 'number' as const,
     display: { type: 'word-spacing-input' },
   },
+  textAlign: {
+    type: 'string' as const,
+    enum: ['left', 'center', 'right', 'justify'],
+    display: { type: 'vertical-text-aligh-options' },
+  },
   textAppearance: {
     type: 'object' as const,
-    display: { type: 'text-appearance' },
+    display: { type: 'text-appearance', useTabDesign: true },
     properties: {
       textTransform: { type: 'string' as const, enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
       textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
@@ -229,12 +233,14 @@ function createTextStyleProperties(prefix: ListTextStylePrefix): Record<string, 
     properties[`${prefix}VerticalAlign`] = {
       type: 'string',
       scope: 'layout',
-      title: 'Vertical align',
+      title: '',
       display: {
         type: 'drop-down',
+        label: 'Vertical alignment',
         enum: [...COLUMN_VALIGN_OPTIONS],
         filterBaselineByTopAnchor: true,
         columnLetter,
+        useTabDesign: true,
       },
       enum: [...COLUMN_VALIGN_OPTIONS],
     };
@@ -243,44 +249,50 @@ function createTextStyleProperties(prefix: ListTextStylePrefix): Record<string, 
   properties[getListColumnTextSettingKey(prefix, 'textFontFamily')] = {
     type: 'string',
     scope: 'common',
-    title: 'Font family',
-    display: { type: 'font-family-select' },
+    title: '',
+    display: { type: 'font-family-select', hideLabel: true, useTabDesign: true },
   };
   properties[getListColumnTextSettingKey(prefix, 'textFontSettings')] = {
     ...textStyleProperties.fontSettings,
     scope: 'common',
     title: '',
-    display: { type: 'font-settings-weight' },
+    display: { type: 'font-settings-weight', hideLabel: true, useTabDesign: true },
   };
   properties[getListColumnTextSettingKey(prefix, 'textFontSize')] = {
     ...textStyleProperties.fontSize,
     scope: 'layout',
-    title: 'Font Size',
+    title: '',
     display: { type: 'font-size' },
   };
   properties[getListColumnTextSettingKey(prefix, 'textLineHeight')] = {
     ...textStyleProperties.lineHeight,
     scope: 'layout',
-    title: 'Line Height',
+    title: '',
     display: { type: 'line-height-input' },
   };
   properties[getListColumnTextSettingKey(prefix, 'textLetterSpacing')] = {
     ...textStyleProperties.letterSpacing,
     scope: 'layout',
-    title: 'Letter Spacing',
+    title: '',
     display: { type: 'letter-spacing-input' },
   };
   properties[getListColumnTextSettingKey(prefix, 'textWordSpacing')] = {
     ...textStyleProperties.wordSpacing,
     scope: 'layout',
-    title: 'Word Spacing',
+    title: '',
     display: { type: 'word-spacing-input' },
+  };
+  properties[getListColumnTextSettingKey(prefix, 'textTextAlign')] = {
+    ...textStyleProperties.textAlign,
+    scope: 'layout',
+    title: '',
+    display: { type: 'vertical-text-aligh-options' },
   };
   properties[getListColumnTextSettingKey(prefix, 'textTextAppearance')] = {
     ...textStyleProperties.textAppearance,
     scope: 'layout',
-    title: 'Text Appearance',
-    display: { type: 'text-appearance' },
+    title: '',
+    display: { type: 'text-appearance', useTabDesign: true },
   };
 
   return properties;
@@ -305,6 +317,7 @@ const textStyleDefaultsByPrefix = LIST_TEXT_STYLE_PREFIXES.reduce<Record<string,
     },
     [getListColumnTextSettingKey(prefix, 'textLetterSpacing')]: 0,
     [getListColumnTextSettingKey(prefix, 'textWordSpacing')]: 0,
+    [getListColumnTextSettingKey(prefix, 'textTextAlign')]: 'left',
     [getListColumnTextSettingKey(prefix, 'textTextAppearance')]: {
       textTransform: 'none',
       textDecoration: 'none',
@@ -337,34 +350,7 @@ function createTextStyleLayoutDefaults(
   }, {});
 }
 
-const TEXT_STYLE_PANEL_LABELS: Record<ListTextStylePrefix, string> = {
-  AColumn: 'A column',
-  BColumn: 'B column',
-  CColumn: 'C column',
-  DColumn: 'D column',
-  EColumn: 'E column',
-  cutLabel: 'See all',
-};
-
-const textStylePanelGroups = LIST_TEXT_STYLE_PREFIXES.map((prefix) => ({
-  type: 'group' as const,
-  title: TEXT_STYLE_PANEL_LABELS[prefix],
-  items: [
-    getListColumnTextSettingKey(prefix, 'textFontFamily'),
-    getListColumnTextSettingKey(prefix, 'textFontSettings'),
-    {
-      type: 'row' as const,
-      items: [
-        getListColumnTextSettingKey(prefix, 'textFontSize'),
-        getListColumnTextSettingKey(prefix, 'textLineHeight'),
-        getListColumnTextSettingKey(prefix, 'textLetterSpacing'),
-        getListColumnTextSettingKey(prefix, 'textWordSpacing'),
-      ],
-    },
-    getListColumnTextSettingKey(prefix, 'textTextAppearance'),
-    ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
-  ],
-}));
+const textStylePanelTab = createListTextStylePanelTab();
 
 function getTextStylePropertyNames(
   prefix: ListTextStylePrefix,
@@ -376,6 +362,7 @@ function getTextStylePropertyNames(
     getListColumnTextSettingKey(prefix, 'textLineHeight'),
     getListColumnTextSettingKey(prefix, 'textLetterSpacing'),
     getListColumnTextSettingKey(prefix, 'textWordSpacing'),
+    getListColumnTextSettingKey(prefix, 'textTextAlign'),
     getListColumnTextSettingKey(prefix, 'textTextAppearance'),
     ...(prefix !== CUT_LABEL_TEXT_PREFIX ? [`${prefix}VerticalAlign`] : []),
   ];
@@ -690,48 +677,6 @@ const schema: ComponentSchemaV1 = {
         title: 'Text Hover',
         display: { type: 'palette-color-picker' },
       },
-      textFontFamily: {
-        type: 'string',
-        scope: 'common',
-        title: 'Font family',
-        display: { type: 'font-family-select' },
-      },
-      textFontSettings: {
-        ...textStyleProperties.fontSettings,
-        scope: 'common',
-        title: '',
-        display: { type: 'font-settings-weight' },
-      },
-      textFontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Input Font Size',
-        display: { type: 'font-size' },
-      },
-      textLineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Input Line Height',
-        display: { type: 'line-height-input' },
-      },
-      textLetterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Input Letter Spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      textWordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Input Word Spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      textTextAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Input Text Appearance',
-        display: { type: 'text-appearance' },
-      },
       ...textStylePropertiesByPrefix,
       backgroundColor: {
         type: 'string',
@@ -765,18 +710,6 @@ const schema: ComponentSchemaV1 = {
       showVisibility: [true, true],
       textColor: '#767676',
       textHoverColor: '#767676',
-      textFontFamily: 'Arial',
-      textFontSettings: {
-        fontWeight: 400,
-        fontStyle: 'normal',
-      },
-      textLetterSpacing: 0,
-      textWordSpacing: 0,
-      textTextAppearance: {
-        textTransform: 'none',
-        textDecoration: 'none',
-        fontVariant: 'normal',
-      },
       ...textStyleDefaultsByPrefix,
       backgroundColor: '#FFFFFF00',
       dividerColor: '#767676',
@@ -800,8 +733,6 @@ const schema: ComponentSchemaV1 = {
         textStroke: 0.003,
         textCorners: 0.192,
         textPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
-        textFontSize: 0.043,
-        textLineHeight: 0.043,
         ...createTextStyleLayoutDefaults({
           textFontSize: 0.043,
           textLineHeight: 0.043,
@@ -823,8 +754,6 @@ const schema: ComponentSchemaV1 = {
         textStroke: 0.001,
         textCorners: 0.05,
         textPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-        textFontSize: 0.01,
-        textLineHeight: 0.01,
         ...createTextStyleLayoutDefaults({
           textFontSize: 0.01,
           textLineHeight: 0.01,
@@ -914,20 +843,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        {
-          type: 'group',
-          title: 'All text',
-          items: [
-            'textFontFamily',
-            'textFontSettings',
-            {
-              type: 'row',
-              items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'],
-            },
-            'textTextAppearance',
-          ],
-        },
-        ...textStylePanelGroups,
+        textStylePanelTab,
       ],
     },
   ],
