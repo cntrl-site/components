@@ -160,7 +160,6 @@ type ListProps = {
   isEditor?: boolean;
   isPreviewMode?: boolean;
   isEditMode?: boolean;
-  isEditMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: ListSettings) => void;
 } & CommonComponentProps;
