@@ -286,9 +286,10 @@ const MarqueeItemCard = ({
   );
 };
 
-export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeProps) => {
+export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
   const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, imageFit, hoverEffect } = settings;
+  const showControls = Boolean(isEditMode);
   const showHoverEffects = !isEditor || Boolean(isPreviewMode);
   const imageHoverClass = showHoverEffects && hoverEffect !== 'off' && hoverEffect !== 'randomize' ? `${P}-image-hover-${hoverEffect}` : undefined;
   const autoplayEnabled = isEditor ? Boolean(isPreviewMode) : true;
@@ -517,7 +518,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode }: MarqueeP
           scaled={scaled}
           onFirstSetImageDone={onFirstSetImageDone}
         />
-        {isEditor && !isPreviewMode && (
+        {showControls && (
           <div
             data-controls="gap"
             data-controls-axis="x"
@@ -625,4 +626,5 @@ type MarqueeProps = {
   content?: MarqueeItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
 } & CommonComponentProps;
