@@ -4,11 +4,38 @@ import lightboxStripSourceRaw from './LightboxStrip.tsx?raw';
 
 const defaultCloseIconUrl = 'https://cdn.cntrl.site/component-assets/Close.svg';
 
+
+const textStyleProperties = {
+  fontSettings: {
+    type: 'object' as const,
+    display: { type: 'font-settings-weight', visible: true },
+    properties: {
+      fontWeight: { type: 'number' as const },
+      fontStyle: { type: 'string' as const },
+    },
+  },
+  fontSize: {
+    type: 'number' as const,
+    display: { type: 'font-size' },
+  },
+  lineHeight: {
+    type: 'number' as const,
+    display: { type: 'line-height-input' },
+  },
+  letterSpacing: {
+    type: 'number' as const,
+    display: { type: 'letter-spacing-input' },
+  },
+  wordSpacing: {
+    type: 'number' as const,
+    display: { type: 'word-spacing-input' },
+  }
+};
+
 const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
-    // sizing: 'auto manual',
     properties: {
       cover: {
         type: 'string',
@@ -24,6 +51,14 @@ const schema: ComponentSchemaV1 = {
         max: 200,
         display: { type: 'range-control' },
       },
+      imageGap: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Image Gap',
+        min: 0,
+        max: 200,
+        display: { type: 'range-control' },
+      },
       backgroundColor: {
         type: 'string',
         scope: 'layout',
@@ -34,20 +69,13 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'contain'] },
+        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
       },
       closeIcon: {
-        type: 'object',
+        type: ['string', 'null'] as const,
         scope: 'common',
-        title: 'Visibility',
-        display: { type: 'button-icon-switch' },
-        properties: {
-          icon: {
-            type: ['string', 'null'] as const,
-            title: 'Icon',
-            display: { type: 'settings-image-input' },
-          },
-        },
+        title: 'Icon',
+        display: { type: 'settings-image-input' },
       },
       closeIconMaxWidth: {
         type: 'number',
@@ -79,7 +107,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'contain'] },
+        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
       },
       thumbnailTrigger: {
         type: 'string',
@@ -107,63 +135,83 @@ const schema: ComponentSchemaV1 = {
         title: 'Text Color',
         display: { type: 'color-input' },
       },
+      textFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: 'Text',
+      },
       textFontSize: {
         type: 'number',
-        scope: 'common',
+        scope: 'layout',
         title: 'Text Font Size',
-        display: { type: 'full-width-input' },
-        min: 0,
-        max: 1,
-      },
-      textFontWeight: {
-        type: 'number',
-        scope: 'common',
-        title: 'Text Font Weight',
-        display: { type: 'full-width-input' },
-        min: 0,
-        max: 1,
-      },
-      textFontFamily: {
-        type: 'string',
-        scope: 'common',
-        title: 'Text Font Family',
-        display: { type: 'full-width-input' },
+        display: { type: 'font-size' },
       },
       textLineHeight: {
         type: 'number',
-        scope: 'common',
+        scope: 'layout',
         title: 'Text Line Height',
-        display: { type: 'full-width-input' },
-        min: 0,
-        max: 1,
+        display: { type: 'line-height-input' },
       },
       textLetterSpacing: {
         type: 'number',
-        scope: 'common',
+        scope: 'layout',
         title: 'Text Letter Spacing',
-        display: { type: 'full-width-input' },
+        display: { type: 'letter-spacing-input' },
+      },
+      textWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      textTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Text Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      contentMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Content margin top',
         min: 0,
-        max: 1,
+        max: 200,
+        display: { type: 'range-control' },
+      },
+      contentMarginLeft: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Content margin left',
+        min: 0,
+        max: 200,
+        display: { type: 'range-control' },
+      },
+      contentMarginRight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Content margin right',
+        min: 0,
+        max: 200,
+        display: { type: 'range-control' },
       },
     },
     defaults: {
       cover: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
       objectFit: 'cover',
-      closeIcon: {
-        icon: defaultCloseIconUrl,
-      },
+      closeIcon: defaultCloseIconUrl,
       closeIconColor: '#ffffff',
       closeIconHoverColor: '#cccccc',
       thumbnailVisibility: 'on',
       thumbnailSize: 'S',
-      thumbnailObjectFit: 'contain',
+      thumbnailObjectFit: 'fit',
       thumbnailTrigger: 'click',
       thumbnailActive: 'invert',
       textColor: '#ffffff',
       textFontSize: 0.04,
-      textFontWeight: 400,
-      textFontFamily: 'Arial',
-      textLineHeight: 1.5,
+      textFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
       textLetterSpacing: 0,
       textWordSpacing: 0,
       textTextAppearance: {
@@ -175,21 +223,33 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         thumbnailGap: 0.04,
+        imageGap: 0,
         textMaxWidth: 0.4,
         closeIconMaxWidth: 0.06,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
+        contentMarginTop: 0,
+        contentMarginLeft: 0,
+        contentMarginRight: 0,
       },
       d: {
         thumbnailGap: 0.02,
+        imageGap: 0,
         textMaxWidth: 0.4,
         closeIconMaxWidth: 0.06,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
+        contentMarginTop: 0,
+        contentMarginLeft: 0,
+        contentMarginRight: 0,
       },
     },
     layout: [
       '__componentName__',
       'thumbnailGap',
+      'imageGap',
       'objectFit',
+      'contentMarginTop',
+      'contentMarginLeft',
+      'contentMarginRight',
     ],
   },
   panels: [
@@ -213,8 +273,12 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        'textFontFamily',
-        { type: 'group', title: '', items: ['textColor', { type: 'row', items: ['textFontSize', 'textLineHeight'] }, { type: 'row', items: ['textFontWeight', 'textLetterSpacing'] }] },
+        'fontFamily',
+        {
+          type: 'group',
+          title: '',
+          items: ['textFontSettings', { type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'] }, 'textTextAppearance'],
+        },
       ],
     },
   ],

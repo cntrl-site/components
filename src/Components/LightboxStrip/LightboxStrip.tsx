@@ -4,7 +4,6 @@ import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
-import { getPositionStyles } from '../utils/getPositionStyles';
 import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 
@@ -46,6 +45,9 @@ function getCSS(P: string): string {
   width: var(--cntrl-article-width, 100vw) !important;
   margin-left: auto;
   margin-right: auto;
+}
+
+.${P}-lightbox-edit-mode {
   z-index: 1;
 }
 
@@ -173,7 +175,9 @@ function getCSS(P: string): string {
   transition: filter 0.2s ease;
 }
 .${P}-close-icon {
-  position: absolute;
+  position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
   pointer-events: auto;
   z-index: 2;
   display: flex;
@@ -202,13 +206,46 @@ function getCSS(P: string): string {
 
 .${P}-text {
   position: relative;
+  flex: 0 1 auto;
   z-index: 2;
-  margin: 16px auto 0;
-  width: 100%;
-  text-align: center;
   box-sizing: border-box;
   pointer-events: none;
   word-break: break-word;
+}
+.${P}-lightbox-content-inner {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.${P}-lightbox-content-area {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.${P}-control {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  flex-shrink: 0;
+}
+
+.${P}-control::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  z-index: 10;
 }
 `;
 }
@@ -230,6 +267,7 @@ type LightboxOverlayProps = {
   images: LightboxStripItem[];
   backgroundColor: string;
   thumbnailGap: string;
+  imageGap: string;
   closeIcon: string | null;
   closeIconMaxWidth: number;
   closeIconColor: string;
@@ -241,20 +279,31 @@ type LightboxOverlayProps = {
   text: any[];
   textMaxWidth: string;
   textStyle: React.CSSProperties;
+  contentMarginTop: string;
+  contentMarginLeft: string;
+  contentMarginRight: string;
   articleWidthCss?: string;
   isEditor?: boolean;
+  isEditMode?: boolean;
+  isPreviewMode?: boolean;
   onClose: () => void;
 };
 
 const MOUSE_DRAG_THRESHOLD_PX = 3;
 const LOOP_COPIES = 3;
+const GAP_LABEL_AREA_PX = 20;
+
+const getGapControlSize = (gap: string) => `max(${gap}, ${GAP_LABEL_AREA_PX}px)`;
 
 const LightboxOverlay = ({
   prefix: P,
   images,
   backgroundColor,
   thumbnailGap,
+  imageGap,
   isEditor,
+  isEditMode,
+  isPreviewMode,
   closeIcon,
   closeIconMaxWidth,
   closeIconColor,
@@ -267,8 +316,14 @@ const LightboxOverlay = ({
   text,
   textMaxWidth,
   textStyle,
+  contentMarginTop,
+  contentMarginLeft,
+  contentMarginRight,
   onClose,
 }: LightboxOverlayProps) => {
+  const showControls = Boolean(isEditMode);
+  const allowMouseDrag = !isEditor || Boolean(isPreviewMode);
+  const allowThumbnailHover = !isEditor || Boolean(isPreviewMode);
   const stripRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
@@ -390,9 +445,10 @@ const LightboxOverlay = ({
   };
 
   const onStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const target = event.target as HTMLElement;
-    if (target.closest('[data-controls="thumbnailGap"]')) return;
+    if (target.closest('[data-controls]')) return;
     const strip = stripRef.current;
     if (!strip) return;
     mouseDragRef.current = {
@@ -405,6 +461,7 @@ const LightboxOverlay = ({
   };
 
   const onStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
     if (!strip || !mouseDragRef.current.isActive) return;
@@ -422,6 +479,7 @@ const LightboxOverlay = ({
   };
 
   const endStripMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
     if (!strip) return;
@@ -519,7 +577,7 @@ const LightboxOverlay = ({
   return (
     <div
       data-selection="none"
-      className={`${P}-lightbox${isEditor ? ` ${P}-lightbox-editor` : ''}`}
+      className={`${P}-lightbox${isEditor ? ` ${P}-lightbox-editor` : ''}${isEditMode ? ` ${P}-lightbox-edit-mode` : ''}`}
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
@@ -539,18 +597,22 @@ const LightboxOverlay = ({
         <div
           ref={stripRef}
           className={`${P}-lightbox-strip`}
-          data-mouse-draggable={images.length > 0 ? 'true' : 'false'}
+          style={{ gap: imageGap }}
+          data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
           data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
-          onPointerDown={onStripPointerDown}
-          onPointerMove={onStripPointerMove}
-          onPointerUp={endStripMouseDrag}
-          onPointerCancel={endStripMouseDrag}
+          onPointerDown={allowMouseDrag ? onStripPointerDown : undefined}
+          onPointerMove={allowMouseDrag ? onStripPointerMove : undefined}
+          onPointerUp={allowMouseDrag ? endStripMouseDrag : undefined}
+          onPointerCancel={allowMouseDrag ? endStripMouseDrag : undefined}
         >
           {flatItems.map((item, flatIndex) => {
             const itemObjectFit = item.image.objectFit ?? 'contain';
             const sourceIndex = flatIndex % images.length;
             const copyIndex = Math.floor(flatIndex / images.length);
             const isMiddleCopy = copyIndex === 1;
+
+            const imageGapControlSize = getGapControlSize(imageGap);
+            const imageGapControlRight = `calc(-0.5 * (${imageGapControlSize} + ${imageGap}))`;
 
             return (
               <div
@@ -575,6 +637,21 @@ const LightboxOverlay = ({
                     objectFit: itemObjectFit,
                   }}
                 />
+                {showControls && isMiddleCopy && sourceIndex < images.length - 1 && (
+                  <div
+                    data-controls="imageGap"
+                    data-controls-axis="x"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: imageGapControlRight,
+                      width: imageGapControlSize,
+                      height: '100%',
+                      pointerEvents: 'auto',
+                      zIndex: 3,
+                    }}
+                  />
+                )}
               </div>
             );
           })}
@@ -586,7 +663,11 @@ const LightboxOverlay = ({
             data-thumbnail-active={thumbnailActive}
             style={{ gap: thumbnailGap }}
           >
-            {images.map((item, index) => (
+            {images.map((item, index) => {
+              const thumbnailGapControlSize = getGapControlSize(thumbnailGap);
+              const thumbnailGapControlRight = `calc(-0.5 * (${thumbnailGapControlSize} + ${thumbnailGap}))`;
+
+              return (
               <div
                 key={`thumb-${item.image.url}-${index}`}
                 style={{ position: 'relative', flex: '0 0 auto' }}
@@ -601,7 +682,7 @@ const LightboxOverlay = ({
                     }
                   }}
                   onMouseEnter={() => {
-                    if (thumbnailTrigger === 'hover') {
+                    if (allowThumbnailHover && thumbnailTrigger === 'hover') {
                       scrollToIndex(index);
                     }
                   }}
@@ -615,15 +696,15 @@ const LightboxOverlay = ({
                     draggable={false}
                   />
                 </button>
-                {isEditor && index < images.length - 1 && (
+                {showControls && index < images.length - 1 && (
                   <div
                     data-controls="thumbnailGap"
                     data-controls-axis="x"
                     style={{
                       position: 'absolute',
                       top: 0,
-                      right: `calc(-1 * ${thumbnailGap})`,
-                      width: thumbnailGap,
+                      right: thumbnailGapControlRight,
+                      width: thumbnailGapControlSize,
                       height: '100%',
                       pointerEvents: 'auto',
                       zIndex: 3,
@@ -631,43 +712,57 @@ const LightboxOverlay = ({
                   />
                 )}
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
-        {closeIcon && (
+        <div className={`${P}-lightbox-content-inner`} style={{ width: '100%', height: '100%' }}>
           <div
-            className={`${P}-close-icon`}
-            style={{
-              width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-              height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-              ['--close-icon-hover-color' as string]: closeIconHoverColor,
-            }}
-          >
-            {/* <button
-              type="button"
-              className={`${P}-close-icon-inner`}
-              onClick={handleClose}
-              aria-label="Close"
-            >
-              {closeIcon && (
-                <SvgImage
-                  url={closeIcon}
-                  fill={closeIconColor}
-                  hoverFill={closeIconHoverColor}
-                  className={`${P}-close-icon-img`}
-                />
+            data-controls={showControls ? 'contentMarginTop' : undefined}
+            className={showControls ? `${P}-control` : undefined}
+            style={{ height: contentMarginTop, width: '100%' }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+            <div
+              data-controls={showControls ? 'contentMarginLeft' : undefined}
+              data-controls-axis={showControls ? 'x' : undefined}
+              className={showControls ? `${P}-control` : undefined}
+              style={{ width: contentMarginLeft, flexShrink: 0 }}
+            />
+            <div className={`${P}-lightbox-content-area`}>
+              {text.length > 0 && (
+                <div className={`${P}-text`} style={{ ...textStyle, maxWidth: textMaxWidth }}>
+                  <RichTextRenderer content={text} />
+                </div>
               )}
-            </button> */}
+              {closeIcon && (
+                <div
+                  className={`${P}-close-icon`}
+                  style={{
+                    width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+                    height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+                    ['--close-icon-hover-color' as string]: closeIconHoverColor,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className={`${P}-close-icon-inner`}
+                    onClick={handleClose}
+                    aria-label="Close"
+                  >
+                    <SvgImage url={closeIcon} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`}/>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div
+              data-controls={showControls ? 'contentMarginRight' : undefined}
+              data-controls-axis={showControls ? 'x' : undefined}
+              className={showControls ? `${P}-control` : undefined}
+              style={{ width: contentMarginRight, flexShrink: 0 }}
+            />
           </div>
-        )}
-        {text.length > 0 && (
-          <div
-            className={`${P}-text`}
-            style={{ ...textStyle, maxWidth: textMaxWidth }}
-          >
-            <RichTextRenderer content={text} />
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -677,12 +772,38 @@ type LightboxStripProps = {
   settings: LightboxStripSettings;
   content?: LightboxStripItem[];
   isEditor?: boolean;
+  isEditMode?: boolean;
+  isPreviewMode?: boolean;
   portalId?: string;
 } & CommonComponentProps;
 
-export const LightboxStrip = ({ settings, content, isEditor, portalId }: LightboxStripProps) => {
+export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPreviewMode, portalId }: LightboxStripProps) => {
   const { prefix: P } = useScopedStyles();
-  const { cover,backgroundColor, thumbnailVisibility, thumbnailObjectFit, thumbnailTrigger, thumbnailActive, thumbnailGap, textMaxWidth, textColor, textFontSize, textFontWeight, textFontFamily, textLineHeight, textLetterSpacing, closeIcon, closeIconMaxWidth, closeIconColor, closeIconHoverColor } = settings;
+  const { 
+    cover,
+    backgroundColor,
+    thumbnailVisibility,
+    thumbnailObjectFit,
+    thumbnailTrigger,
+    thumbnailActive,
+    thumbnailGap,
+    imageGap,
+    textMaxWidth,
+    textColor,
+    textFontSize,
+    textFontWeight,
+    textFontFamily, 
+    textLineHeight,
+    textLetterSpacing, 
+    closeIcon,
+    closeIconMaxWidth,
+    closeIconColor,
+    closeIconHoverColor, 
+    contentMarginTop, 
+    contentMarginLeft, 
+    contentMarginRight
+  } = settings;
+
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const textStyle: React.CSSProperties = {
     color: textColor,
@@ -744,6 +865,7 @@ export const LightboxStrip = ({ settings, content, isEditor, portalId }: Lightbo
             images={items}
             backgroundColor={backgroundColor}
             thumbnailGap={scaled(thumbnailGap)}
+            imageGap={scaled(imageGap ?? 0)}
             thumbnailVisibility={thumbnailVisibility}
             thumbnailObjectFit={thumbnailObjectFit}
             thumbnailTrigger={thumbnailTrigger}
@@ -751,12 +873,17 @@ export const LightboxStrip = ({ settings, content, isEditor, portalId }: Lightbo
             text={items.find((item) => Array.isArray(item.text) && item.text.length > 0)?.text ?? []}
             textMaxWidth={scaled(textMaxWidth)}
             textStyle={textStyle}
+            contentMarginTop={scaled(contentMarginTop ?? 0)}
+            contentMarginLeft={scaled(contentMarginLeft ?? 0)}
+            contentMarginRight={scaled(contentMarginRight ?? 0)}
             closeIcon={closeIcon}
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
             closeIconHoverColor={closeIconHoverColor}
             articleWidthCss={articleWidthCss}
             isEditor={isEditor}
+            isEditMode={isEditMode}
+            isPreviewMode={isPreviewMode}
             onClose={closeLightbox}
           />,
           portalTarget,
@@ -783,6 +910,7 @@ export type LightboxStripSettings = {
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
   thumbnailGap: number;
+  imageGap?: number;
   textMaxWidth: number;
   textColor: string;
   textFontSize: number;
@@ -790,6 +918,9 @@ export type LightboxStripSettings = {
   textFontFamily: string;
   textLineHeight: number;
   textLetterSpacing: number;
+  contentMarginTop: number;
+  contentMarginLeft: number;
+  contentMarginRight: number;
   closeIcon:  string | null;
   closeIconMaxWidth: number;
   closeIconColor: string;
