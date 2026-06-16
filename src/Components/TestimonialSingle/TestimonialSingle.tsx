@@ -148,12 +148,12 @@ type RenderItemContentOpts = {
   textMinHeightPx?: number;
   captionMinHeightPx?: number;
   dataMeasureAttrs?: boolean;
+  hideControls?: boolean;
 };
 
 export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, isEditMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const items = content || [];
-  const showControls = Boolean(isEditMode);
   const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
   const isAnimating = autoplay === 'on' && isPreviewMode;
   const [activeIndex, setActiveIndex] = useState(0);
@@ -270,14 +270,15 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
     const textMinHeightPx = opts?.textMinHeightPx;
     const captionMinHeightPx = opts?.captionMinHeightPx;
     const dataMeasureAttrs = opts?.dataMeasureAttrs;
+    const showMarginControls = isEditMode && !opts?.dataMeasureAttrs && !opts?.hideControls;
 
     return (
       <>
         {item.text && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
             <div
-              data-controls={showControls ? 'textMarginTop' : undefined}
-              className={showControls ? `${P}-control` : undefined}
+              data-controls={showMarginControls ? 'textMarginTop' : undefined}
+              className={showMarginControls ? `${P}-control` : undefined}
               style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false) }}
             />
             <div
@@ -295,8 +296,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
         )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
           <div
-            data-controls={showControls ? 'imageMarginTop' : undefined}
-            className={showControls ? `${P}-control` : undefined}
+            data-controls={showMarginControls ? 'imageMarginTop' : undefined}
+            className={showMarginControls ? `${P}-control` : undefined}
             style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
           />
           <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
@@ -313,8 +314,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
         {item.caption && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
             <div
-              data-controls={showControls ? 'captionMarginTop' : undefined}
-              className={showControls ? `${P}-control` : undefined}
+              data-controls={showMarginControls ? 'captionMarginTop' : undefined}
+              className={showMarginControls ? `${P}-control` : undefined}
               style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false) }}
             />
             <div
@@ -396,7 +397,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
           <div className={`${P}-fade-stack`}>
             {previousItem && isFading && (
               <div className={cn(`${P}-fade-item-prev`, `${P}-fade-out`)}>
-                {renderItemContent(previousItem, visibleContentOpts)}
+                {renderItemContent(previousItem, { ...visibleContentOpts, hideControls: true })}
               </div>
             )}
             <div className={cn(`${P}-fade-item-current`, isFading ? `${P}-fade-in` : undefined)}>
