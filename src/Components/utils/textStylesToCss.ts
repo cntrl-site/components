@@ -16,6 +16,7 @@ export type TextStyles = {
     textDecoration?: string;
     fontVariant?: string;
   };
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
   color: string;
 };
 
@@ -65,6 +66,7 @@ export function textStylesToCss(
     textTransform: textStyles.textAppearance?.textTransform,
     textDecoration: textStyles.textAppearance?.textDecoration,
     fontVariant: textStyles.textAppearance?.fontVariant,
+    textAlign: textStyles.textAlign,
     color: textStyles.color,
   };
 }

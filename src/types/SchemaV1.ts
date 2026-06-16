@@ -47,12 +47,19 @@ export type LayoutPaletteBookmark = {
   items: string[];
 };
 
+export type LayoutTab = {
+  type: 'tab';
+  id?: string;
+  tabs: Record<string, LayoutItem[]>;
+};
+
 export type LayoutItem =
   | string
   | LayoutRow
   | LayoutGroup
   | LayoutSwitcher
-  | LayoutPaletteBookmark;
+  | LayoutPaletteBookmark
+  | LayoutTab;
 
 export type SchemaDisplayRule = {
   if:
