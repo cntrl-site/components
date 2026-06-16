@@ -444,38 +444,108 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
   'rowPaddingBottom',
 ] as const;
 
-function createDefaultContentItem(
-  labelSuffix: string,
-  image: { objectFit: 'cover'; url: string; name: string },
-) {
-  const suffix = labelSuffix ? ` ${labelSuffix}` : '';
-  return {
-    AColumn: `AColumn${suffix}`,
-    BColumnWidth: `BColumnWidth${suffix}`,
-    CColumnWidth: `CColumnWidth${suffix}`,
-    DColumnWidth: `DColumnWidth${suffix}`,
-    EColumnWidth: `EColumnWidth${suffix}`,
-    image,
-    link: '',
-  };
-}
+const DEFAULT_HOVER_IMAGES = [
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDBHFMF0NKJMYCGGRA.jpeg',
+    name: 'List-1.png',
+  },
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MD194E6Z49QD9GG03N.jpeg',
+    name: 'List-2.png',
+  },
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDNZRY59Q8JJVYY92K.jpeg',
+    name: 'List-3.png',
+  },
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDRXD5QWHB5YF8H3XM.jpeg',
+    name: 'List-4.png',
+  },
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MD3C6H5Q9QX0SX8PSP.jpeg',
+    name: 'List-5.png',
+  },
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDM6VHTFVXVD58V0D6.jpeg',
+    name: 'List-6.png',
+  },
+  {
+    objectFit: 'cover' as const,
+    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MD3QT4RPG3VMM2NK5K.jpeg',
+    name: 'List-7.png',
+  },
+];
 
 const DEFAULT_CONTENT_ITEMS = [
-  createDefaultContentItem('', {
-    objectFit: 'cover',
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png',
-    name: 'Slider-1.png',
-  }),
-  createDefaultContentItem('2', {
-    objectFit: 'cover',
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png',
-    name: 'Slider-2.png',
-  }),
-  createDefaultContentItem('3', {
-    objectFit: 'cover',
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png',
-    name: 'Slider-3.png',
-  }),
+  {
+    AColumn: '01',
+    BColumnWidth: 'Ethan Parker',
+    CColumnWidth: 'Midnight Atlas',
+    DColumnWidth: 'Portland, OR',
+    EColumnWidth: 'On Display',
+    image: DEFAULT_HOVER_IMAGES[0],
+    link: '',
+  },
+  {
+    AColumn: '02',
+    BColumnWidth: 'Madison Reed',
+    CColumnWidth: 'Echoes in Vermilion',
+    DColumnWidth: 'Savannah, GA',
+    EColumnWidth: 'Scheduled',
+    image: DEFAULT_HOVER_IMAGES[1],
+    link: '',
+  },
+  {
+    AColumn: '03',
+    BColumnWidth: 'Noah Bennett',
+    CColumnWidth: 'Paper Constellations',
+    DColumnWidth: 'Madison, WI',
+    EColumnWidth: 'On Display',
+    image: DEFAULT_HOVER_IMAGES[2],
+    link: '',
+  },
+  {
+    AColumn: '04',
+    BColumnWidth: 'Olivia Carter',
+    CColumnWidth: 'The Quiet Frequency',
+    DColumnWidth: 'Boise, ID',
+    EColumnWidth: 'On Display',
+    image: DEFAULT_HOVER_IMAGES[3],
+    link: '',
+  },
+  {
+    AColumn: '05',
+    BColumnWidth: 'Mason Brooks',
+    CColumnWidth: 'Sights of Tomorrow',
+    DColumnWidth: 'Tampa, FL',
+    EColumnWidth: 'Postponed',
+    image: DEFAULT_HOVER_IMAGES[4],
+    link: '',
+  },
+  {
+    AColumn: '06',
+    BColumnWidth: 'Sophia Mitchell',
+    CColumnWidth: 'Velvet Horizons',
+    DColumnWidth: 'Albuquerque, NM',
+    EColumnWidth: 'Scheduled',
+    image: DEFAULT_HOVER_IMAGES[5],
+    link: '',
+  },
+  {
+    AColumn: '07',
+    BColumnWidth: 'Jackson Turner',
+    CColumnWidth: 'Ink & Aurora',
+    DColumnWidth: 'Pittsburgh, PA',
+    EColumnWidth: 'On Display',
+    image: DEFAULT_HOVER_IMAGES[6],
+    link: '',
+  },
 ];
 
 const COLUMN_LAYOUT_PANEL_ITEMS = [
