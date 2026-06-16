@@ -1617,7 +1617,7 @@ function buildListColumns(
 
 export function List({ settings, content, isEditor, isPreviewMode, activeEvent, layoutId, onUpdateSettings }: ListProps) {
   const { prefix: P } = useScopedStyles();
-  const showControls = Boolean(isEditor && isPreviewMode);
+  const showControls = Boolean(isEditor && !isPreviewMode);
   const {
     columns,
     type,

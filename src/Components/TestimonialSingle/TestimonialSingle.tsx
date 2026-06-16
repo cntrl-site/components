@@ -153,7 +153,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
   const { prefix: P } = useScopedStyles();
   const items = content || [];
   const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
-  const isAnimating = autoplay === 'on' && !isPreviewMode;
+  const isAnimating = autoplay === 'on' && isPreviewMode;
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);

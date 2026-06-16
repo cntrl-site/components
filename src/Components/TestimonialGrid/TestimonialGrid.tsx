@@ -106,6 +106,7 @@ type TestimonialsProps = {
 } & CommonComponentProps;
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
+const MIN_TRACK_COPIES = 2;
 
 type RenderCardOpts = {
   textMinHeightPx?: number;
@@ -123,8 +124,10 @@ type RenderTextOpts = {
 export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
-  const autoplayEnabled = autoplay === 'on' && !isPreviewMode;
-  const isAnimating = autoplayEnabled;
+  const showControls = Boolean(isEditor && !isPreviewMode);
+  const hasContent = (content?.length ?? 0) > 0;
+  const autoplayEnabled = autoplay === 'on' && (!isEditor || Boolean(isPreviewMode));
+  const useMarqueeTrack = hasContent && (autoplayEnabled || Boolean(isEditor));
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -133,7 +136,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
   const [trackHeight, setTrackHeight] = useState(0);
-  const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
+  const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
@@ -171,13 +174,13 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   );
 
   const copies = useMemo(() => {
-    if (!autoplayEnabled || content?.length === 0) return 1;
-    if (setWidth <= 0 || containerWidth <= 0) return 2;
-    return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [autoplayEnabled, content?.length, setWidth, containerWidth]);
+    if (!useMarqueeTrack || content?.length === 0) return 1;
+    if (setWidth <= 0 || containerWidth <= 0) return MIN_TRACK_COPIES;
+    return Math.max(MIN_TRACK_COPIES, Math.ceil(containerWidth / setWidth) + 1);
+  }, [useMarqueeTrack, content?.length, setWidth, containerWidth]);
 
   useLayoutEffect(() => {
-    if (!autoplayEnabled) return;
+    if (!useMarqueeTrack) return;
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
@@ -212,20 +215,20 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplayEnabled, setWidth]);
+  }, [autoplayEnabled, useMarqueeTrack, setWidth]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
-    if (!autoplayEnabled || !track || !isAnimating) return;
+    if (!useMarqueeTrack || !track) return;
     const safeSetWidth = setWidth > 0 ? setWidth : 0;
     const durationMs = safeSetWidth > 0 && pxPerSec > 0 ? (safeSetWidth / pxPerSec) * 1000 : 0;
     const durationS = `${Math.max(0, durationMs) / 1000}s`;
     track.style.setProperty('--marquee-distance', `${safeSetWidth}px`);
     track.style.setProperty('--marquee-duration', durationS);
-  }, [autoplayEnabled, isAnimating, pxPerSec, setWidth]);
+  }, [autoplayEnabled, useMarqueeTrack, pxPerSec, setWidth]);
 
   useLayoutEffect(() => {
-    if (!autoplayEnabled) {
+    if (!useMarqueeTrack) {
       setTrackHeight(0);
       return;
     }
@@ -251,7 +254,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight, measuredTextMinPx, measuredCaptionMinPx]);
+  }, [useMarqueeTrack, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight, measuredTextMinPx, measuredCaptionMinPx]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -298,9 +301,9 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         }}
       >
         <div
-          data-controls={options?.controlsName}
-          data-controls-axis="y"
-          className={`${P}-control`}
+          data-controls={showControls ? options?.controlsName : undefined}
+          data-controls-axis={showControls ? 'y' : undefined}
+          className={showControls ? `${P}-control` : undefined}
           style={{ height: scaled(options?.marginTop ?? 0) }}
         />
         <div
@@ -318,7 +321,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         </div>
       </div>
     ),
-    [overlayAlignItems, overlayTextAlign, isEditor]
+    [overlayAlignItems, overlayTextAlign, isEditor, showControls, P, scaled]
   );
 
   const renderCard = useCallback(
@@ -360,8 +363,8 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
             }}
           >
             <div
-              data-controls="logoMarginTop"
-              className={`${P}-control`}
+              data-controls={showControls ? 'logoMarginTop' : undefined}
+              className={showControls ? `${P}-control` : undefined}
               style={{ height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
@@ -407,6 +410,8 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       strokeColor,
       textStyle,
       isEditor,
+      showControls,
+      P,
     ]
   );
 
@@ -469,7 +474,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       }}
     >
       {renderCard(item, `card-${key}`, visibleCardOpts)}
-      {isEditor && (
+      {showControls && (
         <div
           data-controls="gap"
           data-controls-axis="x"
@@ -487,7 +492,13 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     </div>
   );
 
-  if (autoplayEnabled && (content?.length ?? 0) > 0) {
+  if (useMarqueeTrack) {
+    const marqueePlayState = !autoplayEnabled
+      ? 'paused'
+      : hoverPauseEnabled
+        ? (isHovering ? 'paused' : 'running')
+        : 'running';
+
     return (
       <div
         ref={wrapperRef}
@@ -518,9 +529,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
             perspective: '1000px',
-            ...(hoverPauseEnabled
-              ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
-              : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
+            ...( { '--marquee-play-state': marqueePlayState } as React.CSSProperties),
           }}
         >
           {Array.from({ length: copies }, (_, copyIndex) => (

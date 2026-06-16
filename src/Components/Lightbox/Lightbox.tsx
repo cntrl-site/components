@@ -31,9 +31,10 @@ type LightboxGalleryProps = {
   portalId: string;
   activeEvent: 'close' | 'open';
   isEditor?: boolean;
+  isPreviewMode?: boolean;
 };
 
-export const LightboxGallery = ({ settings, content, styles, portalId, activeEvent, isEditor }: LightboxGalleryProps) => {
+export const LightboxGallery = ({ settings, content, styles, portalId, activeEvent, isEditor, isPreviewMode }: LightboxGalleryProps) => {
   const [open, setOpen] = useState(false);
   const { url } = settings.thumbnailBlock.cover;
 
