@@ -159,6 +159,7 @@ type ListProps = {
   content?: ListContentItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: ListSettings) => void;
 } & CommonComponentProps;
@@ -1705,9 +1706,9 @@ function buildListColumns(
   });
 }
 
-export function List({ settings, content, isEditor, isPreviewMode, activeEvent, layoutId, onUpdateSettings }: ListProps) {
+export function List({ settings, content, isEditor, isPreviewMode, isEditMode, activeEvent, layoutId, onUpdateSettings }: ListProps) {
   const { prefix: P } = useScopedStyles();
-  const showControls = Boolean(isEditor && !isPreviewMode);
+  const showControls = Boolean(isEditor && isEditMode);
   const {
     columns,
     type,
