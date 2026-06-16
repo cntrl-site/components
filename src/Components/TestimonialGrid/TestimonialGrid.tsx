@@ -103,6 +103,7 @@ type TestimonialsProps = {
   content?: TestimonialsItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
 } & CommonComponentProps;
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
@@ -121,10 +122,10 @@ type RenderTextOpts = {
   dataMeasureKind?: 'text' | 'caption';
 };
 
-export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
+export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, isEditMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
-  const showControls = Boolean(isEditor && !isPreviewMode);
+  const showControls = Boolean(isEditMode);
   const hasContent = (content?.length ?? 0) > 0;
   const autoplayEnabled = autoplay === 'on' && (!isEditor || Boolean(isPreviewMode));
   const useMarqueeTrack = hasContent && (autoplayEnabled || Boolean(isEditor));
@@ -363,9 +364,9 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
             }}
           >
             <div
-              data-controls={showControls ? 'logoMarginTop' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ height: scaled(logoMarginTop) }}
+            data-controls={showControls && !opts?.dataMeasureAttrs ? 'logoMarginTop' : undefined}
+            className={showControls && !opts?.dataMeasureAttrs ? `${P}-control` : undefined}
+            style={{ height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
               {item.logo?.url && (
@@ -379,7 +380,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
           </div>
           {item.caption &&
             renderText(captionStyle, item.caption, 'caption', {
-              controlsName: 'captionMarginTop',
+              ...(opts?.dataMeasureAttrs ? {} : { controlsName: 'captionMarginTop' }),
               marginTop: captionMarginTop,
               ...(opts?.dataMeasureAttrs
                 ? { dataMeasureKind: 'caption' as const }

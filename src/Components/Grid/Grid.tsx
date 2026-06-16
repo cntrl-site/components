@@ -112,6 +112,7 @@ type GridProps = {
   content?: any;
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: GridSettings) => void;
 } & CommonComponentProps;
@@ -337,8 +338,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   );
 }
 
-export function Grid({ settings, content, isEditor, isPreviewMode, metadata, activeEvent, layoutId }: GridProps) {
+export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId }: GridProps) {
   const { prefix: P } = useScopedStyles();
+  const showControls = Boolean(isEditMode);
   const {
     type = 'A',
     gridLayout,
@@ -497,6 +499,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
   const [lightboxOriginRect, setLightboxOriginRect] = useState<AnimRect | null>(null);
 
   const openLightbox = (e: React.MouseEvent<HTMLImageElement>, urls: string[], idx: number) => {
+    if (isEditor && !isPreviewMode) return;
     if (lightbox === 'Off') return;
     const r = e.currentTarget.getBoundingClientRect();
     setLightboxOriginRect({ top: r.top, left: r.left, width: r.width, height: r.height });
@@ -534,7 +537,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
               className={`${P}-item`.trim()}
             >
               <div
-                className={isPreviewMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
+                className={isEditMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
                 style={{ width: (textBoxWidth ?? 0) > 100 ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` : scalingValue(size ?? 0, isEditor) }}
               >
                 <a href={(item.link?.length ?? 0) > 0 && lightbox === 'Off' ? item.link : undefined} target='_blank' className={`${P}-item-image-link`}>
@@ -606,7 +609,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
                   <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
                     {item.title}
                   </p>
-                  {type === 'B' && <div
+                  {type === 'B' && showControls && <div
                     data-controls="subtitleMarginTop"
                     className={`${P}-control`}
                     style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
@@ -620,7 +623,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
           ))}
         </div>
       </div>
-      {lightboxOpen && typeof document !== 'undefined' && lightbox === 'On' &&
+      {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'On' &&
         createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
