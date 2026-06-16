@@ -413,6 +413,12 @@ a.${P}-list-item {
   transform: translateY(-50%);
 }
 
+.${P}-wrapper.${P}-type-b .${P}-padding-control-handle[data-controls-variant="row-padding"][data-controls-axis="y"]::after,
+.${P}-wrapper.${P}-type-b .${P}-padding-control-handle[data-controls-variant="column-padding"][data-controls-axis="y"]::after {
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .${P}-row-padding-handle {
   width: 100%;
   flex-shrink: 0;
@@ -1788,6 +1794,12 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     setVisibleRowCount(undefined);
   }, [cut, showCut, content, entriesCount]);
 
+  useEffect(() => {
+    if (isEditor && !isPreviewMode) {
+      setVisibleRowCount(undefined);
+    }
+  }, [isEditor, isPreviewMode]);
+
   const colorVars = buildColorVars(P, {
     textColor,
     backgroundColor,
@@ -1798,12 +1810,13 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
-  const entryHoverClass =
-    entryHoverEffect === 'Default'
+  const entryHoverClass = (!isEditor || isPreviewMode) 
+  ? entryHoverEffect === 'Default'
       ? `${P}-entry-hover-default`
       : entryHoverEffect === 'Blinds'
         ? `${P}-entry-hover-blinds`
-        : '';
+        : ''
+  : '';
   const wrapperStateClasses = `${entryHoverClass} ${stateClass}`.trim();
   const showDividerTop = showVisibility?.[0] ?? false;
   const showDividerBottom = showVisibility?.[1] ?? false;
@@ -1970,7 +1983,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     showDividerBottom || hasBetweenItemDividers ? `${P}-divider-bottom` : '',
   ].filter(Boolean).join(' ');
 
+  const cutItemClickable = !isEditor || isPreviewMode;
+
   const handleShowMore = () => {
+    if (!cutItemClickable) return;
+
     const currentVisible = visibleRowCount ?? cut;
     if (!showCut) {
       setVisibleRowCount(allRows.length);
@@ -2270,7 +2287,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           onMouseMove={showHoverImage ? handleWrapperMouseMove : undefined}
           onMouseLeave={showHoverImage ? handleWrapperMouseLeave : undefined}
         >
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%', position: 'relative' }}>
             {visibleRows.map((row, rowIdx) => {
               const hasLink = (row.link?.length ?? 0) > 0;
               const RowElement = hasLink ? 'a' : 'div';
@@ -2393,12 +2410,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                             P={P}
                             data-controls={col.paddingBottomKey}
                             data-controls-static-handle=""
-                            data-controls-handle-left="20"
                             data-controls-axis="y"
                             data-controls-variant="column-padding"
                             data-controls-min="0"
                             className={`${P}-padding-control-handle`}
-                            hitPlacement="left-y"
+                            hitPlacement="center"
                             areaStyle={{
                               position: 'absolute',
                               bottom: 0,
@@ -2484,71 +2500,18 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               </RowElement>
             );
             })}
-            {showCutLabel && (() => {
-              const cutLabelFields = resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX);
-              const cutLabelVerticalAlignKind = resolveCutLabelVerticalAlignKind(settings.cutLabelVerticalAlign);
-              const cutLabelUsesFullWidth = cutLabelFields.textTextAlign === 'justify' || isVerticalLayout;
-
-              return (
-              <button
-                type="button"
-                className={`${P}-cut-item`}
-                style={{
-                  minHeight: scaled(cutCellMinHeight ?? 0),
-                  ...getCutItemDividerWidths(
-                    showDividerBottom,
-                    dividerWidth ?? 0,
-                    isEditor ?? false,
-                  ),
-                }}
-                onClick={handleShowMore}
-                onMouseEnter={showHoverImage ? handleCutItemMouseEnter : undefined}
-              >
-                <div
-                  className={`${P}-list-cols-row`}
-                  style={{
-                    ...(isVerticalLayout
-                      ? {
-                        paddingLeft: scaled(effectiveTextPaddingLR),
-                        paddingRight: scaled(effectiveTextPaddingLR),
-                      }
-                      : {}),
-                    justifyContent: textAlignToJustifyContent(cutLabelFields.textTextAlign),
-                    alignItems: cutVerticalAlignKindToFlexAlign(cutLabelVerticalAlignKind),
-                  }}
-                >
-                  <span
-                    className={getListColumnTitleClassName(
-                      settings,
-                      CUT_LABEL_TEXT_PREFIX,
-                      `${P}-cut-label`,
-                      `${P}-text-tight-leading`,
-                    )}
-                    style={{
-                      ...listColumnTextFieldsToCss(cutLabelFields, isEditor),
-                      ...getListColumnTitleVars(settings, CUT_LABEL_TEXT_PREFIX, P, isEditor),
-                      ...(cutLabelUsesFullWidth ? { width: '100%' } : {}),
-                    }}
-                  >
-                    {cutLabel}
-                  </span>
-                </div>
-              </button>
-              );
-            })()}
-          </div>
           {showControls && (
             <div key="row-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
               <ListPaddingControl
                 P={P}
                 data-controls={rowPaddingTopControlKey}
                 data-controls-static-handle=""
-                data-controls-handle-left="20"
+                {...(!isVerticalLayout ? { 'data-controls-handle-left': '20' } : {})}
                 data-controls-axis="y"
                 data-controls-variant="row-padding"
                 data-controls-min="0"
                 className={`${P}-padding-control-handle`}
-                hitPlacement="left-y"
+                hitPlacement={isVerticalLayout ? 'center' : 'left-y'}
                 areaStyle={{
                   position: 'absolute',
                   top: 0,
@@ -2697,6 +2660,60 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               </div>
             );
           })}
+          </div>
+          {showCutLabel && (() => {
+            const cutLabelFields = resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX);
+            const cutLabelVerticalAlignKind = resolveCutLabelVerticalAlignKind(settings.cutLabelVerticalAlign);
+            const cutLabelUsesFullWidth = cutLabelFields.textTextAlign === 'justify' || isVerticalLayout;
+
+            return (
+            <button
+              type="button"
+              className={`${P}-cut-item`}
+              style={{
+                minHeight: scaled(cutCellMinHeight ?? 0),
+                cursor: cutItemClickable ? 'pointer' : 'default',
+                ...getCutItemDividerWidths(
+                  showDividerBottom,
+                  dividerWidth ?? 0,
+                  isEditor ?? false,
+                ),
+              }}
+              onClick={cutItemClickable ? handleShowMore : undefined}
+              onMouseEnter={showHoverImage ? handleCutItemMouseEnter : undefined}
+            >
+              <div
+                className={`${P}-list-cols-row`}
+                style={{
+                  ...(isVerticalLayout
+                    ? {
+                      paddingLeft: scaled(effectiveTextPaddingLR),
+                      paddingRight: scaled(effectiveTextPaddingLR),
+                    }
+                    : {}),
+                  justifyContent: textAlignToJustifyContent(cutLabelFields.textTextAlign),
+                  alignItems: cutVerticalAlignKindToFlexAlign(cutLabelVerticalAlignKind),
+                }}
+              >
+                <span
+                  className={getListColumnTitleClassName(
+                    settings,
+                    CUT_LABEL_TEXT_PREFIX,
+                    `${P}-cut-label`,
+                    `${P}-text-tight-leading`,
+                  )}
+                  style={{
+                    ...listColumnTextFieldsToCss(cutLabelFields, isEditor),
+                    ...getListColumnTitleVars(settings, CUT_LABEL_TEXT_PREFIX, P, isEditor),
+                    ...(cutLabelUsesFullWidth ? { width: '100%' } : {}),
+                  }}
+                >
+                  {cutLabel}
+                </span>
+              </div>
+            </button>
+            );
+          })()}
           {showHoverImage && hoverImage && (
             <img
               className={`${P}-hover-image`}
