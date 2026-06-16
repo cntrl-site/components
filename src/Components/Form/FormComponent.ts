@@ -567,31 +567,24 @@ const schema = {
           type: 'group',
           title: '',
           items: [
-            {
-              type: 'row',
-              title: 'Input',
-              items: [
-                  {
-                    type: 'group',
-                    title: '',
-                    items: ['fieldsGap', 'inputCorners'],
-                  },
-                  {
-                    type: 'group',
-                    title: '',
-                    items: ['inputStroke', 'inputPadding'],
-                  },
-              ],
-            },
-            {
-              type: 'group',
-              title: '',
-              items: [ 
-                { type: 'row', title: 'Button', items: ['gap', 'buttonCorners']},
-                { type: 'row', title: '', items: ['buttonStroke', 'buttonPadding']},
-                { type: 'row', title: '', items: ['isButtonFullWidth']},
-              ],
-            },
+              {
+                type: 'row',
+                title: 'Input',
+                items: ['inputCorners', 'inputPadding'],
+              },
+              {
+                type: 'row',
+                title: '',
+                items: ['inputStroke'],
+              },
+          ],
+        },
+        {
+          type: 'group',
+          title: '',
+          items: [ 
+            { type: 'row', title: 'Button', items: ['buttonCorners', 'buttonPadding']},
+            { type: 'row', title: '', items: ['buttonStroke', 'isButtonFullWidth']},
           ],
         },
       ],

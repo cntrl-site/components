@@ -5,7 +5,6 @@ import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedSty
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
-import { getFontBasedOnSystem } from '../utils/getMainFontBaseOnSystem';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -82,6 +81,10 @@ function getCSS(P: string): string {
   margin-top: 0px;
   color: var(--${P}-subtitle-color);
 }
+.${P}-lightbox-counter {
+  margin: 0;
+  color: var(--${P}-lightbox-counter-color);
+}
 
 .${P}-control {
   position: relative;
@@ -109,6 +112,7 @@ type GridProps = {
   content?: any;
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: GridSettings) => void;
 } & CommonComponentProps;
@@ -124,12 +128,14 @@ type LightboxProps = {
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  counterClassName: string;
+  counterStyle: React.CSSProperties;
 };
 
 const LIGHTBOX_ANIM_MS = 500;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
-function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext }: LightboxProps) {
+function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const ghostRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
@@ -258,20 +264,14 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
             justifyContent: 'center',
             alignItems: 'center',
             height: '10%',
-            color: '#E6E6E6',
-            letterSpacing: '-0.6px',
-            lineHeight: '16px',
             opacity: isOpen ? 1 : 0,
             transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
-            fontFamily: getFontBasedOnSystem(),
           }}
         >
           {images.length > 1 &&
-            <>
-              <p>{index + 1}</p>
-              <p>/</p>
-              <p>{images.length}</p>
-            </>
+            <p className={counterClassName} style={counterStyle}>
+              {index + 1} / {images.length}
+            </p>
           }
         </div>
       </div>
@@ -338,8 +338,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   );
 }
 
-export function Grid({ settings, content, isEditor, isPreviewMode, metadata, activeEvent, layoutId }: GridProps) {
+export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId }: GridProps) {
   const { prefix: P } = useScopedStyles();
+  const showControls = Boolean(isEditMode);
   const {
     type = 'A',
     gridLayout,
@@ -356,6 +357,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
     subtitleMarginTop,
     titleColor,
     subtitleColor,
+    lightboxCounterColor,
     titleFontFamily,
     titleFontSettings,
     titleFontSize,
@@ -370,6 +372,13 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
     subtitleLetterSpacing,
     subtitleWordSpacing,
     subtitleTextAppearance,
+    lightboxCounterFontFamily,
+    lightboxCounterFontSettings,
+    lightboxCounterFontSize,
+    lightboxCounterLineHeight,
+    lightboxCounterLetterSpacing,
+    lightboxCounterWordSpacing,
+    lightboxCounterTextAppearance,
   } = settings;
 
   const resolvedTitleTextStyle: TextStyles = {
@@ -408,9 +417,28 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
     ...subtitleTypographyCss,
   } as React.CSSProperties;
 
+  const resolvedLightboxCounterTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily: lightboxCounterFontFamily,
+      fontWeight: lightboxCounterFontSettings?.fontWeight ?? 400,
+      fontStyle: lightboxCounterFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: lightboxCounterFontSize ?? 0.01,
+    lineHeight: lightboxCounterLineHeight,
+    letterSpacing: lightboxCounterLetterSpacing ?? 0,
+    wordSpacing: lightboxCounterWordSpacing ?? 0,
+    textAppearance: lightboxCounterTextAppearance,
+    color: lightboxCounterColor,
+  };
+  const lightboxCounterTypographyCss = omitTextColors(textStylesToCss(resolvedLightboxCounterTextStyle, isEditor));
+  const lightboxCounterFieldCss = {
+    ...lightboxCounterTypographyCss,
+  } as React.CSSProperties;
+
   const colorVars = buildColorVars(P, {
     titleColor,
     subtitleColor,
+    lightboxCounterColor,
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
@@ -454,12 +482,24 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
     return () => ro.disconnect();
   }, []);
 
+  const lightboxPortalStyle = (() => {
+    const style: Record<string, string> = { ...(colorVars as Record<string, string>) };
+    const articleWidth = containerRef.current
+      ? getComputedStyle(containerRef.current).getPropertyValue('--cntrl-article-width').trim()
+      : '';
+    if (articleWidth) {
+      style['--cntrl-article-width'] = articleWidth;
+    }
+    return style as React.CSSProperties;
+  })();
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxOriginRect, setLightboxOriginRect] = useState<AnimRect | null>(null);
 
   const openLightbox = (e: React.MouseEvent<HTMLImageElement>, urls: string[], idx: number) => {
+    if (isEditor && !isPreviewMode) return;
     if (lightbox === 'Off') return;
     const r = e.currentTarget.getBoundingClientRect();
     setLightboxOriginRect({ top: r.top, left: r.left, width: r.width, height: r.height });
@@ -497,7 +537,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
               className={`${P}-item`.trim()}
             >
               <div
-                className={isPreviewMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
+                className={isEditMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
                 style={{ width: (textBoxWidth ?? 0) > 100 ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` : scalingValue(size ?? 0, isEditor) }}
               >
                 <a href={(item.link?.length ?? 0) > 0 && lightbox === 'Off' ? item.link : undefined} target='_blank' className={`${P}-item-image-link`}>
@@ -569,7 +609,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
                   <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
                     {item.title}
                   </p>
-                  {type === 'B' && <div
+                  {type === 'B' && showControls && <div
                     data-controls="subtitleMarginTop"
                     className={`${P}-control`}
                     style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
@@ -583,9 +623,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
           ))}
         </div>
       </div>
-      {lightboxOpen && typeof document && document.getElementById("grid-component-lightbox-portal") && lightbox === 'On' &&
+      {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'On' &&
         createPortal(
-          <div data-selection="none">
+          <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
               images={lightboxImages}
               index={lightboxIndex}
@@ -595,6 +635,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, metadata, act
               onClose={() => setLightboxOpen(false)}
               onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)}
               onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)}
+              counterClassName={`${P}-lightbox-counter`.trim()}
+              counterStyle={lightboxCounterFieldCss}
             />
           </div>,
           document.body
@@ -631,6 +673,7 @@ type GridSettings = {
   subtitleMarginTop: number;
   titleColor: string;
   subtitleColor: string;
+  lightboxCounterColor: string;
   titleFontFamily: string;
   titleFontSettings?: { fontWeight: number; fontStyle: string };
   titleFontSize?: number;
@@ -645,15 +688,24 @@ type GridSettings = {
   subtitleLetterSpacing?: number;
   subtitleWordSpacing?: number;
   subtitleTextAppearance?: TextStyles['textAppearance'];
+  lightboxCounterFontFamily: string;
+  lightboxCounterFontSettings?: { fontWeight: number; fontStyle: string };
+  lightboxCounterFontSize?: number;
+  lightboxCounterLineHeight?: number;
+  lightboxCounterLetterSpacing?: number;
+  lightboxCounterWordSpacing?: number;
+  lightboxCounterTextAppearance?: TextStyles['textAppearance'];
 };
 
 type ColorKeys =
   | 'titleColor'
   | 'subtitleColor'
+  | 'lightboxCounterColor'
 
 const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   titleColor: 'title-color',
   subtitleColor: 'subtitle-color',
+  lightboxCounterColor: 'lightbox-counter-color',
 };
 
 const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;

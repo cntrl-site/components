@@ -2,17 +2,6 @@ import { Grid } from './Grid';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Grid.tsx?raw';
 
-type GridSchema = ComponentSchemaV1 & {
-  properties: {
-    content: {
-      type: 'array';
-      settings?: { addItemFromFileExplorer?: boolean; addItemWithoutImage?: boolean };
-      items: any;
-      default: any[];
-    };
-  };
-};
-
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
@@ -52,16 +41,25 @@ const textStyleProperties = {
 const paletteBookmarkItems = [
   'titleColor',
   'subtitleColor',
+  'lightboxCounterColor',
 ] as const;
 
-const schema: GridSchema = {
+const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
-  properties: {
-    content: {
+  content: {
       type: 'array',
       settings: {
         addItemWithoutImage: true,
+      },
+      display: {
+        type: 'array',
+        rules: [
+          {
+            if: { name: 'type', value: 'A' },
+            then: { name: 'subtitle', value: false },
+          }
+        ]
       },
       items: {
         type: 'object',
@@ -141,7 +139,6 @@ const schema: GridSchema = {
           link: ''
         },
       ],
-    },
   },
   settings: {
     sizing: 'auto auto',
@@ -285,6 +282,12 @@ const schema: GridSchema = {
         title: 'Subtitle Color',
         display: { type: 'palette-color-picker', visible: false },
       },
+      lightboxCounterColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Lightbox Counter Color',
+        display: { type: 'palette-color-picker' },
+      },
       titleFontFamily: {
         type: 'string',
         scope: 'common',
@@ -369,6 +372,48 @@ const schema: GridSchema = {
         title: 'Subtitle Text Appearance',
         display: { type: 'text-appearance' },
       },
+      lightboxCounterFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      lightboxCounterFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+      },
+      lightboxCounterFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Font Size',
+        display: { type: 'font-size' },
+      },
+      lightboxCounterLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Line Height',
+        display: { type: 'line-height-input' },
+      },
+      lightboxCounterLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      lightboxCounterWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      lightboxCounterTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Input Text Appearance',
+        display: { type: 'text-appearance' },
+      },
     },
     defaults: {
       lightbox: 'Off',
@@ -384,6 +429,7 @@ const schema: GridSchema = {
       transition: 'Slide',
       titleColor: '#767676',
       subtitleColor: '#DEDDDD',
+      lightboxCounterColor: '#DEDDDD',
       titleFontFamily: 'Arial',
       titleFontSettings: {
         fontWeight: 400,
@@ -404,6 +450,18 @@ const schema: GridSchema = {
       subtitleLetterSpacing: 0,
       subtitleWordSpacing: 0,
       subtitleTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      lightboxCounterFontFamily: 'Arial',
+      lightboxCounterFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      lightboxCounterLetterSpacing: 0,
+      lightboxCounterWordSpacing: 0,
+      lightboxCounterTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
         fontVariant: 'normal',
@@ -431,6 +489,8 @@ const schema: GridSchema = {
         titleLineHeight: 0.043,
         subtitleFontSize: 0.0373,
         subtitleLineHeight: 0.0373,
+        lightboxCounterFontSize: 0.0373,
+        lightboxCounterLineHeight: 0.0373,
       },
       d: {
         gridLayout: {
@@ -453,6 +513,8 @@ const schema: GridSchema = {
         titleLineHeight: 0.01,
         subtitleFontSize: 0.01,
         subtitleLineHeight: 0.01,
+        lightboxCounterFontSize: 0.01,
+        lightboxCounterLineHeight: 0.01,
       }
     },
     displayRules: [
@@ -537,6 +599,11 @@ const schema: GridSchema = {
           title: 'Subtitle',
           items: ['subtitleFontFamily', 'subtitleFontSettings', { type: 'row', items: ['subtitleFontSize', 'subtitleLineHeight', 'subtitleLetterSpacing', 'subtitleWordSpacing'] }, 'subtitleTextAppearance'],
         },
+        {
+          type: 'group',
+          title: 'Lightbox Counter',
+          items: ['lightboxCounterFontFamily', 'lightboxCounterFontSettings', { type: 'row', items: ['lightboxCounterFontSize', 'lightboxCounterLineHeight', 'lightboxCounterLetterSpacing', 'lightboxCounterWordSpacing'] }, 'lightboxCounterTextAppearance'],
+        },
       ],
     },
   ],
@@ -544,7 +611,7 @@ const schema: GridSchema = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['titleColor', 'subtitleColor'],
+      default: ['titleColor', 'subtitleColor', 'lightboxCounterColor'],
     },
   },
 };
