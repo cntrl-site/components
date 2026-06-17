@@ -54,12 +54,6 @@ const schema: ComponentSchemaV1 = {
       },
       display: {
         type: 'array',
-        rules: [
-          {
-            if: { name: 'type', value: 'A' },
-            then: { name: 'subtitle', value: false },
-          }
-        ]
       },
       items: {
         type: 'object',
@@ -89,6 +83,10 @@ const schema: ComponentSchemaV1 = {
             properties: {
               url: { type: 'string' },
               name: { type: 'string' },
+              type: {
+                type: 'string',
+                enum: ['image', 'video'],
+              },
               objectFit: {
                 type: 'string',
                 enum: ['cover', 'contain'],
@@ -148,7 +146,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'common',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['A', 'B'],
+        enum: ['A', 'B', 'C'],
       },
       gridLayout: {
         type: 'grid-layout',
@@ -280,7 +278,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Subtitle Color',
-        display: { type: 'palette-color-picker', visible: false },
+        display: { type: 'palette-color-picker' },
       },
       lightboxCounterColor: {
         type: 'string',
@@ -522,10 +520,6 @@ const schema: ComponentSchemaV1 = {
         if: { name: 'transition', value: 'Fade' },
         then: { name: 'properties.direction.display.enabled', value: false },
       },
-      {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.subtitleColor.display.visible', value: true },
-      }
     ],
     layout: [
       '__componentName__',

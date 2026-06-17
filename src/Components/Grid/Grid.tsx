@@ -39,6 +39,37 @@ function getCSS(P: string): string {
   justify-content: center;
   align-items: center;
 }
+.${P}-item-image-wrapper-fit-slider {
+  display: grid;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer,
+.${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer {
+  display: grid;
+  visibility: hidden;
+  pointer-events: none;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer img {
+  grid-area: 1 / 1;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer video {
+  grid-area: 1 / 1;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
+  align-self: stretch;
+  min-height: 0;
+}
 .${P}-item-image-link {
   width: 100%;
   height: 100%;
@@ -50,6 +81,13 @@ function getCSS(P: string): string {
   width: 100%;
   height: 100%;
   display: block;
+  max-width: 100%;
+}
+.${P}-item-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  max-width: 100%;
 }
 .${P}-item-slider,
 .${P}-item-slider .splide__track,
@@ -80,6 +118,22 @@ function getCSS(P: string): string {
   margin-bottom: 0px;
   margin-top: 0px;
   color: var(--${P}-subtitle-color);
+}
+.${P}-type-B .${P}-item-inner,
+.${P}-type-B .${P}-item-inner-hidden,
+.${P}-type-C .${P}-item-inner,
+.${P}-type-C .${P}-item-inner-hidden {
+  align-items: flex-start;
+}
+.${P}-type-B .${P}-item-image-link,
+.${P}-type-C .${P}-item-image-link {
+  align-items: flex-start;
+}
+.${P}-type-B .${P}-item-title,
+.${P}-type-B .${P}-item-subtitle,
+.${P}-type-C .${P}-item-title,
+.${P}-type-C .${P}-item-subtitle {
+  text-align: left;
 }
 .${P}-lightbox-counter {
   margin: 0;
@@ -134,6 +188,54 @@ type LightboxProps = {
 
 const LIGHTBOX_ANIM_MS = 500;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+type GridMedia = {
+  url: string;
+  name?: string;
+  type?: 'image' | 'video';
+};
+
+function isVideoMedia(media: GridMedia): boolean {
+  if (media.type === 'video') return true;
+  if (media.type === 'image') return false;
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url);
+}
+
+function GridMediaItem({
+  media,
+  className,
+  style,
+  onImageClick,
+}: {
+  media: GridMedia;
+  className: string;
+  style: React.CSSProperties;
+  onImageClick?: (e: React.MouseEvent<HTMLImageElement>) => void;
+}) {
+  if (isVideoMedia(media)) {
+    return (
+      <video
+        src={media.url}
+        className={className}
+        style={style}
+        muted
+        loop
+        autoPlay
+        playsInline
+      />
+    );
+  }
+
+  return (
+    <img
+      src={media.url}
+      alt={media.name}
+      className={className}
+      style={style}
+      onClick={onImageClick}
+    />
+  );
+}
 
 function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const ghostRef = useRef<HTMLDivElement>(null);
@@ -456,17 +558,37 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const effW = ratioReversed ? rH : rW;
   const effH = ratioReversed ? rW : rH;
   const aspectRatio = `${effW} / ${effH}`;
-  const isLandscape = effW >= effH;
 
-  const imageStyle: React.CSSProperties = {
-    objectFit: isCover ? 'cover' : 'contain',
-    pointerEvents: 'auto',
-    ...(isCover && {
-      aspectRatio,
-      width: isLandscape ? '100%' : 'auto',
-      height: isLandscape ? 'auto' : '100%',
-    }),
+  const imageWrapperWidth = scalingValue(size ?? 0, isEditor);
+  const isFitSlider = !isCover && slider !== 'Off';
+
+  const imageWrapperStyle: React.CSSProperties = {
+    width: imageWrapperWidth,
+    ...(isCover
+      ? { aspectRatio, height: 'auto', overflow: 'hidden' }
+      : { height: 'auto' }),
   };
+
+  const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
+  const isTypeC = type === 'C';
+  const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
+  const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
+
+  const imageStyle: React.CSSProperties = isCover
+    ? {
+        objectFit: 'cover',
+        pointerEvents: 'auto',
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+      }
+    : {
+        objectFit: 'contain',
+        pointerEvents: 'auto',
+        width: 'auto',
+        height: 'auto',
+        maxWidth: '100%',
+      };
 
   const [dir, setDir] = useState('ltr');
   const [containerWidth, setContainerWidth] = useState(0);
@@ -541,19 +663,57 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                 style={{ width: (textBoxWidth ?? 0) > 100 ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` : scalingValue(size ?? 0, isEditor) }}
               >
                 <a href={(item.link?.length ?? 0) > 0 && lightbox === 'Off' ? item.link : undefined} target='_blank' className={`${P}-item-image-link`}>
-                  <div className={`${P}-item-image-wrapper`} style={{ width: scalingValue(size ?? 0, isEditor), height: scalingValue(size ?? 0, isEditor) }}>
+                  {isTypeC && (
+                    <>
+                      <p className={`${P}-item-title`.trim()} style={{ width: textBoxWidthStyle, ...titleFieldCss }}>
+                        {item.title}
+                      </p>
+                      <div
+                        data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
+                        className={isEditMode ? `${P}-control` : undefined}
+                        style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: controlWidthStyle }}
+                      />
+                      <p className={`${P}-item-subtitle`.trim()} style={{ width: textBoxWidthStyle, ...subtitleFieldCss }}>
+                        {item.subtitle}
+                      </p>
+                      <div
+                        data-controls={isEditMode ? 'titleMarginTop' : undefined}
+                        className={isEditMode ? `${P}-control` : undefined}
+                        style={{ height: scalingValue(titleMarginTop ?? 0, isEditor), width: controlWidthStyle }}
+                      />
+                    </>
+                  )}
+                  <div className={imageWrapperClassName} style={imageWrapperStyle}>
                     {(item.image?.length ?? 0) === 0
                       ? null
                       : slider === 'Off'
                         ?
-                        <img
-                          src={item.image[0].url}
-                          alt={item.image[0].name}
-                          className={`${P}-item-image`.trim()}
-                          style={imageStyle}
-                          onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), 0)}
-                        />
+                        (() => {
+                          const media = item.image[0] as GridMedia;
+                          const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
+                          const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
+                          return (
+                            <GridMediaItem
+                              media={media}
+                              className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                              style={imageStyle}
+                              onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, 0)}
+                            />
+                          );
+                        })()
                         :
+                        <>
+                        {isFitSlider && (
+                          <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
+                            {item.image.map((media: GridMedia) => (
+                              isVideoMedia(media) ? (
+                                <video key={`sizer-${media.url}`} src={media.url} muted playsInline />
+                              ) : (
+                                <img key={`sizer-${media.url}`} src={media.url} alt="" />
+                              )
+                            ))}
+                          </div>
+                        )}
                         <Splide
                           key={`${transition}-${size}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
                           className={`${P}-item-slider`}
@@ -587,36 +747,45 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                             }, 0);
                           }}
                         >
-                          {item.image.map((img: { url: string; name?: string }, imgIndex: number) => (
-                            <SplideSlide key={imgIndex}>
-                              <img
-                                src={img.url}
-                                alt={img.name}
-                                className={`${P}-item-image`.trim()}
-                                style={imageStyle}
-                                onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), imgIndex)}
-                              />
-                            </SplideSlide>
-                          ))}
+                          {item.image.map((media: GridMedia, imgIndex: number) => {
+                            const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
+                            const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
+                            const imageIndex = imageOnly.findIndex((entry: GridMedia) => entry.url === media.url);
+                            return (
+                              <SplideSlide key={imgIndex}>
+                                <GridMediaItem
+                                  media={media}
+                                  className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                                  style={imageStyle}
+                                  onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, imageIndex)}
+                                />
+                              </SplideSlide>
+                            );
+                          })}
                         </Splide>
+                        </>
                     }
                   </div>
-                  <div
-                    data-controls={isEditMode ? 'titleMarginTop' : undefined}
-                    className={isEditMode ? `${P}-control` : undefined}
-                    style={{ height: scalingValue(titleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
-                  />
-                  <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
-                    {item.title}
-                  </p>
-                  {type === 'B' && <div
-                    data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
-                    className={isEditMode ? `${P}-control` : undefined}
-                    style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
-                  />}
-                  {type === 'B' && <p className={`${P}-item-subtitle`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...subtitleFieldCss }}>
-                    {item.subtitle}
-                  </p>}
+                  {!isTypeC && (
+                    <>
+                      <div
+                        data-controls={isEditMode ? 'titleMarginTop' : undefined}
+                        className={isEditMode ? `${P}-control` : undefined}
+                        style={{ height: scalingValue(titleMarginTop ?? 0, isEditor), width: controlWidthStyle }}
+                      />
+                      <p className={`${P}-item-title`.trim()} style={{ width: textBoxWidthStyle, ...titleFieldCss }}>
+                        {item.title}
+                      </p>
+                      <div
+                        data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
+                        className={isEditMode ? `${P}-control` : undefined}
+                        style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: controlWidthStyle }}
+                      />
+                      <p className={`${P}-item-subtitle`.trim()} style={{ width: textBoxWidthStyle, ...subtitleFieldCss }}>
+                        {item.subtitle}
+                      </p>
+                    </>
+                  )}
                 </a>
               </div>
             </div>
@@ -654,7 +823,7 @@ type GridLayoutConfig = {
 };
 
 type GridSettings = {
-  type: 'A' | 'B';
+  type: 'A' | 'B' | 'C';
   gridLayout: GridLayoutConfig;
   textBoxWidth: number;
   verticalGap: number;
