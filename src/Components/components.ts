@@ -10,12 +10,14 @@ import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingl
 import { GridComponent } from './Grid/GridComponent';
 import { ListComponent } from './List/ListComponent';
 import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
+import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
   ControlImageRevealSliderComponent,
   LightboxComponent,
   LightboxStripComponent,
+  LightboxJournalComponent,
   FormComponent,
   OnelinerFormComponent,
   MarqueeComponent,

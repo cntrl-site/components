@@ -43,6 +43,12 @@ const schema: ComponentSchemaV1 = {
         title: '',
         display: { type: 'settings-image-input' },
       },
+      coverFit: {
+        type: 'string',
+        scope: 'common',
+        title: 'Display',
+        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
+      },
       thumbnailGap: {
         type: 'number',
         scope: 'layout',
@@ -62,7 +68,7 @@ const schema: ComponentSchemaV1 = {
       backgroundColor: {
         type: 'string',
         scope: 'layout',
-        title: 'Background Color',
+        title: 'BG',
         display: { type: 'settings-color-picker' },
       },
       objectFit: {
@@ -80,7 +86,7 @@ const schema: ComponentSchemaV1 = {
       closeIconMaxWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon Max Width',
+        title: 'Max Width',
         display: { type:'full-width-input' },
         min: 0,
         max: 1,
@@ -88,13 +94,13 @@ const schema: ComponentSchemaV1 = {
       closeIconColor: {
         type: 'string',
         scope: 'common',
-        title: 'Fill Close Icon',
+        title: 'Fill Icon',
         display: { type: 'settings-color-picker' },
       },
       closeIconHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Hover Close Icon',
+        title: 'Hover Icon',
         display: { type: 'settings-color-picker' },
       },
       thumbnailVisibility: {
@@ -132,13 +138,19 @@ const schema: ComponentSchemaV1 = {
       textColor: {
         type: 'string',
         scope: 'common',
-        title: 'Text Color',
+        title: 'Fill Text',
         display: { type: 'color-input' },
+      },
+      textFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
       },
       textFontSettings: {
         ...textStyleProperties.fontSettings,
         scope: 'common',
-        title: 'Text',
+        title: '',
       },
       textFontSize: {
         type: 'number',
@@ -207,13 +219,11 @@ const schema: ComponentSchemaV1 = {
       thumbnailTrigger: 'click',
       thumbnailActive: 'invert',
       textColor: '#ffffff',
-      textFontSize: 0.04,
+      textFontFamily: 'Arial',
       textFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
       },
-      textLetterSpacing: 0,
-      textWordSpacing: 0,
       textTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
@@ -225,21 +235,29 @@ const schema: ComponentSchemaV1 = {
         thumbnailGap: 0.04,
         imageGap: 0,
         textMaxWidth: 0.4,
-        closeIconMaxWidth: 0.06,
+        closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
         contentMarginTop: 0,
         contentMarginLeft: 0,
         contentMarginRight: 0,
+        textFontSize: 0.02,
+        textLineHeight: 0.02,
+        textLetterSpacing: 0,
+        textWordSpacing: 0,
       },
       d: {
         thumbnailGap: 0.02,
         imageGap: 0,
         textMaxWidth: 0.4,
-        closeIconMaxWidth: 0.06,
+        closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
         contentMarginTop: 0,
         contentMarginLeft: 0,
         contentMarginRight: 0,
+        textFontSize: 0.02,
+        textLineHeight: 0.02,
+        textLetterSpacing: 0,
+        textWordSpacing: 0,
       },
     },
     layout: [
@@ -262,9 +280,9 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailObjectFit']},
         { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
-        { type: 'row', title: 'Cover', items: ['cover'] },
         { type: 'row', title: 'Text', items: ['textMaxWidth'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
+        { type: 'row', title: 'Cover', items: ['cover', 'coverFit'] },
       ],
     },
     {
@@ -273,7 +291,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        'fontFamily',
+        'textFontFamily',
         {
           type: 'group',
           title: '',
@@ -322,7 +340,7 @@ const schema: ComponentSchemaV1 = {
         text: [
           {
             type: 'paragraph',
-            children: [{ text: '' }],
+            children: [{ text: 'Flowers in the spring,' }, { text: 'summer and autumn' }],
           },
         ],
       },
@@ -360,16 +378,16 @@ export const LightboxStripComponent = {
   defaultSize: {
     d: {
       width: 350,
-      height: 140,
+      height: 350,
     },
     m: {
-      width: 390,
-      height: 100,
+      width: 300,
+      height: 350,
     },
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Lightbox.png',
+    url: 'https://cdn.cntrl.site/component-assets/Strip.mp4',
   },
   schema,
   sourceCode: lightboxStripSourceRaw,

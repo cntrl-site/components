@@ -781,6 +781,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
   const { prefix: P } = useScopedStyles();
   const { 
     cover,
+    coverFit,
     backgroundColor,
     thumbnailVisibility,
     thumbnailObjectFit,
@@ -851,7 +852,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
               className={`${P}-cover-image`}
               src={cover}
               alt='cover'
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: coverFit === 'cover' ? 'cover' : 'contain' }}
             />
           </button>
         ) : null}
@@ -904,6 +905,7 @@ export type LightboxStripItem = {
 
 export type LightboxStripSettings = {
   cover: string | null;
+  coverFit: 'cover' | 'fit';
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
   thumbnailObjectFit: 'cover' | 'contain';
