@@ -340,7 +340,6 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
 
 export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId }: GridProps) {
   const { prefix: P } = useScopedStyles();
-  const showControls = Boolean(isEditMode);
   const {
     type = 'A',
     gridLayout,
@@ -461,6 +460,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const imageStyle: React.CSSProperties = {
     objectFit: isCover ? 'cover' : 'contain',
+    pointerEvents: 'auto',
     ...(isCover && {
       aspectRatio,
       width: isLandscape ? '100%' : 'auto',
@@ -602,16 +602,16 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     }
                   </div>
                   <div
-                    data-controls="titleMarginTop"
-                    className={`${P}-control`}
+                    data-controls={isEditMode ? 'titleMarginTop' : undefined}
+                    className={isEditMode ? `${P}-control` : undefined}
                     style={{ height: scalingValue(titleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
                   />
                   <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
                     {item.title}
                   </p>
-                  {type === 'B' && showControls && <div
-                    data-controls="subtitleMarginTop"
-                    className={`${P}-control`}
+                  {type === 'B' && <div
+                    data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
+                    className={isEditMode ? `${P}-control` : undefined}
                     style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
                   />}
                   {type === 'B' && <p className={`${P}-item-subtitle`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...subtitleFieldCss }}>
