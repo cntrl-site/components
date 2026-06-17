@@ -168,12 +168,14 @@ type FormProps = {
   content?: unknown;
   isEditor?: boolean;
   isEditMode?: boolean;
+  isPreviewMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: FormSettings) => void;
 } & CommonComponentProps;
 
-export function Form({ settings, isEditor, isEditMode, metadata, activeEvent }: FormProps) {
+export function Form({ settings, isEditor, isEditMode, isPreviewMode, metadata, activeEvent }: FormProps) {
   const showControls = Boolean(isEditMode);
+  const canSubmit = (isPreviewMode && isEditor) || !isEditor;
   const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
@@ -370,6 +372,8 @@ export function Form({ settings, isEditor, isEditMode, metadata, activeEvent }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
+
     const payload = Object.fromEntries(
       visibleFields.map((f) => [f.name, fieldValues[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
@@ -470,7 +474,7 @@ export function Form({ settings, isEditor, isEditMode, metadata, activeEvent }: 
         />
         <div className={`${P}-overlay-anchor`}>
           <button
-            type="submit"
+            type={canSubmit ? 'submit' : 'button'}
             className={`${P}-button`}
             style={{
               borderStyle: 'solid',
@@ -480,6 +484,7 @@ export function Form({ settings, isEditor, isEditMode, metadata, activeEvent }: 
               paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
               paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
+              pointerEvents: canSubmit ? 'auto' : undefined,
               ...buttonTypographyCss,
               ...(isButtonFullWidth
                 ? {
