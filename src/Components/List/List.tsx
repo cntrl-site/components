@@ -90,6 +90,7 @@ export type ListSettings = {
   cutCellMinHeight: number;
   cutLabel: string;
   entryHoverEffect: 'None' | 'Default' | 'Blinds';
+  entryHoverShowOption: 'Always' | 'Link only';
   rowPaddingTop: number;
   rowPaddingBottom: number;
   rowPaddingTopB: number;
@@ -617,8 +618,24 @@ export function getListColumnVerticalAlignSettingKey(columnLetter: string): stri
 
 export const COLUMN_VALIGN_BASIC_OPTIONS = ['Top', 'Center', 'Bottom'] as const;
 
-export function isBaselineAnchorColumnVerticalAlign(value: string | undefined): boolean {
+export function normalizeListColumnVerticalAlign(value: string | undefined): string {
   const raw = String(value ?? 'Top').trim();
+  if (raw.toLowerCase().startsWith('baseline')) {
+    const anchorLetter = raw.slice(-1).toUpperCase();
+    if (LIST_COLUMN_LETTERS.includes(anchorLetter as typeof LIST_COLUMN_LETTERS[number])) {
+      return `Baseline ${anchorLetter}`;
+    }
+    return 'Top';
+  }
+  const lower = raw.toLowerCase();
+  if (lower === 'center') return 'Center';
+  if (lower === 'bottom') return 'Bottom';
+  if (lower === 'top') return 'Top';
+  return raw;
+}
+
+export function isBaselineAnchorColumnVerticalAlign(value: string | undefined): boolean {
+  const raw = normalizeListColumnVerticalAlign(value);
   if (raw.toLowerCase().startsWith('baseline')) {
     return false;
   }
@@ -668,7 +685,7 @@ type ColumnVerticalAlign =
   | { kind: 'baseline'; anchorLetter: string };
 
 function parseColumnVerticalAlign(value: string | undefined): ColumnVerticalAlign {
-  const raw = String(value ?? 'Top').trim();
+  const raw = normalizeListColumnVerticalAlign(value);
   if (raw.toLowerCase().startsWith('baseline')) {
     const anchorLetter = raw.slice(-1).toUpperCase();
     if (LIST_COLUMN_LETTERS.includes(anchorLetter as typeof LIST_COLUMN_LETTERS[number])) {
@@ -1730,6 +1747,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     imageSize,
     imageOnHover,
     entryHoverEffect,
+    entryHoverShowOption,
     rowPaddingTop,
     rowPaddingBottom,
     rowPaddingTopB,
@@ -2290,7 +2308,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           <div style={{ width: '100%', position: 'relative' }}>
             {visibleRows.map((row, rowIdx) => {
               const hasLink = (row.link?.length ?? 0) > 0;
-              const RowElement = hasLink ? 'a' : 'div';
+              const RowElement = hasLink && isPreviewMode ? 'a' : 'div';
               const rowStyle = getEntryDividerWidths(
                 rowIdx,
                 visibleRows.length,
@@ -2305,7 +2323,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               <RowElement
                 key={row.id}
                 ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstEntryRef.current = el; } : undefined}
-                className={`${P}-list-item${hasLink ? ` ${P}-list-item-has-link` : ''}`}
+                className={`${P}-list-item${hasLink || entryHoverShowOption === 'Always' ? ` ${P}-list-item-has-link` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
                 onMouseEnter={showHoverImage ? (event) => handleRowMouseEnter(row, event) : undefined}
