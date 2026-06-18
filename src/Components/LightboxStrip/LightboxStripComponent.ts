@@ -49,10 +49,25 @@ const schema: ComponentSchemaV1 = {
         title: 'Display',
         display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
       },
+      type: {
+        type: 'string',
+        scope: 'common',
+        title: '',
+        display: { type: 'radio-group' },
+        enum: ['A', 'B'],
+      },
       thumbnailGap: {
         type: 'number',
         scope: 'layout',
         title: 'Thumbnail Gap',
+        min: 0,
+        max: 200,
+        display: { type: 'range-control' },
+      },
+      thumbnailMarginBottom: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Thumbnail Margin Bottom',
         min: 0,
         max: 200,
         display: { type: 'range-control' },
@@ -80,7 +95,7 @@ const schema: ComponentSchemaV1 = {
       closeIcon: {
         type: ['string', 'null'] as const,
         scope: 'common',
-        title: 'Icon',
+        title: '',
         display: { type: 'settings-image-input' },
       },
       closeIconMaxWidth: {
@@ -210,6 +225,7 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       cover: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
       objectFit: 'cover',
+      type: 'A',
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#ffffff',
       closeIconHoverColor: '#cccccc',
@@ -233,13 +249,14 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         thumbnailGap: 0.04,
+        thumbnailMarginBottom: 0.04,
         imageGap: 0,
         textMaxWidth: 0.4,
         closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
         contentMarginTop: 0,
-        contentMarginLeft: 0,
-        contentMarginRight: 0,
+        contentMarginLeft: 0.02,
+        contentMarginRight: 0.2,
         textFontSize: 0.02,
         textLineHeight: 0.02,
         textLetterSpacing: 0,
@@ -247,13 +264,14 @@ const schema: ComponentSchemaV1 = {
       },
       d: {
         thumbnailGap: 0.02,
+        thumbnailMarginBottom: 0.02,
         imageGap: 0,
         textMaxWidth: 0.4,
         closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
-        contentMarginTop: 0,
-        contentMarginLeft: 0,
-        contentMarginRight: 0,
+        contentMarginTop: 0.02,
+        contentMarginLeft: 0.02,
+        contentMarginRight: 0.02,
         textFontSize: 0.02,
         textLineHeight: 0.02,
         textLetterSpacing: 0,
@@ -263,6 +281,7 @@ const schema: ComponentSchemaV1 = {
     layout: [
       '__componentName__',
       'thumbnailGap',
+      'thumbnailMarginBottom',
       'imageGap',
       'objectFit',
       'contentMarginTop',
@@ -278,6 +297,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__'] },
+        { type: 'row', items: ['type'] },
         { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailObjectFit']},
         { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
         { type: 'row', title: 'Text', items: ['textMaxWidth'] },

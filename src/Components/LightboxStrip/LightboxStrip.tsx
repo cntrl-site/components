@@ -4,11 +4,11 @@ import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
-import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 
 const LIGHTBOX_ANIM_MS = 300;
-const THUMB_MAX_SIZE_PX = 40;
+const THUMB_MAX_SIZE_PX = 42;
 
 function getCSS(P: string): string {
   return `
@@ -42,9 +42,11 @@ function getCSS(P: string): string {
 }
 
 .${P}-lightbox-editor {
+  inset: auto;
+  top: 0;
+  left: var(--cntrl-article-left, 0);
   width: var(--cntrl-article-width, 100vw) !important;
-  margin-left: auto;
-  margin-right: auto;
+  height: var(--cntrl-viewport-height, 100vh) !important;
 }
 
 .${P}-lightbox-edit-mode {
@@ -109,7 +111,6 @@ function getCSS(P: string): string {
 
 .${P}-thumbnails {
   position: absolute;
-  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
@@ -167,11 +168,8 @@ function getCSS(P: string): string {
 
 .${P}-thumb-image {
   display: block;
-  max-width: ${THUMB_MAX_SIZE_PX}px;
-  max-height: ${THUMB_MAX_SIZE_PX}px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  width: ${THUMB_MAX_SIZE_PX}px;
+  height: ${THUMB_MAX_SIZE_PX}px;
   transition: filter 0.2s ease;
 }
 .${P}-close-icon {
@@ -250,23 +248,14 @@ function getCSS(P: string): string {
 `;
 }
 
-const getArticleWidthCSSValue = (start: HTMLElement | null): string | undefined => {
-  let el = start;
-  while (el) {
-    const inline = el.style.getPropertyValue('--cntrl-article-width').trim();
-    if (inline) return inline;
-    const computed = getComputedStyle(el).getPropertyValue('--cntrl-article-width').trim();
-    if (computed) return computed;
-    el = el.parentElement;
-  }
-  return undefined;
-};
-
 type LightboxOverlayProps = {
   prefix: string;
+  type: 'A' | 'B';
   images: LightboxStripItem[];
   backgroundColor: string;
   thumbnailGap: string;
+  thumbnailMarginBottom: string;
+  
   imageGap: string;
   closeIcon: string | null;
   closeIconMaxWidth: number;
@@ -282,7 +271,6 @@ type LightboxOverlayProps = {
   contentMarginTop: string;
   contentMarginLeft: string;
   contentMarginRight: string;
-  articleWidthCss?: string;
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
@@ -298,8 +286,10 @@ const getGapControlSize = (gap: string) => `max(${gap}, ${GAP_LABEL_AREA_PX}px)`
 const LightboxOverlay = ({
   prefix: P,
   images,
+  type,
   backgroundColor,
   thumbnailGap,
+  thumbnailMarginBottom,
   imageGap,
   isEditor,
   isEditMode,
@@ -312,7 +302,6 @@ const LightboxOverlay = ({
   thumbnailVisibility,
   thumbnailObjectFit,
   thumbnailActive,
-  articleWidthCss,
   text,
   textMaxWidth,
   textStyle,
@@ -499,11 +488,11 @@ const LightboxOverlay = ({
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setIsVisible(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = originalOverflow;
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -519,14 +508,6 @@ const LightboxOverlay = ({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleClose]);
-
-  useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, []);
 
   useLayoutEffect(() => {
     measureSetWidth();
@@ -586,7 +567,6 @@ const LightboxOverlay = ({
         opacity: isVisible ? 1 : 0,
         transition: `opacity ${LIGHTBOX_ANIM_MS}ms ease`,
         pointerEvents: isVisible ? 'auto' : 'none',
-        ...(articleWidthCss ? { ['--cntrl-article-width' as string]: articleWidthCss } : {}),
       }}
     >
       <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor }} />
@@ -610,20 +590,14 @@ const LightboxOverlay = ({
             const sourceIndex = flatIndex % images.length;
             const copyIndex = Math.floor(flatIndex / images.length);
             const isMiddleCopy = copyIndex === 1;
-
             const imageGapControlSize = getGapControlSize(imageGap);
             const imageGapControlRight = `calc(-0.5 * (${imageGapControlSize} + ${imageGap}))`;
-
             return (
               <div
                 key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
-                ref={(element) => {
-                  itemRefs.current[flatIndex] = element;
-                }}
+                ref={(element) => itemRefs.current[flatIndex] = element}
                 className={`${P}-strip-item`}
-                style={{
-                  height: '100%',
-                }}
+                style={{ height: '100%'}}
                 aria-hidden={!isMiddleCopy}
               >
                 <img
@@ -657,66 +631,74 @@ const LightboxOverlay = ({
           })}
         </div>
 
-        {images.length > 1 && thumbnailVisibility === 'on' && (
-          <div
-            className={`${P}-thumbnails`}
-            data-thumbnail-active={thumbnailActive}
-            style={{ gap: thumbnailGap }}
-          >
-            {images.map((item, index) => {
-              const thumbnailGapControlSize = getGapControlSize(thumbnailGap);
-              const thumbnailGapControlRight = `calc(-0.5 * (${thumbnailGapControlSize} + ${thumbnailGap}))`;
-
-              return (
-              <div
-                key={`thumb-${item.image.url}-${index}`}
-                style={{ position: 'relative', flex: '0 0 auto' }}
-              >
-                <button
-                  type="button"
-                  className={`${P}-thumb`}
-                  data-active={activeIndex === index ? 'true' : 'false'}
-                  onClick={() => {
-                    if (thumbnailTrigger === 'click') {
-                      scrollToIndex(index);
-                    }
+        {images.length > 1 && thumbnailVisibility === 'on' && (() => {
+          const thumbnailMarginBottomControlSize = getGapControlSize(thumbnailMarginBottom);
+          const thumbnailMarginBottomControlBottom = `calc(-0.5 * (${thumbnailMarginBottom} + ${thumbnailMarginBottomControlSize}))`;
+          return (
+            <div
+              className={`${P}-thumbnails`}
+              data-thumbnail-active={thumbnailActive}
+              style={{ gap: thumbnailGap, bottom: thumbnailMarginBottom }}
+            >
+              {images.map((item, index) => {
+                const thumbnailGapControlSize = getGapControlSize(thumbnailGap);
+                const thumbnailGapControlRight = `calc(-0.5 * (${thumbnailGapControlSize} + ${thumbnailGap}))`;
+                return (
+                <div key={`thumb-${item.image.url}-${index}`} style={{ position: 'relative', flex: '0 0 auto' }}>
+                  <button
+                    type="button"
+                    className={`${P}-thumb`}
+                    data-active={activeIndex === index ? 'true' : 'false'}
+                    onClick={() => thumbnailTrigger === 'click' && scrollToIndex(index)}
+                    onMouseEnter={() => allowThumbnailHover && thumbnailTrigger === 'hover' && scrollToIndex(index)}
+                    aria-label={item.image.name ? `View ${item.image.name}` : `View image ${index + 1}`}
+                    aria-current={activeIndex === index ? 'true' : undefined}
+                  >
+                    <img
+                      className={`${P}-thumb-image`}
+                      src={item.image.url}
+                      alt=""
+                      draggable={false}
+                      style={{ objectFit: thumbnailObjectFit === 'cover' ? 'cover' : 'contain' }}
+                    />
+                  </button>
+                  {showControls && index < images.length - 1 && (
+                    <div
+                      data-controls="thumbnailGap"
+                      data-controls-axis="x"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: thumbnailGapControlRight,
+                        width: thumbnailGapControlSize,
+                        height: '100%',
+                        pointerEvents: 'auto',
+                        zIndex: 3,
+                      }}
+                    />
+                  )}
+                </div>
+              );
+              })}
+              {showControls && (
+                <div
+                  data-controls="thumbnailMarginBottom"
+                  data-controls-axis="y"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: thumbnailMarginBottomControlBottom,
+                    height: thumbnailMarginBottomControlSize,
+                    pointerEvents: 'auto',
+                    zIndex: 3,
                   }}
-                  onMouseEnter={() => {
-                    if (allowThumbnailHover && thumbnailTrigger === 'hover') {
-                      scrollToIndex(index);
-                    }
-                  }}
-                  aria-label={item.image.name ? `View ${item.image.name}` : `View image ${index + 1}`}
-                  aria-current={activeIndex === index ? 'true' : undefined}
-                >
-                  <img
-                    className={`${P}-thumb-image`}
-                    src={item.image.url}
-                    alt=""
-                    draggable={false}
-                  />
-                </button>
-                {showControls && index < images.length - 1 && (
-                  <div
-                    data-controls="thumbnailGap"
-                    data-controls-axis="x"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: thumbnailGapControlRight,
-                      width: thumbnailGapControlSize,
-                      height: '100%',
-                      pointerEvents: 'auto',
-                      zIndex: 3,
-                    }}
-                  />
-                )}
-              </div>
-            );
-            })}
-          </div>
-        )}
-        <div className={`${P}-lightbox-content-inner`} style={{ width: '100%', height: '100%' }}>
+                />
+              )}
+            </div>
+          );
+        })()}
+        <div className={`${P}-lightbox-content-inner`} style={{ width: '100%', height: type === 'A' ? '100%' : 'auto', top: type === 'B' ? '50%' : '0' }}>
           <div
             data-controls={showControls ? 'contentMarginTop' : undefined}
             className={showControls ? `${P}-control` : undefined}
@@ -782,20 +764,24 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
   const { 
     cover,
     coverFit,
+    type,
     backgroundColor,
     thumbnailVisibility,
     thumbnailObjectFit,
     thumbnailTrigger,
     thumbnailActive,
     thumbnailGap,
+    thumbnailMarginBottom,
     imageGap,
     textMaxWidth,
     textColor,
     textFontSize,
-    textFontWeight,
-    textFontFamily, 
+    textFontFamily,
+    textFontSettings,
     textLineHeight,
-    textLetterSpacing, 
+    textLetterSpacing,
+    textWordSpacing,
+    textTextAppearance,
     closeIcon,
     closeIconMaxWidth,
     closeIconColor,
@@ -804,26 +790,27 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
     contentMarginLeft, 
     contentMarginRight
   } = settings;
-
-  const scaled = (value: number) => scalingValue(value, isEditor ?? false);
-  const textStyle: React.CSSProperties = {
-    color: textColor,
-    fontFamily: normalizeFontFamilyCssValue(textFontFamily),
-    fontSize: scaled(textFontSize),
-    fontWeight: textFontWeight,
-    lineHeight: textLineHeight,
-    letterSpacing: scaled(textLetterSpacing),
-  };
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [articleWidthCss, setArticleWidthCss] = useState<string | undefined>();
   const items = content ?? [];
+  const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const resolvedTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily: textFontFamily,
+      fontWeight: textFontSettings?.fontWeight ?? 400,
+      fontStyle: textFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: textFontSize,
+    lineHeight: textLineHeight,
+    letterSpacing: textLetterSpacing ?? 0,
+    wordSpacing: textWordSpacing ?? 0,
+    textAppearance: textTextAppearance,
+    color: textColor,
+  };
+  const textStyle = textStylesToCss(resolvedTextStyle, isEditor);
 
   const openLightbox = () => {
     if (items.length === 0) return;
-    if (isEditor && wrapperRef.current) {
-      setArticleWidthCss(getArticleWidthCSSValue(wrapperRef.current));
-    }
     setLightboxOpen(true);
   };
 
@@ -840,12 +827,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             type="button"
             className={`${P}-cover`}
             onClick={openLightbox}
-            style={{
-              display: 'block',
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-            }}
+            style={{display: 'block', padding: 0, border: 'none', background: 'transparent'}}
             aria-label='Open image gallery'
           >
             <img
@@ -863,9 +845,11 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
         return createPortal(
           <LightboxOverlay
             prefix={P}
+            type={type}
             images={items}
             backgroundColor={backgroundColor}
             thumbnailGap={scaled(thumbnailGap)}
+            thumbnailMarginBottom={scaled(thumbnailMarginBottom ?? 0.02)}
             imageGap={scaled(imageGap ?? 0)}
             thumbnailVisibility={thumbnailVisibility}
             thumbnailObjectFit={thumbnailObjectFit}
@@ -881,7 +865,6 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
             closeIconHoverColor={closeIconHoverColor}
-            articleWidthCss={articleWidthCss}
             isEditor={isEditor}
             isEditMode={isEditMode}
             isPreviewMode={isPreviewMode}
@@ -906,20 +889,31 @@ export type LightboxStripItem = {
 export type LightboxStripSettings = {
   cover: string | null;
   coverFit: 'cover' | 'fit';
+  type: 'A' | 'B';
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
   thumbnailObjectFit: 'cover' | 'contain';
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
   thumbnailGap: number;
+  thumbnailMarginBottom?: number;
   imageGap?: number;
   textMaxWidth: number;
   textColor: string;
   textFontSize: number;
-  textFontWeight: number;
   textFontFamily: string;
+  textFontSettings?: {
+    fontWeight: number;
+    fontStyle: string;
+  };
   textLineHeight: number;
   textLetterSpacing: number;
+  textWordSpacing?: number;
+  textTextAppearance?: {
+    textTransform?: string;
+    textDecoration?: string;
+    fontVariant?: string;
+  };
   contentMarginTop: number;
   contentMarginLeft: number;
   contentMarginRight: number;

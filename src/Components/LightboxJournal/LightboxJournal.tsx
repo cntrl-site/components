@@ -42,9 +42,11 @@ function getCSS(P: string): string {
 }
 
 .${P}-lightbox-editor {
+  inset: auto;
+  top: 0;
+  left: var(--cntrl-article-left, 0);
   width: var(--cntrl-article-width, 100vw) !important;
-  margin-left: auto;
-  margin-right: auto;
+  height: var(--cntrl-viewport-height, 100vh) !important;
 }
 
 .${P}-lightbox-edit-mode {
@@ -277,13 +279,24 @@ function getCSS(P: string): string {
   animation: ${P}-titles-fade-out ${TEXT_FADE_MS}ms ease-in-out forwards;
 }
 
-.${P}-lightbox-content-inner {
+.${P}-lightbox-chrome {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
   display: flex;
   flex-direction: column;
+  isolation: isolate;
+}
+
+.${P}-lightbox-persistent-controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  isolation: isolate;
 }
 
 .${P}-lightbox-content-area {
@@ -300,9 +313,9 @@ function getCSS(P: string): string {
   z-index: 2;
   pointer-events: none;
   font-size: 0.85em;
-  opacity: 0.7;
   white-space: nowrap;
   flex-shrink: 0;
+  color: color-mix(in srgb, var(--entry-counter-color, #ffffff) 70%, transparent);
 }
 
 .${P}-control {
@@ -324,18 +337,6 @@ function getCSS(P: string): string {
 }
 `;
 }
-
-const getArticleWidthCSSValue = (start: HTMLElement | null): string | undefined => {
-  let el = start;
-  while (el) {
-    const inline = el.style.getPropertyValue('--cntrl-article-width').trim();
-    if (inline) return inline;
-    const computed = getComputedStyle(el).getPropertyValue('--cntrl-article-width').trim();
-    if (computed) return computed;
-    el = el.parentElement;
-  }
-  return undefined;
-};
 
 export type LightboxJournalImage = {
   url: string;
@@ -373,7 +374,6 @@ type LightboxOverlayProps = {
   contentMarginTop: string;
   contentMarginLeft: string;
   contentMarginRight: string;
-  articleWidthCss?: string;
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
@@ -407,7 +407,6 @@ const LightboxOverlay = ({
   closeIconMaxWidth,
   closeIconColor,
   closeIconHoverColor,
-  articleWidthCss,
   textMaxWidth,
   titlesGap,
   textCountGap,
@@ -458,12 +457,10 @@ const LightboxOverlay = ({
       fixedSiblingsWidth += child.getBoundingClientRect().width;
     });
 
-    const textBarCell = stack.closest(`.${P}-text-bar-cell`) as HTMLElement | null;
-    const textBarMarginRight = textBarCell
-      ? parseFloat(getComputedStyle(textBarCell).marginRight) || 0
-      : 0;
+    const contentAreaStyle = getComputedStyle(contentArea);
+    const contentAreaColumnGap = parseFloat(contentAreaStyle.columnGap) || parseFloat(contentAreaStyle.gap) || 0;
 
-    return contentArea.getBoundingClientRect().width - fixedSiblingsWidth - textBarMarginRight;
+    return contentArea.getBoundingClientRect().width - fixedSiblingsWidth - contentAreaColumnGap;
   }, [P]);
 
   const clearTitlesFadeTimer = useCallback(() => {
@@ -645,6 +642,8 @@ const LightboxOverlay = ({
   const hasCounter = entries.length > 1;
   const hasCloseIcon = Boolean(closeIcon);
   const titlesGapStyle = { gap: titlesGap };
+  const contentAreaGapStyle = hasTitles && hasCounter ? { columnGap: textCountGap } : undefined;
+  const persistentControlsGapStyle = hasCounter && hasCloseIcon ? { gap: countCloseGap } : undefined;
 
   const renderGapControl = (controlKey: string, gap: string) => {
     const gapControlSize = getGapControlSize(gap);
@@ -758,7 +757,6 @@ const LightboxOverlay = ({
         opacity: isVisible ? 1 : 0,
         transition: `opacity ${LIGHTBOX_ANIM_MS}ms ease`,
         pointerEvents: isVisible ? 'auto' : 'none',
-        ...(articleWidthCss ? { ['--cntrl-article-width' as string]: articleWidthCss } : {}),
       }}
     >
       <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor }} />
@@ -808,89 +806,88 @@ const LightboxOverlay = ({
             </div>
           </div>
         </div>
+      </div>
 
-        <div className={`${P}-lightbox-content-inner`} style={{ width: '100%', height: '100%' }}>
+      <div className={`${P}-lightbox-chrome`} style={{ width: '100%', height: '100%' }}>
+        <div
+          data-controls={showControls ? 'contentMarginTop' : undefined}
+          className={showControls ? `${P}-control` : undefined}
+          style={{ height: contentMarginTop, width: '100%' }}
+        />
+        <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
           <div
-            data-controls={showControls ? 'contentMarginTop' : undefined}
+            data-controls={showControls ? 'contentMarginLeft' : undefined}
+            data-controls-axis={showControls ? 'x' : undefined}
             className={showControls ? `${P}-control` : undefined}
-            style={{ height: contentMarginTop, width: '100%' }}
+            style={{ width: contentMarginLeft, flexShrink: 0 }}
           />
-          <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
-            <div
-              data-controls={showControls ? 'contentMarginLeft' : undefined}
-              data-controls-axis={showControls ? 'x' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginLeft, flexShrink: 0 }}
-            />
-            <div className={`${P}-lightbox-content-area`}>
-              {hasTitles && (
+          <div className={`${P}-lightbox-content-area`} style={contentAreaGapStyle}>
+            {hasTitles && (
+              <div className={`${P}-text-bar-cell`}>
                 <div
-                  className={`${P}-text-bar-cell`}
-                  style={hasCounter ? { marginRight: textCountGap } : undefined}
+                  className={`${P}-titles-row`}
+                  style={titlesGapStyle}
                 >
-                  <div
-                    className={`${P}-titles-row`}
-                    style={titlesGapStyle}
-                  >
-                    {textTransition === 'fade' ? (
-                      <>
+                  {textTransition === 'fade' ? (
+                    <>
+                      <div
+                        ref={titlesMeasureRef}
+                        className={`${P}-titles-stack`}
+                        style={{
+                          ...titlesGapStyle,
+                          position: 'absolute',
+                          visibility: 'hidden',
+                          pointerEvents: 'none',
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          width: '100%',
+                          height: 'auto',
+                        }}
+                        aria-hidden="true"
+                      >
+                        {incomingMeasureEntry ? renderTitles(incomingMeasureEntry, false) : renderTitles(activeEntry, false)}
+                      </div>
+                      <div
+                        ref={titlesStackRef}
+                        className={`${P}-titles-stack`}
+                        style={{
+                          ...titlesGapStyle,
+                          ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
+                          ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
+                          ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
+                        }}
+                      >
+                      {outgoingEntry && isTitlesFading ? (
                         <div
-                          ref={titlesMeasureRef}
-                          className={`${P}-titles-stack`}
-                          style={{
-                            ...titlesGapStyle,
-                            position: 'absolute',
-                            visibility: 'hidden',
-                            pointerEvents: 'none',
-                            left: 0,
-                            right: 0,
-                            top: 0,
-                            width: '100%',
-                            height: 'auto',
-                          }}
-                          aria-hidden="true"
-                        >
-                          {incomingMeasureEntry ? renderTitles(incomingMeasureEntry, false) : renderTitles(activeEntry, false)}
-                        </div>
-                        <div
-                          ref={titlesStackRef}
-                          className={`${P}-titles-stack`}
-                          style={{
-                            ...titlesGapStyle,
-                            ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
-                            ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
-                            ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
-                          }}
-                        >
-                        {outgoingEntry && isTitlesFading ? (
-                          <div
-                            className={`${P}-titles-layer-out ${P}-titles-fade-out`}
-                            style={titlesGapStyle}
-                          >
-                            {renderTitles(outgoingEntry)}
-                          </div>
-                        ) : null}
-                        <div
-                          className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}`}
+                          className={`${P}-titles-layer-out ${P}-titles-fade-out`}
                           style={titlesGapStyle}
                         >
-                          {renderTitles(activeEntry, true)}
+                          {renderTitles(outgoingEntry)}
                         </div>
-                        </div>
-                      </>
-                    ) : (
-                      renderTitles(activeEntry, true)
-                    )}
-                  </div>
-                  {showControls && hasCounter ? renderGapControl('textCountGap', textCountGap) : null}
+                      ) : null}
+                      <div
+                        className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}`}
+                        style={titlesGapStyle}
+                      >
+                        {renderTitles(activeEntry, true)}
+                      </div>
+                      </div>
+                    </>
+                  ) : (
+                    renderTitles(activeEntry, true)
+                  )}
                 </div>
-              )}
+                {showControls && hasCounter ? renderGapControl('textCountGap', textCountGap) : null}
+              </div>
+            )}
+            <div className={`${P}-lightbox-persistent-controls`} style={persistentControlsGapStyle}>
               {hasCounter && (
-                <div
-                  className={`${P}-text-bar-cell`}
-                  style={hasCloseIcon ? { marginRight: countCloseGap } : undefined}
-                >
-                  <span className={`${P}-entry-counter`} style={{ color: title1Style.color }}>
+                <div className={`${P}-text-bar-cell`}>
+                  <span
+                    className={`${P}-entry-counter`}
+                    style={{ ['--entry-counter-color' as string]: title1Style.color }}
+                  >
                     {activeEntryIndex + 1} / {entries.length}
                   </span>
                   {showControls && hasCloseIcon ? renderGapControl('countCloseGap', countCloseGap) : null}
@@ -916,13 +913,13 @@ const LightboxOverlay = ({
                 </div>
               )}
             </div>
-            <div
-              data-controls={showControls ? 'contentMarginRight' : undefined}
-              data-controls-axis={showControls ? 'x' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginRight, flexShrink: 0 }}
-            />
           </div>
+          <div
+            data-controls={showControls ? 'contentMarginRight' : undefined}
+            data-controls-axis={showControls ? 'x' : undefined}
+            className={showControls ? `${P}-control` : undefined}
+            style={{ width: contentMarginRight, flexShrink: 0 }}
+          />
         </div>
       </div>
     </div>
@@ -1031,14 +1028,10 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [articleWidthCss, setArticleWidthCss] = useState<string | undefined>();
   const entries = (content ?? []).filter((entry) => getEntryImages(entry).length > 0);
 
   const openLightbox = () => {
     if (entries.length === 0) return;
-    if (isEditor && wrapperRef.current) {
-      setArticleWidthCss(getArticleWidthCSSValue(wrapperRef.current));
-    }
     setLightboxOpen(true);
   };
 
@@ -1099,7 +1092,6 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
             closeIconHoverColor={closeIconHoverColor}
-            articleWidthCss={articleWidthCss}
             isEditor={isEditor}
             isEditMode={isEditMode}
             isPreviewMode={isPreviewMode}
