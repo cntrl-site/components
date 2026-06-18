@@ -110,7 +110,7 @@ const schema: ComponentSchemaV1 = {
           title: `BIRD'S EYE VIEW OVER THE OLD TOWN`,
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT6MP4CXE4D8M7F07N.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
             name: 'Grid-1.png',
             objectFit: 'cover',
           }],
@@ -120,7 +120,7 @@ const schema: ComponentSchemaV1 = {
           title: 'DOORS OF MATERA',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTTK8C047Y4HVS0Y47.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
             name: 'Grid-2.png',
             objectFit: 'cover',
           }],
@@ -130,7 +130,7 @@ const schema: ComponentSchemaV1 = {
           title: 'Cattedrale di Santa Maria',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT6W6J7F3PMQMGQAW5.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
             name: 'Grid-3.png',
             objectFit: 'cover',
           }],
@@ -140,7 +140,7 @@ const schema: ComponentSchemaV1 = {
           title: 'OLD CITY THROUGH THE CRACKS',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT05YW60A4ZJSQFXMH.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
             name: 'Grid-4.png',
             objectFit: 'cover',
           }],
@@ -150,17 +150,17 @@ const schema: ComponentSchemaV1 = {
           title: 'PRIVATE STONE GARDENS',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTXRHFWCZ0ENQCCQB8.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
             name: 'Grid-5.png',
             objectFit: 'cover',
           },
           {
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTH9CN4VJ64RCDBR5Y.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
             name: 'Grid-6.png',
             objectFit: 'cover',
           },
           {
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT38ZBD3E1CF9Q95V9.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(7).webp',
             name: 'Grid-7.png',
             objectFit: 'cover',
           }],
@@ -170,7 +170,7 @@ const schema: ComponentSchemaV1 = {
           title: 'EXITING THE OLD TOWN',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTA4P1VVZ4NW8GFX2N.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
             name: 'Grid-8.png',
             objectFit: 'cover',
           }],
@@ -180,7 +180,7 @@ const schema: ComponentSchemaV1 = {
           title: 'LAUNDRY UNDER THE SUN',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT8CC7M3EH3M86DSGD.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
             name: 'Grid-9.png',
             objectFit: 'cover',
           }],
@@ -190,7 +190,7 @@ const schema: ComponentSchemaV1 = {
           title: 'CITY GATES VIEW',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTE1564HYYJH5GGVGY.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
             name: 'Grid-10.png',
             objectFit: 'cover',
           }],
@@ -200,7 +200,7 @@ const schema: ComponentSchemaV1 = {
           title: 'FORTIFICATIONS AROUND THE CITY',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTE3YZYKJJPEAZWAD2.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
             name: 'Grid-11.png',
             objectFit: 'cover',
           }],

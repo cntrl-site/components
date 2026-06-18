@@ -508,37 +508,37 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
 const DEFAULT_HOVER_IMAGES = [
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDBHFMF0NKJMYCGGRA.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(1).webp',
     name: 'List-1.png',
   },
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MD194E6Z49QD9GG03N.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(2).webp',
     name: 'List-2.png',
   },
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDNZRY59Q8JJVYY92K.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(3).webp',
     name: 'List-3.png',
   },
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDRXD5QWHB5YF8H3XM.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(4).webp',
     name: 'List-4.png',
   },
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MD3C6H5Q9QX0SX8PSP.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(5).webp',
     name: 'List-5.png',
   },
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MDM6VHTFVXVD58V0D6.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(6).webp',
     name: 'List-6.png',
   },
   {
     objectFit: 'cover' as const,
-    url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KV88Q6MD3QT4RPG3VMM2NK5K.jpeg',
+    url: 'https://cdn.cntrl.site/component-assets/default-list(7).webp',
     name: 'List-7.png',
   },
 ];
