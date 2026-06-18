@@ -348,7 +348,7 @@ export type LightboxJournalItem = {
   title1: string;
   title2: string;
   title3: string;
-  images: LightboxJournalImage[];
+  image: LightboxJournalImage[];
 };
 
 type JournalSlide = {
@@ -392,7 +392,7 @@ const MAX_IMAGES_PER_ENTRY = 2;
 
 const getGapControlSize = (gap: string) => `max(${gap}, ${GAP_LABEL_AREA_PX}px)`;
 const getEntryImages = (entry: LightboxJournalItem | undefined): LightboxJournalImage[] =>
-  (entry?.images ?? []).slice(0, MAX_IMAGES_PER_ENTRY);
+  (entry?.image ?? []).slice(0, MAX_IMAGES_PER_ENTRY);
 const getTotalImageCount = (entries: LightboxJournalItem[]) =>
   entries.reduce((sum, entry) => sum + getEntryImages(entry).length, 0);
 const getEntryImageRange = (entries: LightboxJournalItem[], entryIndex: number) => {

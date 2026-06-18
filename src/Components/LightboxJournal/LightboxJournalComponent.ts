@@ -451,7 +451,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
-      addItemFromFileExplorer: true,
+      addItemWithoutImage: true,
     },
     items: {
       type: 'object',
@@ -474,9 +474,9 @@ const schema: ComponentSchemaV1 = {
           placeholder: 'Add Title 3...',
           display: { type: 'text-input' },
         },
-        images: {
+        image: {
           type: 'object',
-          label: 'Images',
+          label: 'Image',
           max: 2,
           display: {
             type: 'media-list-input',
@@ -495,7 +495,7 @@ const schema: ComponentSchemaV1 = {
         title1: 'Journal Entry 1',
         title2: 'summer vacation',
         title3: 'July 1978',
-        images: [
+        image: [
           {
             url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
             name: '',
@@ -512,7 +512,7 @@ const schema: ComponentSchemaV1 = {
         title1: 'Journal Entry 2',
         title2: 'spring break',
         title3: 'March 1979',
-        images: [
+        image: [
           {
             url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
             name: '',
@@ -529,7 +529,7 @@ const schema: ComponentSchemaV1 = {
         title1: 'Journal Entry 3',
         title2: 'winter vacation',
         title3: 'January 1980',
-        images: [
+        image: [
           {
             url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
             name: '',
@@ -564,7 +564,7 @@ export const LightboxJournalComponent = {
   schema,
   sourceCode: lightboxJournalSourceRaw,
   assetsPaths: {
-    content: [{ path: 'images.url', placeholderEnabled: true }],
+    content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {
