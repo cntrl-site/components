@@ -1,13 +1,33 @@
-import { LightboxJournal } from './LightboxJournal';
-import { ComponentSchemaV1 } from '../../types/SchemaV1';
+import {
+  createJournalTextStylePanelTab,
+  getJournalTextStyleSettingKey,
+  JOURNAL_TEXT_STYLE_PREFIXES,
+  JournalTextStylePrefix,
+  LightboxJournal,
+} from './LightboxJournal';
+import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
 import lightboxJournalSourceRaw from './LightboxJournal.tsx?raw';
 
 const defaultCloseIconUrl = 'https://cdn.cntrl.site/component-assets/Close.svg';
 
+type JournalFontSettings = { fontWeight: number; fontStyle: string };
+
+type JournalTextAppearanceSettings = {
+  textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textDecoration: 'none' | 'underline';
+  fontVariant: 'normal' | 'small-caps';
+};
+
+type JournalSchemaDefaultValue =
+  | string
+  | number
+  | JournalFontSettings
+  | JournalTextAppearanceSettings;
+
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
-    display: { type: 'font-settings-weight', visible: true },
+    display: { type: 'font-settings-weight' },
     properties: {
       fontWeight: { type: 'number' as const },
       fontStyle: { type: 'string' as const },
@@ -29,7 +49,133 @@ const textStyleProperties = {
     type: 'number' as const,
     display: { type: 'word-spacing-input' },
   },
+  textAlign: {
+    type: 'string' as const,
+    enum: ['left', 'center', 'right', 'justify'],
+    display: { type: 'vertical-text-aligh-options' },
+  },
+  textAppearance: {
+    type: 'object' as const,
+    display: { type: 'text-appearance', useTabDesign: true },
+    properties: {
+      textTransform: { type: 'string' as const, enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
+      textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
+      fontVariant: { type: 'string' as const, enum: ['normal', 'small-caps'] },
+    },
+  },
 };
+
+function createJournalTextStyleProperties(prefix: JournalTextStylePrefix): Record<string, SchemaProperty> {
+  const properties: Record<string, SchemaProperty> = {};
+
+  properties[getJournalTextStyleSettingKey(prefix, 'fontFamily')] = {
+    type: 'string',
+    scope: 'common',
+    title: '',
+    display: { type: 'font-family-select', hideLabel: true, useTabDesign: true },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'fontSettings')] = {
+    ...textStyleProperties.fontSettings,
+    scope: 'common',
+    title: '',
+    display: { type: 'font-settings-weight', hideLabel: true, useTabDesign: true },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'fontSize')] = {
+    ...textStyleProperties.fontSize,
+    scope: 'layout',
+    title: '',
+    display: { type: 'font-size' },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'lineHeight')] = {
+    ...textStyleProperties.lineHeight,
+    scope: 'layout',
+    title: '',
+    display: { type: 'line-height-input' },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'letterSpacing')] = {
+    ...textStyleProperties.letterSpacing,
+    scope: 'layout',
+    title: '',
+    display: { type: 'letter-spacing-input' },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'wordSpacing')] = {
+    ...textStyleProperties.wordSpacing,
+    scope: 'layout',
+    title: '',
+    display: { type: 'word-spacing-input' },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'textAlign')] = {
+    ...textStyleProperties.textAlign,
+    scope: 'layout',
+    title: '',
+    display: { type: 'vertical-text-aligh-options' },
+  };
+  properties[getJournalTextStyleSettingKey(prefix, 'textAppearance')] = {
+    ...textStyleProperties.textAppearance,
+    scope: 'layout',
+    title: '',
+    display: { type: 'text-appearance', useTabDesign: true },
+  };
+
+  return properties;
+}
+
+const textStylePropertiesByPrefix = JOURNAL_TEXT_STYLE_PREFIXES.reduce<Record<string, SchemaProperty>>(
+  (properties, prefix) => ({
+    ...properties,
+    ...createJournalTextStyleProperties(prefix),
+  }),
+  {},
+);
+
+const textStyleDefaultsByPrefix = JOURNAL_TEXT_STYLE_PREFIXES.reduce<Record<string, JournalSchemaDefaultValue>>(
+  (defaults, prefix) => ({
+    ...defaults,
+    [getJournalTextStyleSettingKey(prefix, 'fontFamily')]: 'Arial',
+    [getJournalTextStyleSettingKey(prefix, 'fontSettings')]: {
+      fontWeight: 400,
+      fontStyle: 'normal',
+    },
+    [getJournalTextStyleSettingKey(prefix, 'letterSpacing')]: 0,
+    [getJournalTextStyleSettingKey(prefix, 'wordSpacing')]: 0,
+    [getJournalTextStyleSettingKey(prefix, 'textAlign')]: 'left',
+    [getJournalTextStyleSettingKey(prefix, 'textAppearance')]: {
+      textTransform: 'none',
+      textDecoration: 'none',
+      fontVariant: 'normal',
+    },
+  }),
+  {},
+);
+
+type JournalTextLayoutDefaults = {
+  title1FontSize?: number;
+  title2FontSize?: number;
+  title3FontSize?: number;
+  countFontSize?: number;
+  title1LineHeight?: number;
+  title2LineHeight?: number;
+  title3LineHeight?: number;
+  countLineHeight?: number;
+};
+
+function createTextStyleLayoutDefaults(
+  layoutDefaults: JournalTextLayoutDefaults,
+): Partial<JournalTextLayoutDefaults> {
+  return JOURNAL_TEXT_STYLE_PREFIXES.reduce<Record<string, number>>((defaults, prefix) => {
+    const fontSize = layoutDefaults[`${prefix}FontSize` as keyof JournalTextLayoutDefaults];
+    const lineHeight = layoutDefaults[`${prefix}LineHeight` as keyof JournalTextLayoutDefaults];
+    if (fontSize !== undefined) {
+      defaults[getJournalTextStyleSettingKey(prefix, 'fontSize')] = fontSize;
+    }
+    if (lineHeight !== undefined) {
+      defaults[getJournalTextStyleSettingKey(prefix, 'lineHeight')] = lineHeight;
+    }
+    return defaults;
+  }, {});
+}
+
+const textStylePanelTab = createJournalTextStylePanelTab();
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -47,6 +193,13 @@ const schema: ComponentSchemaV1 = {
         scope: 'common',
         title: 'Display',
         display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
+      },
+      type: {
+        type: 'string',
+        scope: 'common',
+        title: '',
+        display: { type: 'radio-group' },
+        enum: ['A', 'B'],
       },
       maxHeight: {
         type: 'number',
@@ -132,14 +285,6 @@ const schema: ComponentSchemaV1 = {
         max: 200,
         display: { type: 'range-control' },
       },
-      textCountGap: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text / Count Gap',
-        min: 0,
-        max: 200,
-        display: { type: 'range-control' },
-      },
       countCloseGap: {
         type: 'number',
         scope: 'layout',
@@ -147,12 +292,6 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 200,
         display: { type: 'range-control' },
-      },
-      fontFamily: {
-        type: 'string',
-        scope: 'common',
-        title: 'Font family',
-        display: { type: 'font-family-select' },
       },
       title1Color: {
         type: 'string',
@@ -172,111 +311,13 @@ const schema: ComponentSchemaV1 = {
         title: 'Title 3',
         display: { type: 'palette-color-picker' },
       },
-      title1FontSettings: {
-        ...textStyleProperties.fontSettings,
+      countColor: {
+        type: 'string',
         scope: 'common',
-        title: 'Title 1',
+        title: 'Count',
+        display: { type: 'palette-color-picker' },
       },
-      title1FontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 1 Font Size',
-        display: { type: 'font-size' },
-      },
-      title1LineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 1 Line Height',
-        display: { type: 'line-height-input' },
-      },
-      title1LetterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 1 Letter Spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      title1WordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 1 Word Spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      title1TextAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Title 1 Text Appearance',
-        display: { type: 'text-appearance' },
-      },
-      title2FontSettings: {
-        ...textStyleProperties.fontSettings,
-        scope: 'common',
-        title: 'Title 2',
-      },
-      title2FontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 2 Font Size',
-        display: { type: 'font-size' },
-      },
-      title2LineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 2 Line Height',
-        display: { type: 'line-height-input' },
-      },
-      title2LetterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 2 Letter Spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      title2WordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 2 Word Spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      title2TextAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Title 2 Text Appearance',
-        display: { type: 'text-appearance' },
-      },
-      title3FontSettings: {
-        ...textStyleProperties.fontSettings,
-        scope: 'common',
-        title: 'Title 3',
-      },
-      title3FontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 3 Font Size',
-        display: { type: 'font-size' },
-      },
-      title3LineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 3 Line Height',
-        display: { type: 'line-height-input' },
-      },
-      title3LetterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 3 Letter Spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      title3WordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Title 3 Word Spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      title3TextAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Title 3 Text Appearance',
-        display: { type: 'text-appearance' },
-      },
+      ...textStylePropertiesByPrefix,
       contentMarginTop: {
         type: 'number',
         scope: 'layout',
@@ -306,47 +347,16 @@ const schema: ComponentSchemaV1 = {
       cover: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
       coverFit: 'cover',
       objectFit: 'cover',
+      type: 'A',
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#ffffff',
       closeIconHoverColor: '#cccccc',
       textTransition: 'fade',
-      fontFamily: 'Arial',
       title1Color: '#ffffff',
       title2Color: '#ffffff',
       title3Color: '#ffffff',
-      title1FontSettings: {
-        fontWeight: 400,
-        fontStyle: 'normal',
-      },
-      title1LetterSpacing: 0,
-      title1WordSpacing: 0,
-      title1TextAppearance: {
-        textTransform: 'none',
-        textDecoration: 'none',
-        fontVariant: 'normal',
-      },
-      title2FontSettings: {
-        fontWeight: 400,
-        fontStyle: 'normal',
-      },
-      title2LetterSpacing: 0,
-      title2WordSpacing: 0,
-      title2TextAppearance: {
-        textTransform: 'none',
-        textDecoration: 'none',
-        fontVariant: 'normal',
-      },
-      title3FontSettings: {
-        fontWeight: 400,
-        fontStyle: 'normal',
-      },
-      title3LetterSpacing: 0,
-      title3WordSpacing: 0,
-      title3TextAppearance: {
-        textTransform: 'none',
-        textDecoration: 'none',
-        fontVariant: 'normal',
-      },
+      countColor: 'rgba(255, 255, 255, 0.7)',
+      ...textStyleDefaultsByPrefix,
     },
     layoutDefaults: {
       m: {
@@ -360,14 +370,17 @@ const schema: ComponentSchemaV1 = {
         contentMarginLeft: 0,
         contentMarginRight: 0,
         titlesGap: 0.1,
-        textCountGap: 0.02,
         countCloseGap: 0.02,
-        title1FontSize: 0.02,
-        title1LineHeight: 0.02,
-        title2FontSize: 0.02,
-        title2LineHeight: 0.02,
-        title3FontSize: 0.02,
-        title3LineHeight: 0.02,
+        ...createTextStyleLayoutDefaults({
+          title1FontSize: 0.02,
+          title1LineHeight: 0.02,
+          title2FontSize: 0.02,
+          title2LineHeight: 0.02,
+          title3FontSize: 0.02,
+          title3LineHeight: 0.02,
+          countFontSize: 0.017,
+          countLineHeight: 0.017,
+        }),
       },
       d: {
         maxHeight: 80,
@@ -380,14 +393,17 @@ const schema: ComponentSchemaV1 = {
         contentMarginLeft: 0,
         contentMarginRight: 0,
         titlesGap: 0.1,
-        textCountGap: 0.02,
         countCloseGap: 0.02,
-        title1FontSize: 0.02,
-        title1LineHeight: 0.02,
-        title2FontSize: 0.02,
-        title2LineHeight: 0.02,
-        title3FontSize: 0.02,
-        title3LineHeight: 0.02,
+        ...createTextStyleLayoutDefaults({
+          title1FontSize: 0.02,
+          title1LineHeight: 0.02,
+          title2FontSize: 0.02,
+          title2LineHeight: 0.02,
+          title3FontSize: 0.02,
+          title3LineHeight: 0.02,
+          countFontSize: 0.017,
+          countLineHeight: 0.017,
+        }),
       },
     },
     layout: [
@@ -396,7 +412,6 @@ const schema: ComponentSchemaV1 = {
       'maxHeight',
       'imageGap',
       'titlesGap',
-      'textCountGap',
       'countCloseGap',
       'objectFit',
       'contentMarginTop',
@@ -412,6 +427,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__'] },
+        { type: 'row', items: ['type'] },
         { type: 'row', title: 'Image', items: ['maxWidth', 'maxHeight'] },
         { type: 'row', title: 'Text', items: ['textMaxWidth', 'textTransition'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
@@ -424,39 +440,12 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        'fontFamily',
-        {
-          type: 'group',
-          title: '',
-          items: [
-            'title1FontSettings',
-            { type: 'row', items: ['title1FontSize', 'title1LineHeight', 'title1LetterSpacing', 'title1WordSpacing'] },
-            'title1TextAppearance',
-          ],
-        },
-        {
-          type: 'group',
-          title: '',
-          items: [
-            'title2FontSettings',
-            { type: 'row', items: ['title2FontSize', 'title2LineHeight', 'title2LetterSpacing', 'title2WordSpacing'] },
-            'title2TextAppearance',
-          ],
-        },
-        {
-          type: 'group',
-          title: '',
-          items: [
-            'title3FontSettings',
-            { type: 'row', items: ['title3FontSize', 'title3LineHeight', 'title3LetterSpacing', 'title3WordSpacing'] },
-            'title3TextAppearance',
-          ],
-        },
+        textStylePanelTab,
       ],
     },
   ],
   paletteBookmark: {
-    items: ['backgroundColor', 'title1Color', 'title2Color', 'title3Color', 'closeIconColor', 'closeIconHoverColor'],
+    items: ['backgroundColor', 'title1Color', 'title2Color', 'title3Color', 'countColor', 'closeIconColor', 'closeIconHoverColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
@@ -580,6 +569,8 @@ export const LightboxJournalComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [],
+    parameters: JOURNAL_TEXT_STYLE_PREFIXES.map((prefix) => ({
+      path: `styles.${getJournalTextStyleSettingKey(prefix, 'fontSettings')}`,
+    })),
   },
 };

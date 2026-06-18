@@ -589,7 +589,6 @@ const LightboxOverlay = ({
             const itemObjectFit = item.image.objectFit ?? 'contain';
             const sourceIndex = flatIndex % images.length;
             const copyIndex = Math.floor(flatIndex / images.length);
-            const isMiddleCopy = copyIndex === 1;
             const imageGapControlSize = getGapControlSize(imageGap);
             const imageGapControlRight = `calc(-0.5 * (${imageGapControlSize} + ${imageGap}))`;
             return (
@@ -598,11 +597,9 @@ const LightboxOverlay = ({
                 ref={(element) => itemRefs.current[flatIndex] = element}
                 className={`${P}-strip-item`}
                 style={{ height: '100%'}}
-                aria-hidden={!isMiddleCopy}
               >
                 <img
                   src={item.image.url}
-                  alt={isMiddleCopy ? (item.image.name ?? '') : ''}
                   draggable={false}
                   style={{
                     display: 'block',
@@ -611,7 +608,7 @@ const LightboxOverlay = ({
                     objectFit: itemObjectFit,
                   }}
                 />
-                {showControls && isMiddleCopy && sourceIndex < images.length - 1 && (
+                {showControls && sourceIndex < images.length - 1 && (
                   <div
                     data-controls="imageGap"
                     data-controls-axis="x"
