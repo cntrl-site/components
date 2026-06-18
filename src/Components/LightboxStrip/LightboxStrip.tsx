@@ -801,6 +801,7 @@ const LightboxOverlay = ({
             <div
               data-controls={showControls ? 'contentMarginRight' : undefined}
               data-controls-axis={showControls ? 'x' : undefined}
+              data-controls-reverse={showControls ? '' : undefined}
               className={showControls ? `${P}-control` : undefined}
               style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
             />

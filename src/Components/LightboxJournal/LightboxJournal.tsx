@@ -732,13 +732,14 @@ const LightboxOverlay = ({
   const titlesGapStyle = { gap: titlesGap };
   const persistentControlsGapStyle = hasCounter && hasCloseIcon ? { gap: countCloseGap } : undefined;
 
-  const renderGapControl = (controlKey: string, gap: string) => {
+  const renderGapControl = (controlKey: string, gap: string, isReverse = false) => {
     const gapControlSize = getGapControlSize(gap);
     const gapControlRight = `calc(-0.5 * (${gapControlSize} + ${gap}))`;
     return (
       <div
         data-controls={controlKey}
         data-controls-axis="x"
+        {...(isReverse ? { 'data-controls-reverse': 'true' } : undefined)}
         style={{
           position: 'absolute',
           top: 0,
@@ -972,7 +973,7 @@ const LightboxOverlay = ({
                   >
                     {formatSlideCounter(slides, activeSlideIndex, journalType, entries)}
                   </span>
-                  {showControls && hasCloseIcon ? renderGapControl('countCloseGap', countCloseGap) : null}
+                  {showControls && hasCloseIcon ? renderGapControl('countCloseGap', countCloseGap, true) : null}
                 </div>
               )}
               {hasCloseIcon && (
@@ -1000,6 +1001,7 @@ const LightboxOverlay = ({
           <div
             data-controls={showControls ? 'contentMarginRight' : undefined}
             data-controls-axis={showControls ? 'x' : undefined}
+            data-controls-reverse={showControls ? '' : undefined}
             className={showControls ? `${P}-control` : undefined}
             style={{ width: contentMarginRight, flexShrink: 0 }}
           />
