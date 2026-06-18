@@ -120,9 +120,7 @@ type ListColumnTextSettings = {
 };
 
 type ListColumnTextDefaultsInput = {
-  /** Fallback values applied to every column unless overridden in `byPrefix`. */
   default?: ListColumnTextSettings;
-  /** Per-column text settings (AColumn, BColumn, …, cutLabel). */
   byPrefix?: Partial<Record<ListTextStylePrefix, ListColumnTextSettings>>;
 };
 
@@ -227,13 +225,12 @@ function createColumnLayoutDefaults(
   const { typeBDefaults, ...restOverrides } = overrides;
 
   const defaults = {
-    columns: 3,
     wrapperWidth: 1,
     columnsOrder: [...COLUMN_CONTENT_KEYS],
   } as ListColumnLayoutDefaults;
 
   for (const letter of LIST_COLUMN_LETTERS) {
-    defaults[`${letter}ColumnWidth`] = letter === "A" ? 0.265 : 0.37;
+    defaults[`${letter}ColumnWidth`] = letter === "A" ? 0.0798 : 0.32;
     defaults[`${letter}ColumnPaddingLeft`] = 0;
     defaults[`${letter}ColumnPaddingRight`] = 0;
     defaults[`${letter}ColumnPaddingBottom`] = 0;
@@ -367,10 +364,6 @@ function resolveColumnTextSettings(
   };
 }
 
-/**
- * Keys in ListColumnTextSettings that map to schema properties with scope: 'common'.
- * These can only be set via settings.defaults — layoutDefaults ignores them.
- */
 const COMMON_SCOPED_TEXT_SETTINGS = new Set<keyof ListColumnTextSettings>([
   'textFontFamily',
   'textFontSettings',
@@ -554,7 +547,7 @@ const DEFAULT_CONTENT_ITEMS = [
   {
     AColumn: '01',
     BColumnWidth: 'Ethan Parker',
-    CColumnWidth: 'Midnight\nAtlas',
+    CColumnWidth: 'Midnight Atlas',
     DColumnWidth: 'Portland, OR',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[0],
@@ -608,7 +601,7 @@ const DEFAULT_CONTENT_ITEMS = [
   {
     AColumn: '07',
     BColumnWidth: 'Jackson Turner',
-    CColumnWidth: 'Ink\n& Aurora',
+    CColumnWidth: 'Ink & Aurora',
     DColumnWidth: 'Pittsburgh, PA',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[6],
@@ -872,11 +865,7 @@ const schema: ComponentSchemaV1 = {
       textColor: '#000000',
       textHoverColor: '#FFFFFF',
       ...textStyleDefaultsByPrefix,
-      ...createTextStyleDefaults({
-        byPrefix: {
-          BColumn: { textFontFamily: 'Libre Baskerville' },
-        },
-      }, 'common'),
+      ...createTextStyleDefaults({}, 'common'),
       backgroundColor: '#FFFFFF00',
       dividerColor: '#373737',
       backgroundHoverColor: '#000000',
@@ -884,6 +873,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: createColumnLayoutDefaults({
+        columns: 3,
         type: 'B',
         textPaddingLR: 0.0373,
         entriesCount: 0,
@@ -892,7 +882,7 @@ const schema: ComponentSchemaV1 = {
         dividerWidth: 0.004,
         cut: 0,
         showCut: 0,
-        cutCellMinHeight: 0.043,
+        cutCellMinHeight: 0.02,
         rowPaddingTop: 0.01,
         rowPaddingBottom: 0.01,
         typeBDefaults: {
@@ -907,87 +897,45 @@ const schema: ComponentSchemaV1 = {
         textCorners: 0.192,
         textPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         ...createTextStyleDefaults({
+          default: {
+            textFontSize: 0.0906,
+            textLineHeight: 0.0426,
+            textTextAlign: 'left',
+          },
           byPrefix: {
-            AColumn: {
-              textFontSize: 0.166,
-              textLineHeight: 0.0435,
-              textTextAlign: 'left',
-            },
-            BColumn: {
-              textFontSize: 0.1,
-              textLineHeight: 0.0435,
-              textTextAlign: 'left',
-            },
-            CColumn: {
-              textFontSize: 0.0641,
-              textLineHeight: 0.0692,
-              textTextAlign: 'left',
-            },
-            DColumn: {
-              textFontSize: 0.043,
-              textLineHeight: 0.043,
-              textTextAlign: 'left',
-            },
-            EColumn: {
-              textFontSize: 0.043,
-              textLineHeight: 0.043,
-              textTextAlign: 'left',
+            cutLabel: {
+              textTextAlign: 'center',
             },
           },
         }, 'layout'),
       }),
       d: createColumnLayoutDefaults({
+        columns: 4,
         type: 'A',
         textPaddingLR: 0.01,
         entriesCount: 0,
-        cellMinHeight: 0.1152,
-        imageSize: { min: 400, max: 400 },
-        dividerWidth: 0.00347,
-        cut: 5,
+        cellMinHeight: 0.0555,
+        imageSize: { min: 200, max: 200 },
+        dividerWidth: 0.002083,
+        cut: 0,
         showCut: 0,
-        cutCellMinHeight: 0.1458,
-        rowPaddingTop: 0.01,
-        rowPaddingBottom: 0.01,
+        cutCellMinHeight: 0.0555,
+        rowPaddingTop: 0,
+        rowPaddingBottom: 0,
         rowPaddingTopB: 0.01,
         textStroke: 0.001,
         textCorners: 0.05,
         textPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         ...createTextStyleDefaults({
+          default: {
+            textFontSize: 0.0333,
+            textLineHeight: 0.0333,
+            textLetterSpacing: 0,
+            textTextAlign: 'left',
+            verticalAlign: 'center',
+          },
           byPrefix: {
-            AColumn: {
-              textFontSize: 0.183,
-              textLineHeight: 0.01,
-              textLetterSpacing: -0.0074,
-              textTextAlign: 'left',
-              verticalAlign: 'center',
-            },
-            BColumn: {
-              textFontSize: 0.0694,
-              textLineHeight: 0.0763,
-              textLetterSpacing: -0.00229,
-              textTextAlign: 'left',
-              verticalAlign: 'center',
-            },
-            CColumn: {
-              textFontSize: 0.0694,
-              textLineHeight: 0.0763,
-              textLetterSpacing: -0.00138,
-              textTextAlign: 'left',
-              verticalAlign: 'center',
-            },
-            DColumn: {
-              textFontSize: 0.01,
-              textLineHeight: 0.01,
-              textTextAlign: 'left',
-            },
-            EColumn: {
-              textFontSize: 0.01,
-              textLineHeight: 0.01,
-              textTextAlign: 'left',
-            },
             cutLabel: {
-              textFontSize: 0.0576,
-              textLineHeight: 0.01,
               textTextAlign: 'center',
             },
           },
@@ -1056,9 +1004,6 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', title: '', items: ['imageOnHover', 'imageSize'] },
         { type: 'row', title: 'Entry Hover', items: ['entryHoverEffect', 'entryHoverShowOption'] },
         { type: 'row', title: 'Divider Settings', items: ['dividerWidth', 'showVisibility'] },
-        { type: 'row', title: '', items: ['cut'] },
-        { type: 'row', title: 'Cut Settings', items: ['cutLabel', 'cutCellMinHeight'] },
-        { type: 'row', title: '', items: ['showCut'] },
       ],
     },
     {
@@ -1067,6 +1012,17 @@ const schema: ComponentSchemaV1 = {
       title: 'Columns Order',
       tooltip: 'Columns order',
       layout: ['columnsOrder'],
+    },
+    {
+      id: 'cutSettings',
+      icon: 'cut',
+      title: 'Cut settings',
+      tooltip: 'Cut settings',
+      layout: [
+        { type: 'row', title: '', items: ['cut'] },
+        { type: 'row', title: 'Cut Settings', items: ['cutLabel', 'cutCellMinHeight'] },
+        { type: 'row', title: '', items: ['showCut'] },
+      ],
     },
     {
       id: 'typeStyle',

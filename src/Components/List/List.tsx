@@ -1768,7 +1768,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
   const isVerticalLayout = type === 'B';
   const containerRef = useRef<HTMLDivElement>(null);
   const firstEntryRef = useRef<HTMLElement | null>(null);
-  const [firstEntryHeightPx, setFirstEntryHeightPx] = useState<number | null>(null);
+  const [firstEntryHandleTopPx, setFirstEntryHandleTopPx] = useState<number | null>(null);
   const [designWidth, setDesignWidth] = useState(ARTICLE_DESIGN_WIDTH);
   const minColumnWidth = getListMinColumnWidth(designWidth);
 
@@ -2020,11 +2020,20 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     : (rowPaddingTop ?? 0);
   const resolvedRowPaddingBottom = rowPaddingBottom ?? 0;
   const resolvedCellMinHeight = cellMinHeight ?? 0;
-  const firstEntryCenterTop = (resolvedRowPaddingTop + resolvedCellMinHeight + resolvedRowPaddingBottom) / 2;
+  const firstEntryContentCenter = resolvedRowPaddingTop + resolvedCellMinHeight / 2;
   const rowPaddingBottomControlHeight = Math.max(resolvedRowPaddingBottom, ROW_PADDING_HANDLE_HEIGHT);
-  const firstEntryHandleTop = firstEntryHeightPx != null
-    ? `${firstEntryHeightPx / 2}px`
-    : scaled(firstEntryCenterTop);
+  const firstEntryBorderTopWidth = getEntryDividerWidths(
+    0,
+    visibleRows.length,
+    showDividerTop,
+    showDividerBottom,
+    showCutLabel,
+    dividerWidth ?? 0,
+    isEditor ?? false,
+  ).borderTopWidth;
+  const firstEntryHandleTop = firstEntryHandleTopPx != null
+    ? `${firstEntryHandleTopPx}px`
+    : `calc(${firstEntryBorderTopWidth} + ${scaled(firstEntryContentCenter)})`;
   const rowPaddingTopControlKey = isVerticalLayout ? 'rowPaddingTopB' : 'rowPaddingTop';
   const firstColumn = listColumns[0];
   const lastColumn = listColumns[listColumns.length - 1];
@@ -2099,23 +2108,33 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   useLayoutEffect(() => {
     if (!showControls || isVerticalLayout) {
-      setFirstEntryHeightPx(null);
+      setFirstEntryHandleTopPx(null);
       return;
     }
 
     const el = firstEntryRef.current;
-    if (!el) {
-      setFirstEntryHeightPx(null);
+    const container = el?.parentElement;
+    if (!el || !container) {
+      setFirstEntryHandleTopPx(null);
       return;
     }
 
     const update = () => {
-      setFirstEntryHeightPx(el.getBoundingClientRect().height);
+      const rowContent = el.querySelector('[data-list-row]');
+      if (!rowContent) {
+        setFirstEntryHandleTopPx(null);
+        return;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const rowRect = rowContent.getBoundingClientRect();
+      setFirstEntryHandleTopPx(rowRect.top - containerRect.top + rowRect.height / 2);
     };
 
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
+    observer.observe(container);
 
     return () => observer.disconnect();
   }, [
@@ -2130,6 +2149,10 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     listColumns,
     effectiveColumnWidths,
     designWidth,
+    dividerWidth,
+    showDividerTop,
+    showDividerBottom,
+    showCutLabel,
   ]);
 
   const hasBaselineColumn = useMemo(
@@ -2532,7 +2555,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 hitPlacement={isVerticalLayout ? 'center' : 'left-y'}
                 areaStyle={{
                   position: 'absolute',
-                  top: 0,
+                  top: firstEntryBorderTopWidth,
                   left: 0,
                   width: '100%',
                   height: scaled(Math.max(resolvedRowPaddingTop, ROW_PADDING_HANDLE_HEIGHT)),

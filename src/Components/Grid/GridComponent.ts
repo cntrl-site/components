@@ -107,31 +107,101 @@ const schema: ComponentSchemaV1 = {
       },
       default: [
         {
-          title: 'Title 1',
-          subtitle: 'Subtitle 1',
+          title: `BIRD'S EYE VIEW OVER THE OLD TOWN`,
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT6MP4CXE4D8M7F07N.jpeg',
             name: 'Grid-1.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'Title 2',
-          subtitle: 'Subtitle 2',
+          title: 'DOORS OF MATERA',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-2.png',
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTTK8C047Y4HVS0Y47.jpeg',
             name: 'Grid-2.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'Title 3',
-          subtitle: 'Subtitle 3',
+          title: 'Cattedrale di Santa Maria',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-3.png',
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT6W6J7F3PMQMGQAW5.jpeg',
             name: 'Grid-3.png',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'OLD CITY THROUGH THE CRACKS',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT05YW60A4ZJSQFXMH.jpeg',
+            name: 'Grid-4.png',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'PRIVATE STONE GARDENS',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTXRHFWCZ0ENQCCQB8.jpeg',
+            name: 'Grid-5.png',
+            objectFit: 'cover',
+          },
+          {
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTH9CN4VJ64RCDBR5Y.jpeg',
+            name: 'Grid-6.png',
+            objectFit: 'cover',
+          },
+          {
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT38ZBD3E1CF9Q95V9.jpeg',
+            name: 'Grid-7.png',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'EXITING THE OLD TOWN',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTA4P1VVZ4NW8GFX2N.jpeg',
+            name: 'Grid-8.png',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'LAUNDRY UNDER THE SUN',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMT8CC7M3EH3M86DSGD.jpeg',
+            name: 'Grid-9.png',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'CITY GATES VIEW',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTE1564HYYJH5GGVGY.jpeg',
+            name: 'Grid-10.png',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'FORTIFICATIONS AROUND THE CITY',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVDNXFMTE3YZYKJJPEAZWAD2.jpeg',
+            name: 'Grid-11.png',
             objectFit: 'cover',
           }],
           link: ''
@@ -143,7 +213,7 @@ const schema: ComponentSchemaV1 = {
     properties: {
       type: {
         type: 'string',
-        scope: 'common',
+        scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
         enum: ['A', 'B', 'C'],
@@ -194,6 +264,18 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 1000,
       },
+      showText: {
+        type: 'boolean',
+        scope: 'common',
+        title: 'Show text',
+        display: { type: 'toggle-cycle', enum: ['Always', 'On hover'] },
+      },
+      alignEntries: {
+        type: 'boolean',
+        scope: 'layout',
+        title: 'Align entries',
+        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+      },
       entriesCount: {
         type: 'number',
         scope: 'layout',
@@ -225,6 +307,12 @@ const schema: ComponentSchemaV1 = {
             type: 'boolean',
           },
         },
+      },
+      lightboxImageDisplay: {
+        type: 'string',
+        scope: 'common',
+        title: 'Display',
+        display: { type: 'toggle-cycle', enum: ['Fit', 'Cover'] },
       },
       slider: {
         type: 'boolean',
@@ -414,21 +502,23 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      lightbox: 'Off',
+      lightbox: 'On',
       imageDisplay: {
-        display: 'Fit',
-        ratioValue: '16:9',
+        display: 'Cover',
+        ratioValue: '2:3',
         reversed: false,
       },
-      type: 'A',
-      slider: 'Off',
-      sliderTiming: 5,
+      lightboxImageDisplay: 'Fit',
+      slider: 'On',
+      sliderTiming: 3,
       direction: 'Horizontal',
-      transition: 'Slide',
-      titleColor: '#767676',
-      subtitleColor: '#DEDDDD',
+      transition: 'Fade',
+      showText: 'Always',
+      alignEntries: 'On',
+      titleColor: '#000000',
+      subtitleColor: '#000000',
       lightboxCounterColor: '#DEDDDD',
-      titleFontFamily: 'Arial',
+      titleFontFamily: 'Affigere-Regular',
       titleFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -436,11 +526,11 @@ const schema: ComponentSchemaV1 = {
       titleLetterSpacing: 0,
       titleWordSpacing: 0,
       titleTextAppearance: {
-        textTransform: 'none',
+        textTransform: 'uppercase',
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      subtitleFontFamily: 'Arial',
+      subtitleFontFamily: 'Goudy Bookletter 1911',
       subtitleFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -452,7 +542,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      lightboxCounterFontFamily: 'Arial',
+      lightboxCounterFontFamily: 'Goudy Bookletter 1911',
       lightboxCounterFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -467,15 +557,16 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
+        type: 'C',
         gridLayout: {
-          entryWidth: 0.2,
-          horizontalGap: 0.05,
+          entryWidth: 0.8,
+          horizontalGap: 0.0533,
           wrapperWidth: 1,
-          columnsCount: 2,
+          columnsCount: 1,
           lockedParam: null,
         },
         textBoxWidth: 100,
-        verticalGap: 0.0083,
+        verticalGap: 0.266,
         entriesCount: 0,
         titleMarginTop: 0.02,
         subtitleMarginTop: 0.02,
@@ -483,23 +574,24 @@ const schema: ComponentSchemaV1 = {
         titleCorners: 0.192,
         subtitlePadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         titlePadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
-        titleFontSize: 0.043,
-        titleLineHeight: 0.043,
-        subtitleFontSize: 0.0373,
-        subtitleLineHeight: 0.0373,
+        titleFontSize: 0.1066,
+        titleLineHeight: 0.0853,
+        subtitleFontSize: 0.056,
+        subtitleLineHeight: 0.0506,
         lightboxCounterFontSize: 0.0373,
         lightboxCounterLineHeight: 0.0373,
       },
       d: {
+        type: 'C',
         gridLayout: {
-          entryWidth: 0.2,
-          horizontalGap: 0.05,
+          entryWidth: 0.1736,
+          horizontalGap: 0,
           wrapperWidth: 1,
-          columnsCount: 2,
+          columnsCount: 3,
           lockedParam: null,
         },
         textBoxWidth: 100,
-        verticalGap: 0.0083,
+        verticalGap: 0.0694,
         entriesCount: 0,
         titleMarginTop: 0.008,
         subtitleMarginTop: 0.008,
@@ -507,8 +599,9 @@ const schema: ComponentSchemaV1 = {
         titleCorners: 0.05,
         subtitlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         titlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-        titleFontSize: 0.01,
-        titleLineHeight: 0.01,
+        titleFontSize: 0.027,
+        titleLineHeight: 0.0222,
+        titleLetterSpacing: 0.00055,
         subtitleFontSize: 0.01,
         subtitleLineHeight: 0.01,
         lightboxCounterFontSize: 0.01,
@@ -520,6 +613,18 @@ const schema: ComponentSchemaV1 = {
         if: { name: 'transition', value: 'Fade' },
         then: { name: 'properties.direction.display.enabled', value: false },
       },
+      {
+        if: { name: 'lightbox', value: 'Off' },
+        then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
+      },
+      {
+        if: { name: 'type', value: 'A' },
+        then: { name: 'properties.alignEntries.display.visible', value: false },
+      },
+      {
+        if: { name: 'type', value: 'B' },
+        then: { name: 'properties.alignEntries.display.visible', value: false },
+      },
     ],
     layout: [
       '__componentName__',
@@ -528,9 +633,12 @@ const schema: ComponentSchemaV1 = {
       'gridLayout',
       'textBoxWidth',
       'verticalGap',
+      'showText',
+      'alignEntries',
       'entriesCount',
       'lightbox',
       'imageDisplay',
+      'lightboxImageDisplay',
       'slider',
       'sliderTiming',
       'direction',
@@ -561,11 +669,21 @@ const schema: ComponentSchemaV1 = {
           title: '',
           items: ['textBoxWidth', 'entriesCount']
         },
-        {type: 'row', title: '', items: ['verticalGap']},
+        {type: 'row', title: '', items: ['verticalGap', 'showText']},
+        {type: 'row', title: '', items: ['alignEntries']},
+      ],
+    },
+    {
+      id: 'imageSettings',
+      icon: 'cover',
+      title: 'Image settings',
+      tooltip: 'Image settings',
+      layout: [
+        {type: 'row', title: 'Image', items: ['imageDisplay']},
         {
           type: 'row',
-          title: 'Image',
-          items: ['imageDisplay', 'lightbox']
+          title: 'Lightbox',
+          items: ['lightbox', 'lightboxImageDisplay']
         },
         {
           type: 'row',
