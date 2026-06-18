@@ -8,6 +8,7 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 
 const LIGHTBOX_ANIM_MS = 300;
+const CONTROLS_IDLE_MS = 3000;
 const THUMB_MAX_SIZE_PX = 42;
 
 function getCSS(P: string): string {
@@ -89,11 +90,15 @@ function getCSS(P: string): string {
 }
 
 .${P}-lightbox-strip[data-mouse-dragging="true"] {
-  cursor: grabbing;
   scroll-snap-type: none;
 }
 
-.${P}-lightbox-strip[data-mouse-draggable="true"] {
+.${P}-lightbox-content[data-mouse-dragging="true"] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.${P}-lightbox-content[data-mouse-draggable="true"] {
   cursor: grab;
 }
 
@@ -123,6 +128,13 @@ function getCSS(P: string): string {
   overflow-x: auto;
   scrollbar-width: none;
   pointer-events: auto;
+  opacity: 1;
+  transition: opacity ${LIGHTBOX_ANIM_MS}ms ease;
+}
+
+.${P}-thumbnails[data-chrome-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .${P}-lightbox-editor .${P}-thumbnails {
@@ -184,6 +196,13 @@ function getCSS(P: string): string {
   border: none;
   background-color: transparent;
   padding: 0;
+  opacity: 1;
+  transition: opacity ${LIGHTBOX_ANIM_MS}ms ease;
+}
+
+.${P}-close-icon[data-chrome-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .${P}-close-icon-inner {
@@ -277,7 +296,7 @@ type LightboxOverlayProps = {
   onClose: () => void;
 };
 
-const MOUSE_DRAG_THRESHOLD_PX = 3;
+const MOUSE_DRAG_THRESHOLD_PX = 1;
 const LOOP_COPIES = 3;
 const GAP_LABEL_AREA_PX = 20;
 
@@ -311,8 +330,10 @@ const LightboxOverlay = ({
   onClose,
 }: LightboxOverlayProps) => {
   const showControls = Boolean(isEditMode);
+  const hideChromeOnIdle = !isEditMode;
   const allowMouseDrag = !isEditor || Boolean(isPreviewMode);
   const allowThumbnailHover = !isEditor || Boolean(isPreviewMode);
+  const contentRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
@@ -330,10 +351,23 @@ const LightboxOverlay = ({
   );
   const [isMouseDragging, setIsMouseDragging] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [chromeVisible, setChromeVisible] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const lockedActiveIndexRef = useRef<number | null>(null);
   const isClosingRef = useRef(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chromeIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetChromeIdleTimer = useCallback(() => {
+    if (!hideChromeOnIdle) return;
+    setChromeVisible(true);
+    if (chromeIdleTimerRef.current) {
+      clearTimeout(chromeIdleTimerRef.current);
+    }
+    chromeIdleTimerRef.current = setTimeout(() => {
+      setChromeVisible(false);
+    }, CONTROLS_IDLE_MS);
+  }, [hideChromeOnIdle]);
 
   const handleClose = useCallback(() => {
     if (isClosingRef.current) return;
@@ -433,23 +467,29 @@ const LightboxOverlay = ({
     });
   };
 
-  const onStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const isDragBlockedTarget = (target: HTMLElement) => (
+    target.closest('[data-controls]')
+    || target.closest(`.${P}-thumbnails`)
+    || target.closest(`.${P}-close-icon`)
+  );
+
+  const onContentPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
-    if (event.pointerType !== 'mouse') return;
-    const target = event.target as HTMLElement;
-    if (target.closest('[data-controls]')) return;
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    if (isDragBlockedTarget(event.target as HTMLElement)) return;
     const strip = stripRef.current;
-    if (!strip) return;
+    const content = contentRef.current;
+    if (!strip || !content) return;
     mouseDragRef.current = {
       isActive: true,
       startX: event.clientX,
       scrollLeft: strip.scrollLeft,
       hasMoved: false,
     };
-    strip.setPointerCapture(event.pointerId);
+    content.setPointerCapture(event.pointerId);
   };
 
-  const onStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onContentPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
@@ -467,16 +507,17 @@ const LightboxOverlay = ({
     }
   };
 
-  const endStripMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+  const endContentMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
-    if (!strip) return;
+    const content = contentRef.current;
+    if (!strip || !content) return;
     const hadMoved = mouseDragRef.current.hasMoved;
     mouseDragRef.current.isActive = false;
     setIsMouseDragging(false);
-    if (strip.hasPointerCapture(event.pointerId)) {
-      strip.releasePointerCapture(event.pointerId);
+    if (content.hasPointerCapture(event.pointerId)) {
+      content.releasePointerCapture(event.pointerId);
     }
     normalizeInfiniteScroll();
     if (hadMoved) {
@@ -496,8 +537,28 @@ const LightboxOverlay = ({
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
+      if (chromeIdleTimerRef.current) {
+        clearTimeout(chromeIdleTimerRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!hideChromeOnIdle) {
+      setChromeVisible(true);
+      return;
+    }
+    resetChromeIdleTimer();
+    const content = contentRef.current;
+    if (!content) return;
+    content.addEventListener('mousemove', resetChromeIdleTimer);
+    return () => {
+      content.removeEventListener('mousemove', resetChromeIdleTimer);
+      if (chromeIdleTimerRef.current) {
+        clearTimeout(chromeIdleTimerRef.current);
+      }
+    };
+  }, [hideChromeOnIdle, resetChromeIdleTimer]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -571,19 +632,21 @@ const LightboxOverlay = ({
     >
       <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor }} />
       <div
+        ref={contentRef}
         className={`${P}-lightbox-content`}
+        data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
+        data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
         onClick={(event) => event.stopPropagation()}
+        onPointerDown={allowMouseDrag ? onContentPointerDown : undefined}
+        onPointerMove={allowMouseDrag ? onContentPointerMove : undefined}
+        onPointerUp={allowMouseDrag ? endContentMouseDrag : undefined}
+        onPointerCancel={allowMouseDrag ? endContentMouseDrag : undefined}
       >
         <div
           ref={stripRef}
           className={`${P}-lightbox-strip`}
           style={{ gap: imageGap }}
-          data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
           data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
-          onPointerDown={allowMouseDrag ? onStripPointerDown : undefined}
-          onPointerMove={allowMouseDrag ? onStripPointerMove : undefined}
-          onPointerUp={allowMouseDrag ? endStripMouseDrag : undefined}
-          onPointerCancel={allowMouseDrag ? endStripMouseDrag : undefined}
         >
           {flatItems.map((item, flatIndex) => {
             const itemObjectFit = item.image.objectFit ?? 'contain';
@@ -627,7 +690,6 @@ const LightboxOverlay = ({
             );
           })}
         </div>
-
         {images.length > 1 && thumbnailVisibility === 'on' && (() => {
           const thumbnailMarginBottomControlSize = getGapControlSize(thumbnailMarginBottom);
           const thumbnailMarginBottomControlBottom = `calc(-0.5 * (${thumbnailMarginBottom} + ${thumbnailMarginBottomControlSize}))`;
@@ -635,6 +697,7 @@ const LightboxOverlay = ({
             <div
               className={`${P}-thumbnails`}
               data-thumbnail-active={thumbnailActive}
+              data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
               style={{ gap: thumbnailGap, bottom: thumbnailMarginBottom }}
             >
               {images.map((item, index) => {
@@ -699,16 +762,16 @@ const LightboxOverlay = ({
           <div
             data-controls={showControls ? 'contentMarginTop' : undefined}
             className={showControls ? `${P}-control` : undefined}
-            style={{ height: contentMarginTop, width: '100%' }}
+            style={{ height: contentMarginTop, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
           />
-          <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'row', width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}>
             <div
               data-controls={showControls ? 'contentMarginLeft' : undefined}
               data-controls-axis={showControls ? 'x' : undefined}
               className={showControls ? `${P}-control` : undefined}
               style={{ width: contentMarginLeft, flexShrink: 0 }}
             />
-            <div className={`${P}-lightbox-content-area`}>
+            <div className={`${P}-lightbox-content-area`} style={{ pointerEvents: 'none' }}>
               {text.length > 0 && (
                 <div className={`${P}-text`} style={{ ...textStyle, maxWidth: textMaxWidth }}>
                   <RichTextRenderer content={text} />
@@ -717,6 +780,7 @@ const LightboxOverlay = ({
               {closeIcon && (
                 <div
                   className={`${P}-close-icon`}
+                  data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
                   style={{
                     width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
                     height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
@@ -738,7 +802,7 @@ const LightboxOverlay = ({
               data-controls={showControls ? 'contentMarginRight' : undefined}
               data-controls-axis={showControls ? 'x' : undefined}
               className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginRight, flexShrink: 0 }}
+              style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
             />
           </div>
         </div>
