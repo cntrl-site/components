@@ -77,11 +77,11 @@ type ListColumnVerticalAlignUpdates = {
 
 export type ListSettings = {
   columns: number;
-  type: 'A' | 'B';
+  type: 'a' | 'b';
   wrapperWidth: number;
   entriesCount: number;
   cellMinHeight: number;
-  imageOnHover: 'On' | 'Off';
+  imageOnHover: 'on' | 'off';
   imageSize?: { min: number; max: number };
   dividerWidth: number;
   showVisibility: boolean[];
@@ -89,8 +89,8 @@ export type ListSettings = {
   showCut: number;
   cutCellMinHeight: number;
   cutLabel: string;
-  entryHoverEffect: 'None' | 'Default' | 'Blinds' | 'Reveal';
-  entryHoverShowOption: 'Always' | 'Link only';
+  entryHoverEffect: 'none' | 'default' | 'blinds' | 'reveal';
+  entryHoverShowOption: 'always' | 'link only';
   rowPaddingTop: number;
   rowPaddingBottom: number;
   rowPaddingTopB: number;
@@ -818,7 +818,7 @@ function getListColumnVerticalAlignSanitizeUpdates(
     const key = getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey;
     const value = settings[key];
 
-    if (settings.type === 'B') {
+    if (settings.type === 'b') {
       const raw = String(value ?? 'Top').trim();
       if (raw !== 'Top' && raw !== 'Center' && raw !== 'Bottom') {
         updates[key] = 'Top';
@@ -951,7 +951,6 @@ function syncRowListColHeights(
     }
   });
 
-  void rowEl.offsetHeight;
   return rowHeight;
 }
 
@@ -1610,8 +1609,8 @@ export function applyListSettingsChange(
   const prevColumns = prevSettings.columns;
   const nextContentWidth = getListEffectiveContentWidth(nextSettings);
   const prevContentWidth = getListEffectiveContentWidth(prevSettings);
-  const isVerticalLayout = nextSettings.type === 'B'
-    || (nextSettings.type === undefined && prevSettings.type === 'B');
+  const isVerticalLayout = nextSettings.type === 'b'
+    || (nextSettings.type === undefined && prevSettings.type === 'b');
   const columns =
     typeof nextColumns === 'number'
       ? nextColumns
@@ -1837,9 +1836,9 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   const [visibleRowCount, setVisibleRowCount] = useState<number | undefined>(undefined);
   const [hoverImage, setHoverImage] = useState<HoverImageState | null>(null);
-  const showHoverImage = imageOnHover === 'On' && (!isEditor || isPreviewMode);
+  const showHoverImage = imageOnHover === 'on' && (!isEditor || isPreviewMode);
   const cutEnabled = (cut ?? 0) > 0;
-  const isVerticalLayout = type === 'B';
+  const isVerticalLayout = type === 'b';
   const containerRef = useRef<HTMLDivElement>(null);
   const firstEntryRef = useRef<HTMLElement | null>(null);
   const [firstEntryHandleTopPx, setFirstEntryHandleTopPx] = useState<number | null>(null);
@@ -1903,16 +1902,16 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
   const entryHoverClass = (!isEditor || isPreviewMode)
-    ? entryHoverEffect === 'Default'
+    ? entryHoverEffect === 'default'
       ? `${P}-entry-hover-default`
-      : entryHoverEffect === 'Blinds'
+      : entryHoverEffect === 'blinds'
         ? `${P}-entry-hover-blinds`
-        : entryHoverEffect === 'Reveal'
+        : entryHoverEffect === 'reveal'
           ? `${P}-entry-hover-reveal`
           : ''
     : '';
   const wrapperStateClasses = `${entryHoverClass} ${stateClass}`.trim();
-  const revealHoverActive = entryHoverEffect === 'Reveal' && (!isEditor || isPreviewMode);
+  const revealHoverActive = entryHoverEffect === 'reveal' && (!isEditor || isPreviewMode);
   const showDividerTop = showVisibility?.[0] ?? false;
   const showDividerBottom = showVisibility?.[1] ?? false;
 
@@ -2285,11 +2284,14 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     }
 
     const applyBaselines = () => {
-      container.querySelectorAll<HTMLElement>('[data-list-row]').forEach((rowEl) => {
-        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
-        cols.forEach((el) => {
+      const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-list-row]'));
+      const listColClassName = `${P}-list-col`;
+      const probeClassName = `${P}-baseline-probe`;
+
+      rows.forEach((rowEl) => {
+        rowEl.querySelectorAll<HTMLElement>('[data-list-col]').forEach((el) => {
           el.style.transform = '';
-          const listCol = el.querySelector<HTMLElement>(`.${P}-list-col`);
+          const listCol = el.querySelector<HTMLElement>(`.${listColClassName}`);
           if (listCol) {
             listCol.style.minHeight = '';
             listCol.style.height = '';
@@ -2299,9 +2301,17 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             title.style.transform = '';
           }
         });
+      });
 
-        syncRowListColHeights(rowEl, cols, `${P}-list-col`);
-        void rowEl.offsetHeight;
+      rows.forEach((rowEl) => {
+        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
+        syncRowListColHeights(rowEl, cols, listColClassName);
+      });
+
+      void container.offsetHeight;
+
+      rows.forEach((rowEl) => {
+        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
         const rowTop = rowEl.getBoundingClientRect().top;
 
         type ColInfo = {
@@ -2312,7 +2322,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           anchor: string | null;
         };
 
-        const probeClassName = `${P}-baseline-probe`;
         const byLetter = new Map<string, ColInfo>();
         const infos: ColInfo[] = cols.map((el) => {
           const titleEl = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
@@ -2337,7 +2346,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             const baseline = measureColumnFirstLineBaselineOffset(
               info,
               rowTop,
-              `${P}-list-col`,
+              listColClassName,
               probeClassName,
             );
             finalBaseline.set(info.letter, baseline);
@@ -2351,7 +2360,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           const followerNatural = measureColumnFirstLineBaselineOffset(
             info,
             rowTop,
-            `${P}-list-col`,
+            listColClassName,
             probeClassName,
           );
           const shift = anchorBaseline - followerNatural;
@@ -2360,7 +2369,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           const result = measureColumnFirstLineBaselineOffset(
             info,
             rowTop,
-            `${P}-list-col`,
+            listColClassName,
             probeClassName,
           );
           finalBaseline.set(info.letter, result);
@@ -2371,20 +2380,33 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       });
     };
 
+    let rafId: number | null = null;
+    const scheduleApplyBaselines = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        applyBaselines();
+      });
+    };
+
     applyBaselines();
 
-    const observer = new ResizeObserver(() => applyBaselines());
+    const observer = new ResizeObserver(() => scheduleApplyBaselines());
     observer.observe(container);
 
     let cancelled = false;
     if (typeof document !== 'undefined' && document.fonts?.ready) {
       document.fonts.ready.then(() => {
-        if (!cancelled) applyBaselines();
+        if (!cancelled) scheduleApplyBaselines();
       });
     }
 
     return () => {
       cancelled = true;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       observer.disconnect();
       clearBaselineStyles();
     };
@@ -2398,9 +2420,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     effectiveColumnWidths,
   ]);
 
+  const scopedCss = useMemo(() => getCSS(P), [P]);
+
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+      <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div style={colorVars}>
         <div
           ref={containerRef}
@@ -2417,7 +2441,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           <div style={{ width: '100%', position: 'relative' }}>
             {visibleRows.map((row, rowIdx) => {
               const hasLink = (row.link?.length ?? 0) > 0;
-              const RowElement = hasLink && isPreviewMode ? 'a' : 'div';
+              const RowElement = hasLink && (!isEditor || isPreviewMode) ? 'a' : 'div';
               const rowStyle = getEntryDividerWidths(
                 rowIdx,
                 visibleRows.length,
@@ -2432,11 +2456,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               <RowElement
                 key={row.id}
                 ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstEntryRef.current = el; } : undefined}
-                className={`${P}-list-item${hasLink || entryHoverShowOption === 'Always' ? ` ${P}-list-item-has-link` : ''}`}
+                className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
                 onMouseEnter={(event) => {
-                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'Always')) {
+                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'always')) {
                     setRevealOpenDirectionFromMouseEnter(event, P);
                   }
                   if (showHoverImage) {
@@ -2444,7 +2468,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   }
                 }}
                 onMouseLeave={(event) => {
-                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'Always')) {
+                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'always')) {
                     setRevealCloseDirectionFromMouseLeave(event, P);
                   }
                 }}

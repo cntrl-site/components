@@ -88,7 +88,7 @@ type ListColumnLayoutDefaultsOverrides = {
   EColumnPaddingLeft?: number;
   EColumnPaddingRight?: number;
   EColumnPaddingBottom?: number;
-  type?: 'A' | 'B';
+  type?: 'a' | 'b';
   textPaddingLR?: number;
   entriesCount?: number;
   cellMinHeight?: number;
@@ -103,7 +103,6 @@ type ListColumnLayoutDefaultsOverrides = {
   textStroke?: number;
   textCorners?: number;
   textPadding?: { top: number; right: number; bottom: number; left: number };
-  /** Default padding values applied only when type === 'B'. Explicit overrides take precedence. */
   typeBDefaults?: ListTypeBPaddingDefaults;
 };
 
@@ -237,7 +236,7 @@ function createColumnLayoutDefaults(
   }
 
   const typeBApplied: ListTypeBPaddingDefaults =
-    restOverrides.type === 'B' && typeBDefaults ? typeBDefaults : {};
+    restOverrides.type === 'b' && typeBDefaults ? typeBDefaults : {};
 
   return { ...defaults, ...typeBApplied, ...restOverrides };
 }
@@ -509,37 +508,30 @@ const DEFAULT_HOVER_IMAGES = [
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(1).webp',
-    name: 'List-1.png',
   },
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(2).webp',
-    name: 'List-2.png',
   },
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(3).webp',
-    name: 'List-3.png',
   },
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(4).webp',
-    name: 'List-4.png',
   },
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(5).webp',
-    name: 'List-5.png',
   },
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(6).webp',
-    name: 'List-6.png',
   },
   {
     objectFit: 'cover' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(7).webp',
-    name: 'List-7.png',
   },
 ];
 
@@ -671,7 +663,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['A', 'B'],
+        enum: ['a', 'b'],
       },
       columns: {
         type: 'number',
@@ -701,7 +693,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Entries #',
-        display: { type: 'toggle-numeric-input', enum: ['Auto', 'Fixed'] },
+        display: { type: 'toggle-numeric-input', enum: ['auto', 'fixed'] },
         min: 1,
       },
       cellMinHeight: {
@@ -716,7 +708,7 @@ const schema: ComponentSchemaV1 = {
         type: 'boolean',
         scope: 'common',
         title: 'Image On Hover',
-        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       imageSize: {
         type: 'object',
@@ -742,7 +734,7 @@ const schema: ComponentSchemaV1 = {
         type: 'array',
         scope: 'common',
         title: 'Show',
-        display: { type: 'double-toggle', enum: ['Top', 'Bottom'] },
+        display: { type: 'double-toggle', enum: ['top', 'bottom'] },
         items: { type: 'boolean' },
         default: [true, false],
       },
@@ -750,20 +742,20 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Cut',
-        display: { type: 'toggle-numeric-input', enum: ['Off', 'On'] },
+        display: { type: 'toggle-numeric-input', enum: ['off', 'on'] },
         min: 1,
       },
       entryHoverEffect: {
         type: 'string',
         scope: 'common',
         title: 'Effect',
-        display: { type: 'toggle-cycle', enum: ['None', 'Default', 'Blinds', 'Reveal'] },
+        display: { type: 'toggle-cycle', enum: ['none', 'default', 'blinds', 'reveal'] },
       },
       entryHoverShowOption: {
         type: 'string',
         scope: 'common',
         title: 'Show',
-        display: { type: 'toggle-cycle', enum: ['Always', 'Link only'] },
+        display: { type: 'toggle-cycle', enum: ['always', 'link only'] },
       },
       cutCellMinHeight: {
         type: 'number',
@@ -783,7 +775,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Show',
-        display: { type: 'toggle-numeric-input', enum: ['All', 'Custom'] },
+        display: { type: 'toggle-numeric-input', enum: ['all', 'custom'] },
         min: 1,
       },
       rowPaddingTop: {
@@ -857,9 +849,9 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      imageOnHover: 'On',
-      entryHoverEffect: 'Default',
-      entryHoverShowOption: 'Always',
+      imageOnHover: 'on',
+      entryHoverEffect: 'default',
+      entryHoverShowOption: 'always',
       cutLabel: 'SEE ALL',
       showVisibility: [true, true],
       textColor: '#000000',
@@ -874,7 +866,7 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: createColumnLayoutDefaults({
         columns: 3,
-        type: 'B',
+        type: 'b',
         textPaddingLR: 0.0373,
         entriesCount: 0,
         cellMinHeight: 0.02,
@@ -911,7 +903,7 @@ const schema: ComponentSchemaV1 = {
       }),
       d: createColumnLayoutDefaults({
         columns: 4,
-        type: 'A',
+        type: 'a',
         textPaddingLR: 0.01,
         entriesCount: 0,
         cellMinHeight: 0.0555,
@@ -949,19 +941,19 @@ const schema: ComponentSchemaV1 = {
         then: { name: `properties.${name}.display.visible`, value: false },
       })),
       {
-        if: { name: 'type', value: 'A' },
+        if: { name: 'type', value: 'a' },
         then: { name: 'properties.textPaddingLR.display.visible', value: false },
       },
       ...HORIZONTAL_LAYOUT_PROPERTY_NAMES.map((name) => ({
-        if: { name: 'type', value: 'B' },
+        if: { name: 'type', value: 'b' },
         then: { name: `properties.${name}.display.visible`, value: false },
       })),
       {
-        if: { name: 'type', value: 'A' },
+        if: { name: 'type', value: 'a' },
         then: { name: 'properties.rowPaddingTopB.display.visible', value: false },
       },
       ...LIST_COLUMN_LETTERS.map((letter) => ({
-        if: { name: 'type', value: 'A' },
+        if: { name: 'type', value: 'a' },
         then: { name: `properties.${letter}ColumnPaddingBottom.display.visible`, value: false },
       })),
     ],
@@ -1058,7 +1050,7 @@ export const ListComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Programme_List.png ',
+    url: 'https://cdn.cntrl.site/component-assets/Programme_List.png',
   },
   version: 1,
   defaultSize: {

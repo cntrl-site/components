@@ -107,101 +107,90 @@ const schema: ComponentSchemaV1 = {
       },
       default: [
         {
-          title: `BIRD'S EYE VIEW OVER THE OLD TOWN`,
+          title: `bird's eye view over the old town`,
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
-            name: 'Grid-1.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'DOORS OF MATERA',
+          title: 'doors of matera',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
-            name: 'Grid-2.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'Cattedrale di Santa Maria',
+          title: 'cattedrale di santa maria',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
-            name: 'Grid-3.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'OLD CITY THROUGH THE CRACKS',
+          title: 'old city through the cracks',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
-            name: 'Grid-4.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'PRIVATE STONE GARDENS',
+          title: 'private stone gardens',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
-            name: 'Grid-5.png',
             objectFit: 'cover',
           },
           {
             url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
-            name: 'Grid-6.png',
             objectFit: 'cover',
           },
           {
             url: 'https://cdn.cntrl.site/component-assets/grid(7).webp',
-            name: 'Grid-7.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'EXITING THE OLD TOWN',
+          title: 'exiting the old town',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
-            name: 'Grid-8.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'LAUNDRY UNDER THE SUN',
+          title: 'laundry under the sun',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
-            name: 'Grid-9.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'CITY GATES VIEW',
+          title: 'city gates view',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
-            name: 'Grid-10.png',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'FORTIFICATIONS AROUND THE CITY',
+          title: 'fortifications around the city',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
-            name: 'Grid-11.png',
             objectFit: 'cover',
           }],
           link: ''
@@ -216,7 +205,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['A', 'B', 'C'],
+        enum: ['a', 'b', 'c'],
       },
       gridLayout: {
         type: 'grid-layout',
@@ -268,26 +257,26 @@ const schema: ComponentSchemaV1 = {
         type: 'boolean',
         scope: 'common',
         title: 'Show text',
-        display: { type: 'toggle-cycle', enum: ['Always', 'On hover'] },
+        display: { type: 'toggle-cycle', enum: ['always', 'on hover'] },
       },
       alignEntries: {
         type: 'boolean',
         scope: 'layout',
         title: 'Align entries',
-        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       entriesCount: {
         type: 'number',
         scope: 'layout',
         title: 'Entries #',
-        display: { type: 'toggle-numeric-input', enum: ['Auto', 'Fixed'] },
+        display: { type: 'toggle-numeric-input', enum: ['auto', 'fixed'] },
         min: 1,
       },
       lightbox: {
         type: 'boolean',
         scope: 'common',
         title: 'Lightbox',
-        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       imageDisplay: {
         type: 'object',
@@ -297,7 +286,7 @@ const schema: ComponentSchemaV1 = {
         properties: {
           display: {
             type: 'string',
-            enum: ['Fit', 'Cover'],
+            enum: ['fit', 'cover'],
           },
           ratioValue: {
             type: 'string',
@@ -312,13 +301,13 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['Fit', 'Cover'] },
+        display: { type: 'toggle-cycle', enum: ['fit', 'cover'] },
       },
       slider: {
         type: 'boolean',
         scope: 'common',
         title: 'Slider',
-        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       sliderTiming: {
         type: 'number',
@@ -332,13 +321,13 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Direction',
-        display: { type: 'toggle-cycle', enum: ['Horizontal', 'Vertical', 'Random'], enabled: true },
+        display: { type: 'toggle-cycle', enum: ['horizontal', 'vertical', 'random'], enabled: true },
       },
       transition: {
         type: 'string',
         scope: 'common',
         title: 'Transition',
-        display: { type: 'toggle-cycle', enum: ['Fade', 'Slide'] },
+        display: { type: 'toggle-cycle', enum: ['fade', 'slide'] },
       },
       titleMarginTop: {
         type: 'number',
@@ -502,19 +491,19 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      lightbox: 'On',
+      lightbox: 'on',
       imageDisplay: {
-        display: 'Cover',
+        display: 'cover',
         ratioValue: '2:3',
         reversed: false,
       },
-      lightboxImageDisplay: 'Fit',
-      slider: 'On',
+      lightboxImageDisplay: 'fit',
+      slider: 'on',
       sliderTiming: 3,
-      direction: 'Horizontal',
-      transition: 'Fade',
-      showText: 'Always',
-      alignEntries: 'On',
+      direction: 'horizontal',
+      transition: 'fade',
+      showText: 'always',
+      alignEntries: 'on',
       titleColor: '#000000',
       subtitleColor: '#000000',
       lightboxCounterColor: '#DEDDDD',
@@ -557,7 +546,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        type: 'C',
+        type: 'c',
         gridLayout: {
           entryWidth: 0.8,
           horizontalGap: 0.0533,
@@ -582,7 +571,7 @@ const schema: ComponentSchemaV1 = {
         lightboxCounterLineHeight: 0.0373,
       },
       d: {
-        type: 'C',
+        type: 'c',
         gridLayout: {
           entryWidth: 0.1736,
           horizontalGap: 0,
@@ -610,19 +599,19 @@ const schema: ComponentSchemaV1 = {
     },
     displayRules: [
       {
-        if: { name: 'transition', value: 'Fade' },
+        if: { name: 'transition', value: 'fade' },
         then: { name: 'properties.direction.display.enabled', value: false },
       },
       {
-        if: { name: 'lightbox', value: 'Off' },
+        if: { name: 'lightbox', value: 'off' },
         then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
       },
       {
-        if: { name: 'type', value: 'A' },
+        if: { name: 'type', value: 'a' },
         then: { name: 'properties.alignEntries.display.visible', value: false },
       },
       {
-        if: { name: 'type', value: 'B' },
+        if: { name: 'type', value: 'b' },
         then: { name: 'properties.alignEntries.display.visible', value: false },
       },
     ],

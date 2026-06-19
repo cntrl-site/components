@@ -288,6 +288,7 @@ const MarqueeItemCard = ({
 
 export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode }: MarqueeProps) => {
   const { prefix: P } = useScopedStyles();
+  const scopedCss = useMemo(() => getCSS(P), [P]);
   const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, imageFit, hoverEffect } = settings;
   const showControls = Boolean(isEditMode);
   const showHoverEffects = !isEditor || Boolean(isPreviewMode);
@@ -550,7 +551,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
         aria-label="Marquee"
         style={setWidth > 0 && trackHeight > 0 ? { height: trackHeight } : undefined}
       >
-        <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+        <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
         <div
           key="marquee-track"
           ref={trackRef}
@@ -583,7 +584,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
 
   return (
     <div ref={wrapperRef} className={`${P}-wrapper`}>
-      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+      <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div
         key="marquee-static"
         className={cn(`${P}-marquee-row`, `${P}-marquee-static`)}
