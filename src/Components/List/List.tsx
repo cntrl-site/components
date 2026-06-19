@@ -523,7 +523,8 @@ a.${P}-list-item {
   background: var(--${P}-background-hover-color);
   transform: scaleY(0);
   transform-origin: center center;
-  transition: transform 250ms;
+  opacity: 0;
+  transition: opacity 150ms, transform 0s 250ms;
   z-index: 0;
   pointer-events: none;
 }
@@ -539,6 +540,8 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover::before,
 .${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item::before {
   transform: scaleY(1);
+  opacity: 1;
+  transition: transform 250ms, opacity 250ms;
 }
 
 .${P}-cut-item {
