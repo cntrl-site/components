@@ -89,7 +89,7 @@ export type ListSettings = {
   showCut: number;
   cutCellMinHeight: number;
   cutLabel: string;
-  entryHoverEffect: 'None' | 'Default' | 'Blinds';
+  entryHoverEffect: 'None' | 'Default' | 'Blinds' | 'Reveal';
   entryHoverShowOption: 'Always' | 'Link only';
   rowPaddingTop: number;
   rowPaddingBottom: number;
@@ -171,6 +171,20 @@ function sv(px: number): string {
 
 function hasListColumnText(value: React.ReactNode): boolean {
   return String(value ?? '').trim().length > 0;
+}
+
+function setRevealOpenDirectionFromMouseEnter(event: React.MouseEvent<HTMLElement>, prefix: string): void {
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const fromBottom = event.clientY - rect.top > rect.height / 2;
+  el.classList.toggle(`${prefix}-reveal-from-bottom`, fromBottom);
+}
+
+function setRevealCloseDirectionFromMouseLeave(event: React.MouseEvent<HTMLElement>, prefix: string): void {
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const exitToTop = event.clientY < rect.top + rect.height / 2;
+  el.classList.toggle(`${prefix}-reveal-from-bottom`, exitToTop);
 }
 
 function getEntryDividerWidths(
@@ -456,15 +470,19 @@ a.${P}-list-item {
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-item,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item {
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item {
   transition: background-color 250ms, border-color 250ms;
 }
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-label,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-label {
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-label,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-label {
   transition: color 250ms;
 }
 
@@ -486,21 +504,31 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover),
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-cut-item:hover,
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item {
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item-has-link:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-cut-item:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item {
   border-bottom-color: var(--${P}-divider-hover-color);
 }
 
 .${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default .${P}-list-item-has-link:hover:first-child,
 .${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link:first-child,
 .${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds .${P}-list-item-has-link:hover:first-child,
-.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child {
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-reveal .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
 .${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item-has-link:hover:first-child,
 .${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link:first-child,
 .${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item-has-link:hover:first-child,
-.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child {
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
@@ -511,7 +539,11 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link:hover .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover .${P}-cut-label,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item .${P}-cut-label {
+.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item .${P}-cut-label,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link:hover .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item:hover .${P}-cut-label,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item .${P}-cut-label {
   color: var(--${P}-text-hover-color);
 }
 
@@ -542,6 +574,45 @@ a.${P}-list-item {
   transform: scaleY(1);
   opacity: 1;
   transition: transform 250ms, opacity 250ms;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--${P}-background-hover-color);
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  transition: transform 120ms;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-col,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-label {
+  position: relative;
+  z-index: 1;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item::before {
+  transform: scaleY(1);
+  transform-origin: top center;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link.${P}-reveal-from-bottom::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item.${P}-reveal-from-bottom::before {
+  transform-origin: top center;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link.${P}-reveal-from-bottom:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link.${P}-reveal-from-bottom.${P}-state-hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item.${P}-reveal-from-bottom:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item.${P}-reveal-from-bottom.${P}-state-hover::before {
+  transform-origin: bottom center;
 }
 
 .${P}-cut-item {
@@ -1831,14 +1902,17 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
-  const entryHoverClass = (!isEditor || isPreviewMode) 
-  ? entryHoverEffect === 'Default'
+  const entryHoverClass = (!isEditor || isPreviewMode)
+    ? entryHoverEffect === 'Default'
       ? `${P}-entry-hover-default`
       : entryHoverEffect === 'Blinds'
         ? `${P}-entry-hover-blinds`
-        : ''
-  : '';
+        : entryHoverEffect === 'Reveal'
+          ? `${P}-entry-hover-reveal`
+          : ''
+    : '';
   const wrapperStateClasses = `${entryHoverClass} ${stateClass}`.trim();
+  const revealHoverActive = entryHoverEffect === 'Reveal' && (!isEditor || isPreviewMode);
   const showDividerTop = showVisibility?.[0] ?? false;
   const showDividerBottom = showVisibility?.[1] ?? false;
 
@@ -2104,9 +2178,18 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     setHoverImage(null);
   };
 
-  const handleCutItemMouseEnter = () => {
+  const handleCutItemMouseEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (revealHoverActive) {
+      setRevealOpenDirectionFromMouseEnter(event, P);
+    }
     if (!showHoverImage) return;
     setHoverImage(null);
+  };
+
+  const handleCutItemMouseLeave = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (revealHoverActive) {
+      setRevealCloseDirectionFromMouseLeave(event, P);
+    }
   };
 
   useLayoutEffect(() => {
@@ -2352,7 +2435,19 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 className={`${P}-list-item${hasLink || entryHoverShowOption === 'Always' ? ` ${P}-list-item-has-link` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
-                onMouseEnter={showHoverImage ? (event) => handleRowMouseEnter(row, event) : undefined}
+                onMouseEnter={(event) => {
+                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'Always')) {
+                    setRevealOpenDirectionFromMouseEnter(event, P);
+                  }
+                  if (showHoverImage) {
+                    handleRowMouseEnter(row, event);
+                  }
+                }}
+                onMouseLeave={(event) => {
+                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'Always')) {
+                    setRevealCloseDirectionFromMouseLeave(event, P);
+                  }
+                }}
               >
                 {resolvedRowPaddingTop > 0 && (
                   <div
@@ -2724,7 +2819,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 ),
               }}
               onClick={cutItemClickable ? handleShowMore : undefined}
-              onMouseEnter={showHoverImage ? handleCutItemMouseEnter : undefined}
+              onMouseEnter={revealHoverActive || showHoverImage ? handleCutItemMouseEnter : undefined}
+              onMouseLeave={revealHoverActive ? handleCutItemMouseLeave : undefined}
             >
               <div
                 className={`${P}-list-cols-row`}

@@ -757,7 +757,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Effect',
-        display: { type: 'toggle-cycle', enum: ['None', 'Default', 'Blinds'] },
+        display: { type: 'toggle-cycle', enum: ['None', 'Default', 'Blinds', 'Reveal'] },
       },
       entryHoverShowOption: {
         type: 'string',
