@@ -7,6 +7,7 @@ import {
   getListColumnTextSettingKey,
   LIST_TEXT_STYLE_PREFIXES,
   List,
+  applyListColumnCountChange,
   normalizeListColumnVerticalAlign,
   type ListTextStylePrefix,
 } from './List';
@@ -922,7 +923,7 @@ const schema: ComponentSchemaV1 = {
           default: {
             textFontSize: 0.0333,
             textLineHeight: 0.0333,
-            textLetterSpacing: 0,
+            textLetterSpacing: -0.0009,
             textTextAlign: 'left',
             verticalAlign: 'center',
           },
@@ -1048,6 +1049,7 @@ export const ListComponent = {
   name: 'Default List',
   category: 'lists',
   layoutMode: 'structured' as const,
+  normalizeLayoutSettingsUpdate: applyListColumnCountChange,
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/Programme_List.png',

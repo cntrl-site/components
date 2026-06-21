@@ -32,6 +32,11 @@ export type Component = {
     content: Path[];
     parameters: Path[];
   };
+  normalizeLayoutSettingsUpdate?: (
+    nextSettings: Record<string, any>,
+    prevSettings: Record<string, any>,
+    options?: any,
+  ) => Record<string, any>;
 };
 
 type Path = {

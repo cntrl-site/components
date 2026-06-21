@@ -1594,6 +1594,57 @@ function getColumnLayoutUpdatesForOrderChange(
   return updates;
 }
 
+function hasListSettingsChanges(
+  current: ListSettings,
+  updated: ListSettings,
+): boolean {
+  const keys = new Set([
+    ...Object.keys(current),
+    ...Object.keys(updated),
+  ]);
+
+  for (const key of keys) {
+    if (current[key as keyof ListSettings] !== updated[key as keyof ListSettings]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function applyListColumnCountChange(
+  nextSettings: ListSettings,
+  prevSettings: ListSettings,
+): ListSettings {
+  const nextColumns = nextSettings.columns;
+  const prevColumns = prevSettings.columns;
+
+  if (typeof nextColumns !== 'number' || nextColumns === prevColumns) {
+    return nextSettings;
+  }
+
+  const nextContentWidth = getListEffectiveContentWidth(nextSettings);
+  const isVerticalLayout = nextSettings.type === 'b'
+    || (nextSettings.type === undefined && prevSettings.type === 'b');
+  const updates: ListSettings = {
+    ...nextSettings,
+    ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
+    ...getResetListColumnPaddingUpdates(),
+  };
+
+  if (isVerticalLayout) {
+    for (const key of COLUMN_PADDING_BOTTOM_KEYS) {
+      if (typeof prevSettings[key] === 'number') {
+        updates[key] = prevSettings[key];
+      }
+    }
+  } else {
+    Object.assign(updates, getResetListColumnPaddingBottomUpdates());
+  }
+
+  return hasListSettingsChanges(nextSettings, updates) ? updates : nextSettings;
+}
+
 export function applyListSettingsChange(
   nextSettings: ListSettings,
   prevSettings: ListSettings,
@@ -1644,23 +1695,7 @@ export function applyListSettingsChange(
   };
 
   if (typeof nextColumns === 'number' && nextColumns !== prevColumns) {
-    const updates: ListSettings = {
-      ...nextSettings,
-      ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
-      ...getResetListColumnPaddingUpdates(),
-    };
-
-    if (isVerticalLayout) {
-      for (const key of COLUMN_PADDING_BOTTOM_KEYS) {
-        if (typeof prevSettings[key] === 'number') {
-          updates[key] = prevSettings[key];
-        }
-      }
-    } else {
-      Object.assign(updates, getResetListColumnPaddingBottomUpdates());
-    }
-
-    return updates;
+    return nextSettings;
   }
 
   const nextOrder = getColumnsOrder(nextSettings);
@@ -1938,6 +1973,15 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       return;
     }
 
+    if (
+      typeof prevSettings.columns === 'number'
+      && typeof settings.columns === 'number'
+      && prevSettings.columns !== settings.columns
+    ) {
+      prevSettingsRef.current = settings;
+      return;
+    }
+
     const updatedSettings = applyListSettingsChange(
       settings,
       prevSettings,
@@ -1946,7 +1990,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
     prevSettingsRef.current = settings;
 
-    if (updatedSettings === settings) {
+    if (!hasListSettingsChanges(settings, updatedSettings)) {
       return;
     }
 
