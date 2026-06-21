@@ -344,7 +344,7 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
+      cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
       coverFit: 'cover',
       objectFit: 'cover',
       type: 'A',
@@ -497,12 +497,12 @@ const schema: ComponentSchemaV1 = {
         title3: 'July 1978',
         image: [
           {
-            url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_1.jpg',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_2.jpg',
             name: '',
             objectFit: 'contain',
           },
@@ -514,12 +514,12 @@ const schema: ComponentSchemaV1 = {
         title3: 'March 1979',
         image: [
           {
-            url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_3.jpg',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_4.jpg',
             name: '',
             objectFit: 'contain',
           },
@@ -531,7 +531,7 @@ const schema: ComponentSchemaV1 = {
         title3: 'January 1980',
         image: [
           {
-            url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
+            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_5.jpg',
             name: '',
             objectFit: 'contain',
           },

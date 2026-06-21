@@ -1,14 +1,33 @@
-import { LightboxStrip } from './LightboxStrip';
-import { ComponentSchemaV1 } from '../../types/SchemaV1';
+import {
+  createStripTextStylePanelTab,
+  getStripTextStyleSettingKey,
+  STRIP_TEXT_STYLE_PREFIXES,
+  StripTextStylePrefix,
+  LightboxStrip,
+} from './LightboxStrip';
+import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
 import lightboxStripSourceRaw from './LightboxStrip.tsx?raw';
 
 const defaultCloseIconUrl = 'https://cdn.cntrl.site/component-assets/Close.svg';
 
+type StripFontSettings = { fontWeight: number; fontStyle: string };
+
+type StripTextAppearanceSettings = {
+  textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textDecoration: 'none' | 'underline';
+  fontVariant: 'normal' | 'small-caps';
+};
+
+type StripSchemaDefaultValue =
+  | string
+  | number
+  | StripFontSettings
+  | StripTextAppearanceSettings;
 
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
-    display: { type: 'font-settings-weight', visible: true },
+    display: { type: 'font-settings-weight' },
     properties: {
       fontWeight: { type: 'number' as const },
       fontStyle: { type: 'string' as const },
@@ -29,8 +48,132 @@ const textStyleProperties = {
   wordSpacing: {
     type: 'number' as const,
     display: { type: 'word-spacing-input' },
-  }
+  },
+  textAlign: {
+    type: 'string' as const,
+    enum: ['left', 'center', 'right', 'justify'],
+    display: { type: 'vertical-text-aligh-options' },
+  },
+  textAppearance: {
+    type: 'object' as const,
+    display: { type: 'text-appearance', useTabDesign: true },
+    properties: {
+      textTransform: { type: 'string' as const, enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
+      textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
+      fontVariant: { type: 'string' as const, enum: ['normal', 'small-caps'] },
+    },
+  },
 };
+
+function createStripTextStyleProperties(prefix: StripTextStylePrefix): Record<string, SchemaProperty> {
+  const properties: Record<string, SchemaProperty> = {};
+
+  properties[getStripTextStyleSettingKey(prefix, 'fontFamily')] = {
+    type: 'string',
+    scope: 'common',
+    title: '',
+    display: { type: 'font-family-select', hideLabel: true, useTabDesign: true },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'fontSettings')] = {
+    ...textStyleProperties.fontSettings,
+    scope: 'common',
+    title: '',
+    display: { type: 'font-settings-weight', hideLabel: true, useTabDesign: true },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'fontSize')] = {
+    ...textStyleProperties.fontSize,
+    scope: 'layout',
+    title: '',
+    display: { type: 'font-size' },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'lineHeight')] = {
+    ...textStyleProperties.lineHeight,
+    scope: 'layout',
+    title: '',
+    display: { type: 'line-height-input' },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'letterSpacing')] = {
+    ...textStyleProperties.letterSpacing,
+    scope: 'layout',
+    title: '',
+    display: { type: 'letter-spacing-input' },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'wordSpacing')] = {
+    ...textStyleProperties.wordSpacing,
+    scope: 'layout',
+    title: '',
+    display: { type: 'word-spacing-input' },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'textAlign')] = {
+    ...textStyleProperties.textAlign,
+    scope: 'layout',
+    title: '',
+    display: { type: 'vertical-text-aligh-options' },
+  };
+  properties[getStripTextStyleSettingKey(prefix, 'textAppearance')] = {
+    ...textStyleProperties.textAppearance,
+    scope: 'layout',
+    title: '',
+    display: { type: 'text-appearance', useTabDesign: true },
+  };
+
+  return properties;
+}
+
+const textStylePropertiesByPrefix = STRIP_TEXT_STYLE_PREFIXES.reduce<Record<string, SchemaProperty>>(
+  (properties, prefix) => ({
+    ...properties,
+    ...createStripTextStyleProperties(prefix),
+  }),
+  {},
+);
+
+const textStyleDefaultsByPrefix = STRIP_TEXT_STYLE_PREFIXES.reduce<Record<string, StripSchemaDefaultValue>>(
+  (defaults, prefix) => ({
+    ...defaults,
+    [getStripTextStyleSettingKey(prefix, 'fontFamily')]: 'Arial',
+    [getStripTextStyleSettingKey(prefix, 'fontSettings')]: {
+      fontWeight: 400,
+      fontStyle: 'normal',
+    },
+    [getStripTextStyleSettingKey(prefix, 'letterSpacing')]: 0,
+    [getStripTextStyleSettingKey(prefix, 'wordSpacing')]: 0,
+    [getStripTextStyleSettingKey(prefix, 'textAlign')]: 'left',
+    [getStripTextStyleSettingKey(prefix, 'textAppearance')]: {
+      textTransform: 'none',
+      textDecoration: 'none',
+      fontVariant: 'normal',
+    },
+  }),
+  {},
+);
+
+type StripTextLayoutDefaults = {
+  title1FontSize?: number;
+  title2FontSize?: number;
+  title3FontSize?: number;
+  title1LineHeight?: number;
+  title2LineHeight?: number;
+  title3LineHeight?: number;
+};
+
+function createTextStyleLayoutDefaults(
+  layoutDefaults: StripTextLayoutDefaults,
+): Partial<StripTextLayoutDefaults> {
+  return STRIP_TEXT_STYLE_PREFIXES.reduce<Record<string, number>>((defaults, prefix) => {
+    const fontSize = layoutDefaults[`${prefix}FontSize` as keyof StripTextLayoutDefaults];
+    const lineHeight = layoutDefaults[`${prefix}LineHeight` as keyof StripTextLayoutDefaults];
+    if (fontSize !== undefined) {
+      defaults[getStripTextStyleSettingKey(prefix, 'fontSize')] = fontSize;
+    }
+    if (lineHeight !== undefined) {
+      defaults[getStripTextStyleSettingKey(prefix, 'lineHeight')] = lineHeight;
+    }
+    return defaults;
+  }, {});
+}
+
+const textStylePanelTab = createStripTextStylePanelTab();
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -85,6 +228,12 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'BG',
         display: { type: 'settings-color-picker' },
+      },
+      contentBackgroundColor: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Content BG',
+        display: { type: 'settings-color-picker', visible: true },
       },
       objectFit: {
         type: 'string',
@@ -150,53 +299,41 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 1,
       },
-      textColor: {
+      title1Gap: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Title 1 Gap',
+        min: 0,
+        max: 200,
+        display: { type: 'range-control' },
+      },
+      title2Gap: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Title 2 Gap',
+        min: 0,
+        max: 200,
+        display: { type: 'range-control' },
+      },
+      title1Color: {
         type: 'string',
         scope: 'common',
-        title: 'Fill Text',
-        display: { type: 'color-input' },
+        title: 'Title 1',
+        display: { type: 'palette-color-picker' },
       },
-      textFontFamily: {
+      title2Color: {
         type: 'string',
         scope: 'common',
-        title: 'Font family',
-        display: { type: 'font-family-select' },
+        title: 'Title 2',
+        display: { type: 'palette-color-picker' },
       },
-      textFontSettings: {
-        ...textStyleProperties.fontSettings,
+      title3Color: {
+        type: 'string',
         scope: 'common',
-        title: '',
+        title: 'Title 3',
+        display: { type: 'palette-color-picker' },
       },
-      textFontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Font Size',
-        display: { type: 'font-size' },
-      },
-      textLineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Line Height',
-        display: { type: 'line-height-input' },
-      },
-      textLetterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Letter Spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      textWordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Text Word Spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      textTextAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Text Text Appearance',
-        display: { type: 'text-appearance' },
-      },
+      ...textStylePropertiesByPrefix,
       contentMarginTop: {
         type: 'number',
         scope: 'layout',
@@ -223,7 +360,7 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
+      cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
       objectFit: 'cover',
       type: 'A',
       closeIcon: defaultCloseIconUrl,
@@ -234,55 +371,70 @@ const schema: ComponentSchemaV1 = {
       thumbnailObjectFit: 'fit',
       thumbnailTrigger: 'click',
       thumbnailActive: 'invert',
-      textColor: '#ffffff',
-      textFontFamily: 'Arial',
-      textFontSettings: {
-        fontWeight: 400,
-        fontStyle: 'normal',
-      },
-      textTextAppearance: {
-        textTransform: 'none',
-        textDecoration: 'none',
-        fontVariant: 'normal',
-      },
+      title1Color: '#ffffff',
+      title2Color: '#ffffff',
+      title3Color: '#ffffff',
+      ...textStyleDefaultsByPrefix,
     },
     layoutDefaults: {
       m: {
         thumbnailGap: 0.04,
         thumbnailMarginBottom: 0.04,
-        imageGap: 0,
+        imageGap: 0.005,
         textMaxWidth: 0.4,
         closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
+        contentBackgroundColor: 'rgb(10, 10, 10)',
         contentMarginTop: 0,
         contentMarginLeft: 0.02,
         contentMarginRight: 0.2,
-        textFontSize: 0.02,
-        textLineHeight: 0.02,
-        textLetterSpacing: 0,
-        textWordSpacing: 0,
+        title1Gap: 0.1,
+        title2Gap: 0.1,
+        ...createTextStyleLayoutDefaults({
+          title1FontSize: 0.01,
+          title1LineHeight: 0.02,
+          title2FontSize: 0.01,
+          title2LineHeight: 0.02,
+          title3FontSize: 0.01,
+          title3LineHeight: 0.02,
+        }),
       },
       d: {
         thumbnailGap: 0.02,
         thumbnailMarginBottom: 0.02,
-        imageGap: 0,
+        imageGap: 0.005,
         textMaxWidth: 0.4,
         closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
+        contentBackgroundColor: 'rgb(10, 10, 10)',
         contentMarginTop: 0.02,
         contentMarginLeft: 0.02,
         contentMarginRight: 0.02,
-        textFontSize: 0.02,
-        textLineHeight: 0.02,
-        textLetterSpacing: 0,
-        textWordSpacing: 0,
+        title1Gap: 0.1,
+        title2Gap: 0.1,
+        ...createTextStyleLayoutDefaults({
+          title1FontSize: 0.015,
+          title1LineHeight: 0.02,
+          title2FontSize: 0.015,
+          title2LineHeight: 0.02,
+          title3FontSize: 0.015,
+          title3LineHeight: 0.02,
+        }),
       },
     },
+    displayRules: [
+      {
+        if: { name: 'type', value: 'A' },
+        then: { name: 'properties.contentBackgroundColor.display.visible', value: false },
+      },
+    ],
     layout: [
       '__componentName__',
       'thumbnailGap',
       'thumbnailMarginBottom',
       'imageGap',
+      'title1Gap',
+      'title2Gap',
       'objectFit',
       'contentMarginTop',
       'contentMarginLeft',
@@ -300,7 +452,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['type'] },
         { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailObjectFit']},
         { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
-        { type: 'row', title: 'Text', items: ['textMaxWidth'] },
+        { type: 'row', title: 'Text', items: ['textMaxWidth', 'title1Gap', 'title2Gap'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
         { type: 'row', title: 'Cover', items: ['cover', 'coverFit'] },
       ],
@@ -311,23 +463,19 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        'textFontFamily',
-        {
-          type: 'group',
-          title: '',
-          items: ['textFontSettings', { type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'] }, 'textTextAppearance'],
-        },
+        textStylePanelTab,
       ],
     },
   ],
   paletteBookmark: {
-    items: ['backgroundColor', 'textColor', 'closeIconColor', 'closeIconHoverColor'],
+    items: ['backgroundColor', 'contentBackgroundColor', 'title1Color', 'title2Color', 'title3Color', 'closeIconColor', 'closeIconHoverColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
     type: 'array',
     settings: {
       addItemFromFileExplorer: true,
+      stripFieldsOnAdd: ['title1', 'title2', 'title3', 'text'],
     },
     items: {
       type: 'object',
@@ -339,48 +487,63 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
             supportsMainImage: true,
           },
+          
         },
-        text: {
+        title1: {
           type: 'string',
-          label: 'Text',
-          placeholder: 'Add Text...',
-          display: {
-            type: 'rich-text',
-          },
+          label: 'Title 1',
+          placeholder: 'Add Title 1...',
+          display: { type: 'text-input' },
+        },
+        title2: {
+          type: 'string',
+          label: 'Title 2',
+          placeholder: 'Add Title 2...',
+          display: { type: 'text-input' },
+        },
+        title3: {
+          type: 'string',
+          label: 'Title 3',
+          placeholder: 'Add Title 3...',
+          display: { type: 'text-input' },
         },
       },
     },
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_1.jpg',
           name: '',
           objectFit: 'contain',
         },
-        text: [
-          {
-            type: 'paragraph',
-            children: [{ text: 'Flowers in the spring,' }, { text: 'summer and autumn' }],
-          },
-        ],
+        title1: 'Ethan Parker',
+        title2: 'Midnight Atlas',
+        title3: 'Portland, OR',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
-          name: '',
-          objectFit: 'contain',
-        },
-      },
-      {
-        image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_2.jpg',
           name: '',
           objectFit: 'contain',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_3.jpg',
+          name: '',
+          objectFit: 'contain',
+        },
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_4.jpg',
+          name: '',
+          objectFit: 'contain',
+        },
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_5.jpg',
           name: '',
           objectFit: 'contain',
         },
@@ -417,6 +580,8 @@ export const LightboxStripComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [],
+    parameters: STRIP_TEXT_STYLE_PREFIXES.map((prefix) => ({
+      path: `styles.${getStripTextStyleSettingKey(prefix, 'fontSettings')}`,
+    })),
   },
 };
