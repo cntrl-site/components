@@ -507,7 +507,7 @@ const schema: ComponentSchemaV1 = {
       titleColor: '#000000',
       subtitleColor: '#000000',
       lightboxCounterColor: '#DEDDDD',
-      titleFontFamily: 'Affigere-Regular',
+      titleFontFamily: 'Arial',
       titleFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -546,7 +546,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        type: 'c',
+        type: 'a',
         gridLayout: {
           entryWidth: 0.8,
           horizontalGap: 0.0533,
@@ -571,16 +571,16 @@ const schema: ComponentSchemaV1 = {
         lightboxCounterLineHeight: 0.0373,
       },
       d: {
-        type: 'c',
+        type: 'a',
         gridLayout: {
-          entryWidth: 0.1736,
+          entryWidth: 0.0833,
           horizontalGap: 0,
           wrapperWidth: 1,
           columnsCount: 3,
           lockedParam: null,
         },
-        textBoxWidth: 100,
-        verticalGap: 0.0694,
+        textBoxWidth: 200,
+        verticalGap: 0.09722,
         entriesCount: 0,
         titleMarginTop: 0.008,
         subtitleMarginTop: 0.008,
@@ -590,7 +590,7 @@ const schema: ComponentSchemaV1 = {
         titlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         titleFontSize: 0.027,
         titleLineHeight: 0.0222,
-        titleLetterSpacing: 0.00055,
+        titleLetterSpacing: -0.00118,
         subtitleFontSize: 0.01,
         subtitleLineHeight: 0.01,
         lightboxCounterFontSize: 0.01,
