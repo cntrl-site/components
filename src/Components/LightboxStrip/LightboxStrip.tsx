@@ -365,12 +365,20 @@ export function resolveSharedStripTitles(items: LightboxStripLegacyItem[]): Shar
 
 export type LightboxStripSettings = {
   cover: string | null;
-  coverFit: 'cover' | 'fit';
+  coverFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   type: 'A' | 'B';
   backgroundColor: string;
   contentBackgroundColor?: string;
   thumbnailVisibility: 'on' | 'off';
-  thumbnailObjectFit: 'cover' | 'contain';
+  thumbnailObjectFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  },
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
   thumbnailGap: number;
@@ -574,7 +582,11 @@ type LightboxOverlayProps = {
   closeIconColor: string;
   closeIconHoverColor: string;
   thumbnailVisibility: 'on' | 'off';
-  thumbnailObjectFit: 'cover' | 'contain';
+  thumbnailObjectFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
   textMaxWidth: string;
@@ -1228,7 +1240,7 @@ const LightboxOverlay = ({
                       src={item.image.url}
                       alt=""
                       draggable={false}
-                      style={{ objectFit: thumbnailObjectFit === 'cover' ? 'cover' : 'contain' }}
+                      style={{ objectFit: thumbnailObjectFit.display === 'Cover' ? 'cover' : 'contain' }}
                     />
                   </button>
                   {showControls && index < images.length - 1 && (
@@ -1343,7 +1355,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
               className={`${P}-cover-image`}
               src={cover}
               alt='cover'
-              style={{ objectFit: coverFit === 'cover' ? 'cover' : 'contain' }}
+              style={{ objectFit: coverFit.display === 'Cover' ? 'cover' : 'contain' }}
             />
           </button>
         ) : null}

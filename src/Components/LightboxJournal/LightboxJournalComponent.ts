@@ -189,10 +189,23 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'settings-image-input' },
       },
       coverFit: {
-        type: 'string',
+        type: 'object',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
+        display: { type: 'image-ratio-control' },
+        properties: {
+          display: {
+            type: 'string',
+            enum: ['Fit', 'Cover'],
+          },
+          ratioValue: {
+            type: 'string',
+            enum: ['1:1', '2:3', '3:4', '4:5', '16:9'],
+          },
+          reversed: {
+            type: 'boolean',
+          },
+        },
       },
       type: {
         type: 'string',
@@ -230,12 +243,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'BG',
         display: { type: 'settings-color-picker' },
-      },
-      objectFit: {
-        type: 'string',
-        scope: 'common',
-        title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
       },
       closeIcon: {
         type: ['string', 'null'] as const,
@@ -345,8 +352,11 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
-      coverFit: 'cover',
-      objectFit: 'cover',
+      coverFit: {
+        display: 'Cover',
+        ratioValue: '16:9',
+        reversed: false,
+      },
       type: 'A',
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#ffffff',
@@ -413,7 +423,6 @@ const schema: ComponentSchemaV1 = {
       'imageGap',
       'titlesGap',
       'countCloseGap',
-      'objectFit',
       'contentMarginTop',
       'contentMarginLeft',
       'contentMarginRight',

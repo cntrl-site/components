@@ -449,7 +449,11 @@ type LightboxOverlayProps = {
   prefix: string;
   entries: LightboxJournalItem[];
   journalType: 'A' | 'B';
-  objectFit: 'cover' | 'contain';
+  coverFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   backgroundColor: string;
   imageGap: string;
   slideMaxWidth: string;
@@ -542,7 +546,7 @@ const LightboxOverlay = ({
   prefix: P,
   entries,
   journalType,
-  objectFit,
+  coverFit,
   backgroundColor,
   imageGap,
   slideMaxWidth,
@@ -886,7 +890,7 @@ const LightboxOverlay = ({
 
     if (images.length === 1) {
       const image = images[0];
-      const itemObjectFit = image.objectFit ?? objectFit;
+      const itemObjectFit = image.objectFit ?? coverFit.display === 'Cover' ? 'cover' : 'contain';
       return (
         <div className={`${P}-slide-image-cell`} style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}>
           <img
@@ -906,7 +910,7 @@ const LightboxOverlay = ({
         style={hasInnerImageGap ? { gap: imageGap } : undefined}
       >
         {images.map((image, imageIndex) => {
-          const itemObjectFit = image.objectFit ?? objectFit;
+          const itemObjectFit = image.objectFit ?? coverFit.display === 'Cover' ? 'cover' : 'contain';
           return (
             <div
               key={`${image.url}-${imageIndex}`}
@@ -1286,7 +1290,6 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     coverFit,
     type,
     backgroundColor,
-    objectFit,
     imageGap,
     maxWidth,
     maxHeight,
@@ -1403,7 +1406,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
               className={`${P}-cover-image`}
               src={cover}
               alt="cover"
-              style={{ objectFit: coverFit === 'cover' ? 'cover' : 'contain' }}
+              style={{ objectFit: coverFit.display === 'Cover' ? 'cover' : 'contain' }}
             />
           </button>
         ) : null}
@@ -1416,7 +1419,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             prefix={P}
             entries={entries}
             journalType={type}
-            objectFit={objectFit === 'fit' ? 'contain' : 'cover'}
+            coverFit={coverFit}
             backgroundColor={backgroundColor}
             imageGap={scaled(imageGap ?? 0)}
             slideMaxWidth={`${maxWidth}%`}
@@ -1453,12 +1456,15 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
 
 export type LightboxJournalSettings = {
   cover: string | null;
-  coverFit: 'cover' | 'fit';
+  coverFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   type: 'A' | 'B';
   maxWidth: number;
   maxHeight: number;
   backgroundColor: string;
-  objectFit: 'cover' | 'fit';
   imageGap?: number;
   textMaxWidth: number;
   textTransition: 'none' | 'fade';

@@ -187,10 +187,23 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'settings-image-input' },
       },
       coverFit: {
-        type: 'string',
+        type: 'object',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
+        display: { type: 'image-ratio-control' },
+        properties: {
+          display: {
+            type: 'string',
+            enum: ['Fit', 'Cover'],
+          },
+          ratioValue: {
+            type: 'string',
+            enum: ['1:1', '2:3', '3:4', '4:5', '16:9'],
+          },
+          reversed: {
+            type: 'boolean',
+          },
+        },
       },
       type: {
         type: 'string',
@@ -235,12 +248,6 @@ const schema: ComponentSchemaV1 = {
         title: 'Content BG',
         display: { type: 'settings-color-picker', visible: true },
       },
-      objectFit: {
-        type: 'string',
-        scope: 'common',
-        title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
-      },
       closeIcon: {
         type: ['string', 'null'] as const,
         scope: 'common',
@@ -274,10 +281,23 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       thumbnailObjectFit: {
-        type: 'string',
+        type: 'object',
         scope: 'common',
         title: 'Display',
-        display: { type: 'toggle-cycle', enum: ['cover', 'fit'] },
+        display: { type: 'image-ratio-control' },
+        properties: {
+          display: {
+            type: 'string',
+            enum: ['Fit', 'Cover'],
+          },
+          ratioValue: {
+            type: 'string',
+            enum: ['1:1', '2:3', '3:4', '4:5', '16:9'],
+          },
+          reversed: {
+            type: 'boolean',
+          },
+        },
       },
       thumbnailTrigger: {
         type: 'string',
@@ -361,14 +381,22 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
-      objectFit: 'cover',
+      coverFit: {
+        display: 'Cover',
+        ratioValue: '16:9',
+        reversed: false,
+      },
       type: 'A',
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#ffffff',
       closeIconHoverColor: '#cccccc',
       thumbnailVisibility: 'on',
       thumbnailSize: 'S',
-      thumbnailObjectFit: 'fit',
+      thumbnailObjectFit: {
+        display: 'Fit',
+        ratioValue: '16:9',
+        reversed: false,
+      },
       thumbnailTrigger: 'click',
       thumbnailActive: 'invert',
       title1Color: '#ffffff',
@@ -435,7 +463,6 @@ const schema: ComponentSchemaV1 = {
       'imageGap',
       'title1Gap',
       'title2Gap',
-      'objectFit',
       'contentMarginTop',
       'contentMarginLeft',
       'contentMarginRight',
