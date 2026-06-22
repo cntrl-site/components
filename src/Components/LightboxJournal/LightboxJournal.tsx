@@ -92,6 +92,7 @@ function getCSS(P: string): string {
   width: 100%;
   height: 100%;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .${P}-cover-image {
@@ -153,8 +154,24 @@ function getCSS(P: string): string {
   box-sizing: border-box;
 }
 
-.${P}-lightbox-strip[data-desktop-nav="true"] {
-  cursor: ew-resize;
+.${P}-lightbox-strip[data-desktop-nav="true"]::before,
+.${P}-lightbox-strip[data-desktop-nav="true"]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  z-index: 2;
+}
+
+.${P}-lightbox-strip[data-desktop-nav="true"]::before {
+  left: 0;
+  cursor: w-resize;
+}
+
+.${P}-lightbox-strip[data-desktop-nav="true"]::after {
+  right: 0;
+  cursor: e-resize;
 }
 
 .${P}-slide-stack {
@@ -210,12 +227,16 @@ function getCSS(P: string): string {
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .${P}-slide-inner {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -223,7 +244,6 @@ function getCSS(P: string): string {
 
 .${P}-slide-image-cell {
   position: relative;
-  flex: 1 1 0;
   min-width: 0;
   height: 100%;
 }
@@ -608,14 +628,14 @@ const LightboxOverlay = ({
   }, []);
 
   const handleClose = useCallback(() => {
-    if (isClosingRef.current) return;
+    if (isEditMode || isClosingRef.current) return;
     isClosingRef.current = true;
     onBeforeClose?.();
     setIsVisible(false);
     closeTimeoutRef.current = setTimeout(() => {
       onClose();
     }, LIGHTBOX_ANIM_MS);
-  }, [onBeforeClose, onClose]);
+  }, [isEditMode, onBeforeClose, onClose]);
 
   const syncUrlToSlide = useCallback((slideIndex: number) => {
     if (!enableUrlSync) return;
@@ -861,13 +881,15 @@ const LightboxOverlay = ({
       const image = images[0];
       const itemObjectFit = image.objectFit ?? objectFit;
       return (
-        <img
-          className={`${P}-slide-image`}
-          src={image.url}
-          alt={image.name ?? ''}
-          draggable={false}
-          style={{ objectFit: itemObjectFit }}
-        />
+        <div className={`${P}-slide-image-cell`} style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}>
+          <img
+            className={`${P}-slide-image`}
+            src={image.url}
+            alt={image.name ?? ''}
+            draggable={false}
+            style={{ objectFit: itemObjectFit }}
+          />
+        </div>
       );
     }
 
@@ -882,6 +904,7 @@ const LightboxOverlay = ({
             <div
               key={`${image.url}-${imageIndex}`}
               className={`${P}-slide-image-cell`}
+              style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
             >
               <img
                 className={`${P}-slide-image`}
@@ -950,7 +973,7 @@ const LightboxOverlay = ({
               >
                 <div
                   className={`${P}-slide-area`}
-                  style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
+                  // style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
                 >
                   {renderSlideImages(outgoingSlide.images)}
                 </div>
@@ -962,7 +985,7 @@ const LightboxOverlay = ({
             >
               <div
                 className={`${P}-slide-area`}
-                style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
+                // style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
               >
                 {activeSlide ? renderSlideImages(activeSlide.images) : null}
               </div>
@@ -1295,7 +1318,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   }, [shouldSyncUrl]);
 
   const openLightbox = (slideIndex = 0) => {
-    if (entries.length === 0) return;
+    if (isEditMode || entries.length === 0) return;
     const slides = buildJournalSlides(entries, type);
     const normalizedSlideIndex = Math.max(0, Math.min(slideIndex, slides.length - 1));
     setLightboxInitialSlideIndex(normalizedSlideIndex);

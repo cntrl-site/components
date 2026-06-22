@@ -452,7 +452,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['type'] },
         { type: 'row', title: 'Thumbnails', items: ['thumbnailVisibility', 'thumbnailObjectFit']},
         { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
-        { type: 'row', title: 'Text', items: ['textMaxWidth', 'title1Gap', 'title2Gap'] },
+        { type: 'row', title: 'Text', items: ['textMaxWidth'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
         { type: 'row', title: 'Cover', items: ['cover', 'coverFit'] },
       ],

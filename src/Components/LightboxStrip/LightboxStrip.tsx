@@ -24,6 +24,7 @@ function getCSS(P: string): string {
   width: 100%;
   height: 100%;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .${P}-cover-image {
@@ -735,13 +736,13 @@ const LightboxOverlay = ({
   }, [hideChromeOnIdle]);
 
   const handleClose = useCallback(() => {
-    if (isClosingRef.current) return;
+    if (isEditMode || isClosingRef.current) return;
     isClosingRef.current = true;
     setIsVisible(false);
     closeTimeoutRef.current = setTimeout(() => {
       onClose();
     }, LIGHTBOX_ANIM_MS);
-  }, [onClose]);
+  }, [isEditMode, onClose]);
 
   const measureSetWidth = () => {
     if (!isLoopEnabled || images.length === 0) {
@@ -1112,6 +1113,7 @@ const LightboxOverlay = ({
                     <div
                       data-controls="thumbnailGap"
                       data-controls-axis="x"
+                      
                       style={{
                         position: 'absolute',
                         top: 0,
@@ -1130,6 +1132,7 @@ const LightboxOverlay = ({
                 <div
                   data-controls="thumbnailMarginBottom"
                   data-controls-axis="y"
+                  data-controls-reverse={showControls ? '' : undefined}
                   style={{
                     position: 'absolute',
                     left: 0,
@@ -1164,7 +1167,6 @@ const LightboxOverlay = ({
               display: 'flex',
               flexDirection: 'row',
               width: '100%',
-              pointerEvents: showControls ? 'auto' : 'none',
               ...(type === 'B' ? { backgroundColor: contentBackgroundColor } : {}),
             }}
           >
@@ -1174,7 +1176,7 @@ const LightboxOverlay = ({
               className={showControls ? `${P}-control` : undefined}
               style={{ width: contentMarginLeft, flexShrink: 0 }}
             />
-            <div className={`${P}-lightbox-content-area`} style={{ pointerEvents: 'none' }}>
+            <div className={`${P}-lightbox-content-area`}>
               {hasTitles && (
                 <div className={`${P}-titles-row`}>
                   {renderTitles(true)}
@@ -1258,9 +1260,9 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
   const title1Style = stripTextFieldsToCss('title1', resolveStripTextFields(settings, 'title1'), isEditor);
   const title2Style = stripTextFieldsToCss('title2', resolveStripTextFields(settings, 'title2'), isEditor);
   const title3Style = stripTextFieldsToCss('title3', resolveStripTextFields(settings, 'title3'), isEditor);
-
+  console.log('openLightbox', isEditMode, items.length);
   const openLightbox = () => {
-    if (items.length === 0) return;
+    if (isEditMode || items.length === 0) return;
     setLightboxOpen(true);
   };
 
