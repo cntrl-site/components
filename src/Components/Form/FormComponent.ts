@@ -71,7 +71,7 @@ const schema = {
         type: 'number',
         scope: 'common',
         title: 'Fields',
-        display: { type: 'number' },
+        display: { type: 'common-numeric-input' },
         min: 1,
         max: 7,
       },
@@ -561,7 +561,7 @@ const schema = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'name', 'fieldsToShow'] },
+        { type: 'row', items: ['__componentName__', 'name'] },
         'type',
         {
           type: 'group',
@@ -575,7 +575,7 @@ const schema = {
               {
                 type: 'row',
                 title: '',
-                items: ['inputStroke'],
+                items: ['fieldsToShow', 'inputStroke'],
               },
           ],
         },

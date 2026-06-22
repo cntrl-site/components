@@ -13,7 +13,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
-        min: 0.5,
+        min: 0,
         max: 7,
       },
       direction: {

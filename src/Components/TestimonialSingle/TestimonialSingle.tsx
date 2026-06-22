@@ -151,11 +151,13 @@ type RenderItemContentOpts = {
   hideControls?: boolean;
 };
 
+const SLIDE_INTERVAL_BASE_MS = 3000;
+
 export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, isEditMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const items = content || [];
-  const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
-  const isAnimating = autoplay === 'on' && isPreviewMode;
+  const { speed, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
+  const isAnimating = speed > 0 && (!isEditor || Boolean(isPreviewMode));
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);
@@ -251,14 +253,14 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
 
   useEffect(() => {
     if (!isAnimating || !canSwitch) return;
-    const safeDelayMs = Math.max(300, Number.isFinite(delay * 1000) ? delay * 1000 : 0);
+    const slideIntervalMs = Math.max(300, SLIDE_INTERVAL_BASE_MS / speed);
     const id = window.setInterval(() => {
       setActiveIndex((currentIndex) => commitTransition(currentIndex, (currentIndex + 1) % items.length));
-    }, safeDelayMs);
+    }, slideIntervalMs);
     return () => {
       window.clearInterval(id);
     };
-  }, [isAnimating, canSwitch, commitTransition, items.length, delay]);
+  }, [isAnimating, canSwitch, commitTransition, items.length, speed]);
 
   useEffect(() => {
     return () => {
@@ -476,8 +478,7 @@ export type TestimonialsItem = {
 };
 
 type TestimonialsSettings = {
-  autoplay: 'on' | 'off';
-  delay: number;
+  speed: number;
   align: 'start' | 'center' | 'end';
   width: number;
   imageMarginTop?: number;

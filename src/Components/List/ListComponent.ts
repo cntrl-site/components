@@ -747,7 +747,7 @@ const schema: ComponentSchemaV1 = {
       cut: {
         type: 'number',
         scope: 'layout',
-        title: 'Cut',
+        title: 'Display',
         display: { type: 'toggle-numeric-input', enum: ['off', 'on'] },
         min: 1,
       },
@@ -942,10 +942,6 @@ const schema: ComponentSchemaV1 = {
     },
     displayRules: [
       ...createColumnTextVisibilityDisplayRules(),
-      ...CUT_DEPENDENT_DISPLAY_RULE_NAMES.map((name) => ({
-        if: { name: 'cut', value: 0 },
-        then: { name: `properties.${name}.display.visible`, value: false },
-      })),
       {
         if: { name: 'type', value: 'a' },
         then: { name: 'properties.textPaddingLR.display.visible', value: false },

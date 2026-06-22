@@ -124,10 +124,10 @@ type RenderTextOpts = {
 
 export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, isEditMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
-  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
+  const { align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
   const showControls = Boolean(isEditMode);
   const hasContent = (content?.length ?? 0) > 0;
-  const autoplayEnabled = autoplay === 'on' && (!isEditor || Boolean(isPreviewMode));
+  const autoplayEnabled = speed > 0 && (!isEditor || Boolean(isPreviewMode));
   const useMarqueeTrack = hasContent && (autoplayEnabled || Boolean(isEditor));
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
@@ -597,7 +597,6 @@ type Padding = {
 };
 
 type TestimonialsSettings = {
-  autoplay: 'on' | 'off';
   speed: number;
   align: 'start' | 'center' | 'end';
   direction: 'left' | 'right';
