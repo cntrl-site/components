@@ -124,17 +124,20 @@ export type ListSettings = {
   dividerHoverColor: string;
 } & ListColumnTextStyleOverrides;
 
+type ListMedia = {
+  objectFit?: 'cover' | 'contain';
+  url: string;
+  name: string;
+  type?: 'image' | 'video';
+};
+
 type ListContentItem = {
   AColumn?: string;
   BColumnWidth?: string;
   CColumnWidth?: string;
   DColumnWidth?: string;
   EColumnWidth?: string;
-  image?: {
-    objectFit?: 'cover' | 'contain';
-    url: string;
-    name: string;
-  };
+  image?: ListMedia;
   link?: string;
 };
 
@@ -149,10 +152,67 @@ type HoverImageState = {
   rowId: string | number;
   url: string;
   objectFit: 'cover' | 'contain';
+  isVideo: boolean;
   widthPx: number;
   x: number;
   y: number;
 };
+
+function isVideoMedia(media: Pick<ListMedia, 'url' | 'type' | 'name'>): boolean {
+  if (media.type === 'video') return true;
+  if (media.type === 'image') return false;
+  const name = media.name ?? '';
+  if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(name)) return true;
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url);
+}
+
+function ListHoverMedia({
+  media,
+  className,
+  style,
+}: {
+  media: Pick<HoverImageState, 'url' | 'objectFit' | 'isVideo'>;
+  className: string;
+  style: React.CSSProperties;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!media.isVideo) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {});
+    }
+  }, [media.isVideo, media.url]);
+
+  if (media.isVideo) {
+    return (
+      <video
+        ref={videoRef}
+        className={className}
+        src={media.url}
+        style={style}
+        muted
+        loop
+        autoPlay
+        playsInline
+        preload="auto"
+      />
+    );
+  }
+
+  return (
+    <img
+      className={className}
+      src={media.url}
+      alt=""
+      style={style}
+    />
+  );
+}
 
 type ListProps = {
   layoutId?: string;
@@ -235,14 +295,14 @@ function getCSS(P: string): string {
   box-sizing: border-box;
 }
 
-.${P}-hover-image {
+.${P}-hover-image,
+.${P}-hover-video {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 10;
   pointer-events: none;
   display: block;
-  height: auto;
 }
 
 .${P}-list-item {
@@ -2199,7 +2259,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     setHoverImage({
       rowId: row.id,
       url: image.url,
-      objectFit: image.objectFit ?? 'cover',
+      objectFit: 'contain',
+      isVideo: isVideoMedia(image),
       widthPx,
       x,
       y,
@@ -2922,19 +2983,27 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             </button>
             );
           })()}
-          {showHoverImage && hoverImage && (
-            <img
-              className={`${P}-hover-image`}
-              src={hoverImage.url}
-              alt=""
-              style={{
-                width: sv(hoverImage.widthPx),
-                objectFit: hoverImage.objectFit,
-                left: hoverImage.x,
-                top: hoverImage.y,
-              }}
-            />
-          )}
+          {showHoverImage && hoverImage && (() => {
+            const hoverSize = sv(hoverImage.widthPx);
+            const hoverMediaStyle: React.CSSProperties = {
+              width: hoverSize,
+              height: 'auto',
+              maxHeight: hoverSize,
+              objectFit: 'contain',
+              left: hoverImage.x,
+              top: hoverImage.y,
+              position: 'absolute',
+            };
+
+            return (
+              <ListHoverMedia
+                key={`${hoverImage.rowId}-${hoverImage.url}`}
+                media={hoverImage}
+                className={hoverImage.isVideo ? `${P}-hover-video` : `${P}-hover-image`}
+                style={hoverMediaStyle}
+              />
+            );
+          })()}
         </div>
       </div>
     </>

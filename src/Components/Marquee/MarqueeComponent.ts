@@ -205,7 +205,7 @@ const schema: ComponentSchemaV1 = {
 export const MarqueeComponent = {
   element: Marquee,
   id: 'marquee',
-  name: 'Marquee',
+  name: 'Simple Marquee',
   category: 'galleries',
   version: 1,
   defaultSize: {

@@ -507,31 +507,31 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
 
 const DEFAULT_HOVER_IMAGES = [
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(1).webp',
   },
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(2).webp',
   },
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(3).webp',
   },
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(4).webp',
   },
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(5).webp',
   },
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(6).webp',
   },
   {
-    objectFit: 'cover' as const,
+    objectFit: 'contain' as const,
     url: 'https://cdn.cntrl.site/component-assets/default-list(7).webp',
   },
 ];
@@ -636,11 +636,16 @@ const schema: ComponentSchemaV1 = {
             label: 'Image',
             display: {
               isObjectFitEditable: false,
+              defaultObjectFit: 'contain',
               type: 'media-input',
             },
             properties: {
               url: { type: 'string' },
               name: { type: 'string' },
+              type: {
+                type: 'string',
+                enum: ['image', 'video'],
+              },
               objectFit: { type: 'string', enum: ['cover', 'contain'] },
             },
             required: ['url', 'name'],
@@ -1046,7 +1051,7 @@ const schema: ComponentSchemaV1 = {
 export const ListComponent = {
   element: List,
   id: 'list',
-  name: 'Default List',
+  name: 'Programme',
   category: 'lists',
   layoutMode: 'structured' as const,
   normalizeLayoutSettingsUpdate: applyListColumnCountChange,

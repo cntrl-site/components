@@ -107,7 +107,7 @@ const schema: ComponentSchemaV1 = {
       },
       default: [
         {
-          title: `bird's eye view over the old town`,
+          title: `Flying Over the Old Town`,
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
@@ -116,7 +116,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'doors of matera',
+          title: 'Doors of Matera',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
@@ -125,7 +125,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'cattedrale di santa maria',
+          title: 'Cattedrale di Santa Maria',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
@@ -134,7 +134,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'old city through the cracks',
+          title: 'City Through the Cracks',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
@@ -143,7 +143,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'private stone gardens',
+          title: 'Private Stone Gardens',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
@@ -160,7 +160,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'exiting the old town',
+          title: 'Exiting the Old Town',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
@@ -169,7 +169,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'laundry under the sun',
+          title: 'Under the Sun',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
@@ -178,7 +178,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'city gates view',
+          title: 'Citygates View',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
@@ -187,7 +187,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'fortifications around the city',
+          title: 'Around the City',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
@@ -348,19 +348,19 @@ const schema: ComponentSchemaV1 = {
       titleColor: {
         type: 'string',
         scope: 'common',
-        title: 'Title Color',
+        title: 'Title Entry',
         display: { type: 'palette-color-picker' },
       },
       subtitleColor: {
         type: 'string',
         scope: 'common',
-        title: 'Subtitle Color',
+        title: 'Subtitle Entry',
         display: { type: 'palette-color-picker' },
       },
       lightboxCounterColor: {
         type: 'string',
         scope: 'common',
-        title: 'Lightbox Counter Color',
+        title: 'Counter Lightbox',
         display: { type: 'palette-color-picker' },
       },
       titleFontFamily: {
