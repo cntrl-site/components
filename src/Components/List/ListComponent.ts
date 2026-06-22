@@ -509,31 +509,31 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
 const DEFAULT_HOVER_IMAGES = [
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(1).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(2).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(3).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(4).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(5).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(6).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/default-list(7).webp',
+    url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
   },
 ];
 
