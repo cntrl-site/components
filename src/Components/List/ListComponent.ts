@@ -9,6 +9,7 @@ import {
   List,
   applyListColumnCountChange,
   normalizeListColumnVerticalAlign,
+  type ListSettings,
   type ListTextStylePrefix,
 } from './List';
 import { ComponentSchemaV1, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
@@ -1052,7 +1053,8 @@ export const ListComponent = {
   name: 'Programme',
   category: 'lists',
   layoutMode: 'structured' as const,
-  normalizeLayoutSettingsUpdate: applyListColumnCountChange,
+  normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, prevSettings: Record<string, any>) =>
+    applyListColumnCountChange(nextSettings as ListSettings, prevSettings as ListSettings),
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/Programme_List.png',
