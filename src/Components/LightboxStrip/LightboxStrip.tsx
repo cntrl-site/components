@@ -266,7 +266,7 @@ function getCSS(P: string): string {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   flex: 1;
   min-width: 0;
 }
@@ -1083,6 +1083,74 @@ const LightboxOverlay = ({
         onPointerUp={allowMouseDrag ? endContentMouseDrag : undefined}
         onPointerCancel={allowMouseDrag ? endContentMouseDrag : undefined}
       >
+
+<div
+          className={`${P}-lightbox-content-inner`}
+          style={{
+            width: '100%',
+            height: type === 'A' ? '100%' : 'auto',
+            top: 0,
+            bottom: type === 'A' ? 0 : 'auto',
+            ...(type === 'B' ? { backgroundColor: contentBackgroundColor, position: 'relative' } : {}),
+          }}
+        >
+          <div
+            data-controls={showControls ? 'contentMarginTop' : undefined}
+            className={showControls ? `${P}-control` : undefined}
+            style={{ height: contentMarginTop, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
+          />
+          <div
+            className={type === 'B' ? `${P}-lightbox-chrome-bar` : undefined}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              width: '100%',
+            }}
+          >
+            <div
+              data-controls={showControls ? 'contentMarginLeft' : undefined}
+              data-controls-axis={showControls ? 'x' : undefined}
+              className={showControls ? `${P}-control` : undefined}
+              style={{ width: contentMarginLeft, flexShrink: 0 }}
+            />
+            <div className={`${P}-lightbox-content-area`}>
+              {hasTitles && (
+                <div className={`${P}-titles-row`}>
+                  {renderTitles(true)}
+                </div>
+              )}
+              {closeIcon && (
+                <div
+                  className={`${P}-close-icon`}
+                  data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
+                  style={{
+                    width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+                    height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+                    ['--close-icon-hover-color' as string]: closeIconHoverColor,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className={`${P}-close-icon-inner`}
+                    onClick={handleClose}
+                    aria-label="Close"
+                  >
+                    <SvgImage url={closeIcon} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`}/>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div
+              data-controls={showControls ? 'contentMarginRight' : undefined}
+              data-controls-axis={showControls ? 'x' : undefined}
+              data-controls-reverse={showControls ? '' : undefined}
+              className={showControls ? `${P}-control` : undefined}
+              style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
+            />
+          </div>
+        </div>
+
+
         <div
           ref={stripRef}
           className={`${P}-lightbox-strip`}
@@ -1201,71 +1269,6 @@ const LightboxOverlay = ({
             </div>
           );
         })()}
-        <div
-          className={`${P}-lightbox-content-inner`}
-          style={{
-            width: '100%',
-            height: type === 'A' ? '100%' : 'auto',
-            top: 0,
-            bottom: type === 'A' ? 0 : 'auto',
-          }}
-        >
-          <div
-            data-controls={showControls ? 'contentMarginTop' : undefined}
-            className={showControls ? `${P}-control` : undefined}
-            style={{ height: contentMarginTop, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
-          />
-          <div
-            className={type === 'B' ? `${P}-lightbox-chrome-bar` : undefined}
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              width: '100%',
-              ...(type === 'B' ? { backgroundColor: contentBackgroundColor } : {}),
-            }}
-          >
-            <div
-              data-controls={showControls ? 'contentMarginLeft' : undefined}
-              data-controls-axis={showControls ? 'x' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginLeft, flexShrink: 0 }}
-            />
-            <div className={`${P}-lightbox-content-area`}>
-              {hasTitles && (
-                <div className={`${P}-titles-row`}>
-                  {renderTitles(true)}
-                </div>
-              )}
-              {closeIcon && (
-                <div
-                  className={`${P}-close-icon`}
-                  data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
-                  style={{
-                    width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-                    height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-                    ['--close-icon-hover-color' as string]: closeIconHoverColor,
-                  }}
-                >
-                  <button
-                    type="button"
-                    className={`${P}-close-icon-inner`}
-                    onClick={handleClose}
-                    aria-label="Close"
-                  >
-                    <SvgImage url={closeIcon} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`}/>
-                  </button>
-                </div>
-              )}
-            </div>
-            <div
-              data-controls={showControls ? 'contentMarginRight' : undefined}
-              data-controls-axis={showControls ? 'x' : undefined}
-              data-controls-reverse={showControls ? '' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
