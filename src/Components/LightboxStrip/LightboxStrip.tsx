@@ -118,7 +118,6 @@ function getCSS(P: string): string {
   flex: 0 0 auto;
   height: 100%;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
 }
 
 .${P}-thumbnails {
@@ -597,6 +596,7 @@ type LightboxOverlayProps = {
 };
 
 const MOUSE_DRAG_THRESHOLD_PX = 1;
+const DRAG_SNAP_RATIO = 0.15;
 const LOOP_COPIES = 3;
 const GAP_LABEL_AREA_PX = 20;
 
@@ -718,6 +718,8 @@ const LightboxOverlay = ({
   const [isVisible, setIsVisible] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
   const lockedActiveIndexRef = useRef<number | null>(null);
   const isClosingRef = useRef(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -816,6 +818,50 @@ const LightboxOverlay = ({
     setActiveIndex(flatIndex % images.length);
   };
 
+  const setStripSnapEnabled = (enabled: boolean) => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    strip.style.scrollSnapType = enabled ? '' : 'none';
+  };
+
+  const snapAfterDrag = (startScrollLeft: number, behavior: ScrollBehavior = 'smooth') => {
+    const strip = stripRef.current;
+    if (!strip || images.length === 0) return;
+
+    const scrollDelta = strip.scrollLeft - startScrollLeft;
+    const currentFlatIndex = getNearestFlatIndex(strip.scrollLeft);
+    const currentItem = itemRefs.current[currentFlatIndex];
+    const nextItem = itemRefs.current[currentFlatIndex + 1];
+    const span = currentItem
+      ? (nextItem ? nextItem.offsetLeft - currentItem.offsetLeft : currentItem.offsetWidth)
+      : 0;
+
+    let targetFlatIndex = currentFlatIndex;
+    if (span > 0) {
+      if (scrollDelta > span * DRAG_SNAP_RATIO) {
+        targetFlatIndex += 1;
+      } else if (scrollDelta < -span * DRAG_SNAP_RATIO) {
+        targetFlatIndex -= 1;
+      }
+    }
+
+    if (!isLoopEnabled) {
+      targetFlatIndex = Math.max(0, Math.min(flatItems.length - 1, targetFlatIndex));
+    }
+
+    const targetItem = itemRefs.current[targetFlatIndex];
+    if (!targetItem) {
+      snapToNearestItem(behavior);
+      return;
+    }
+
+    strip.scrollTo({
+      left: targetItem.offsetLeft,
+      behavior,
+    });
+    setActiveIndex(targetFlatIndex % images.length);
+  };
+
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
     const strip = stripRef.current;
     const flatIndex = isLoopEnabled ? images.length + index : index;
@@ -852,6 +898,7 @@ const LightboxOverlay = ({
       scrollLeft: strip.scrollLeft,
       hasMoved: false,
     };
+    setStripSnapEnabled(false);
     resetChromeIdleTimer();
     content.setPointerCapture(event.pointerId);
   };
@@ -882,14 +929,16 @@ const LightboxOverlay = ({
     const content = contentRef.current;
     if (!strip || !content) return;
     const hadMoved = mouseDragRef.current.hasMoved;
+    const startScrollLeft = mouseDragRef.current.scrollLeft;
     mouseDragRef.current.isActive = false;
     setIsMouseDragging(false);
     if (content.hasPointerCapture(event.pointerId)) {
       content.releasePointerCapture(event.pointerId);
     }
     normalizeInfiniteScroll();
+    setStripSnapEnabled(true);
     if (hadMoved) {
-      snapToNearestItem();
+      snapAfterDrag(startScrollLeft);
     } else {
       updateActiveIndex();
     }
@@ -941,6 +990,11 @@ const LightboxOverlay = ({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleClose]);
+
+  useLayoutEffect(() => {
+    measureSetWidth();
+    scrollToIndex(activeIndexRef.current, 'auto');
+  }, [imageGap]);
 
   useLayoutEffect(() => {
     measureSetWidth();
@@ -1260,7 +1314,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
   const title1Style = stripTextFieldsToCss('title1', resolveStripTextFields(settings, 'title1'), isEditor);
   const title2Style = stripTextFieldsToCss('title2', resolveStripTextFields(settings, 'title2'), isEditor);
   const title3Style = stripTextFieldsToCss('title3', resolveStripTextFields(settings, 'title3'), isEditor);
-  console.log('openLightbox', isEditMode, items.length);
+
   const openLightbox = () => {
     if (isEditMode || items.length === 0) return;
     setLightboxOpen(true);

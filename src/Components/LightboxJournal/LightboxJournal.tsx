@@ -817,10 +817,17 @@ const LightboxOverlay = ({
     setTitlesStackMinHeight(undefined);
     setTitlesStackWidth(undefined);
     setIncomingMeasureEntry(null);
+    setActiveSlideIndex((current) => {
+      const maxIndex = Math.max(0, slides.length - 1);
+      return Math.min(current, maxIndex);
+    });
+  }, [clearTitlesFadeTimer, entries.length, journalType, slides.length]);
+
+  useLayoutEffect(() => {
     prevSlideIndexRef.current = initialSlideIndex;
     prevEntryIndexRef.current = slides[initialSlideIndex]?.entryIndex ?? 0;
     setActiveSlideIndex(initialSlideIndex);
-  }, [clearTitlesFadeTimer, entries.length, initialSlideIndex, journalType, slides]);
+  }, [initialSlideIndex, slides.length]);
 
   const outgoingEntry = prevEntryIndex !== null ? entries[prevEntryIndex] : null;
   const outgoingSlide = prevSlideIndex !== null ? slides[prevSlideIndex] : null;
@@ -1307,7 +1314,10 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   const didApplyInitialUrlRef = useRef(false);
   const urlHistoryPushedRef = useRef(false);
   const isClosingFromUrlRef = useRef(false);
-  const entries = (content ?? []).filter((entry) => getEntryImages(entry).length > 0);
+  const entries = useMemo(
+    () => (content ?? []).filter((entry) => getEntryImages(entry).length > 0),
+    [content],
+  );
   const shouldSyncUrl = !isEditor || Boolean(isPreviewMode);
 
   const removeJournalUrl = useCallback(() => {
