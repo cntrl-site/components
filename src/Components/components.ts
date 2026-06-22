@@ -6,13 +6,17 @@ import { FormComponent } from './Form/FormComponent';
 import { OnelinerFormComponent } from './OnelinerForm/OnelinerFormComponent';
 import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridComponent';
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
+import { InlineImageFlowComponent } from './InlineImageFlow/InlineImageFlowComponent';
+import { ScreenImageSliderComponent } from './ScreenImageSlider/ScreenImageSliderComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
   ControlImageRevealSliderComponent,
+  ScreenImageSliderComponent,
   LightboxComponent,
   FormComponent,
   OnelinerFormComponent,
   TestimonialGridComponent,
-  TestimonialSingleComponent
+  TestimonialSingleComponent,
+  InlineImageFlowComponent
 ];
