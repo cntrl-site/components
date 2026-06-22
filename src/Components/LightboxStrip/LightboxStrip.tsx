@@ -729,6 +729,7 @@ const LightboxOverlay = ({
       clearTimeout(chromeIdleTimerRef.current);
     }
     chromeIdleTimerRef.current = setTimeout(() => {
+      if (mouseDragRef.current.isActive) return;
       setChromeVisible(false);
     }, CONTROLS_IDLE_MS);
   }, [hideChromeOnIdle]);
@@ -850,6 +851,7 @@ const LightboxOverlay = ({
       scrollLeft: strip.scrollLeft,
       hasMoved: false,
     };
+    resetChromeIdleTimer();
     content.setPointerCapture(event.pointerId);
   };
 
@@ -868,6 +870,7 @@ const LightboxOverlay = ({
       strip.scrollLeft = mouseDragRef.current.scrollLeft - deltaX;
       normalizeInfiniteScroll(true);
       updateActiveIndex();
+      resetChromeIdleTimer();
     }
   };
 
@@ -889,6 +892,7 @@ const LightboxOverlay = ({
     } else {
       updateActiveIndex();
     }
+    resetChromeIdleTimer();
   };
 
   useEffect(() => {
@@ -915,9 +919,12 @@ const LightboxOverlay = ({
     resetChromeIdleTimer();
     const content = contentRef.current;
     if (!content) return;
-    content.addEventListener('mousemove', resetChromeIdleTimer);
+    const onPointerActivity = () => resetChromeIdleTimer();
+    content.addEventListener('pointermove', onPointerActivity);
+    content.addEventListener('pointerdown', onPointerActivity);
     return () => {
-      content.removeEventListener('mousemove', resetChromeIdleTimer);
+      content.removeEventListener('pointermove', onPointerActivity);
+      content.removeEventListener('pointerdown', onPointerActivity);
       if (chromeIdleTimerRef.current) {
         clearTimeout(chromeIdleTimerRef.current);
       }
