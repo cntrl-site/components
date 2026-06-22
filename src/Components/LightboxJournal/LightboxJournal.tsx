@@ -5,6 +5,7 @@ import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
@@ -95,10 +96,34 @@ function getCSS(P: string): string {
   pointer-events: auto;
 }
 
+.${P}-ratio-wrapper-cover {
+  aspect-ratio: var(--image-aspect-ratio);
+  height: auto;
+  overflow: hidden;
+  width: 100%;
+}
+
+.${P}-ratio-wrapper-fit {
+  height: 100%;
+  width: 100%;
+}
+
 .${P}-cover-image {
   display: block;
+}
+
+.${P}-cover-image-cover {
+  object-fit: cover;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+}
+
+.${P}-cover-image-fit {
+  object-fit: contain;
+  width: auto;
+  height: auto;
+  max-width: 100%;
 }
 
 .${P}-lightbox {
@@ -248,8 +273,33 @@ function getCSS(P: string): string {
   height: 100%;
 }
 
+.${P}-slide-image-cell-cover {
+  aspect-ratio: var(--image-aspect-ratio);
+  overflow: hidden;
+  height: auto;
+  width: 100%;
+}
+
 .${P}-slide-image {
   display: block;
+}
+
+.${P}-slide-image-cover {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+}
+
+.${P}-slide-image-fit {
+  object-fit: contain;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+}
+
+.${P}-slide-image-custom {
+  object-fit: var(--image-object-fit);
   width: 100%;
   height: 100%;
 }
@@ -882,6 +932,32 @@ const LightboxOverlay = ({
     ));
   };
 
+  const getSlideImageCellProps = (image: LightboxJournalImage) => {
+    const useRatioWrapper = !image.objectFit && isImageRatioCover(coverFit);
+    return {
+      className: `${P}-slide-image-cell${useRatioWrapper ? ` ${P}-slide-image-cell-cover` : ''}`,
+      style: {
+        maxWidth: slideMaxWidth,
+        maxHeight: slideMaxHeight,
+        ...(useRatioWrapper
+          ? ({ '--image-aspect-ratio': getAspectRatio(coverFit) } as React.CSSProperties)
+          : {}),
+      },
+    };
+  };
+
+  const getSlideImageProps = (image: LightboxJournalImage) => {
+    if (image.objectFit) {
+      return {
+        className: `${P}-slide-image ${P}-slide-image-custom`,
+        style: { '--image-object-fit': image.objectFit } as React.CSSProperties,
+      };
+    }
+    return isImageRatioCover(coverFit)
+      ? { className: `${P}-slide-image ${P}-slide-image-cover` }
+      : { className: `${P}-slide-image ${P}-slide-image-fit` };
+  };
+
   const renderSlideImages = (images: LightboxJournalImage[]) => {
     if (images.length === 0) return null;
     const hasInnerImageGap = images.length > 1;
@@ -890,15 +966,13 @@ const LightboxOverlay = ({
 
     if (images.length === 1) {
       const image = images[0];
-      const itemObjectFit = image.objectFit ?? coverFit.display === 'Cover' ? 'cover' : 'contain';
       return (
-        <div className={`${P}-slide-image-cell`} style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}>
+        <div {...getSlideImageCellProps(image)}>
           <img
-            className={`${P}-slide-image`}
+            {...getSlideImageProps(image)}
             src={image.url}
             alt={image.name ?? ''}
             draggable={false}
-            style={{ objectFit: itemObjectFit }}
           />
         </div>
       );
@@ -910,19 +984,16 @@ const LightboxOverlay = ({
         style={hasInnerImageGap ? { gap: imageGap } : undefined}
       >
         {images.map((image, imageIndex) => {
-          const itemObjectFit = image.objectFit ?? coverFit.display === 'Cover' ? 'cover' : 'contain';
           return (
             <div
               key={`${image.url}-${imageIndex}`}
-              className={`${P}-slide-image-cell`}
-              style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
+              {...getSlideImageCellProps(image)}
             >
               <img
-                className={`${P}-slide-image`}
+                {...getSlideImageProps(image)}
                 src={image.url}
                 alt={image.name ?? ''}
                 draggable={false}
-                style={{ objectFit: itemObjectFit }}
               />
               {showControls && hasInnerImageGap && imageIndex < images.length - 1 && (
                 <div
@@ -1392,21 +1463,23 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
         {cover ? (
           <button
             type="button"
-            className={`${P}-cover`}
+            className={`${P}-cover ${isImageRatioCover(coverFit) ? `${P}-ratio-wrapper-cover` : `${P}-ratio-wrapper-fit`}`}
             onClick={() => openLightbox()}
             style={{
               display: 'block',
               padding: 0,
               border: 'none',
               background: 'transparent',
+              ...(isImageRatioCover(coverFit)
+                ? ({ '--image-aspect-ratio': getAspectRatio(coverFit) } as React.CSSProperties)
+                : {}),
             }}
             aria-label="Open journal gallery"
           >
             <img
-              className={`${P}-cover-image`}
+              className={`${P}-cover-image ${isImageRatioCover(coverFit) ? `${P}-cover-image-cover` : `${P}-cover-image-fit`}`}
               src={cover}
               alt="cover"
-              style={{ objectFit: coverFit.display === 'Cover' ? 'cover' : 'contain' }}
             />
           </button>
         ) : null}

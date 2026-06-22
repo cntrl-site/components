@@ -179,6 +179,7 @@ const schema: ComponentSchemaV1 = {
   type: 'object',
   version: 1,
   settings: {
+    sizing: 'auto manual',
     properties: {
       cover: {
         type: 'string',

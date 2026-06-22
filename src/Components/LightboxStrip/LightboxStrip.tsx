@@ -5,6 +5,7 @@ import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
@@ -27,10 +28,34 @@ function getCSS(P: string): string {
   pointer-events: auto;
 }
 
+.${P}-ratio-wrapper-cover {
+  aspect-ratio: var(--image-aspect-ratio);
+  height: auto;
+  overflow: hidden;
+  width: 100%;
+}
+
+.${P}-ratio-wrapper-fit {
+  height: 100%;
+  width: 100%;
+}
+
 .${P}-cover-image {
   display: block;
+}
+
+.${P}-cover-image-cover {
+  object-fit: cover;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+}
+
+.${P}-cover-image-fit {
+  object-fit: contain;
+  width: auto;
+  height: auto;
+  max-width: 100%;
 }
 
 .${P}-lightbox {
@@ -188,7 +213,17 @@ function getCSS(P: string): string {
   display: block;
   width: ${THUMB_MAX_SIZE_PX}px;
   height: ${THUMB_MAX_SIZE_PX}px;
+  object-fit: contain;
   transition: filter 0.2s ease;
+}
+
+.${P}-thumb-image-cover {
+  aspect-ratio: var(--image-aspect-ratio);
+  max-width: ${THUMB_MAX_SIZE_PX}px;
+  max-height: ${THUMB_MAX_SIZE_PX}px;
+  width: auto;
+  height: auto;
+  object-fit: cover;
 }
 .${P}-close-icon {
   position: relative;
@@ -653,6 +688,10 @@ const LightboxOverlay = ({
   const allowImageScroll = !isEditMode && (!isEditor || Boolean(isPreviewMode));
   const allowMouseDrag = allowImageScroll;
   const allowThumbnailHover = allowImageScroll;
+  const isThumbCover = isImageRatioCover(thumbnailObjectFit);
+  const thumbAspectRatioStyle = isThumbCover
+    ? ({ '--image-aspect-ratio': getAspectRatio(thumbnailObjectFit) } as React.CSSProperties)
+    : undefined;
 
   const renderGapControl = (controlKey: string, gap: string, isReverse = false) => {
     const gapControlSize = getGapControlSize(gap);
@@ -1236,11 +1275,11 @@ const LightboxOverlay = ({
                     aria-current={activeIndex === index ? 'true' : undefined}
                   >
                     <img
-                      className={`${P}-thumb-image`}
+                      className={`${P}-thumb-image${isThumbCover ? ` ${P}-thumb-image-cover` : ''}`}
                       src={item.image.url}
                       alt=""
                       draggable={false}
-                      style={{ objectFit: thumbnailObjectFit.display === 'Cover' ? 'cover' : 'contain' }}
+                      style={thumbAspectRatioStyle}
                     />
                   </button>
                   {showControls && index < images.length - 1 && (
@@ -1346,16 +1385,23 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
         {cover ? (
           <button
             type="button"
-            className={`${P}-cover`}
+            className={`${P}-cover ${isImageRatioCover(coverFit) ? `${P}-ratio-wrapper-cover` : `${P}-ratio-wrapper-fit`}`}
             onClick={openLightbox}
-            style={{display: 'block', padding: 0, border: 'none', background: 'transparent'}}
+            style={{
+              display: 'block',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              ...(isImageRatioCover(coverFit)
+                ? ({ '--image-aspect-ratio': getAspectRatio(coverFit) } as React.CSSProperties)
+                : {}),
+            }}
             aria-label='Open image gallery'
           >
             <img
-              className={`${P}-cover-image`}
+              className={`${P}-cover-image ${isImageRatioCover(coverFit) ? `${P}-cover-image-cover` : `${P}-cover-image-fit`}`}
               src={cover}
               alt='cover'
-              style={{ objectFit: coverFit.display === 'Cover' ? 'cover' : 'contain' }}
             />
           </button>
         ) : null}
