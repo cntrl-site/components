@@ -28,20 +28,12 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto manual',
     properties: {
-      autoplay: {
-        type: 'string',
-        scope: 'common',
-        title: 'Autoplay',
-        display: { type: 'switch-control' },
-        enum: ['on', 'off'],
-      },
-      delay: {
+      speed: {
         type: 'number',
         scope: 'layout',
-        title: 'Delay(s)',
-        display: { type: 'percentage-input'},
-        step: 1,
-        min: 1,
+        title: 'Speed',
+        display: { type: 'speed-control' },
+        min: 0,
         max: 8,
       },
       align: {
@@ -237,7 +229,6 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      autoplay: 'on',
       controls: {
         mode: 'On',
         icon: testimonialDefaultControlsIconUrl,
@@ -263,7 +254,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        delay: 3,
+        speed: 1,
         width: 0.69,
         imageMarginTop: 0.08,
         captionMarginTop: 0.04,
@@ -277,7 +268,7 @@ const schema: ComponentSchemaV1 = {
         controlsWidth: 0.06,
       },
       d: {
-        delay: 3,
+        speed: 1,
         width: 0.35,
         imageMarginTop: 0.02,
         textMarginTop: 0,
@@ -291,16 +282,9 @@ const schema: ComponentSchemaV1 = {
         controlsWidth: 0.014,
       },
     },
-    displayRules: [
-      {
-        if: { name: 'autoplay', value: 'off' },
-        then: { name: 'properties.delay.display.enabled', value: false },
-      },
-    ],
     layout: [
       '__componentName__',
-      'autoplay',
-      'delay',
+      'speed',
       'width',
       'imageMarginTop',
       'textMarginTop',
@@ -314,10 +298,10 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'autoplay'] },
+        { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['width', 'align'] },
         { type: 'row', items: ['controls'] },
-        { type: 'row', items: ['controlsWidth', 'delay'] },
+        { type: 'row', items: ['controlsWidth', 'speed'] },
         { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
       ],
     },
@@ -327,6 +311,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         { type: 'group', title: 'Text', items: [
         'textFontFamily',
         'textFontSettings',

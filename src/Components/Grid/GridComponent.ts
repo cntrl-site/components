@@ -54,12 +54,6 @@ const schema: ComponentSchemaV1 = {
       },
       display: {
         type: 'array',
-        rules: [
-          {
-            if: { name: 'type', value: 'A' },
-            then: { name: 'subtitle', value: false },
-          }
-        ]
       },
       items: {
         type: 'object',
@@ -89,6 +83,10 @@ const schema: ComponentSchemaV1 = {
             properties: {
               url: { type: 'string' },
               name: { type: 'string' },
+              type: {
+                type: 'string',
+                enum: ['image', 'video'],
+              },
               objectFit: {
                 type: 'string',
                 enum: ['cover', 'contain'],
@@ -109,31 +107,90 @@ const schema: ComponentSchemaV1 = {
       },
       default: [
         {
-          title: 'Title 1',
-          subtitle: 'Subtitle 1',
+          title: `Flying Over the Old Town`,
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
-            name: 'Grid-1.png',
+            url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'Title 2',
-          subtitle: 'Subtitle 2',
+          title: 'Doors of Matera',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-2.png',
-            name: 'Grid-2.png',
+            url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
             objectFit: 'cover',
           }],
           link: ''
         },
         {
-          title: 'Title 3',
-          subtitle: 'Subtitle 3',
+          title: 'Cattedrale di Santa Maria',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
-            url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-3.png',
-            name: 'Grid-3.png',
+            url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'City Through the Cracks',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'Private Stone Gardens',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
+            objectFit: 'cover',
+          },
+          {
+            url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
+            objectFit: 'cover',
+          },
+          {
+            url: 'https://cdn.cntrl.site/component-assets/grid(7).webp',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'Exiting the Old Town',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'Under the Sun',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'Citygates View',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
+            objectFit: 'cover',
+          }],
+          link: ''
+        },
+        {
+          title: 'Around the City',
+          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          image: [{
+            url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
             objectFit: 'cover',
           }],
           link: ''
@@ -145,10 +202,10 @@ const schema: ComponentSchemaV1 = {
     properties: {
       type: {
         type: 'string',
-        scope: 'common',
+        scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['A', 'B'],
+        enum: ['a', 'b', 'c'],
       },
       gridLayout: {
         type: 'grid-layout',
@@ -196,18 +253,30 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 1000,
       },
+      showText: {
+        type: 'boolean',
+        scope: 'common',
+        title: 'Show text',
+        display: { type: 'toggle-cycle', enum: ['always', 'on hover'] },
+      },
+      alignEntries: {
+        type: 'boolean',
+        scope: 'layout',
+        title: 'Align entries',
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
+      },
       entriesCount: {
         type: 'number',
         scope: 'layout',
         title: 'Entries #',
-        display: { type: 'toggle-numeric-input', enum: ['Auto', 'Fixed'] },
+        display: { type: 'toggle-numeric-input', enum: ['auto', 'fixed'] },
         min: 1,
       },
       lightbox: {
         type: 'boolean',
         scope: 'common',
         title: 'Lightbox',
-        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       imageDisplay: {
         type: 'object',
@@ -217,7 +286,7 @@ const schema: ComponentSchemaV1 = {
         properties: {
           display: {
             type: 'string',
-            enum: ['Fit', 'Cover'],
+            enum: ['fit', 'cover'],
           },
           ratioValue: {
             type: 'string',
@@ -228,11 +297,17 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      lightboxImageDisplay: {
+        type: 'string',
+        scope: 'common',
+        title: 'Display',
+        display: { type: 'toggle-cycle', enum: ['fit', 'cover'] },
+      },
       slider: {
         type: 'boolean',
         scope: 'common',
         title: 'Slider',
-        display: { type: 'toggle-cycle', enum: ['On', 'Off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       sliderTiming: {
         type: 'number',
@@ -246,13 +321,13 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Direction',
-        display: { type: 'toggle-cycle', enum: ['Horizontal', 'Vertical', 'Random'], enabled: true },
+        display: { type: 'toggle-cycle', enum: ['horizontal', 'vertical', 'random'], enabled: true },
       },
       transition: {
         type: 'string',
         scope: 'common',
         title: 'Transition',
-        display: { type: 'toggle-cycle', enum: ['Fade', 'Slide'] },
+        display: { type: 'toggle-cycle', enum: ['fade', 'slide'] },
       },
       titleMarginTop: {
         type: 'number',
@@ -273,19 +348,19 @@ const schema: ComponentSchemaV1 = {
       titleColor: {
         type: 'string',
         scope: 'common',
-        title: 'Title Color',
+        title: 'Title Entry',
         display: { type: 'palette-color-picker' },
       },
       subtitleColor: {
         type: 'string',
         scope: 'common',
-        title: 'Subtitle Color',
-        display: { type: 'palette-color-picker', visible: false },
+        title: 'Subtitle Entry',
+        display: { type: 'palette-color-picker' },
       },
       lightboxCounterColor: {
         type: 'string',
         scope: 'common',
-        title: 'Lightbox Counter Color',
+        title: 'Counter Lightbox',
         display: { type: 'palette-color-picker' },
       },
       titleFontFamily: {
@@ -416,19 +491,21 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      lightbox: 'Off',
+      lightbox: 'on',
       imageDisplay: {
-        display: 'Fit',
-        ratioValue: '16:9',
+        display: 'cover',
+        ratioValue: '2:3',
         reversed: false,
       },
-      type: 'A',
-      slider: 'Off',
-      sliderTiming: 5,
-      direction: 'Horizontal',
-      transition: 'Slide',
-      titleColor: '#767676',
-      subtitleColor: '#DEDDDD',
+      lightboxImageDisplay: 'fit',
+      slider: 'on',
+      sliderTiming: 3,
+      direction: 'horizontal',
+      transition: 'fade',
+      showText: 'always',
+      alignEntries: 'on',
+      titleColor: '#000000',
+      subtitleColor: '#000000',
       lightboxCounterColor: '#DEDDDD',
       titleFontFamily: 'Arial',
       titleFontSettings: {
@@ -438,11 +515,11 @@ const schema: ComponentSchemaV1 = {
       titleLetterSpacing: 0,
       titleWordSpacing: 0,
       titleTextAppearance: {
-        textTransform: 'none',
+        textTransform: 'uppercase',
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      subtitleFontFamily: 'Arial',
+      subtitleFontFamily: 'Goudy Bookletter 1911',
       subtitleFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -454,7 +531,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      lightboxCounterFontFamily: 'Arial',
+      lightboxCounterFontFamily: 'Goudy Bookletter 1911',
       lightboxCounterFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -469,15 +546,16 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
+        type: 'a',
         gridLayout: {
-          entryWidth: 0.2,
-          horizontalGap: 0.05,
+          entryWidth: 0.8,
+          horizontalGap: 0.0533,
           wrapperWidth: 1,
-          columnsCount: 2,
+          columnsCount: 1,
           lockedParam: null,
         },
         textBoxWidth: 100,
-        verticalGap: 0.0083,
+        verticalGap: 0.266,
         entriesCount: 0,
         titleMarginTop: 0.02,
         subtitleMarginTop: 0.02,
@@ -485,23 +563,24 @@ const schema: ComponentSchemaV1 = {
         titleCorners: 0.192,
         subtitlePadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         titlePadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
-        titleFontSize: 0.043,
-        titleLineHeight: 0.043,
-        subtitleFontSize: 0.0373,
-        subtitleLineHeight: 0.0373,
+        titleFontSize: 0.1066,
+        titleLineHeight: 0.0853,
+        subtitleFontSize: 0.056,
+        subtitleLineHeight: 0.0506,
         lightboxCounterFontSize: 0.0373,
         lightboxCounterLineHeight: 0.0373,
       },
       d: {
+        type: 'a',
         gridLayout: {
-          entryWidth: 0.2,
-          horizontalGap: 0.05,
+          entryWidth: 0.0833,
+          horizontalGap: 0,
           wrapperWidth: 1,
-          columnsCount: 2,
+          columnsCount: 3,
           lockedParam: null,
         },
-        textBoxWidth: 100,
-        verticalGap: 0.0083,
+        textBoxWidth: 200,
+        verticalGap: 0.09722,
         entriesCount: 0,
         titleMarginTop: 0.008,
         subtitleMarginTop: 0.008,
@@ -509,8 +588,9 @@ const schema: ComponentSchemaV1 = {
         titleCorners: 0.05,
         subtitlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         titlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-        titleFontSize: 0.01,
-        titleLineHeight: 0.01,
+        titleFontSize: 0.027,
+        titleLineHeight: 0.0222,
+        titleLetterSpacing: -0.00118,
         subtitleFontSize: 0.01,
         subtitleLineHeight: 0.01,
         lightboxCounterFontSize: 0.01,
@@ -519,13 +599,21 @@ const schema: ComponentSchemaV1 = {
     },
     displayRules: [
       {
-        if: { name: 'transition', value: 'Fade' },
+        if: { name: 'transition', value: 'fade' },
         then: { name: 'properties.direction.display.enabled', value: false },
       },
       {
-        if: { name: 'type', value: 'B' },
-        then: { name: 'properties.subtitleColor.display.visible', value: true },
-      }
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
+      },
+      {
+        if: { name: 'type', value: 'a' },
+        then: { name: 'properties.alignEntries.display.visible', value: false },
+      },
+      {
+        if: { name: 'type', value: 'b' },
+        then: { name: 'properties.alignEntries.display.visible', value: false },
+      },
     ],
     layout: [
       '__componentName__',
@@ -534,9 +622,12 @@ const schema: ComponentSchemaV1 = {
       'gridLayout',
       'textBoxWidth',
       'verticalGap',
+      'showText',
+      'alignEntries',
       'entriesCount',
       'lightbox',
       'imageDisplay',
+      'lightboxImageDisplay',
       'slider',
       'sliderTiming',
       'direction',
@@ -549,11 +640,11 @@ const schema: ComponentSchemaV1 = {
   panels: [
     {
       id: 'general',
-      icon: 'cursor',
+      icon: 'settings',
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'name'] },
+        '__componentName__',
         'type',
         {
           type: 'row',
@@ -567,11 +658,22 @@ const schema: ComponentSchemaV1 = {
           title: '',
           items: ['textBoxWidth', 'entriesCount']
         },
-        {type: 'row', title: '', items: ['verticalGap']},
+        {type: 'row', title: '', items: ['verticalGap', 'showText']},
+        {type: 'row', title: '', items: ['alignEntries']},
+      ],
+    },
+    {
+      id: 'imageSettings',
+      icon: 'cover',
+      title: 'Image settings',
+      tooltip: 'Image settings',
+      layout: [
+        '__componentName__',
+        {type: 'row', title: 'Image', items: ['imageDisplay']},
         {
           type: 'row',
-          title: 'Image',
-          items: ['imageDisplay', 'lightbox']
+          title: 'Lightbox',
+          items: ['lightbox', 'lightboxImageDisplay']
         },
         {
           type: 'row',
@@ -589,6 +691,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         {
           type: 'group',
           title: 'Title',

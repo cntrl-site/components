@@ -1,6 +1,15 @@
 import React from 'react';
 import { ComponentSchemaV1 } from './SchemaV1';
 
+export type Breakpoint = 'd' | 't' | 'm';
+
+export type ComponentSize = {
+  width?: number | string;
+  height?: number | string;
+};
+
+export type ComponentDefaultSize = Partial<Record<Breakpoint, ComponentSize>>;
+
 export type Component = {
   element: (props: any) => React.ReactElement;
   id: string;
@@ -8,7 +17,7 @@ export type Component = {
   category?: string;
   version?: number;
   layoutMode?: 'freeform' | 'structured';
-  defaultSize?: Record<string, { width?: number | string; height?: number | string }>;
+  defaultSize?: ComponentDefaultSize;
   schema: any;
   preview?: {
     type: 'image' | 'video';
@@ -23,6 +32,11 @@ export type Component = {
     content: Path[];
     parameters: Path[];
   };
+  normalizeLayoutSettingsUpdate?: (
+    nextSettings: Record<string, any>,
+    prevSettings: Record<string, any>,
+    options?: any,
+  ) => Record<string, any>;
 };
 
 type Path = {

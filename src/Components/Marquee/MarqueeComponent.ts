@@ -13,7 +13,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
-        min: 0.5,
+        min: 0,
         max: 7,
       },
       direction: {
@@ -205,7 +205,7 @@ const schema: ComponentSchemaV1 = {
 export const MarqueeComponent = {
   element: Marquee,
   id: 'marquee',
-  name: 'Marquee',
+  name: 'Simple Marquee',
   category: 'galleries',
   version: 1,
   defaultSize: {

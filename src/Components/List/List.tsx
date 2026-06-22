@@ -77,11 +77,11 @@ type ListColumnVerticalAlignUpdates = {
 
 export type ListSettings = {
   columns: number;
-  type: 'A' | 'B';
+  type: 'a' | 'b';
   wrapperWidth: number;
   entriesCount: number;
   cellMinHeight: number;
-  imageOnHover: 'On' | 'Off';
+  imageOnHover: 'on' | 'off';
   imageSize?: { min: number; max: number };
   dividerWidth: number;
   showVisibility: boolean[];
@@ -89,7 +89,8 @@ export type ListSettings = {
   showCut: number;
   cutCellMinHeight: number;
   cutLabel: string;
-  entryHoverEffect: 'None' | 'Default' | 'Blinds';
+  entryHoverEffect: 'none' | 'default' | 'blinds' | 'reveal';
+  entryHoverShowOption: 'always' | 'link only';
   rowPaddingTop: number;
   rowPaddingBottom: number;
   rowPaddingTopB: number;
@@ -123,17 +124,20 @@ export type ListSettings = {
   dividerHoverColor: string;
 } & ListColumnTextStyleOverrides;
 
+type ListMedia = {
+  objectFit?: 'cover' | 'contain';
+  url: string;
+  name: string;
+  type?: 'image' | 'video';
+};
+
 type ListContentItem = {
   AColumn?: string;
   BColumnWidth?: string;
   CColumnWidth?: string;
   DColumnWidth?: string;
   EColumnWidth?: string;
-  image?: {
-    objectFit?: 'cover' | 'contain';
-    url: string;
-    name: string;
-  };
+  image?: ListMedia;
   link?: string;
 };
 
@@ -148,10 +152,67 @@ type HoverImageState = {
   rowId: string | number;
   url: string;
   objectFit: 'cover' | 'contain';
+  isVideo: boolean;
   widthPx: number;
   x: number;
   y: number;
 };
+
+function isVideoMedia(media: Pick<ListMedia, 'url' | 'type' | 'name'>): boolean {
+  if (media.type === 'video') return true;
+  if (media.type === 'image') return false;
+  const name = media.name ?? '';
+  if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(name)) return true;
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url);
+}
+
+function ListHoverMedia({
+  media,
+  className,
+  style,
+}: {
+  media: Pick<HoverImageState, 'url' | 'objectFit' | 'isVideo'>;
+  className: string;
+  style: React.CSSProperties;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!media.isVideo) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {});
+    }
+  }, [media.isVideo, media.url]);
+
+  if (media.isVideo) {
+    return (
+      <video
+        ref={videoRef}
+        className={className}
+        src={media.url}
+        style={style}
+        muted
+        loop
+        autoPlay
+        playsInline
+        preload="auto"
+      />
+    );
+  }
+
+  return (
+    <img
+      className={className}
+      src={media.url}
+      alt=""
+      style={style}
+    />
+  );
+}
 
 type ListProps = {
   layoutId?: string;
@@ -170,6 +231,20 @@ function sv(px: number): string {
 
 function hasListColumnText(value: React.ReactNode): boolean {
   return String(value ?? '').trim().length > 0;
+}
+
+function setRevealOpenDirectionFromMouseEnter(event: React.MouseEvent<HTMLElement>, prefix: string): void {
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const fromBottom = event.clientY - rect.top > rect.height / 2;
+  el.classList.toggle(`${prefix}-reveal-from-bottom`, fromBottom);
+}
+
+function setRevealCloseDirectionFromMouseLeave(event: React.MouseEvent<HTMLElement>, prefix: string): void {
+  const el = event.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const exitToTop = event.clientY < rect.top + rect.height / 2;
+  el.classList.toggle(`${prefix}-reveal-from-bottom`, exitToTop);
 }
 
 function getEntryDividerWidths(
@@ -220,14 +295,14 @@ function getCSS(P: string): string {
   box-sizing: border-box;
 }
 
-.${P}-hover-image {
+.${P}-hover-image,
+.${P}-hover-video {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 10;
   pointer-events: none;
   display: block;
-  height: auto;
 }
 
 .${P}-list-item {
@@ -413,6 +488,12 @@ a.${P}-list-item {
   transform: translateY(-50%);
 }
 
+.${P}-wrapper.${P}-type-b .${P}-padding-control-handle[data-controls-variant="row-padding"][data-controls-axis="y"]::after,
+.${P}-wrapper.${P}-type-b .${P}-padding-control-handle[data-controls-variant="column-padding"][data-controls-axis="y"]::after {
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .${P}-row-padding-handle {
   width: 100%;
   flex-shrink: 0;
@@ -449,15 +530,19 @@ a.${P}-list-item {
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-item,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item {
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item {
   transition: background-color 250ms, border-color 250ms;
 }
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-default .${P}-cut-label,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-label {
+.${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-label,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-label {
   transition: color 250ms;
 }
 
@@ -479,21 +564,31 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover),
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-cut-item:hover,
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item {
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item-has-link:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-cut-item:hover,
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item {
   border-bottom-color: var(--${P}-divider-hover-color);
 }
 
 .${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default .${P}-list-item-has-link:hover:first-child,
 .${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link:first-child,
 .${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds .${P}-list-item-has-link:hover:first-child,
-.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child {
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-reveal .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top:not(.${P}-divider-bottom).${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
 .${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item-has-link:hover:first-child,
 .${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link:first-child,
 .${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item-has-link:hover:first-child,
-.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child {
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item-has-link:hover:first-child,
+.${P}-wrapper.${P}-divider-top.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link:first-child {
   border-top-color: var(--${P}-divider-hover-color);
 }
 
@@ -504,7 +599,11 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-list-item-has-link:hover .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link .${P}-list-col-title,
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover .${P}-cut-label,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item .${P}-cut-label {
+.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item .${P}-cut-label,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link:hover .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link .${P}-list-col-title,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item:hover .${P}-cut-label,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item .${P}-cut-label {
   color: var(--${P}-text-hover-color);
 }
 
@@ -516,7 +615,8 @@ a.${P}-list-item {
   background: var(--${P}-background-hover-color);
   transform: scaleY(0);
   transform-origin: center center;
-  transition: transform 250ms;
+  opacity: 0;
+  transition: opacity 150ms, transform 0s 250ms;
   z-index: 0;
   pointer-events: none;
 }
@@ -532,6 +632,47 @@ a.${P}-list-item {
 .${P}-wrapper.${P}-entry-hover-blinds .${P}-cut-item:hover::before,
 .${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item::before {
   transform: scaleY(1);
+  opacity: 1;
+  transition: transform 250ms, opacity 250ms;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--${P}-background-hover-color);
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  transition: transform 120ms;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-col,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-label {
+  position: relative;
+  z-index: 1;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item::before {
+  transform: scaleY(1);
+  transform-origin: top center;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link.${P}-reveal-from-bottom::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item.${P}-reveal-from-bottom::before {
+  transform-origin: top center;
+}
+
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link.${P}-reveal-from-bottom:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-list-item-has-link.${P}-reveal-from-bottom.${P}-state-hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item.${P}-reveal-from-bottom:hover::before,
+.${P}-wrapper.${P}-entry-hover-reveal .${P}-cut-item.${P}-reveal-from-bottom.${P}-state-hover::before {
+  transform-origin: bottom center;
 }
 
 .${P}-cut-item {
@@ -611,8 +752,24 @@ export function getListColumnVerticalAlignSettingKey(columnLetter: string): stri
 
 export const COLUMN_VALIGN_BASIC_OPTIONS = ['Top', 'Center', 'Bottom'] as const;
 
-export function isBaselineAnchorColumnVerticalAlign(value: string | undefined): boolean {
+export function normalizeListColumnVerticalAlign(value: string | undefined): string {
   const raw = String(value ?? 'Top').trim();
+  if (raw.toLowerCase().startsWith('baseline')) {
+    const anchorLetter = raw.slice(-1).toUpperCase();
+    if (LIST_COLUMN_LETTERS.includes(anchorLetter as typeof LIST_COLUMN_LETTERS[number])) {
+      return `Baseline ${anchorLetter}`;
+    }
+    return 'Top';
+  }
+  const lower = raw.toLowerCase();
+  if (lower === 'center') return 'Center';
+  if (lower === 'bottom') return 'Bottom';
+  if (lower === 'top') return 'Top';
+  return raw;
+}
+
+export function isBaselineAnchorColumnVerticalAlign(value: string | undefined): boolean {
+  const raw = normalizeListColumnVerticalAlign(value);
   if (raw.toLowerCase().startsWith('baseline')) {
     return false;
   }
@@ -662,7 +819,7 @@ type ColumnVerticalAlign =
   | { kind: 'baseline'; anchorLetter: string };
 
 function parseColumnVerticalAlign(value: string | undefined): ColumnVerticalAlign {
-  const raw = String(value ?? 'Top').trim();
+  const raw = normalizeListColumnVerticalAlign(value);
   if (raw.toLowerCase().startsWith('baseline')) {
     const anchorLetter = raw.slice(-1).toUpperCase();
     if (LIST_COLUMN_LETTERS.includes(anchorLetter as typeof LIST_COLUMN_LETTERS[number])) {
@@ -721,7 +878,7 @@ function getListColumnVerticalAlignSanitizeUpdates(
     const key = getListColumnVerticalAlignSettingKey(letter) as ListColumnVerticalAlignKey;
     const value = settings[key];
 
-    if (settings.type === 'B') {
+    if (settings.type === 'b') {
       const raw = String(value ?? 'Top').trim();
       if (raw !== 'Top' && raw !== 'Center' && raw !== 'Bottom') {
         updates[key] = 'Top';
@@ -854,7 +1011,6 @@ function syncRowListColHeights(
     }
   });
 
-  void rowEl.offsetHeight;
   return rowHeight;
 }
 
@@ -1498,6 +1654,57 @@ function getColumnLayoutUpdatesForOrderChange(
   return updates;
 }
 
+function hasListSettingsChanges(
+  current: ListSettings,
+  updated: ListSettings,
+): boolean {
+  const keys = new Set([
+    ...Object.keys(current),
+    ...Object.keys(updated),
+  ]);
+
+  for (const key of keys) {
+    if (current[key as keyof ListSettings] !== updated[key as keyof ListSettings]) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function applyListColumnCountChange(
+  nextSettings: ListSettings,
+  prevSettings: ListSettings,
+): ListSettings {
+  const nextColumns = nextSettings.columns;
+  const prevColumns = prevSettings.columns;
+
+  if (typeof nextColumns !== 'number' || nextColumns === prevColumns) {
+    return nextSettings;
+  }
+
+  const nextContentWidth = getListEffectiveContentWidth(nextSettings);
+  const isVerticalLayout = nextSettings.type === 'b'
+    || (nextSettings.type === undefined && prevSettings.type === 'b');
+  const updates: ListSettings = {
+    ...nextSettings,
+    ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
+    ...getResetListColumnPaddingUpdates(),
+  };
+
+  if (isVerticalLayout) {
+    for (const key of COLUMN_PADDING_BOTTOM_KEYS) {
+      if (typeof prevSettings[key] === 'number') {
+        updates[key] = prevSettings[key];
+      }
+    }
+  } else {
+    Object.assign(updates, getResetListColumnPaddingBottomUpdates());
+  }
+
+  return hasListSettingsChanges(nextSettings, updates) ? updates : nextSettings;
+}
+
 export function applyListSettingsChange(
   nextSettings: ListSettings,
   prevSettings: ListSettings,
@@ -1513,8 +1720,8 @@ export function applyListSettingsChange(
   const prevColumns = prevSettings.columns;
   const nextContentWidth = getListEffectiveContentWidth(nextSettings);
   const prevContentWidth = getListEffectiveContentWidth(prevSettings);
-  const isVerticalLayout = nextSettings.type === 'B'
-    || (nextSettings.type === undefined && prevSettings.type === 'B');
+  const isVerticalLayout = nextSettings.type === 'b'
+    || (nextSettings.type === undefined && prevSettings.type === 'b');
   const columns =
     typeof nextColumns === 'number'
       ? nextColumns
@@ -1548,23 +1755,7 @@ export function applyListSettingsChange(
   };
 
   if (typeof nextColumns === 'number' && nextColumns !== prevColumns) {
-    const updates: ListSettings = {
-      ...nextSettings,
-      ...getEqualListColumnWidthUpdates(nextColumns, nextContentWidth),
-      ...getResetListColumnPaddingUpdates(),
-    };
-
-    if (isVerticalLayout) {
-      for (const key of COLUMN_PADDING_BOTTOM_KEYS) {
-        if (typeof prevSettings[key] === 'number') {
-          updates[key] = prevSettings[key];
-        }
-      }
-    } else {
-      Object.assign(updates, getResetListColumnPaddingBottomUpdates());
-    }
-
-    return updates;
+    return nextSettings;
   }
 
   const nextOrder = getColumnsOrder(nextSettings);
@@ -1724,6 +1915,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     imageSize,
     imageOnHover,
     entryHoverEffect,
+    entryHoverShowOption,
     rowPaddingTop,
     rowPaddingBottom,
     rowPaddingTopB,
@@ -1739,12 +1931,12 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   const [visibleRowCount, setVisibleRowCount] = useState<number | undefined>(undefined);
   const [hoverImage, setHoverImage] = useState<HoverImageState | null>(null);
-  const showHoverImage = imageOnHover === 'On' && (!isEditor || isPreviewMode);
+  const showHoverImage = imageOnHover === 'on' && (!isEditor || isPreviewMode);
   const cutEnabled = (cut ?? 0) > 0;
-  const isVerticalLayout = type === 'B';
+  const isVerticalLayout = type === 'b';
   const containerRef = useRef<HTMLDivElement>(null);
   const firstEntryRef = useRef<HTMLElement | null>(null);
-  const [firstEntryHeightPx, setFirstEntryHeightPx] = useState<number | null>(null);
+  const [firstEntryHandleTopPx, setFirstEntryHandleTopPx] = useState<number | null>(null);
   const [designWidth, setDesignWidth] = useState(ARTICLE_DESIGN_WIDTH);
   const minColumnWidth = getListMinColumnWidth(designWidth);
 
@@ -1788,6 +1980,12 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     setVisibleRowCount(undefined);
   }, [cut, showCut, content, entriesCount]);
 
+  useEffect(() => {
+    if (isEditor && !isPreviewMode) {
+      setVisibleRowCount(undefined);
+    }
+  }, [isEditor, isPreviewMode]);
+
   const colorVars = buildColorVars(P, {
     textColor,
     backgroundColor,
@@ -1798,13 +1996,17 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
-  const entryHoverClass =
-    entryHoverEffect === 'Default'
+  const entryHoverClass = (!isEditor || isPreviewMode)
+    ? entryHoverEffect === 'default'
       ? `${P}-entry-hover-default`
-      : entryHoverEffect === 'Blinds'
+      : entryHoverEffect === 'blinds'
         ? `${P}-entry-hover-blinds`
-        : '';
+        : entryHoverEffect === 'reveal'
+          ? `${P}-entry-hover-reveal`
+          : ''
+    : '';
   const wrapperStateClasses = `${entryHoverClass} ${stateClass}`.trim();
+  const revealHoverActive = entryHoverEffect === 'reveal' && (!isEditor || isPreviewMode);
   const showDividerTop = showVisibility?.[0] ?? false;
   const showDividerBottom = showVisibility?.[1] ?? false;
 
@@ -1831,6 +2033,15 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       return;
     }
 
+    if (
+      typeof prevSettings.columns === 'number'
+      && typeof settings.columns === 'number'
+      && prevSettings.columns !== settings.columns
+    ) {
+      prevSettingsRef.current = settings;
+      return;
+    }
+
     const updatedSettings = applyListSettingsChange(
       settings,
       prevSettings,
@@ -1839,7 +2050,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
     prevSettingsRef.current = settings;
 
-    if (updatedSettings === settings) {
+    if (!hasListSettingsChanges(settings, updatedSettings)) {
       return;
     }
 
@@ -1970,7 +2181,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     showDividerBottom || hasBetweenItemDividers ? `${P}-divider-bottom` : '',
   ].filter(Boolean).join(' ');
 
+  const cutItemClickable = !isEditor || isPreviewMode;
+
   const handleShowMore = () => {
+    if (!cutItemClickable) return;
+
     const currentVisible = visibleRowCount ?? cut;
     if (!showCut) {
       setVisibleRowCount(allRows.length);
@@ -1985,11 +2200,20 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     : (rowPaddingTop ?? 0);
   const resolvedRowPaddingBottom = rowPaddingBottom ?? 0;
   const resolvedCellMinHeight = cellMinHeight ?? 0;
-  const firstEntryCenterTop = (resolvedRowPaddingTop + resolvedCellMinHeight + resolvedRowPaddingBottom) / 2;
+  const firstEntryContentCenter = resolvedRowPaddingTop + resolvedCellMinHeight / 2;
   const rowPaddingBottomControlHeight = Math.max(resolvedRowPaddingBottom, ROW_PADDING_HANDLE_HEIGHT);
-  const firstEntryHandleTop = firstEntryHeightPx != null
-    ? `${firstEntryHeightPx / 2}px`
-    : scaled(firstEntryCenterTop);
+  const firstEntryBorderTopWidth = getEntryDividerWidths(
+    0,
+    visibleRows.length,
+    showDividerTop,
+    showDividerBottom,
+    showCutLabel,
+    dividerWidth ?? 0,
+    isEditor ?? false,
+  ).borderTopWidth;
+  const firstEntryHandleTop = firstEntryHandleTopPx != null
+    ? `${firstEntryHandleTopPx}px`
+    : `calc(${firstEntryBorderTopWidth} + ${scaled(firstEntryContentCenter)})`;
   const rowPaddingTopControlKey = isVerticalLayout ? 'rowPaddingTopB' : 'rowPaddingTop';
   const firstColumn = listColumns[0];
   const lastColumn = listColumns[listColumns.length - 1];
@@ -2035,7 +2259,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     setHoverImage({
       rowId: row.id,
       url: image.url,
-      objectFit: image.objectFit ?? 'cover',
+      objectFit: 'contain',
+      isVideo: isVideoMedia(image),
       widthPx,
       x,
       y,
@@ -2057,30 +2282,49 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     setHoverImage(null);
   };
 
-  const handleCutItemMouseEnter = () => {
+  const handleCutItemMouseEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (revealHoverActive) {
+      setRevealOpenDirectionFromMouseEnter(event, P);
+    }
     if (!showHoverImage) return;
     setHoverImage(null);
   };
 
+  const handleCutItemMouseLeave = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (revealHoverActive) {
+      setRevealCloseDirectionFromMouseLeave(event, P);
+    }
+  };
+
   useLayoutEffect(() => {
     if (!showControls || isVerticalLayout) {
-      setFirstEntryHeightPx(null);
+      setFirstEntryHandleTopPx(null);
       return;
     }
 
     const el = firstEntryRef.current;
-    if (!el) {
-      setFirstEntryHeightPx(null);
+    const container = el?.parentElement;
+    if (!el || !container) {
+      setFirstEntryHandleTopPx(null);
       return;
     }
 
     const update = () => {
-      setFirstEntryHeightPx(el.getBoundingClientRect().height);
+      const rowContent = el.querySelector('[data-list-row]');
+      if (!rowContent) {
+        setFirstEntryHandleTopPx(null);
+        return;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const rowRect = rowContent.getBoundingClientRect();
+      setFirstEntryHandleTopPx(rowRect.top - containerRect.top + rowRect.height / 2);
     };
 
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
+    observer.observe(container);
 
     return () => observer.disconnect();
   }, [
@@ -2095,6 +2339,10 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     listColumns,
     effectiveColumnWidths,
     designWidth,
+    dividerWidth,
+    showDividerTop,
+    showDividerBottom,
+    showCutLabel,
   ]);
 
   const hasBaselineColumn = useMemo(
@@ -2141,11 +2389,14 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     }
 
     const applyBaselines = () => {
-      container.querySelectorAll<HTMLElement>('[data-list-row]').forEach((rowEl) => {
-        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
-        cols.forEach((el) => {
+      const rows = Array.from(container.querySelectorAll<HTMLElement>('[data-list-row]'));
+      const listColClassName = `${P}-list-col`;
+      const probeClassName = `${P}-baseline-probe`;
+
+      rows.forEach((rowEl) => {
+        rowEl.querySelectorAll<HTMLElement>('[data-list-col]').forEach((el) => {
           el.style.transform = '';
-          const listCol = el.querySelector<HTMLElement>(`.${P}-list-col`);
+          const listCol = el.querySelector<HTMLElement>(`.${listColClassName}`);
           if (listCol) {
             listCol.style.minHeight = '';
             listCol.style.height = '';
@@ -2155,9 +2406,17 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             title.style.transform = '';
           }
         });
+      });
 
-        syncRowListColHeights(rowEl, cols, `${P}-list-col`);
-        void rowEl.offsetHeight;
+      rows.forEach((rowEl) => {
+        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
+        syncRowListColHeights(rowEl, cols, listColClassName);
+      });
+
+      void container.offsetHeight;
+
+      rows.forEach((rowEl) => {
+        const cols = Array.from(rowEl.querySelectorAll<HTMLElement>('[data-list-col]'));
         const rowTop = rowEl.getBoundingClientRect().top;
 
         type ColInfo = {
@@ -2168,7 +2427,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           anchor: string | null;
         };
 
-        const probeClassName = `${P}-baseline-probe`;
         const byLetter = new Map<string, ColInfo>();
         const infos: ColInfo[] = cols.map((el) => {
           const titleEl = el.querySelector<HTMLElement>(`.${P}-list-col-title`);
@@ -2193,7 +2451,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             const baseline = measureColumnFirstLineBaselineOffset(
               info,
               rowTop,
-              `${P}-list-col`,
+              listColClassName,
               probeClassName,
             );
             finalBaseline.set(info.letter, baseline);
@@ -2207,7 +2465,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           const followerNatural = measureColumnFirstLineBaselineOffset(
             info,
             rowTop,
-            `${P}-list-col`,
+            listColClassName,
             probeClassName,
           );
           const shift = anchorBaseline - followerNatural;
@@ -2216,7 +2474,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           const result = measureColumnFirstLineBaselineOffset(
             info,
             rowTop,
-            `${P}-list-col`,
+            listColClassName,
             probeClassName,
           );
           finalBaseline.set(info.letter, result);
@@ -2227,20 +2485,33 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       });
     };
 
+    let rafId: number | null = null;
+    const scheduleApplyBaselines = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        applyBaselines();
+      });
+    };
+
     applyBaselines();
 
-    const observer = new ResizeObserver(() => applyBaselines());
+    const observer = new ResizeObserver(() => scheduleApplyBaselines());
     observer.observe(container);
 
     let cancelled = false;
     if (typeof document !== 'undefined' && document.fonts?.ready) {
       document.fonts.ready.then(() => {
-        if (!cancelled) applyBaselines();
+        if (!cancelled) scheduleApplyBaselines();
       });
     }
 
     return () => {
       cancelled = true;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       observer.disconnect();
       clearBaselineStyles();
     };
@@ -2254,9 +2525,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     effectiveColumnWidths,
   ]);
 
+  const scopedCss = useMemo(() => getCSS(P), [P]);
+
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+      <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div style={colorVars}>
         <div
           ref={containerRef}
@@ -2270,10 +2543,10 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           onMouseMove={showHoverImage ? handleWrapperMouseMove : undefined}
           onMouseLeave={showHoverImage ? handleWrapperMouseLeave : undefined}
         >
-          <div style={{ width: '100%' }}>
+          <div style={{ width: '100%', position: 'relative' }}>
             {visibleRows.map((row, rowIdx) => {
               const hasLink = (row.link?.length ?? 0) > 0;
-              const RowElement = hasLink ? 'a' : 'div';
+              const RowElement = hasLink && (!isEditor || isPreviewMode) ? 'a' : 'div';
               const rowStyle = getEntryDividerWidths(
                 rowIdx,
                 visibleRows.length,
@@ -2288,10 +2561,22 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               <RowElement
                 key={row.id}
                 ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstEntryRef.current = el; } : undefined}
-                className={`${P}-list-item${hasLink ? ` ${P}-list-item-has-link` : ''}`}
+                className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
-                onMouseEnter={showHoverImage ? (event) => handleRowMouseEnter(row, event) : undefined}
+                onMouseEnter={(event) => {
+                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'always')) {
+                    setRevealOpenDirectionFromMouseEnter(event, P);
+                  }
+                  if (showHoverImage) {
+                    handleRowMouseEnter(row, event);
+                  }
+                }}
+                onMouseLeave={(event) => {
+                  if (revealHoverActive && (hasLink || entryHoverShowOption === 'always')) {
+                    setRevealCloseDirectionFromMouseLeave(event, P);
+                  }
+                }}
               >
                 {resolvedRowPaddingTop > 0 && (
                   <div
@@ -2393,12 +2678,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                             P={P}
                             data-controls={col.paddingBottomKey}
                             data-controls-static-handle=""
-                            data-controls-handle-left="20"
                             data-controls-axis="y"
                             data-controls-variant="column-padding"
                             data-controls-min="0"
                             className={`${P}-padding-control-handle`}
-                            hitPlacement="left-y"
+                            hitPlacement="center"
                             areaStyle={{
                               position: 'absolute',
                               bottom: 0,
@@ -2484,74 +2768,21 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               </RowElement>
             );
             })}
-            {showCutLabel && (() => {
-              const cutLabelFields = resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX);
-              const cutLabelVerticalAlignKind = resolveCutLabelVerticalAlignKind(settings.cutLabelVerticalAlign);
-              const cutLabelUsesFullWidth = cutLabelFields.textTextAlign === 'justify' || isVerticalLayout;
-
-              return (
-              <button
-                type="button"
-                className={`${P}-cut-item`}
-                style={{
-                  minHeight: scaled(cutCellMinHeight ?? 0),
-                  ...getCutItemDividerWidths(
-                    showDividerBottom,
-                    dividerWidth ?? 0,
-                    isEditor ?? false,
-                  ),
-                }}
-                onClick={handleShowMore}
-                onMouseEnter={showHoverImage ? handleCutItemMouseEnter : undefined}
-              >
-                <div
-                  className={`${P}-list-cols-row`}
-                  style={{
-                    ...(isVerticalLayout
-                      ? {
-                        paddingLeft: scaled(effectiveTextPaddingLR),
-                        paddingRight: scaled(effectiveTextPaddingLR),
-                      }
-                      : {}),
-                    justifyContent: textAlignToJustifyContent(cutLabelFields.textTextAlign),
-                    alignItems: cutVerticalAlignKindToFlexAlign(cutLabelVerticalAlignKind),
-                  }}
-                >
-                  <span
-                    className={getListColumnTitleClassName(
-                      settings,
-                      CUT_LABEL_TEXT_PREFIX,
-                      `${P}-cut-label`,
-                      `${P}-text-tight-leading`,
-                    )}
-                    style={{
-                      ...listColumnTextFieldsToCss(cutLabelFields, isEditor),
-                      ...getListColumnTitleVars(settings, CUT_LABEL_TEXT_PREFIX, P, isEditor),
-                      ...(cutLabelUsesFullWidth ? { width: '100%' } : {}),
-                    }}
-                  >
-                    {cutLabel}
-                  </span>
-                </div>
-              </button>
-              );
-            })()}
-          </div>
           {showControls && (
             <div key="row-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
               <ListPaddingControl
                 P={P}
                 data-controls={rowPaddingTopControlKey}
                 data-controls-static-handle=""
-                data-controls-handle-left="20"
+                {...(!isVerticalLayout ? { 'data-controls-handle-left': '20' } : {})}
                 data-controls-axis="y"
                 data-controls-variant="row-padding"
                 data-controls-min="0"
                 className={`${P}-padding-control-handle`}
-                hitPlacement="left-y"
+                hitPlacement={isVerticalLayout ? 'center' : 'left-y'}
                 areaStyle={{
                   position: 'absolute',
-                  top: 0,
+                  top: firstEntryBorderTopWidth,
                   left: 0,
                   width: '100%',
                   height: scaled(Math.max(resolvedRowPaddingTop, ROW_PADDING_HANDLE_HEIGHT)),
@@ -2697,19 +2928,82 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               </div>
             );
           })}
-          {showHoverImage && hoverImage && (
-            <img
-              className={`${P}-hover-image`}
-              src={hoverImage.url}
-              alt=""
+          </div>
+          {showCutLabel && (() => {
+            const cutLabelFields = resolveListColumnTextFields(settings, CUT_LABEL_TEXT_PREFIX);
+            const cutLabelVerticalAlignKind = resolveCutLabelVerticalAlignKind(settings.cutLabelVerticalAlign);
+            const cutLabelUsesFullWidth = cutLabelFields.textTextAlign === 'justify' || isVerticalLayout;
+
+            return (
+            <button
+              type="button"
+              className={`${P}-cut-item`}
               style={{
-                width: sv(hoverImage.widthPx),
-                objectFit: hoverImage.objectFit,
-                left: hoverImage.x,
-                top: hoverImage.y,
+                minHeight: scaled(cutCellMinHeight ?? 0),
+                cursor: cutItemClickable ? 'pointer' : 'default',
+                ...getCutItemDividerWidths(
+                  showDividerBottom,
+                  dividerWidth ?? 0,
+                  isEditor ?? false,
+                ),
               }}
-            />
-          )}
+              onClick={cutItemClickable ? handleShowMore : undefined}
+              onMouseEnter={revealHoverActive || showHoverImage ? handleCutItemMouseEnter : undefined}
+              onMouseLeave={revealHoverActive ? handleCutItemMouseLeave : undefined}
+            >
+              <div
+                className={`${P}-list-cols-row`}
+                style={{
+                  ...(isVerticalLayout
+                    ? {
+                      paddingLeft: scaled(effectiveTextPaddingLR),
+                      paddingRight: scaled(effectiveTextPaddingLR),
+                    }
+                    : {}),
+                  justifyContent: textAlignToJustifyContent(cutLabelFields.textTextAlign),
+                  alignItems: cutVerticalAlignKindToFlexAlign(cutLabelVerticalAlignKind),
+                }}
+              >
+                <span
+                  className={getListColumnTitleClassName(
+                    settings,
+                    CUT_LABEL_TEXT_PREFIX,
+                    `${P}-cut-label`,
+                    `${P}-text-tight-leading`,
+                  )}
+                  style={{
+                    ...listColumnTextFieldsToCss(cutLabelFields, isEditor),
+                    ...getListColumnTitleVars(settings, CUT_LABEL_TEXT_PREFIX, P, isEditor),
+                    ...(cutLabelUsesFullWidth ? { width: '100%' } : {}),
+                  }}
+                >
+                  {cutLabel}
+                </span>
+              </div>
+            </button>
+            );
+          })()}
+          {showHoverImage && hoverImage && (() => {
+            const hoverSize = sv(hoverImage.widthPx);
+            const hoverMediaStyle: React.CSSProperties = {
+              width: hoverSize,
+              height: 'auto',
+              maxHeight: hoverSize,
+              objectFit: 'contain',
+              left: hoverImage.x,
+              top: hoverImage.y,
+              position: 'absolute',
+            };
+
+            return (
+              <ListHoverMedia
+                key={`${hoverImage.rowId}-${hoverImage.url}`}
+                media={hoverImage}
+                className={hoverImage.isVideo ? `${P}-hover-video` : `${P}-hover-image`}
+                style={hoverMediaStyle}
+              />
+            );
+          })()}
         </div>
       </div>
     </>

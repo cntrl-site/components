@@ -74,7 +74,7 @@ const schema = {
         type: 'number',
         scope: 'common',
         title: 'Fields',
-        display: { type: 'number' },
+        display: { type: 'common-numeric-input' },
         min: 1,
         max: 3,
       },
@@ -467,8 +467,8 @@ const schema = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'fieldsToShow'] },
-        {type: 'row', items: ['minHeight']},
+        { type: 'row', items: ['__componentName__'] },
+        {type: 'row', items: ['fieldsToShow', 'minHeight']},
         {type: 'row', items: ['corners', 'stroke']},
         {type: 'row', title: '', items: ['inputPadding', 'buttonPadding']},
         {type: 'row', title: '', items: ['buttonIcon']},
@@ -481,6 +481,7 @@ const schema = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         'fontFamily',
         {
           type: 'group',
@@ -505,6 +506,7 @@ const schema = {
       title: 'Fields',
       tooltip: 'Fields',
       layout: [
+        '__componentName__',
         'fields',
         'buttonLabel',
         'successMessage',

@@ -2,12 +2,47 @@ import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
+}
+
+function hasText(value: string | undefined): boolean {
+  return (value?.trim().length ?? 0) > 0;
+}
+
+function getGridTextClassName(
+  fontSize: number | undefined,
+  lineHeight: number | undefined,
+  baseClassName: string,
+  tightLeadingClassName: string,
+): string {
+  const resolvedFontSize = fontSize ?? 0.01;
+  const needsTightLeading = lineHeight !== undefined && lineHeight < resolvedFontSize;
+
+  return needsTightLeading
+    ? `${baseClassName} ${tightLeadingClassName}`
+    : baseClassName;
+}
+
+function getGridTextLeadingVars(
+  fontSize: number | undefined,
+  lineHeight: number | undefined,
+  varPrefix: string,
+  isEditor?: boolean,
+): React.CSSProperties {
+  const resolvedFontSize = fontSize ?? 0.01;
+
+  if (lineHeight === undefined || lineHeight >= resolvedFontSize) {
+    return {};
+  }
+
+  return {
+    [`--${varPrefix}-title-leading-gap`]: scalingValue((resolvedFontSize - lineHeight) / 2, isEditor),
+  } as React.CSSProperties;
 }
 
 function getCSS(P: string): string {
@@ -38,6 +73,38 @@ function getCSS(P: string): string {
   display: flex;
   justify-content: center;
   align-items: center;
+  align-self: center;
+}
+.${P}-item-image-wrapper-fit-slider {
+  display: grid;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer,
+.${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer {
+  display: grid;
+  visibility: hidden;
+  pointer-events: none;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer img {
+  grid-area: 1 / 1;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer video {
+  grid-area: 1 / 1;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
+  align-self: stretch;
+  min-height: 0;
 }
 .${P}-item-image-link {
   width: 100%;
@@ -50,6 +117,13 @@ function getCSS(P: string): string {
   width: 100%;
   height: 100%;
   display: block;
+  max-width: 100%;
+}
+.${P}-item-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  max-width: 100%;
 }
 .${P}-item-slider,
 .${P}-item-slider .splide__track,
@@ -80,6 +154,78 @@ function getCSS(P: string): string {
   margin-bottom: 0px;
   margin-top: 0px;
   color: var(--${P}-subtitle-color);
+}
+.${P}-text-tight-leading {
+  display: block;
+  flex-shrink: 0;
+  padding-top: var(--${P}-title-leading-gap, 0);
+  padding-bottom: var(--${P}-title-leading-gap, 0);
+}
+.${P}-show-text-hover .${P}-item-title,
+.${P}-show-text-hover .${P}-item-subtitle {
+  opacity: 0;
+  transition: opacity 250ms;
+}
+.${P}-show-text-hover .${P}-item-inner:hover .${P}-item-title,
+.${P}-show-text-hover .${P}-item-inner:hover .${P}-item-subtitle,
+.${P}-show-text-hover .${P}-item-inner-hidden:hover .${P}-item-title,
+.${P}-show-text-hover .${P}-item-inner-hidden:hover .${P}-item-subtitle {
+  opacity: 1;
+}
+.${P}-type-b .${P}-item-inner,
+.${P}-type-b .${P}-item-inner-hidden,
+.${P}-type-c .${P}-item-inner,
+.${P}-type-c .${P}-item-inner-hidden {
+  align-items: flex-start;
+}
+.${P}-type-b .${P}-item-image-link,
+.${P}-type-c .${P}-item-image-link {
+  align-items: center;
+}
+.${P}-type-b .${P}-item-title,
+.${P}-type-b .${P}-item-subtitle,
+.${P}-type-c .${P}-item-title,
+.${P}-type-c .${P}-item-subtitle {
+  text-align: left;
+}
+.${P}-item-text-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  flex-shrink: 0;
+}
+.${P}-align-entries .${P}-item {
+  display: contents;
+}
+.${P}-align-entries .${P}-item-inner,
+.${P}-align-entries .${P}-item-inner-hidden {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
+  justify-self: center;
+  margin-bottom: var(--${P}-align-entries-row-gap, 0);
+}
+.${P}-align-entries .${P}-item-inner-last-row {
+  margin-bottom: 0;
+}
+.${P}-align-entries .${P}-item-text-link {
+  display: contents;
+}
+.${P}-align-entries .${P}-item-title-row,
+.${P}-align-entries .${P}-item-subtitle-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 100%;
+}
+.${P}-align-entries .${P}-item-image-link {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .${P}-lightbox-counter {
   margin: 0;
@@ -122,7 +268,7 @@ type AnimRect = { top: number; left: number; width: number; height: number };
 type LightboxProps = {
   images: string[];
   index: number;
-  imageDisplay: 'Fit' | 'Cover';
+  imageDisplay: 'fit' | 'cover';
   originRect: AnimRect | null;
   reverseClose: boolean;
   onClose: () => void;
@@ -133,9 +279,59 @@ type LightboxProps = {
 };
 
 const LIGHTBOX_ANIM_MS = 500;
+const SLIDER_TRANSITION_MS = 750;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
+type GridMedia = {
+  url: string;
+  name?: string;
+  type?: 'image' | 'video';
+};
+
+function isVideoMedia(media: GridMedia): boolean {
+  if (media.type === 'video') return true;
+  if (media.type === 'image') return false;
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url);
+}
+
+function GridMediaItem({
+  media,
+  className,
+  style,
+  onImageClick,
+}: {
+  media: GridMedia;
+  className: string;
+  style: React.CSSProperties;
+  onImageClick?: (e: React.MouseEvent<HTMLImageElement>) => void;
+}) {
+  if (isVideoMedia(media)) {
+    return (
+      <video
+        src={media.url}
+        className={className}
+        style={style}
+        muted
+        loop
+        autoPlay
+        playsInline
+      />
+    );
+  }
+
+  return (
+    <img
+      src={media.url}
+      alt={media.name}
+      className={className}
+      style={style}
+      onClick={onImageClick}
+    />
+  );
+}
+
 function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
+  const isCover = imageDisplay === 'cover';
   const ghostRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
@@ -153,7 +349,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
     const nw = img.naturalWidth;
     const nh = img.naturalHeight;
     if (!cw || !ch || !nw || !nh) return;
-    if (imageDisplay === 'Cover') {
+    if (imageDisplay === 'cover') {
       setFinalRect({ width: cw, height: ch, left: cb.left, top: cb.top });
       return;
     }
@@ -178,12 +374,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   }, [computeFinalRect, index]);
 
   useEffect(() => {
-    if (phase !== 'opening' || !finalRect) return;
-    const handle = { id: 0 };
-    handle.id = requestAnimationFrame(() => {
-      handle.id = requestAnimationFrame(() => setPhase('open'));
-    });
-    return () => cancelAnimationFrame(handle.id);
+    if (phase === 'opening' && finalRect) setPhase('open');
   }, [phase, finalRect]);
 
   useEffect(() => {
@@ -198,6 +389,18 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
     }
     prevIndexRef.current = index;
   }, [index]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (phase === 'closing') return;
+      setPhase('closing');
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [phase]);
 
   const handleClose = () => {
     if (phase === 'closing') return;
@@ -246,34 +449,65 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
           justifyContent: 'center',
         }}
       >
-        <div style={{ height: '10%' }}></div>
-        <div
-          style={{
-            width: '70%',
-            height: '80%',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-          <div ref={ghostRef} style={{ width: '100%', height: '100%' }} />
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '10%',
-            opacity: isOpen ? 1 : 0,
-            transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
-          }}
-        >
-          {images.length > 1 &&
-            <p className={counterClassName} style={counterStyle}>
-              {index + 1} / {images.length}
-            </p>
-          }
-        </div>
+        {isCover ? (
+          <>
+            <div ref={ghostRef} style={{ position: 'absolute', inset: 0 }} />
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '10%',
+                opacity: isOpen ? 1 : 0,
+                transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
+                pointerEvents: 'none',
+                zIndex: 9999,
+              }}
+            >
+              {images.length > 1 &&
+                <p className={counterClassName} style={counterStyle}>
+                  {index + 1} / {images.length}
+                </p>
+              }
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ height: '10%' }}></div>
+            <div
+              style={{
+                width: '70%',
+                height: '80%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+              <div ref={ghostRef} style={{ width: '100%', height: '100%' }} />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '10%',
+                opacity: isOpen ? 1 : 0,
+                transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
+              }}
+            >
+              {images.length > 1 &&
+                <p className={counterClassName} style={counterStyle}>
+                  {index + 1} / {images.length}
+                </p>
+              }
+            </div>
+          </>
+        )}
       </div>
 
       {animatedRect && (
@@ -287,7 +521,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
             left: animatedRect.left,
             width: animatedRect.width,
             height: animatedRect.height,
-            objectFit: imageDisplay === 'Cover' ? 'cover' : 'contain',
+            objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
             opacity: isClosing && !reverseAnimateClose ? 0 : 1,
             transition: isClosing && !reverseAnimateClose
               ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
@@ -338,17 +572,26 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   );
 }
 
+function resolveLightboxImageDisplay(
+  value: GridSettings['lightboxImageDisplay'],
+): 'fit' | 'cover' {
+  if (typeof value === 'string') {
+    return value === 'cover' ? 'cover' : 'fit';
+  }
+  return value?.display === 'cover' ? 'cover' : 'fit';
+}
+
 export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId }: GridProps) {
   const { prefix: P } = useScopedStyles();
-  const showControls = Boolean(isEditMode);
   const {
-    type = 'A',
+    type = 'a',
     gridLayout,
-    textBoxWidth,
+    textBoxWidth = 100,
     verticalGap,
     entriesCount,
     lightbox,
     imageDisplay,
+    lightboxImageDisplay,
     slider,
     sliderTiming,
     direction,
@@ -379,6 +622,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     lightboxCounterLetterSpacing,
     lightboxCounterWordSpacing,
     lightboxCounterTextAppearance,
+    showText = 'always',
+    alignEntries = 'off',
   } = settings;
 
   const resolvedTitleTextStyle: TextStyles = {
@@ -433,7 +678,29 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const lightboxCounterTypographyCss = omitTextColors(textStylesToCss(resolvedLightboxCounterTextStyle, isEditor));
   const lightboxCounterFieldCss = {
     ...lightboxCounterTypographyCss,
+    ...getGridTextLeadingVars(lightboxCounterFontSize, lightboxCounterLineHeight, P, isEditor),
   } as React.CSSProperties;
+
+  const titleTextClassName = getGridTextClassName(
+    titleFontSize,
+    titleLineHeight,
+    `${P}-item-title`,
+    `${P}-text-tight-leading`,
+  );
+  const subtitleTextClassName = getGridTextClassName(
+    subtitleFontSize,
+    subtitleLineHeight,
+    `${P}-item-subtitle`,
+    `${P}-text-tight-leading`,
+  );
+  const titleTextLeadingVars = getGridTextLeadingVars(titleFontSize, titleLineHeight, P, isEditor);
+  const subtitleTextLeadingVars = getGridTextLeadingVars(subtitleFontSize, subtitleLineHeight, P, isEditor);
+  const lightboxCounterClassName = getGridTextClassName(
+    lightboxCounterFontSize,
+    lightboxCounterLineHeight,
+    `${P}-lightbox-counter`,
+    `${P}-text-tight-leading`,
+  );
 
   const colorVars = buildColorVars(P, {
     titleColor,
@@ -442,7 +709,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
-  const wrapperStateClasses = `${stateClass}`.trim();
+  const showTextOnHover = showText === 'on hover' && (!isEditor || isPreviewMode);
+  const wrapperStateClasses = `${stateClass}${showTextOnHover ? ` ${P}-show-text-hover` : ''}`.trim();
 
   const resEntriesCount = entriesCount === 0 ? Infinity : entriesCount;
 
@@ -450,23 +718,45 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const size = gridLayout.entryWidth ?? 0.2;
 
-  const isCover = imageDisplay?.display === 'Cover';
+  const isCover = imageDisplay?.display === 'cover';
   const ratioValue = imageDisplay?.ratioValue ?? '1:1';
   const ratioReversed = imageDisplay?.reversed ?? false;
   const [rW, rH] = ratioValue.split(':').map(Number);
   const effW = ratioReversed ? rH : rW;
   const effH = ratioReversed ? rW : rH;
   const aspectRatio = `${effW} / ${effH}`;
-  const isLandscape = effW >= effH;
 
-  const imageStyle: React.CSSProperties = {
-    objectFit: isCover ? 'cover' : 'contain',
-    ...(isCover && {
-      aspectRatio,
-      width: isLandscape ? '100%' : 'auto',
-      height: isLandscape ? 'auto' : '100%',
-    }),
+  const imageWrapperWidth = scalingValue(size ?? 0, isEditor);
+  const isFitSlider = !isCover && slider !== 'off';
+
+  const imageWrapperStyle: React.CSSProperties = {
+    width: imageWrapperWidth,
+    ...(isCover
+      ? { aspectRatio, height: 'auto', overflow: 'hidden' }
+      : { height: 'auto' }),
   };
+
+  const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
+  const isTypeC = type === 'c';
+  const shouldAlignEntries = isTypeC && alignEntries === 'on';
+  const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
+  const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
+
+  const imageStyle: React.CSSProperties = isCover
+    ? {
+        objectFit: 'cover',
+        pointerEvents: 'auto',
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+      }
+    : {
+        objectFit: 'contain',
+        pointerEvents: 'auto',
+        width: 'auto',
+        height: 'auto',
+        maxWidth: '100%',
+      };
 
   const [dir, setDir] = useState('ltr');
   const [containerWidth, setContainerWidth] = useState(0);
@@ -500,7 +790,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const openLightbox = (e: React.MouseEvent<HTMLImageElement>, urls: string[], idx: number) => {
     if (isEditor && !isPreviewMode) return;
-    if (lightbox === 'Off') return;
+    if (lightbox === 'off') return;
     const r = e.currentTarget.getBoundingClientRect();
     setLightboxOriginRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     setLightboxImages(urls);
@@ -509,7 +799,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   };
 
   useEffect(() => {
-    if (!lightboxOpen || lightbox !== 'On') return;
+    if (!lightboxOpen || lightbox !== 'on') return;
     if (typeof document === 'undefined') return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -518,124 +808,289 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     };
   }, [lightboxOpen, lightbox]);
 
+  useEffect(() => {
+    if (!isEditor || isPreviewMode) return;
+    setLightboxOpen(false);
+    setLightboxOriginRect(null);
+  }, [isEditor, isPreviewMode]);
+
+  const scopedCss = useMemo(() => getCSS(P), [P]);
+
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+      <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${P}-type-${type} ${wrapperStateClasses}`.trim()}
+          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${wrapperStateClasses}`.trim()}
           style={{
             gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
-            rowGap: scalingValue(verticalGap ?? 0, isEditor),
+            rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
             columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
-            width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor)
+            width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor),
+            ...(shouldAlignEntries
+              ? { [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor) }
+              : {}),
           }}>
-          {cropContent.map((item: any, index: number) => (
+          {cropContent.map((item: any, index: number) => {
+            const hasTitle = hasText(item.title);
+            const hasSubtitle = hasText(item.subtitle);
+            const itemLink = (item.link?.length ?? 0) > 0 && lightbox === 'off' ? item.link : undefined;
+            const isLastRow = Math.floor(index / gridLayout.columnsCount)
+              === Math.ceil(cropContent.length / gridLayout.columnsCount) - 1;
+
+            const typeCTextBlock = isTypeC ? (
+              <div className={`${P}-item-text-block`}>
+                {hasTitle && (
+                  <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
+                    {item.title}
+                  </p>
+                )}
+                {hasTitle && (
+                  <div
+                    data-controls={isEditMode ? 'titleMarginTop' : undefined}
+                    className={isEditMode ? `${P}-control` : undefined}
+                    style={{
+                      height: scalingValue(titleMarginTop ?? 0, isEditor),
+                      width: controlWidthStyle,
+                    }}
+                  />
+                )}
+                {hasSubtitle && (
+                  <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}>
+                    {item.subtitle}
+                  </p>
+                )}
+                {hasSubtitle && (
+                  <div
+                    data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
+                    className={isEditMode ? `${P}-control` : undefined}
+                    style={{
+                      height: scalingValue(subtitleMarginTop ?? 0, isEditor),
+                      width: controlWidthStyle,
+                    }}
+                  />
+                )}
+              </div>
+            ) : null;
+
+            const titleRow = isTypeC ? (
+              <div className={`${P}-item-title-row`}>
+                {hasTitle && (
+                  <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
+                    {item.title}
+                  </p>
+                )}
+                {hasTitle && (
+                  <div
+                    data-controls={isEditMode ? 'titleMarginTop' : undefined}
+                    className={isEditMode ? `${P}-control` : undefined}
+                    style={{
+                      height: scalingValue(titleMarginTop ?? 0, isEditor),
+                      width: controlWidthStyle,
+                    }}
+                  />
+                )}
+              </div>
+            ) : null;
+
+            const subtitleRow = isTypeC ? (
+              <div className={`${P}-item-subtitle-row`}>
+                {hasSubtitle && (
+                  <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}>
+                    {item.subtitle}
+                  </p>
+                )}
+                {hasSubtitle && (
+                  <div
+                    data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
+                    className={isEditMode ? `${P}-control` : undefined}
+                    style={{
+                      height: scalingValue(subtitleMarginTop ?? 0, isEditor),
+                      width: controlWidthStyle,
+                    }}
+                  />
+                )}
+              </div>
+            ) : null;
+
+            const alignedTextRows = itemLink ? (
+              <a href={itemLink} target="_blank" className={`${P}-item-text-link`}>
+                {titleRow}
+                {subtitleRow}
+              </a>
+            ) : (
+              <>
+                {titleRow}
+                {subtitleRow}
+              </>
+            );
+
+            const imageContent = (
+              <div className={imageWrapperClassName} style={imageWrapperStyle}>
+                {(item.image?.length ?? 0) === 0
+                  ? null
+                  : slider === 'off'
+                    ?
+                    (() => {
+                      const media = item.image[0] as GridMedia;
+                      const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
+                      const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
+                      return (
+                        <GridMediaItem
+                          media={media}
+                          className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                          style={imageStyle}
+                          onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, 0)}
+                        />
+                      );
+                    })()
+                    :
+                    <>
+                    {isFitSlider && (
+                      <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
+                        {item.image.map((media: GridMedia) => (
+                          isVideoMedia(media) ? (
+                            <video key={`sizer-${media.url}`} src={media.url} muted playsInline />
+                          ) : (
+                            <img key={`sizer-${media.url}`} src={media.url} alt="" />
+                          )
+                        ))}
+                      </div>
+                    )}
+                    <Splide
+                      key={`${transition}-${size}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
+                      className={`${P}-item-slider`}
+                      options={{
+                        arrows: false,
+                        pagination: false,
+                        drag: false,
+                        perPage: 1,
+                        autoplay: true,
+                        interval: sliderTiming * 1000,
+                        width: '100%',
+                        height: '100%',
+                        speed: SLIDER_TRANSITION_MS,
+                        type: transition === 'fade' ? 'fade' : 'loop',
+                        rewind: transition === 'fade',
+                        pauseOnHover: false,
+                        pauseOnFocus: false,
+                        direction: transition === 'fade' ? 'ltr' : direction !== 'random'
+                          ? direction === 'horizontal'
+                            ? 'ltr'
+                            : 'ttb'
+                          : dir as 'ltr' | 'ttb' | 'rtl',
+                      }}
+                      onMoved={(splide) => {
+                        if (direction !== 'random' || transition === 'fade') return;
+                        const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : 'ttb';
+                        setDir(next);
+
+                        setTimeout(() => {
+                          splide.refresh();
+                        }, 0);
+                      }}
+                    >
+                      {item.image.map((media: GridMedia, imgIndex: number) => {
+                        const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
+                        const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
+                        const imageIndex = imageOnly.findIndex((entry: GridMedia) => entry.url === media.url);
+                        return (
+                          <SplideSlide key={imgIndex}>
+                            <GridMediaItem
+                              media={media}
+                              className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                              style={imageStyle}
+                              onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, imageIndex)}
+                            />
+                          </SplideSlide>
+                        );
+                      })}
+                    </Splide>
+                    </>
+                }
+              </div>
+            );
+
+            const typeABText = !isTypeC ? (
+              <>
+                <div
+                  data-controls={isEditMode && hasTitle ? 'titleMarginTop' : undefined}
+                  className={isEditMode && hasTitle ? `${P}-control` : undefined}
+                  style={{
+                    height: hasTitle ? scalingValue(titleMarginTop ?? 0, isEditor) : 0,
+                    width: controlWidthStyle,
+                  }}
+                />
+                <p
+                  className={titleTextClassName}
+                  style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}
+                >
+                  {item.title}
+                </p>
+                <div
+                  data-controls={isEditMode && hasSubtitle ? 'subtitleMarginTop' : undefined}
+                  className={isEditMode && hasSubtitle ? `${P}-control` : undefined}
+                  style={{
+                    height: hasSubtitle ? scalingValue(subtitleMarginTop ?? 0, isEditor) : 0,
+                    width: controlWidthStyle,
+                  }}
+                />
+                <p
+                  className={subtitleTextClassName}
+                  style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}
+                >
+                  {item.subtitle}
+                </p>
+              </>
+            ) : null;
+
+            return (
             <div
               key={index}
               className={`${P}-item`.trim()}
             >
               <div
-                className={isEditMode ? `${P}-item-inner` : `${P}-item-inner-hidden`}
-                style={{ width: (textBoxWidth ?? 0) > 100 ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` : scalingValue(size ?? 0, isEditor) }}
+                className={`${isEditMode 
+                  ? `${P}-item-inner` 
+                  : `${P}-item-inner-hidden`}${shouldAlignEntries && isLastRow ? ` ${P}-item-inner-last-row` : ''}`.trim()}
+                style={{ width: (textBoxWidth ?? 0) > 100 
+                  ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` 
+                  : scalingValue(size ?? 0, isEditor) }}
               >
-                <a href={(item.link?.length ?? 0) > 0 && lightbox === 'Off' ? item.link : undefined} target='_blank' className={`${P}-item-image-link`}>
-                  <div className={`${P}-item-image-wrapper`} style={{ width: scalingValue(size ?? 0, isEditor), height: scalingValue(size ?? 0, isEditor) }}>
-                    {(item.image?.length ?? 0) === 0
-                      ? null
-                      : slider === 'Off'
-                        ?
-                        <img
-                          src={item.image[0].url}
-                          alt={item.image[0].name}
-                          className={`${P}-item-image`.trim()}
-                          style={imageStyle}
-                          onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), 0)}
-                        />
-                        :
-                        <Splide
-                          key={`${transition}-${size}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
-                          className={`${P}-item-slider`}
-                          options={{
-                            arrows: false,
-                            pagination: false,
-                            drag: false,
-                            perPage: 1,
-                            autoplay: true,
-                            interval: sliderTiming * 1000,
-                            width: '100%',
-                            height: '100%',
-                            speed: 500,
-                            type: transition === 'Fade' ? 'fade' : 'loop',
-                            rewind: transition === 'Fade',
-                            pauseOnHover: false,
-                            pauseOnFocus: false,
-                            direction: transition === 'Fade' ? 'ltr' : direction !== 'Random'
-                              ? direction === 'Horizontal'
-                                ? 'ltr'
-                                : 'ttb'
-                              : dir as 'ltr' | 'ttb' | 'rtl',
-                          }}
-                          onMoved={(splide) => {
-                            if (direction !== 'Random' || transition === 'Fade') return;
-                            const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : Math.random() > 0.5 ? 'btt' : 'ttb';
-                            setDir(next);
-
-                            setTimeout(() => {
-                              splide.refresh();
-                            }, 0);
-                          }}
-                        >
-                          {item.image.map((img: { url: string; name?: string }, imgIndex: number) => (
-                            <SplideSlide key={imgIndex}>
-                              <img
-                                src={img.url}
-                                alt={img.name}
-                                className={`${P}-item-image`.trim()}
-                                style={imageStyle}
-                                onClick={(e) => openLightbox(e, item.image.map((i: any) => i.url), imgIndex)}
-                              />
-                            </SplideSlide>
-                          ))}
-                        </Splide>
-                    }
-                  </div>
-                  <div
-                    data-controls="titleMarginTop"
-                    className={`${P}-control`}
-                    style={{ height: scalingValue(titleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
-                  />
-                  <p className={`${P}-item-title`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...titleFieldCss }}>
-                    {item.title}
-                  </p>
-                  {type === 'B' && showControls && <div
-                    data-controls="subtitleMarginTop"
-                    className={`${P}-control`}
-                    style={{ height: scalingValue(subtitleMarginTop ?? 0, isEditor), width: scalingValue(size * textBoxWidth / 100, isEditor) }}
-                  />}
-                  {type === 'B' && <p className={`${P}-item-subtitle`.trim()} style={{ width: `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`, ...subtitleFieldCss }}>
-                    {item.subtitle}
-                  </p>}
-                </a>
+                {shouldAlignEntries ? (
+                  <>
+                    {alignedTextRows}
+                    <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                      {imageContent}
+                    </a>
+                  </>
+                ) : (
+                  <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                    {typeCTextBlock}
+                    {imageContent}
+                    {typeABText}
+                  </a>
+                )}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </div>
-      {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'On' &&
+      {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'on' &&
         createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
               images={lightboxImages}
               index={lightboxIndex}
-              imageDisplay={imageDisplay.display}
+              imageDisplay={resolveLightboxImageDisplay(lightboxImageDisplay)}
               originRect={lightboxOriginRect}
-              reverseClose={slider === 'Off'}
+              reverseClose={slider === 'off'}
               onClose={() => setLightboxOpen(false)}
               onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)}
               onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)}
-              counterClassName={`${P}-lightbox-counter`.trim()}
+              counterClassName={lightboxCounterClassName}
               counterStyle={lightboxCounterFieldCss}
             />
           </div>,
@@ -654,21 +1109,24 @@ type GridLayoutConfig = {
 };
 
 type GridSettings = {
-  type: 'A' | 'B';
+  type: 'a' | 'b' | 'c';
   gridLayout: GridLayoutConfig;
   textBoxWidth: number;
   verticalGap: number;
   entriesCount: number;
-  lightbox: 'On' | 'Off';
+  lightbox: 'on' | 'off';
   imageDisplay: {
-    display: 'Fit' | 'Cover';
+    display: 'fit' | 'cover';
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed: boolean;
   };
-  slider: 'On' | 'Off';
+  lightboxImageDisplay?: 'fit' | 'cover' | { display?: 'fit' | 'cover' };
+  slider: 'on' | 'off';
   sliderTiming: number;
-  direction: 'Horizontal' | 'Vertical' | 'Random',
-  transition: 'Fade' | 'Slide',
+  direction: 'horizontal' | 'vertical' | 'random',
+  transition: 'fade' | 'slide',
+  showText: 'always' | 'on hover';
+  alignEntries: 'on' | 'off';
   titleMarginTop: number;
   subtitleMarginTop: number;
   titleColor: string;

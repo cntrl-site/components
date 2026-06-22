@@ -20,19 +20,12 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto manual',
     properties: {
-      autoplay: {
-        type: 'string',
-        scope: 'common',
-        title: 'Autoplay',
-        display: { type: 'switch-control' },
-        enum: ['on', 'off'],
-      },
       speed: {
         type: 'number',
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
-        min: 0.5,
+        min: 0,
         max: 8,
       },
       direction: {
@@ -237,7 +230,6 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      autoplay: 'on',
       direction: 'left',
       pauseOnHover: 'off',
       strokeColor: '#000000',
@@ -312,7 +304,6 @@ const schema: ComponentSchemaV1 = {
     ],
     layout: [
       '__componentName__',
-      'autoplay',
       'speed',
       'direction',
       'pauseOnHover',
@@ -336,7 +327,7 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        {type: 'row', items: ['__componentName__', 'autoplay']},   
+        {type: 'row', items: ['__componentName__']},
         {type: 'row', items: ['align', 'direction']},
         {type: 'row', items: ['speed', 'pauseOnHover']},
         {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'corners']}, {type: 'group', title: '', items: ['stroke', 'padding']}]},
@@ -349,6 +340,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         { type: 'group', title: 'Text', items: [
         'textFontFamily',
         'textFontSettings',
