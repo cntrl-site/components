@@ -10,6 +10,74 @@ import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 const LIGHTBOX_ANIM_MS = 300;
 const TEXT_FADE_MS = 400;
 const SLIDE_FADE_MS = 300;
+const JOURNAL_URL_PARAM_PREFIX = 'cntrl-lightbox-journal-';
+
+const getJournalUrlParamKey = (slideNumber: number) => `${JOURNAL_URL_PARAM_PREFIX}${slideNumber}`;
+
+const findJournalUrlSlideNumber = (): number | null => {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  for (const [key] of params) {
+    if (!key.startsWith(JOURNAL_URL_PARAM_PREFIX)) continue;
+    const slideNumber = Number.parseInt(key.slice(JOURNAL_URL_PARAM_PREFIX.length), 10);
+    if (Number.isFinite(slideNumber) && slideNumber >= 1) {
+      return slideNumber;
+    }
+  }
+  return null;
+};
+
+const slideNumberToIndex = (slideNumber: number, slideCount: number) => {
+  if (slideCount <= 0) return -1;
+  const slideIndex = slideNumber - 1;
+  if (slideIndex < 0 || slideIndex >= slideCount) return -1;
+  return slideIndex;
+};
+
+const setJournalUrlParam = (slideNumber: number, replace = true) => {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  [...url.searchParams.keys()].forEach((key) => {
+    if (key.startsWith(JOURNAL_URL_PARAM_PREFIX)) {
+      url.searchParams.delete(key);
+    }
+  });
+  url.searchParams.set(getJournalUrlParamKey(slideNumber), '');
+  const historyMethod = replace ? 'replaceState' : 'pushState';
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history[historyMethod](window.history.state, '', nextUrl);
+};
+
+const clearJournalUrlParam = () => {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  let changed = false;
+  [...url.searchParams.keys()].forEach((key) => {
+    if (key.startsWith(JOURNAL_URL_PARAM_PREFIX)) {
+      url.searchParams.delete(key);
+      changed = true;
+    }
+  });
+  if (changed) {
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(window.history.state, '', nextUrl);
+  }
+};
+
+const hasJournalUrlParam = () => {
+  if (typeof window === 'undefined') return false;
+  return [...new URLSearchParams(window.location.search).keys()]
+    .some((key) => key.startsWith(JOURNAL_URL_PARAM_PREFIX));
+};
+
+const removeJournalUrlParam = (didPushHistory: boolean) => {
+  if (!hasJournalUrlParam()) return;
+  if (didPushHistory) {
+    window.history.back();
+    return;
+  }
+  clearJournalUrlParam();
+};
 
 function getCSS(P: string): string {
   return `
@@ -384,6 +452,9 @@ type LightboxOverlayProps = {
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
+  initialSlideIndex?: number;
+  enableUrlSync?: boolean;
+  onBeforeClose?: () => void;
   onClose: () => void;
 };
 
@@ -474,6 +545,9 @@ const LightboxOverlay = ({
   contentMarginTop,
   contentMarginLeft,
   contentMarginRight,
+  initialSlideIndex = 0,
+  enableUrlSync = false,
+  onBeforeClose,
   onClose,
 }: LightboxOverlayProps) => {
   const showControls = Boolean(isEditMode);
@@ -482,7 +556,7 @@ const LightboxOverlay = ({
     () => buildJournalSlides(entries, journalType),
     [entries, journalType],
   );
-  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(initialSlideIndex);
   const activeSlide = slides[activeSlideIndex];
   const activeEntry = activeSlide?.entry;
   const [isVisible, setIsVisible] = useState(false);
@@ -536,11 +610,17 @@ const LightboxOverlay = ({
   const handleClose = useCallback(() => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
+    onBeforeClose?.();
     setIsVisible(false);
     closeTimeoutRef.current = setTimeout(() => {
       onClose();
     }, LIGHTBOX_ANIM_MS);
-  }, [onClose]);
+  }, [onBeforeClose, onClose]);
+
+  const syncUrlToSlide = useCallback((slideIndex: number) => {
+    if (!enableUrlSync) return;
+    setJournalUrlParam(slideIndex + 1, true);
+  }, [enableUrlSync]);
 
   const goToSlide = useCallback((index: number) => {
     if (slides.length === 0) return;
@@ -574,6 +654,7 @@ const LightboxOverlay = ({
     setPrevSlideIndex(activeSlideIndex);
     setIsSlideFading(true);
     setActiveSlideIndex(normalizedIndex);
+    syncUrlToSlide(normalizedIndex);
     prevSlideIndexRef.current = normalizedIndex;
     if (shouldFadeTitles) {
       clearTitlesFadeTimer();
@@ -603,7 +684,7 @@ const LightboxOverlay = ({
       setIncomingMeasureEntry(null);
       prevEntryIndexRef.current = incomingSlide.entryIndex;
     }
-  }, [activeSlideIndex, clearTitlesFadeTimer, getIncomingTitlesMeasureWidth, slides, textTransition]);
+  }, [activeSlideIndex, clearTitlesFadeTimer, getIncomingTitlesMeasureWidth, slides, syncUrlToSlide, textTransition]);
 
   const onStripPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowDesktopNav) return;
@@ -716,10 +797,10 @@ const LightboxOverlay = ({
     setTitlesStackMinHeight(undefined);
     setTitlesStackWidth(undefined);
     setIncomingMeasureEntry(null);
-    prevSlideIndexRef.current = 0;
-    prevEntryIndexRef.current = 0;
-    setActiveSlideIndex(0);
-  }, [clearTitlesFadeTimer, entries.length, journalType]);
+    prevSlideIndexRef.current = initialSlideIndex;
+    prevEntryIndexRef.current = slides[initialSlideIndex]?.entryIndex ?? 0;
+    setActiveSlideIndex(initialSlideIndex);
+  }, [clearTitlesFadeTimer, entries.length, initialSlideIndex, journalType, slides]);
 
   const outgoingEntry = prevEntryIndex !== null ? entries[prevEntryIndex] : null;
   const outgoingSlide = prevSlideIndex !== null ? slides[prevSlideIndex] : null;
@@ -1199,16 +1280,74 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   const countStyle = journalTextFieldsToCss('count', resolveJournalTextFields(settings, 'count'), isEditor);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxInitialSlideIndex, setLightboxInitialSlideIndex] = useState(0);
+  const didApplyInitialUrlRef = useRef(false);
+  const urlHistoryPushedRef = useRef(false);
+  const isClosingFromUrlRef = useRef(false);
   const entries = (content ?? []).filter((entry) => getEntryImages(entry).length > 0);
+  const shouldSyncUrl = !isEditor || Boolean(isPreviewMode);
 
-  const openLightbox = () => {
+  const removeJournalUrl = useCallback(() => {
+    if (!shouldSyncUrl) return;
+    isClosingFromUrlRef.current = true;
+    removeJournalUrlParam(urlHistoryPushedRef.current);
+    urlHistoryPushedRef.current = false;
+  }, [shouldSyncUrl]);
+
+  const openLightbox = (slideIndex = 0) => {
     if (entries.length === 0) return;
+    const slides = buildJournalSlides(entries, type);
+    const normalizedSlideIndex = Math.max(0, Math.min(slideIndex, slides.length - 1));
+    setLightboxInitialSlideIndex(normalizedSlideIndex);
+    if (shouldSyncUrl) {
+      const hadParam = hasJournalUrlParam();
+      setJournalUrlParam(normalizedSlideIndex + 1, hadParam);
+      urlHistoryPushedRef.current = !hadParam;
+    }
     setLightboxOpen(true);
   };
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxOpen(false);
-  };
+    isClosingFromUrlRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (!shouldSyncUrl || didApplyInitialUrlRef.current) return;
+    didApplyInitialUrlRef.current = true;
+    const slideNumber = findJournalUrlSlideNumber();
+    if (!slideNumber) return;
+    const slideIndex = slideNumberToIndex(slideNumber, buildJournalSlides(entries, type).length);
+    if (slideIndex < 0) return;
+    setLightboxInitialSlideIndex(slideIndex);
+    setLightboxOpen(true);
+  }, [entries, shouldSyncUrl, type]);
+
+  useEffect(() => {
+    if (!shouldSyncUrl) return;
+    const onPopState = () => {
+      if (isClosingFromUrlRef.current) {
+        isClosingFromUrlRef.current = false;
+        setLightboxOpen(false);
+        return;
+      }
+      const slideNumber = findJournalUrlSlideNumber();
+      if (!slideNumber) {
+        setLightboxOpen(false);
+        return;
+      }
+      const slideIndex = slideNumberToIndex(slideNumber, buildJournalSlides(entries, type).length);
+      if (slideIndex < 0) {
+        setLightboxOpen(false);
+        return;
+      }
+      urlHistoryPushedRef.current = false;
+      setLightboxInitialSlideIndex(slideIndex);
+      setLightboxOpen(true);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [entries, shouldSyncUrl, type]);
 
   return (
     <>
@@ -1218,7 +1357,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
           <button
             type="button"
             className={`${P}-cover`}
-            onClick={openLightbox}
+            onClick={() => openLightbox()}
             style={{
               display: 'block',
               padding: 0,
@@ -1267,6 +1406,9 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             isEditor={isEditor}
             isEditMode={isEditMode}
             isPreviewMode={isPreviewMode}
+            initialSlideIndex={lightboxInitialSlideIndex}
+            enableUrlSync={shouldSyncUrl}
+            onBeforeClose={removeJournalUrl}
             onClose={closeLightbox}
           />,
           portalTarget,
