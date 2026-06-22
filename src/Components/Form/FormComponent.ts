@@ -595,6 +595,7 @@ const schema = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         'fontFamily',
         {
           type: 'group',
@@ -624,6 +625,7 @@ const schema = {
       title: 'Fields',
       tooltip: 'Fields',
       layout: [
+        '__componentName__',
         'fields',
         'buttonLabel',
         'successMessage',

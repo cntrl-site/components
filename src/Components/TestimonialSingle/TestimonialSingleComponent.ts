@@ -311,6 +311,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         { type: 'group', title: 'Text', items: [
         'textFontFamily',
         'textFontSettings',

@@ -644,7 +644,7 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'name'] },
+        '__componentName__',
         'type',
         {
           type: 'row',
@@ -668,6 +668,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Image settings',
       tooltip: 'Image settings',
       layout: [
+        '__componentName__',
         {type: 'row', title: 'Image', items: ['imageDisplay']},
         {
           type: 'row',
@@ -690,6 +691,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         {
           type: 'group',
           title: 'Title',

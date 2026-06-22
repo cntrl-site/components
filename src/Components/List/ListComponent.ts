@@ -1005,7 +1005,7 @@ const schema: ComponentSchemaV1 = {
       icon: 'layers',
       title: 'Columns Order',
       tooltip: 'Columns order',
-      layout: ['columnsOrder'],
+      layout: ['__componentName__', 'columnsOrder'],
     },
     {
       id: 'cutSettings',
@@ -1013,6 +1013,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Cut settings',
       tooltip: 'Cut settings',
       layout: [
+        '__componentName__',
         { type: 'row', title: '', items: ['cut'] },
         { type: 'row', title: 'Cut Settings', items: ['cutLabel', 'cutCellMinHeight'] },
         { type: 'row', title: '', items: ['showCut'] },
@@ -1024,6 +1025,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         textStylePanelTab,
       ],
     },
