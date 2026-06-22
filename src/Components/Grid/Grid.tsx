@@ -73,6 +73,7 @@ function getCSS(P: string): string {
   display: flex;
   justify-content: center;
   align-items: center;
+  align-self: center;
 }
 .${P}-item-image-wrapper-fit-slider {
   display: grid;
@@ -179,7 +180,7 @@ function getCSS(P: string): string {
 }
 .${P}-type-b .${P}-item-image-link,
 .${P}-type-c .${P}-item-image-link {
-  align-items: flex-start;
+  align-items: center;
 }
 .${P}-type-b .${P}-item-title,
 .${P}-type-b .${P}-item-subtitle,
@@ -224,7 +225,7 @@ function getCSS(P: string): string {
   height: auto;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
 }
 .${P}-lightbox-counter {
   margin: 0;
