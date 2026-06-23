@@ -316,7 +316,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Active Color',
-        display: { type: 'palette-color-picker' },
+        display: { type: 'palette-color-picker', visible: false },
       },
       textMaxWidth: {
         type: 'string',
@@ -462,6 +462,10 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'type', value: 'A' },
         then: { name: 'properties.contentBackgroundColor.display.visible', value: false },
+      },
+      {
+        if: { name: 'thumbnailActive', value: 'color' },
+        then: { name: 'properties.thumbnailActiveColor.display.visible', value: true },
       },
     ],
     layout: [

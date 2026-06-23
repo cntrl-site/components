@@ -1412,6 +1412,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
 
   const openLightbox = (slideIndex = 0) => {
     if (isEditMode || entries.length === 0) return;
+    if (isEditor && !isPreviewMode) return;
     const slides = buildJournalSlides(entries, type);
     const normalizedSlideIndex = Math.max(0, Math.min(slideIndex, slides.length - 1));
     setLightboxInitialSlideIndex(normalizedSlideIndex);

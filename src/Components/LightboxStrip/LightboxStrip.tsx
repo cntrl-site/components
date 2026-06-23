@@ -1225,7 +1225,7 @@ const LightboxOverlay = ({
                   draggable={false}
                   style={{
                     display: 'block',
-                    width: '100%',
+                    maxWidth: '100%',
                     height: '100%',
                     objectFit: itemObjectFit,
                   }}
@@ -1378,6 +1378,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
 
   const openLightbox = () => {
     if (isEditMode || items.length === 0) return;
+    if (isEditor && !isPreviewMode) return;
     setLightboxOpen(true);
   };
 
