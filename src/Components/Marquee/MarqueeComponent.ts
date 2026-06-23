@@ -40,7 +40,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Gap',
         min: 0,
-        max: 200,
         display: { type: 'numeric-input' },
       },
       imageMaxWidth: {
@@ -48,7 +47,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Max width',
         min: 10,
-        max: 400,
         display: { type: 'numeric-input' },
       },
       imageMaxHeight: {
@@ -56,7 +54,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Max height',
         min: 10,
-        max: 400,
         display: { type: 'numeric-input' },
       },
       imageFit: {
@@ -99,8 +96,8 @@ const schema: ComponentSchemaV1 = {
       d: {
         speed: 1.64,
         gap: 0.02,
-        imageMaxWidth: 0.15,
-        imageMaxHeight: 0.1,
+        imageMaxWidth: 0.208,
+        imageMaxHeight: 0.278,
       },
     },
     displayRules: [
@@ -165,35 +162,35 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
           name: '',
         },
         link: '',
@@ -211,7 +208,7 @@ export const MarqueeComponent = {
   defaultSize: {
     d: {
       width: '100%',
-      height: 140,
+      height: 400,
     },
     m: {
       width: 390,
