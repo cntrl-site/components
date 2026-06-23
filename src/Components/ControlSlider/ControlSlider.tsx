@@ -31,7 +31,6 @@ const alignmentClassName: Record<Alignment, string> = {
 
 export function ControlSlider({ settings, content, styles: sliderStyles, isEditor }: SliderProps) {
   const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
   const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -74,7 +73,9 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
           backgroundColor: transition.backgroundColor && transition.type === 'fade in' ? transition.backgroundColor : 'transparent'
         }}
       >
-      {settings.imageCaption.isActive && (
+      {settings.imageCaption.isActive && sliderStyles.imageCaption && (() => {
+        const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
+        return (
         <div
           className={cn(styles.captionBlock)}
         >
@@ -122,7 +123,8 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
             ))}
           </div>
         </div>
-      )}
+        );
+      })()}
       <Splide
         onMove={(e) => {
           setCurrentSlideIndex(e.index);
