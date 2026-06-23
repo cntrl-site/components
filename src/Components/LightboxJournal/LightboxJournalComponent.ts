@@ -273,7 +273,7 @@ const schema: ComponentSchemaV1 = {
       },
       textMaxWidth: {
         type: 'string',
-        scope: 'common',
+        scope: 'layout',
         title: 'Max Width',
         display: { type: 'full-width-input' },
         min: 0,
