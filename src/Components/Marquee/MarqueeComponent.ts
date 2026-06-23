@@ -165,35 +165,35 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZNCQFC3T744H0KX6R3FR.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7RZRTSS60YBFT6Y37ZX00T.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ9M9YJPQ5JWKCHDEW5M1GJD.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S04EHBXQS1T4KVAMZNZQM.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01KM5KBNFNRT3D0JP64K5EY92A/articles-assets/01KQ7S08Q40WHD39024VNDWF2Q.jpeg',
+          url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
           name: '',
         },
         link: '',
