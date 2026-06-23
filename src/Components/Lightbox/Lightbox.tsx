@@ -634,8 +634,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             </button>
           );
         })()}
-        {caption && caption.isActive && lightboxStyles.imageCaption && content[currentIndex]?.imageCaption && (() => {
-          return (
+        {caption && caption.isActive && lightboxStyles.imageCaption && content[currentIndex]?.imageCaption && (
             <div 
               className={classes.caption} 
               style={{
@@ -667,8 +666,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
             </div>
-          );
-        })()}
+        )}
         {thumbnail.isActive && (() => {
           const [vertical, horizontal] = thumbnail.position.split('-');
           const effectivePosition: Alignment =
