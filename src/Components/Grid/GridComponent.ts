@@ -160,7 +160,7 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Exiting the Old Town',
+          title: 'Leaving the Old Town',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
           image: [{
             url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
