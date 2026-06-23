@@ -1,16 +1,23 @@
 import React from 'react';
 import { ComponentSchemaV1 } from './SchemaV1';
 
+export type Breakpoint = 'd' | 't' | 'm';
+
+export type ComponentSize = {
+  width?: number | string;
+  height?: number | string;
+};
+
+export type ComponentDefaultSize = Partial<Record<Breakpoint, ComponentSize>>;
+
 export type Component = {
   element: (props: any) => React.ReactElement;
   id: string;
   name: string;
   category?: string;
   version?: number;
-  defaultSize?: {
-    width?: number | string;
-    height?: number | string;
-  };
+  layoutMode?: 'freeform' | 'structured';
+  defaultSize?: ComponentDefaultSize;
   schema: any;
   preview?: {
     type: 'image' | 'video';
@@ -25,6 +32,11 @@ export type Component = {
     content: Path[];
     parameters: Path[];
   };
+  normalizeLayoutSettingsUpdate?: (
+    nextSettings: Record<string, any>,
+    prevSettings: Record<string, any>,
+    options?: any,
+  ) => Record<string, any>;
 };
 
 type Path = {

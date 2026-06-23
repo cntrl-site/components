@@ -7,11 +7,21 @@ export const ControlSliderComponent: Component = {
   name: 'Slider',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/sliderImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/Slider.mp4',
   },
   defaultSize: {
-    width: 400,
-    height: 400
+    d: {
+      width: 400,
+      height: 400
+    },
+    t: {
+      width: 400,
+      height: 400
+    },
+    m: {
+      width: 300,
+      height: 300
+    }
   },
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
@@ -270,7 +280,8 @@ export const ControlSliderComponent: Component = {
                   type: 'setting-toggle',
                 }
               },
-              alignment: {                type: 'string',
+              alignment: {                
+                type: 'string',
                 display: {
                   type: 'align-grid'
                 },

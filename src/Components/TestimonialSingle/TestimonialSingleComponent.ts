@@ -28,26 +28,18 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto manual',
     properties: {
-      autoplay: {
-        type: 'string',
-        scope: 'common',
-        title: 'Autoplay',
-        display: { type: 'switch-control' },
-        enum: ['on', 'off'],
-      },
-      delay: {
+      speed: {
         type: 'number',
         scope: 'layout',
-        title: 'Delay(s)',
-        display: { type: 'step-control'},
-        step: 1,
-        min: 1,
+        title: 'Speed',
+        display: { type: 'speed-control' },
+        min: 0,
         max: 8,
       },
       align: {
         type: 'string',
         scope: 'common',
-        title: 'Align',
+        title: 'Alignment',
         display: {
           type: 'align-group',
           direction: 'horizontal',
@@ -60,7 +52,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 1000,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       imageWidth: {
         type: 'number',
@@ -68,7 +60,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 300,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       imageHeight: {
         type: 'number',
@@ -76,14 +68,14 @@ const schema: ComponentSchemaV1 = {
         title: 'height',
         min: 0,
         max: 300,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       imageMarginTop: {
         type: 'number',
         scope: 'layout',
         title: 'Image margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       textMarginTop: {
@@ -91,7 +83,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Text margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       controls: {
@@ -117,18 +109,18 @@ const schema: ComponentSchemaV1 = {
         title: 'Controls width',
         min: 0,
         max: 100,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       controlsColor: {
         type: 'string',
         scope: 'common',
-        title: 'Controls Color',
+        title: 'Fill Controls',
         display: { type: 'settings-color-picker' },
       },
       controlsHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Controls Hover',
+        title: 'Hover Controls',
         display: { type: 'settings-color-picker' },
       },
       captionMarginTop: {
@@ -136,7 +128,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Caption margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       captionFontFamily: {
@@ -185,7 +177,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Caption Color',
+        title: 'Fill Caption',
       },
       textFontFamily: {
         type: 'string',
@@ -233,11 +225,10 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Text Color',
+        title: 'Fill Text',
       },
     },
     defaults: {
-      autoplay: 'on',
       controls: {
         mode: 'On',
         icon: testimonialDefaultControlsIconUrl,
@@ -254,7 +245,7 @@ const schema: ComponentSchemaV1 = {
       textWordSpacing: 0,
       textTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
       textColor: '#000000',
-      captionFontFamily: 'Charter',
+      captionFontFamily: 'Goudy Bookletter 1911',
       captionFontSettings: { fontWeight: 400, fontStyle: 'normal' },
       captionLetterSpacing: 0,
       captionWordSpacing: 0,
@@ -263,7 +254,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        delay: 3,
+        speed: 1,
         width: 0.69,
         imageMarginTop: 0.08,
         captionMarginTop: 0.04,
@@ -277,7 +268,7 @@ const schema: ComponentSchemaV1 = {
         controlsWidth: 0.06,
       },
       d: {
-        delay: 3,
+        speed: 1,
         width: 0.35,
         imageMarginTop: 0.02,
         textMarginTop: 0,
@@ -291,16 +282,9 @@ const schema: ComponentSchemaV1 = {
         controlsWidth: 0.014,
       },
     },
-    displayRules: [
-      {
-        if: { name: 'autoplay', value: 'off' },
-        then: { name: 'properties.delay.display.enabled', value: false },
-      },
-    ],
     layout: [
       '__componentName__',
-      'autoplay',
-      'delay',
+      'speed',
       'width',
       'imageMarginTop',
       'textMarginTop',
@@ -314,9 +298,10 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'autoplay'] },
-        { type: 'row', items: ['controls', {'type': 'group', title: '', items: ['delay', 'width']}] },
-        { type: 'row', items: ['controlsWidth', 'align'] },
+        { type: 'row', items: ['__componentName__'] },
+        { type: 'row', items: ['width', 'align'] },
+        { type: 'row', items: ['controls'] },
+        { type: 'row', items: ['controlsWidth', 'speed'] },
         { type: 'row', title: 'Image Container', items: ['imageWidth', 'imageHeight'] },
       ],
     },
@@ -326,6 +311,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         { type: 'group', title: 'Text', items: [
         'textFontFamily',
         'textFontSettings',
@@ -456,11 +442,21 @@ export const TestimonialSingleComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/testimonialsSingle.png',
+    url: 'https://cdn.cntrl.site/component-assets/Testimonials_Single.png',
   },
   defaultSize: {
-    width: 700,
-    height: 300,
+    d: {
+      width: 700,
+      height: 300
+    },
+    t: {
+      width: 373,
+      height: 300
+    },
+    m: {
+      width: 334,
+      height: 300
+    }
   },
   schema,
   sourceCode: testimonialSingleSourceRaw,

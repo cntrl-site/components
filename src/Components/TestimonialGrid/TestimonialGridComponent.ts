@@ -20,19 +20,12 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto manual',
     properties: {
-      autoplay: {
-        type: 'string',
-        scope: 'common',
-        title: 'Autoplay',
-        display: { type: 'switch-control' },
-        enum: ['on', 'off'],
-      },
       speed: {
         type: 'number',
         scope: 'layout',
         title: 'Speed',
         display: { type: 'speed-control' },
-        min: 0.5,
+        min: 0,
         max: 8,
       },
       direction: {
@@ -46,7 +39,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Pause on hover',
         type: 'string',
         scope: 'common',
-        display: { type: 'switch-toggle-2', enum: ['on', 'off'] },
+        display: { type: 'toggle', enum: ['on', 'off'] },
       },
       gap: {
         type: 'number',
@@ -58,7 +51,7 @@ const schema: ComponentSchemaV1 = {
       },
       align: {
         type: 'string',
-        title: 'Align',
+        title: 'Alignment',
         display: {
           type: 'align-group',
           direction: 'horizontal',
@@ -71,7 +64,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 400,
-        display: { type: 'range-control'  },
+        display: { type: 'numeric-input'  },
       },
       corners: {
         type: 'number',
@@ -79,7 +72,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Corners',
         min: 0,
         max: 100,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       stroke: {
         type: 'number',
@@ -87,16 +80,16 @@ const schema: ComponentSchemaV1 = {
         title: 'Stroke',
         min: 0,
         max: 10,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       strokeColor: {
         type: 'string',
         scope: 'common',
-        title: 'Stroke color',
+        title: 'Stroke Card',
         display: { type: 'palette-color-picker', visible: true },
       },
       bgColor: {
-        title: 'BG color',
+        title: 'BG card',
         type: 'string',
         scope: 'common',
         display: { type: 'palette-color-picker' },
@@ -112,7 +105,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Logo margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       logoWidth: {
@@ -121,7 +114,7 @@ const schema: ComponentSchemaV1 = {
         title: 'width',
         min: 0,
         max: 200,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       logoHeight: {
         type: 'number',
@@ -129,18 +122,18 @@ const schema: ComponentSchemaV1 = {
         title: 'height',
         min: 0,
         max: 200,
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
       },
       textColor: {
         type: 'string',
         scope: 'common',
-        title: 'Text color',
+        title: 'Fill Text',
         display: { type: 'palette-color-picker' },
       },
       captionColor: {
         type: 'string',
         scope: 'common',
-        title: 'Caption color',
+        title: 'Fill Caption',
         display: { type: 'palette-color-picker' },
       },
       captionMarginTop: {
@@ -148,7 +141,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Caption margin top',
         min: 0,
-        max: 100,
+        max: 200,
         display: { type: 'range-control' },
       },
       captionFontFamily: {
@@ -237,7 +230,6 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      autoplay: 'on',
       direction: 'left',
       pauseOnHover: 'off',
       strokeColor: '#000000',
@@ -312,7 +304,6 @@ const schema: ComponentSchemaV1 = {
     ],
     layout: [
       '__componentName__',
-      'autoplay',
       'speed',
       'direction',
       'pauseOnHover',
@@ -336,10 +327,10 @@ const schema: ComponentSchemaV1 = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        {type: 'row', items: ['__componentName__', 'autoplay']},   
-        {type: 'row', items: ['speed', 'pauseOnHover']},
+        {type: 'row', items: ['__componentName__']},
         {type: 'row', items: ['align', 'direction']},
-        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'corners', 'stroke']}, {type: 'group', title: '', items: ['padding']}]},
+        {type: 'row', items: ['speed', 'pauseOnHover']},
+        {type: 'row', title: 'Card', items: [{type: 'group', title: '', items: ['cardWidth', 'corners']}, {type: 'group', title: '', items: ['stroke', 'padding']}]},
         {type: 'row', title: 'Image Container', items: ['logoWidth', 'logoHeight']},
       ],
     },
@@ -349,6 +340,7 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         { type: 'group', title: 'Text', items: [
         'textFontFamily',
         'textFontSettings',
@@ -459,7 +451,7 @@ const schema: ComponentSchemaV1 = {
         caption: [
           {
             type: 'paragraph',
-            children: [{ text: 'Pia' }],
+            children: [{ text: 'Pia,' }],
           },
           {
             type: 'paragraph',
@@ -479,11 +471,13 @@ export const TestimonialGridComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/testimonials.png',
+    url: 'https://cdn.cntrl.site/component-assets/Testimonials_Grid.mp4',
   },
   defaultSize: {
-    width: '100%',
-    height: 320,
+    d: {
+      width: '100%',
+      height: 320
+    }    
   },
   schema,
   sourceCode: testimonialGridSourceRaw,

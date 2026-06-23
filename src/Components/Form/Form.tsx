@@ -144,6 +144,22 @@ function getCSS(P: string): string {
   position: relative;
   height: auto;
 }
+.${P}-control {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+.${P}-control::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 20px;
+  pointer-events: auto;
+  z-index: 10;
+}
 `;
 }
 
@@ -151,11 +167,15 @@ type FormProps = {
   settings: FormSettings;
   content?: unknown;
   isEditor?: boolean;
+  isEditMode?: boolean;
+  isPreviewMode?: boolean;
   activeEvent: string | undefined;
   onUpdateSettings?: (settings: FormSettings) => void;
 } & CommonComponentProps;
 
-export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
+export function Form({ settings, isEditor, isEditMode, isPreviewMode, metadata, activeEvent }: FormProps) {
+  const showControls = Boolean(isEditMode);
+  const canSubmit = (isPreviewMode && isEditor) || !isEditor;
   const { prefix: P } = useScopedStyles();
   const {
     type = 'A',
@@ -352,6 +372,8 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
+
     const payload = Object.fromEntries(
       visibleFields.map((f) => [f.name, fieldValues[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
@@ -397,52 +419,62 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
       <form
         onSubmit={handleSubmit}
         className={`${P}-form`}
-        style={{ gap: scalingValue(gap ?? 0, isEditor) }}
       >
-        <div
-          className={`${P}-fields`}
-          style={{ gap: scalingValue(fieldsGap ?? 0, isEditor) }}
-        >
+        <div className={`${P}-fields`}>
           {visibleFields.map((field, index) => (
-            <div key={index} className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
-              {showLabels && (
-                <span className={`${P}-field-label`} style={labelTextCss ? { ...labelTextCss, lineHeight: labelTextCss.fontSize } : undefined}>
-                  {field.label || field.name}
-                </span>
-              )}
-              {field.type === 'textarea' ? (
-                <textarea
-                  name={field.name}
-                  autoComplete="off"
-                  value={displayValues[field.name] ?? ''}
-                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  className={`${P}-input`}
-                  style={inputFieldCss}
-                  rows={1}
-                  data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
-                  data-field-type="textarea"
-                />
-              ) : (
-                <input
-                  type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
-                  name={field.name}
-                  autoComplete="off"
-                  value={displayValues[field.name] ?? ''}
-                  onChange={(e) => handleFieldChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  required={field.isRequired ?? field.type === 'email'}
-                  className={`${P}-input`}
-                  style={inputFieldCss}
-                  data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
+            <React.Fragment key={index}>
+              {index > 0 && (
+                <div
+                  data-controls={showControls ? 'fieldsGap' : undefined}
+                  className={showControls ? `${P}-control` : undefined}
+                  style={{ height: scalingValue(fieldsGap ?? 0, isEditor) }}
                 />
               )}
-            </div>
+              <div className={`${P}-field-group${showLabels ? ` ${P}-labeled` : ''}`}>
+                {showLabels && (
+                  <span className={`${P}-field-label`} style={labelTextCss ? { ...labelTextCss, lineHeight: labelTextCss.fontSize } : undefined}>
+                    {field.label || field.name}
+                  </span>
+                )}
+                {field.type === 'textarea' ? (
+                  <textarea
+                    name={field.name}
+                    autoComplete="off"
+                    value={displayValues[field.name] ?? ''}
+                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    className={`${P}-input`}
+                    style={inputFieldCss}
+                    rows={1}
+                    data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
+                    data-field-type="textarea"
+                  />
+                ) : (
+                  <input
+                    type={field.type === 'phone' ? 'tel' : field.type === 'email' ? 'email' : 'text'}
+                    name={field.name}
+                    autoComplete="off"
+                    value={displayValues[field.name] ?? ''}
+                    onChange={(e) => handleFieldChange(field.name, e.target.value)}
+                    placeholder={field.placeholder}
+                    required={field.isRequired ?? field.type === 'email'}
+                    className={`${P}-input`}
+                    style={inputFieldCss}
+                    data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
+                  />
+                )}
+              </div>
+            </React.Fragment>
           ))}
         </div>
+        <div
+          data-controls={showControls ? 'gap' : undefined}
+          className={showControls ? `${P}-control` : undefined}
+          style={{ height: scalingValue(gap ?? 0, isEditor) }}
+        />
         <div className={`${P}-overlay-anchor`}>
           <button
-            type="submit"
+            type={canSubmit ? 'submit' : 'button'}
             className={`${P}-button`}
             style={{
               borderStyle: 'solid',
@@ -452,6 +484,7 @@ export function Form({ settings, isEditor, metadata, activeEvent }: FormProps) {
               paddingRight: scalingValue(buttonPadding?.right ?? 0, isEditor),
               paddingBottom: scalingValue(buttonPadding?.bottom ?? 0, isEditor),
               paddingLeft: scalingValue(buttonPadding?.left ?? 0, isEditor),
+              pointerEvents: canSubmit ? 'auto' : undefined,
               ...buttonTypographyCss,
               ...(isButtonFullWidth
                 ? {

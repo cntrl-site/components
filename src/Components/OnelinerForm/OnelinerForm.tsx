@@ -207,11 +207,13 @@ type OnelinerFormProps = {
   settings: OnelinerFormSettings;
   content?: unknown;
   isEditor?: boolean;
+  isPreviewMode?: boolean;
   activeEvent?: string;
 } & CommonComponentProps;
 
-export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: OnelinerFormProps) => {
+export const OnelinerForm = ({ settings, isEditor, isPreviewMode, metadata, activeEvent }: OnelinerFormProps) => {
   const { prefix: P } = useScopedStyles();
+  const canSubmit = (isPreviewMode && isEditor) || !isEditor;
   const {
     fields = [{ name: 'email', type: 'email', placeholder: 'Your email' }],
     buttonIcon,
@@ -352,6 +354,8 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
+
     const payload = Object.fromEntries(
       visibleFields.map((f) => [f.name, values[f.name]?.trim() ?? '']).filter(([, v]) => v)
     );
@@ -431,7 +435,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
         </div>
         <div className={`${P}-overlayAnchor`}>
           <button
-            type="submit"
+            type={canSubmit ? 'submit' : 'button'}
             className={`${P}-submitBtn`}
             aria-label={submitAriaLabel}
             style={{
@@ -441,6 +445,7 @@ export const OnelinerForm = ({ settings, isEditor, metadata, activeEvent }: Onel
               paddingLeft: scalingValue(buttonPadding.left, isEditor),
               paddingTop: scalingValue(buttonPadding.top, isEditor),
               paddingBottom: scalingValue(buttonPadding.bottom, isEditor),
+              pointerEvents: canSubmit ? 'auto' : undefined,
             }}
           >
             {status === 'submitting'

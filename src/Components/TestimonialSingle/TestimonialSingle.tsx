@@ -141,19 +141,23 @@ type TestimonialsProps = {
   content?: TestimonialsItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
 } & CommonComponentProps;
 
 type RenderItemContentOpts = {
   textMinHeightPx?: number;
   captionMinHeightPx?: number;
   dataMeasureAttrs?: boolean;
+  hideControls?: boolean;
 };
 
-export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
+const SLIDE_INTERVAL_BASE_MS = 3000;
+
+export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, isEditMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
   const items = content || [];
-  const { autoplay, delay, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
-  const isAnimating = autoplay === 'on' && !isPreviewMode;
+  const { speed, align, width, imageMarginTop, textMarginTop, captionMarginTop, imageWidth, imageHeight, controlsWidth, controlsColor, controlsHoverColor } = settings;
+  const isAnimating = speed > 0 && (!isEditor || Boolean(isPreviewMode));
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);
@@ -249,14 +253,14 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
 
   useEffect(() => {
     if (!isAnimating || !canSwitch) return;
-    const safeDelayMs = Math.max(300, Number.isFinite(delay * 1000) ? delay * 1000 : 0);
+    const slideIntervalMs = Math.max(300, SLIDE_INTERVAL_BASE_MS / speed);
     const id = window.setInterval(() => {
       setActiveIndex((currentIndex) => commitTransition(currentIndex, (currentIndex + 1) % items.length));
-    }, safeDelayMs);
+    }, slideIntervalMs);
     return () => {
       window.clearInterval(id);
     };
-  }, [isAnimating, canSwitch, commitTransition, items.length, delay]);
+  }, [isAnimating, canSwitch, commitTransition, items.length, speed]);
 
   useEffect(() => {
     return () => {
@@ -268,14 +272,15 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
     const textMinHeightPx = opts?.textMinHeightPx;
     const captionMinHeightPx = opts?.captionMinHeightPx;
     const dataMeasureAttrs = opts?.dataMeasureAttrs;
+    const showMarginControls = isEditMode && !opts?.dataMeasureAttrs && !opts?.hideControls;
 
     return (
       <>
         {item.text && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
             <div
-              data-controls="textMarginTop"
-              className={`${P}-control`}
+              data-controls={showMarginControls ? 'textMarginTop' : undefined}
+              className={showMarginControls ? `${P}-control` : undefined}
               style={{ height: scalingValue(textMarginTop ?? 0, isEditor ?? false) }}
             />
             <div
@@ -293,8 +298,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         )}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
           <div
-            data-controls="imageMarginTop"
-            className={`${P}-control`}
+            data-controls={showMarginControls ? 'imageMarginTop' : undefined}
+            className={showMarginControls ? `${P}-control` : undefined}
             style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
           />
           <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
@@ -311,8 +316,8 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
         {item.caption && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: overlayAlignItems, width: '100%' }}>
             <div
-              data-controls="captionMarginTop"
-              className={`${P}-control`}
+              data-controls={showMarginControls ? 'captionMarginTop' : undefined}
+              className={showMarginControls ? `${P}-control` : undefined}
               style={{ height: scalingValue(captionMarginTop ?? 0, isEditor ?? false) }}
             />
             <div
@@ -394,7 +399,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode }
           <div className={`${P}-fade-stack`}>
             {previousItem && isFading && (
               <div className={cn(`${P}-fade-item-prev`, `${P}-fade-out`)}>
-                {renderItemContent(previousItem, visibleContentOpts)}
+                {renderItemContent(previousItem, { ...visibleContentOpts, hideControls: true })}
               </div>
             )}
             <div className={cn(`${P}-fade-item-current`, isFading ? `${P}-fade-in` : undefined)}>
@@ -473,8 +478,7 @@ export type TestimonialsItem = {
 };
 
 type TestimonialsSettings = {
-  autoplay: 'on' | 'off';
-  delay: number;
+  speed: number;
   align: 'start' | 'center' | 'end';
   width: number;
   imageMarginTop?: number;

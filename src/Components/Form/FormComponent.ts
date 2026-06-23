@@ -3,8 +3,8 @@ import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Form.tsx?raw';
 
 const defaultFieldsItems = [
-  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
   { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
+  { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },
   { name: 'company', type: 'text' as const, placeholder: 'Enter company', label: 'Company', isRequired: false, error: 'Please, enter your company name.' },
   { name: 'phone', type: 'phone' as const, placeholder: 'Enter your phone', label: 'Phone', isRequired: false, error: 'Please, enter a valid phone number.' },
   { name: 'message', type: 'textarea' as const, placeholder: 'Enter your message', label: 'Message', isRequired: false, error: 'Message is required' },
@@ -71,7 +71,7 @@ const schema = {
         type: 'number',
         scope: 'common',
         title: 'Fields',
-        display: { type: 'number' },
+        display: { type: 'common-numeric-input' },
         min: 1,
         max: 7,
       },
@@ -120,7 +120,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Gap',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 100,
       },
@@ -128,7 +128,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Gap',
-        display: { type: 'range-control', enabled: true },
+        display: { type: 'numeric-input', enabled: true },
         min: 0,
         max: 100,
       },
@@ -148,7 +148,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Stroke',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 20,
       },
@@ -156,7 +156,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control', enabled: true },
+        display: { type: 'numeric-input', enabled: true },
         min: 0,
         max: 100,
       },
@@ -164,7 +164,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Stroke',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 20,
       },
@@ -172,14 +172,14 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control', enabled: true },
+        display: { type: 'numeric-input', enabled: true },
         min: 0,
         max: 100,
       },
       inputColor: {
         type: 'string',
         scope: 'common',
-        title: 'Input Fill',
+        title: 'Fill Input',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
@@ -191,25 +191,25 @@ const schema = {
       inputBorderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Input Stroke',
+        title: 'Stroke Input',
         display: { type: 'palette-color-picker' },
       },
       placeholderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Filler text',
+        title: 'Filler Input',
         display: { type: 'palette-color-picker' },
       },
       buttonColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Fill',
+        title: 'Fill Button',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Label',
+        title: 'Label Button',
         display: { type: 'palette-color-picker' },
       },
       isButtonFullWidth: {
@@ -221,13 +221,13 @@ const schema = {
       buttonBorderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Stroke',
+        title: 'Stroke Button',
         display: { type: 'palette-color-picker' },
       },
       labelTextColor: {
         type: 'string',
         scope: 'common',
-        title: 'Label Color',
+        title: 'Label Button',
         display: { type: 'palette-color-picker', visible: false },
       },
       successColor: {
@@ -561,42 +561,30 @@ const schema = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'name', 'fieldsToShow'] },
+        { type: 'row', items: ['__componentName__', 'name'] },
         'type',
         {
           type: 'group',
           title: '',
           items: [
-            {
-              type: 'row',
-              title: 'Input',
-              items: [
-                  {
-                    type: 'group',
-                    title: '',
-                    items: ['fieldsGap', 'inputStroke', 'inputCorners'],
-                  },
-                  {
-                    type: 'group',
-                    title: '',
-                    items: ['inputPadding'],
-                  },
-              ],
-            },
-            {
-              type: 'group',
-              title: 'Button',
-              items: [
-                {type: 'row', items: ['isButtonFullWidth']},
-                {
-                  type: 'row',
-                  items: [
-                    { type: 'group', title: '', items: ['gap', 'buttonStroke', 'buttonCorners']},
-                    { type: 'group', title: '', items: ['buttonPadding']}
-                  ]
-                },
-              ],
-            },
+              {
+                type: 'row',
+                title: 'Input',
+                items: ['inputCorners', 'inputPadding'],
+              },
+              {
+                type: 'row',
+                title: '',
+                items: ['fieldsToShow', 'inputStroke'],
+              },
+          ],
+        },
+        {
+          type: 'group',
+          title: '',
+          items: [ 
+            { type: 'row', title: 'Button', items: ['buttonCorners', 'buttonPadding']},
+            { type: 'row', title: '', items: ['buttonStroke', 'isButtonFullWidth']},
           ],
         },
       ],
@@ -607,6 +595,7 @@ const schema = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         'fontFamily',
         {
           type: 'group',
@@ -636,6 +625,7 @@ const schema = {
       title: 'Fields',
       tooltip: 'Fields',
       layout: [
+        '__componentName__',
         'fields',
         'buttonLabel',
         'successMessage',
@@ -666,11 +656,21 @@ export const FormComponent = {
   category: 'forms',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/formImg.jpg',
+    url: 'https://cdn.cntrl.site/component-assets/Newsletter_Stacked.png',
   },
   defaultSize: {
-    width: 300,
-    height: 42,
+    d: {
+      width: 300,
+      height: 42
+    },
+    t: {
+      width: 346,
+      height: 42
+    },
+    m: {
+      width: 300,
+      height: 42
+    }
   },
   schema,
   sourceCode: formSourceRaw,

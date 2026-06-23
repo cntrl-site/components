@@ -6,7 +6,7 @@ export type SchemaDisplay = {
 };
 
 export type SchemaProperty = {
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'];
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'] | 'grid-layout';
   scope?: PropertyScope;
   title?: string;
   message?: string;
@@ -17,6 +17,7 @@ export type SchemaProperty = {
   properties?: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   items?: SchemaProperty;
+  gridParams?: SchemaProperty;
   default?: unknown;
   min?: number;
   max?: number;
@@ -46,12 +47,19 @@ export type LayoutPaletteBookmark = {
   items: string[];
 };
 
+export type LayoutTab = {
+  type: 'tab';
+  id?: string;
+  tabs: Record<string, LayoutItem[]>;
+};
+
 export type LayoutItem =
   | string
   | LayoutRow
   | LayoutGroup
   | LayoutSwitcher
-  | LayoutPaletteBookmark;
+  | LayoutPaletteBookmark
+  | LayoutTab;
 
 export type SchemaDisplayRule = {
   if:

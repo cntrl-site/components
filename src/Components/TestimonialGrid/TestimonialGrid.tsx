@@ -103,9 +103,11 @@ type TestimonialsProps = {
   content?: TestimonialsItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
+  isEditMode?: boolean;
 } & CommonComponentProps;
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
+const MIN_TRACK_COPIES = 2;
 
 type RenderCardOpts = {
   textMinHeightPx?: number;
@@ -120,11 +122,13 @@ type RenderTextOpts = {
   dataMeasureKind?: 'text' | 'caption';
 };
 
-export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: TestimonialsProps) => {
+export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, isEditMode }: TestimonialsProps) => {
   const { prefix: P } = useScopedStyles();
-  const { autoplay, align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
-  const autoplayEnabled = autoplay === 'on' && !isPreviewMode;
-  const isAnimating = autoplayEnabled;
+  const { align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
+  const showControls = Boolean(isEditMode);
+  const hasContent = (content?.length ?? 0) > 0;
+  const autoplayEnabled = speed > 0 && (!isEditor || Boolean(isPreviewMode));
+  const useMarqueeTrack = hasContent && (autoplayEnabled || Boolean(isEditor));
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -133,7 +137,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
   const [trackHeight, setTrackHeight] = useState(0);
-  const hoverPauseEnabled = isAnimating && pauseOnHover === 'on';
+  const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
@@ -171,13 +175,13 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
   );
 
   const copies = useMemo(() => {
-    if (!autoplayEnabled || content?.length === 0) return 1;
-    if (setWidth <= 0 || containerWidth <= 0) return 2;
-    return Math.max(2, Math.ceil(containerWidth / setWidth) + 1);
-  }, [autoplayEnabled, content?.length, setWidth, containerWidth]);
+    if (!useMarqueeTrack || content?.length === 0) return 1;
+    if (setWidth <= 0 || containerWidth <= 0) return MIN_TRACK_COPIES;
+    return Math.max(MIN_TRACK_COPIES, Math.ceil(containerWidth / setWidth) + 1);
+  }, [useMarqueeTrack, content?.length, setWidth, containerWidth]);
 
   useLayoutEffect(() => {
-    if (!autoplayEnabled) return;
+    if (!useMarqueeTrack) return;
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
@@ -212,36 +216,46 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [autoplayEnabled, setWidth]);
+  }, [autoplayEnabled, useMarqueeTrack, setWidth]);
 
   useLayoutEffect(() => {
     const track = trackRef.current;
-    if (!autoplayEnabled || !track || !isAnimating) return;
+    if (!useMarqueeTrack || !track) return;
     const safeSetWidth = setWidth > 0 ? setWidth : 0;
     const durationMs = safeSetWidth > 0 && pxPerSec > 0 ? (safeSetWidth / pxPerSec) * 1000 : 0;
     const durationS = `${Math.max(0, durationMs) / 1000}s`;
     track.style.setProperty('--marquee-distance', `${safeSetWidth}px`);
     track.style.setProperty('--marquee-duration', durationS);
-  }, [autoplayEnabled, isAnimating, pxPerSec, setWidth]);
+  }, [autoplayEnabled, useMarqueeTrack, pxPerSec, setWidth]);
 
   useLayoutEffect(() => {
-    if (!autoplayEnabled) {
+    if (!useMarqueeTrack) {
       setTrackHeight(0);
       return;
     }
+    const set = setRef.current;
     const track = trackRef.current;
-    if (!track) return;
+    if (!set || !track) return;
     const measure = () => {
-      const next = track.getBoundingClientRect().height;
+      let next = 0;
+      for (let i = 0; i < set.children.length; i++) {
+        const wrapper = set.children[i] as HTMLElement;
+        const card = wrapper.firstElementChild as HTMLElement | null;
+        if (card) next = Math.max(next, card.offsetHeight);
+      }
+      if (next <= 0) {
+        next = track.offsetHeight;
+      }
       setTrackHeight(next > 0 ? next : 0);
     };
     measure();
     const ro = new ResizeObserver(measure);
+    ro.observe(set);
     ro.observe(track);
     return () => {
       ro.disconnect();
     };
-  }, [autoplayEnabled, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight]);
+  }, [useMarqueeTrack, copies, content, isEditor, gap, cardWidth, padding, stroke, corners, logoWidth, logoHeight, measuredTextMinPx, measuredCaptionMinPx]);
 
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
@@ -288,9 +302,9 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         }}
       >
         <div
-          data-controls={options?.controlsName}
-          data-controls-axis="y"
-          className={`${P}-control`}
+          data-controls={showControls ? options?.controlsName : undefined}
+          data-controls-axis={showControls ? 'y' : undefined}
+          className={showControls ? `${P}-control` : undefined}
           style={{ height: scaled(options?.marginTop ?? 0) }}
         />
         <div
@@ -308,7 +322,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         </div>
       </div>
     ),
-    [overlayAlignItems, overlayTextAlign, isEditor]
+    [overlayAlignItems, overlayTextAlign, isEditor, showControls, P, scaled]
   );
 
   const renderCard = useCallback(
@@ -317,7 +331,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
         key={key}
         style={{
           padding: `${scaled(padding.top)} ${scaled(padding.right)} ${scaled(padding.bottom)} ${scaled(padding.left)}`,
-          width: scaled(cardWidth + stroke * 2),
+          width: scaled(cardWidth + (stroke * 2)),
           height: '100%',
           borderRadius: scaled(corners),
           border: `${scaled(stroke)} solid ${strokeColor}`,
@@ -350,9 +364,9 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
             }}
           >
             <div
-              data-controls="logoMarginTop"
-              className={`${P}-control`}
-              style={{ height: scaled(logoMarginTop) }}
+            data-controls={showControls && !opts?.dataMeasureAttrs ? 'logoMarginTop' : undefined}
+            className={showControls && !opts?.dataMeasureAttrs ? `${P}-control` : undefined}
+            style={{ height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
               {item.logo?.url && (
@@ -366,7 +380,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
           </div>
           {item.caption &&
             renderText(captionStyle, item.caption, 'caption', {
-              controlsName: 'captionMarginTop',
+              ...(opts?.dataMeasureAttrs ? {} : { controlsName: 'captionMarginTop' }),
               marginTop: captionMarginTop,
               ...(opts?.dataMeasureAttrs
                 ? { dataMeasureKind: 'caption' as const }
@@ -397,6 +411,8 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       strokeColor,
       textStyle,
       isEditor,
+      showControls,
+      P,
     ]
   );
 
@@ -459,7 +475,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
       }}
     >
       {renderCard(item, `card-${key}`, visibleCardOpts)}
-      {isEditor && (
+      {showControls && (
         <div
           data-controls="gap"
           data-controls-axis="x"
@@ -477,7 +493,13 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
     </div>
   );
 
-  if (autoplayEnabled && (content?.length ?? 0) > 0) {
+  if (useMarqueeTrack) {
+    const marqueePlayState = !autoplayEnabled
+      ? 'paused'
+      : hoverPauseEnabled
+        ? (isHovering ? 'paused' : 'running')
+        : 'running';
+
     return (
       <div
         ref={wrapperRef}
@@ -508,9 +530,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode }: 
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
             perspective: '1000px',
-            ...(hoverPauseEnabled
-              ? ({ '--marquee-play-state': isHovering ? 'paused' : 'running' } as React.CSSProperties)
-              : ({ '--marquee-play-state': 'running' } as React.CSSProperties)),
+            ...( { '--marquee-play-state': marqueePlayState } as React.CSSProperties),
           }}
         >
           {Array.from({ length: copies }, (_, copyIndex) => (
@@ -577,7 +597,6 @@ type Padding = {
 };
 
 type TestimonialsSettings = {
-  autoplay: 'on' | 'off';
   speed: number;
   align: 'start' | 'center' | 'end';
   direction: 'left' | 'right';

@@ -7,11 +7,21 @@ export const LightboxComponent: Component = {
   name: 'Lightbox',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/lightboxImg.png',
+    url: 'https://cdn.cntrl.site/component-assets/Lightbox.png',
   },
   defaultSize: {
-    width: 440,
-    height: 550
+    d: {
+      width: 440,
+      height: 550
+    },
+    t: {
+      width: 235,
+      height: 293
+    },
+    m: {
+      width: 265,
+      height: 331
+    }
   },
   fontSettingsPaths: {
     content: [],

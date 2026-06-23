@@ -74,7 +74,7 @@ const schema = {
         type: 'number',
         scope: 'common',
         title: 'Fields',
-        display: { type: 'number' },
+        display: { type: 'common-numeric-input' },
         min: 1,
         max: 3,
       },
@@ -134,20 +134,20 @@ const schema = {
       inputPadding: {
         type: 'object',
         scope: 'layout',
-        title: '',
+        title: 'Input Padding',
         display: { type: 'padding-controls' },
       },
       buttonPadding: {
         type: 'object',
         scope: 'layout',
-        title: '',
+        title: 'Button Padding',
         display: { type: 'padding-controls' },
       },
       minHeight: {
         type: 'number',
         scope: 'layout',
         title: 'min Height',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 200,
       },
@@ -155,7 +155,7 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Corners',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 100,
       },
@@ -163,20 +163,20 @@ const schema = {
         type: 'number',
         scope: 'layout',
         title: 'Stroke',
-        display: { type: 'range-control' },
+        display: { type: 'numeric-input' },
         min: 0,
         max: 20,
       },
       strokeColor: {
         type: 'string',
         scope: 'common',
-        title: 'Stroke',
+        title: 'Stroke All',
         display: { type: 'palette-color-picker' },
       },
       inputColor: {
         type: 'string',
         scope: 'common',
-        title: 'Input Fill',
+        title: 'Fill Input',
         display: { type: 'palette-color-picker' },
       },
       inputTextColor: {
@@ -188,19 +188,19 @@ const schema = {
       placeholderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Filler Text',
+        title: 'Filler Input',
         display: { type: 'palette-color-picker' },
       },
       buttonColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Fill',
+        title: 'Fill Button',
         display: { type: 'palette-color-picker' },
       },
       buttonTextColor: {
         type: 'string',
         scope: 'common',
-        title: 'Button Label',
+        title: 'Label Button',
         display: { type: 'palette-color-picker' },
       },
       successColor: {
@@ -346,11 +346,11 @@ const schema = {
         icon: onelinerDefaultSubmitIconUrl,
       },
       fontFamily: 'Arial',
-      strokeColor: '#0A00F8',
+      strokeColor: '#000000',
       inputColor: '#ffffff',
       inputTextColor: '#0A00F8',
       placeholderColor: '#000000',
-      buttonColor: '#0088D7',
+      buttonColor: '#000000',
       buttonTextColor: '#ffffff',
       errorColor: '#ef4444',
       successColor: '#22c55e',
@@ -399,7 +399,7 @@ const schema = {
       m: {
         minHeight: 0.1,
         iconMaxWidth: 0.1,
-        stroke: 0,
+        stroke: 0.001,
         corners: 0,
         buttonPadding: { top: 0.02, right: 0.04, bottom: 0.02, left: 0.04 },
         inputPadding: { top: 0.01, right: 0.03, bottom: 0.01, left: 0.03 },
@@ -413,7 +413,7 @@ const schema = {
       d: {
         minHeight: 0.028,
         iconMaxWidth: 0.028,
-        stroke: 0,
+        stroke: 0.001,
         corners: 0,
         buttonPadding: { right: 0.0175, left: 0.0175, top: 0.005, bottom: 0.004,},
         inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
@@ -467,20 +467,12 @@ const schema = {
       title: 'General',
       tooltip: 'General Settings',
       layout: [
-        { type: 'row', items: ['__componentName__', 'fieldsToShow'] },
-        {type: 'row', items: ['minHeight', 'corners']},
-        {type: 'row', items: [
-          {type: 'group', title: '', items: ['stroke', 'buttonIcon']},
-          {
-          type: 'switcher',
-          title: 'Padding',
-          options: {
-            'Input': ['inputPadding'],
-            'Button': ['buttonPadding'],
-          },
-        },
-      ]},
-      'iconMaxWidth'
+        { type: 'row', items: ['__componentName__'] },
+        {type: 'row', items: ['fieldsToShow', 'minHeight']},
+        {type: 'row', items: ['corners', 'stroke']},
+        {type: 'row', title: '', items: ['inputPadding', 'buttonPadding']},
+        {type: 'row', title: '', items: ['buttonIcon']},
+        'iconMaxWidth',
       ],
     },
     {
@@ -489,6 +481,7 @@ const schema = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
+        '__componentName__',
         'fontFamily',
         {
           type: 'group',
@@ -513,6 +506,7 @@ const schema = {
       title: 'Fields',
       tooltip: 'Fields',
       layout: [
+        '__componentName__',
         'fields',
         'buttonLabel',
         'successMessage',
@@ -543,11 +537,21 @@ export const OnelinerFormComponent = {
   category: 'forms',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/onelinerImg.jpg',
+    url: 'https://cdn.cntrl.site/component-assets/Newsletter_Single_Line.png',
   },
   defaultSize: {
-    width: 400,
-    height: 60,
+    d: {
+      width: 400,
+      height: 60
+    },
+    t: {
+      width: 453,
+      height: 60
+    },
+    m: {
+      width: 340,
+      height: 60
+    }
   },
   assetsPaths: {
     content: [],
