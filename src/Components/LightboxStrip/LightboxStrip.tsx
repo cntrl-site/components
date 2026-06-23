@@ -208,7 +208,6 @@ function getCSS(P: string): string {
 
 .${P}-thumb-image {
   display: block;
-  width: ${THUMB_MAX_SIZE_PX}px;
   height: ${THUMB_MAX_SIZE_PX}px;
   object-fit: contain;
   transition: filter 0.2s ease;
@@ -1283,7 +1282,10 @@ const LightboxOverlay = ({
                       src={item.image.url}
                       alt=""
                       draggable={false}
-                      style={thumbAspectRatioStyle}
+                      style={
+                        {...thumbAspectRatioStyle,
+                        ...(thumbnailObjectFit.display === 'Cover' ? { width: THUMB_MAX_SIZE_PX } : { width: '100%' }),}
+                      }
                     />
                   </button>
                   {showControls && index < images.length - 1 && (
