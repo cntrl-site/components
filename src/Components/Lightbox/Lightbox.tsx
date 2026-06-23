@@ -69,6 +69,7 @@ export const LightboxGallery = ({ settings, content, styles, portalId, activeEve
 };
 
 const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles, settings, portalId, isEditor, metadata }) => {
+  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.imageCaption ?? {};
   const [currentIndex, setCurrentIndex] = useState(0);
   const [splideKey, setSplideKey] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
@@ -633,9 +634,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
             </button>
           );
         })()}
-        {caption && caption.isActive && lightboxStyles.imageCaption && content[currentIndex]?.imageCaption && (() => {
-          const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = lightboxStyles.imageCaption;
-          return (
+        {caption && caption.isActive && lightboxStyles.imageCaption && content[currentIndex]?.imageCaption && (
             <div 
               className={classes.caption} 
               style={{
@@ -667,8 +666,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                 <RichTextRenderer content={content[currentIndex].imageCaption} />
               </div>
             </div>
-          );
-        })()}
+        )}
         {thumbnail.isActive && (() => {
           const [vertical, horizontal] = thumbnail.position.split('-');
           const effectivePosition: Alignment =
