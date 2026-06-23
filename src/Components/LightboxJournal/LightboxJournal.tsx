@@ -11,16 +11,25 @@ import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 const LIGHTBOX_ANIM_MS = 300;
 const TEXT_FADE_MS = 400;
 const SLIDE_FADE_MS = 300;
-const JOURNAL_URL_PARAM_PREFIX = 'cntrl-lightbox-journal-';
+const JOURNAL_URL_PARAM_KEY = 'cntrl-lightbox-journal';
+const LEGACY_JOURNAL_URL_PARAM_PREFIX = `${JOURNAL_URL_PARAM_KEY}-`;
 
-const getJournalUrlParamKey = (slideNumber: number) => `${JOURNAL_URL_PARAM_PREFIX}${slideNumber}`;
+const isJournalUrlParamKey = (key: string) =>
+  key === JOURNAL_URL_PARAM_KEY || key.startsWith(LEGACY_JOURNAL_URL_PARAM_PREFIX);
 
 const findJournalUrlSlideNumber = (): number | null => {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
+  const value = params.get(JOURNAL_URL_PARAM_KEY);
+  if (value) {
+    const slideNumber = Number.parseInt(value, 10);
+    if (Number.isFinite(slideNumber) && slideNumber >= 1) {
+      return slideNumber;
+    }
+  }
   for (const [key] of params) {
-    if (!key.startsWith(JOURNAL_URL_PARAM_PREFIX)) continue;
-    const slideNumber = Number.parseInt(key.slice(JOURNAL_URL_PARAM_PREFIX.length), 10);
+    if (!key.startsWith(LEGACY_JOURNAL_URL_PARAM_PREFIX)) continue;
+    const slideNumber = Number.parseInt(key.slice(LEGACY_JOURNAL_URL_PARAM_PREFIX.length), 10);
     if (Number.isFinite(slideNumber) && slideNumber >= 1) {
       return slideNumber;
     }
@@ -39,11 +48,11 @@ const setJournalUrlParam = (slideNumber: number, replace = true) => {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
   [...url.searchParams.keys()].forEach((key) => {
-    if (key.startsWith(JOURNAL_URL_PARAM_PREFIX)) {
+    if (isJournalUrlParamKey(key)) {
       url.searchParams.delete(key);
     }
   });
-  url.searchParams.set(getJournalUrlParamKey(slideNumber), '');
+  url.searchParams.set(JOURNAL_URL_PARAM_KEY, String(slideNumber));
   const historyMethod = replace ? 'replaceState' : 'pushState';
   const nextUrl = `${url.pathname}${url.search}${url.hash}`;
   window.history[historyMethod](window.history.state, '', nextUrl);
@@ -54,7 +63,7 @@ const clearJournalUrlParam = () => {
   const url = new URL(window.location.href);
   let changed = false;
   [...url.searchParams.keys()].forEach((key) => {
-    if (key.startsWith(JOURNAL_URL_PARAM_PREFIX)) {
+    if (isJournalUrlParamKey(key)) {
       url.searchParams.delete(key);
       changed = true;
     }
@@ -68,7 +77,7 @@ const clearJournalUrlParam = () => {
 const hasJournalUrlParam = () => {
   if (typeof window === 'undefined') return false;
   return [...new URLSearchParams(window.location.search).keys()]
-    .some((key) => key.startsWith(JOURNAL_URL_PARAM_PREFIX));
+    .some((key) => isJournalUrlParamKey(key));
 };
 
 const removeJournalUrlParam = (didPushHistory: boolean) => {
@@ -300,7 +309,7 @@ function getCSS(P: string): string {
 
 .${P}-slide-image-custom {
   object-fit: var(--image-object-fit);
-  width: 100%;
+  max-width: 100%;
   height: 100%;
 }
 
