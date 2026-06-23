@@ -193,11 +193,11 @@ function getCSS(P: string): string {
   opacity: 1;
 }
 
-.${P}-thumbnails[data-thumbnail-active="invert"] .${P}-thumb[data-active="true"] .${P}-thumb-image {
-  filter: invert(1);
+.${P}-thumbnails[data-thumbnail-active="outline"] .${P}-thumb[data-active="true"] {
+  border-color: var(--thumbnail-active-color, #ffffff);
 }
 
-.${P}-thumbnails[data-thumbnail-active="grayscale"] .${P}-thumb:not([data-active="true"]) .${P}-thumb-image {
+.${P}-thumbnails[data-thumbnail-active="color"] .${P}-thumb:not([data-active="true"]) .${P}-thumb-image {
   filter: grayscale(1);
 }
 
@@ -205,9 +205,6 @@ function getCSS(P: string): string {
   transform: scale(1.15);
 }
 
-.${P}-thumbnails[data-thumbnail-active="opacity"] .${P}-thumb:not([data-active="true"]) {
-  opacity: 0.5;
-}
 
 .${P}-thumb-image {
   display: block;
@@ -415,7 +412,8 @@ export type LightboxStripSettings = {
     reversed: boolean;
   },
   thumbnailTrigger: 'click' | 'hover';
-  thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
+  thumbnailActive: 'outline' | 'color' | 'scale-up';
+  thumbnailActiveColor: string;
   thumbnailGap: number;
   thumbnailMarginBottom?: number;
   imageGap?: number;
@@ -623,7 +621,8 @@ type LightboxOverlayProps = {
     reversed: boolean;
   };
   thumbnailTrigger: 'click' | 'hover';
-  thumbnailActive: 'invert' | 'grayscale' | 'scale-up' | 'opacity';
+  thumbnailActive: 'outline' | 'color' | 'scale-up';
+  thumbnailActiveColor: string;
   textMaxWidth: string;
   title1Gap: string;
   title2Gap: string;
@@ -669,6 +668,7 @@ const LightboxOverlay = ({
   thumbnailVisibility,
   thumbnailObjectFit,
   thumbnailActive,
+  thumbnailActiveColor,
   textMaxWidth,
   title1Gap,
   title2Gap,
@@ -1258,7 +1258,11 @@ const LightboxOverlay = ({
               className={`${P}-thumbnails`}
               data-thumbnail-active={thumbnailActive}
               data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
-              style={{ gap: thumbnailGap, bottom: thumbnailMarginBottom }}
+              style={{
+                gap: thumbnailGap,
+                bottom: thumbnailMarginBottom,
+                '--thumbnail-active-color': thumbnailActiveColor,
+              } as React.CSSProperties}
             >
               {images.map((item, index) => {
                 const thumbnailGapControlSize = getGapControlSize(thumbnailGap);
@@ -1346,6 +1350,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
     thumbnailObjectFit,
     thumbnailTrigger,
     thumbnailActive,
+    thumbnailActiveColor,
     thumbnailGap,
     thumbnailMarginBottom,
     imageGap,
@@ -1423,6 +1428,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             thumbnailObjectFit={thumbnailObjectFit}
             thumbnailTrigger={thumbnailTrigger}
             thumbnailActive={thumbnailActive}
+            thumbnailActiveColor={thumbnailActiveColor}
             textMaxWidth={scaled(textMaxWidth)}
             title1Gap={scaled(title1Gap ?? 0)}
             title2Gap={scaled(title2Gap ?? 0)}

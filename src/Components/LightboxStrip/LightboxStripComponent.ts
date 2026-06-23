@@ -310,7 +310,13 @@ const schema: ComponentSchemaV1 = {
         type: 'boolean',
         scope: 'common',
         title: 'Active',
-        display: { type: 'toggle-cycle', enum: ['invert', 'grayscale', 'scale-up'] },
+        display: { type: 'toggle-cycle', enum: ['outline', 'color', 'scale-up'] },
+      },
+      thumbnailActiveColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Active Color',
+        display: { type: 'palette-color-picker' },
       },
       textMaxWidth: {
         type: 'string',
@@ -399,7 +405,8 @@ const schema: ComponentSchemaV1 = {
         reversed: false,
       },
       thumbnailTrigger: 'click',
-      thumbnailActive: 'invert',
+      thumbnailActive: 'color',
+      thumbnailActiveColor: '#ffffff',
       title1Color: '#ffffff',
       title2Color: '#ffffff',
       title3Color: '#ffffff',
@@ -496,7 +503,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['backgroundColor', 'contentBackgroundColor', 'title1Color', 'title2Color', 'title3Color', 'closeIconColor', 'closeIconHoverColor'],
+    items: ['backgroundColor', 'contentBackgroundColor', 'title1Color', 'title2Color', 'title3Color', 'closeIconColor', 'closeIconHoverColor', 'thumbnailActiveColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
