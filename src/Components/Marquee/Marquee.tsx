@@ -142,8 +142,8 @@ function getCSS(P: string): string {
 
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
 const GAP_LABEL_AREA_PX = 20;
-const MIN_CONTENT_SEQUENCE_REPEAT = 3;
-const OUTER_SET_COPIES = 3;
+const MIN_CONTENT_SEQUENCE_REPEAT = 2;
+const OUTER_SET_COPIES = 2;
 
 const expandSetContent = (items: MarqueeItem[], repeat: number) =>
   Array.from({ length: repeat }, () => items).flat();

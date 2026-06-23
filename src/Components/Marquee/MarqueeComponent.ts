@@ -40,7 +40,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Gap',
         min: 0,
-        max: 200,
         display: { type: 'numeric-input' },
       },
       imageMaxWidth: {
@@ -48,7 +47,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Max width',
         min: 10,
-        max: 400,
         display: { type: 'numeric-input' },
       },
       imageMaxHeight: {
@@ -56,7 +54,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Max height',
         min: 10,
-        max: 400,
         display: { type: 'numeric-input' },
       },
       imageFit: {
@@ -99,8 +96,8 @@ const schema: ComponentSchemaV1 = {
       d: {
         speed: 1.64,
         gap: 0.02,
-        imageMaxWidth: 0.15,
-        imageMaxHeight: 0.1,
+        imageMaxWidth: 0.208,
+        imageMaxHeight: 0.278,
       },
     },
     displayRules: [
@@ -211,7 +208,7 @@ export const MarqueeComponent = {
   defaultSize: {
     d: {
       width: '100%',
-      height: 140,
+      height: 400,
     },
     m: {
       width: 390,
