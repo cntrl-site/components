@@ -7,6 +7,7 @@ import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
 import { useLightboxSwipeDismiss } from '../utils/useLightboxSwipeDismiss';
+import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
@@ -169,6 +170,7 @@ function getCSS(P: string): string {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: none;
 }
 
 .${P}-lightbox-editor {
@@ -747,6 +749,7 @@ const LightboxOverlay = ({
     mediaAreaStyle,
     chromeStyle: swipeChromeStyle,
     swipeHandlers,
+    dismissAreaStyle,
   } = useLightboxSwipeDismiss({
     enabled: allowSwipeDismiss,
     onClose: handleClose,
@@ -888,6 +891,8 @@ const LightboxOverlay = ({
     }
   }, [resetStripNavGesture]);
 
+  useLightboxScrollLock();
+
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
@@ -902,11 +907,8 @@ const LightboxOverlay = ({
         }
       });
     });
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       cancelAnimationFrame(frame);
-      document.body.style.overflow = originalOverflow;
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -1154,6 +1156,7 @@ const LightboxOverlay = ({
           position: 'relative',
           width: '100%',
           height: '100%',
+          ...dismissAreaStyle,
         }}
         {...swipeHandlers}
       >

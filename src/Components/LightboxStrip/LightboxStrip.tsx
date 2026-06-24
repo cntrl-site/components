@@ -7,6 +7,7 @@ import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
 import { useLightboxSwipeDismiss } from '../utils/useLightboxSwipeDismiss';
+import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
@@ -67,6 +68,7 @@ function getCSS(P: string): string {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: none;
 }
 
 .${P}-lightbox-editor {
@@ -827,6 +829,7 @@ const LightboxOverlay = ({
     mediaAreaStyle,
     chromeStyle: swipeChromeStyle,
     swipeHandlers,
+    dismissAreaStyle,
   } = useLightboxSwipeDismiss({
     enabled: allowImageScroll,
     onClose: handleClose,
@@ -1025,13 +1028,12 @@ const LightboxOverlay = ({
     resetChromeIdleTimer();
   };
 
+  useLightboxScrollLock();
+
   useEffect(() => {
     const frame = requestAnimationFrame(() => setIsVisible(true));
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       cancelAnimationFrame(frame);
-      document.body.style.overflow = originalOverflow;
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -1162,6 +1164,7 @@ const LightboxOverlay = ({
           position: 'relative',
           width: '100%',
           height: '100%',
+          ...dismissAreaStyle,
         }}
         {...swipeHandlers}
       >
@@ -1173,6 +1176,7 @@ const LightboxOverlay = ({
         <div
           ref={stripRef}
           className={`${P}-lightbox-strip`}
+          data-lightbox-scrollable=""
           style={{ gap: imageGap }}
           data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
           data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
@@ -1305,8 +1309,10 @@ const LightboxOverlay = ({
           return (
             <div
               className={`${P}-thumbnails`}
+              data-lightbox-scrollable=""
               data-thumbnail-active={thumbnailActive}
               data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
+              onClick={(event) => event.stopPropagation()}
               style={{
                 gap: thumbnailGap,
                 bottom: thumbnailMarginBottom,
