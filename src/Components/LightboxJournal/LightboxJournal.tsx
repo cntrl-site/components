@@ -735,7 +735,8 @@ const LightboxOverlay = ({
   const {
     isSwipeDragging,
     backdropStyle: swipeBackdropStyle,
-    dismissAreaStyle,
+    mediaAreaStyle,
+    chromeStyle: swipeChromeStyle,
     swipeHandlers,
   } = useLightboxSwipeDismiss({
     enabled: allowSwipeDismiss,
@@ -1097,12 +1098,12 @@ const LightboxOverlay = ({
           position: 'relative',
           width: '100%',
           height: '100%',
-          ...dismissAreaStyle,
         }}
         {...swipeHandlers}
       >
         <div
           className={`${P}-lightbox-content`}
+          style={mediaAreaStyle}
           onClick={(event) => event.stopPropagation()}
         >
           <div
@@ -1132,10 +1133,7 @@ const LightboxOverlay = ({
               key={`slide-in-${slideTransitionKey}-${activeSlideIndex}`}
               className={`${P}-slide-layer-in${isSlideFading ? ` ${P}-slide-fade-in` : ''}`}
             >
-              <div
-                className={`${P}-slide-area`}
-                // style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
-              >
+              <div className={`${P}-slide-area`} >
                 {activeSlide ? renderSlideImages(activeSlide.images) : null}
               </div>
             </div>
@@ -1143,7 +1141,7 @@ const LightboxOverlay = ({
           </div>
         </div>
 
-        <div className={`${P}-lightbox-chrome`} style={{ width: '100%', height: '100%' }}>
+        <div className={`${P}-lightbox-chrome`} style={{ width: '100%', height: '100%', ...swipeChromeStyle }}>
         <div
           data-controls={showControls ? 'contentMarginTop' : undefined}
           className={showControls ? `${P}-control` : undefined}

@@ -224,7 +224,7 @@ const schema: ComponentSchemaV1 = {
       maxHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Max Height',
+        title: 'Max Height (%)',
         min: 0,
         max: 100,
         display: { type: 'percentage-input' },
@@ -232,7 +232,7 @@ const schema: ComponentSchemaV1 = {
       maxWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Max Width',
+        title: 'Max Width (%)',
         min: 0,
         max: 100,
         display: { type: 'percentage-input' },
@@ -248,7 +248,7 @@ const schema: ComponentSchemaV1 = {
       backgroundColor: {
         type: 'string',
         scope: 'common',
-        title: 'BG',
+        title: 'BG Default',
         display: { type: 'settings-color-picker' },
       },
       closeIcon: {
@@ -268,13 +268,13 @@ const schema: ComponentSchemaV1 = {
       closeIconColor: {
         type: 'string',
         scope: 'common',
-        title: 'Fill Icon',
+        title: 'Icon Default',
         display: { type: 'settings-color-picker' },
       },
       closeIconHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Hover Icon',
+        title: 'Icon Hover',
         display: { type: 'settings-color-picker' },
       },
       textMaxWidth: {
@@ -310,25 +310,25 @@ const schema: ComponentSchemaV1 = {
       title1Color: {
         type: 'string',
         scope: 'common',
-        title: 'Title 1',
+        title: 'Title Default',
         display: { type: 'palette-color-picker' },
       },
       title2Color: {
         type: 'string',
         scope: 'common',
-        title: 'Title 2',
+        title: 'Subtitle Default',
         display: { type: 'palette-color-picker' },
       },
       title3Color: {
         type: 'string',
         scope: 'common',
-        title: 'Title 3',
+        title: 'Caption Default',
         display: { type: 'palette-color-picker' },
       },
       countColor: {
         type: 'string',
         scope: 'common',
-        title: 'Count',
+        title: 'Count Default',
         display: { type: 'palette-color-picker' },
       },
       ...textStylePropertiesByPrefix,
@@ -461,7 +461,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['backgroundColor', 'title1Color', 'title2Color', 'title3Color', 'countColor', 'closeIconColor', 'closeIconHoverColor'],
+    items: ['title1Color', 'title2Color', 'title3Color', 'backgroundColor', 'countColor', 'closeIconColor', 'closeIconHoverColor'],
     panelIds: ['general', 'typeStyle'],
   },
   content: {
@@ -474,20 +474,20 @@ const schema: ComponentSchemaV1 = {
       properties: {
         title1: {
           type: 'string',
-          label: 'Title 1',
-          placeholder: 'Add Title 1...',
+          label: 'Title',
+          placeholder: 'Add Title...',
           display: { type: 'text-input' },
         },
         title2: {
           type: 'string',
-          label: 'Title 2',
-          placeholder: 'Add Title 2...',
+          label: 'Subtitle',
+          placeholder: 'Add Subtitle...',
           display: { type: 'text-input' },
         },
         title3: {
           type: 'string',
-          label: 'Title 3',
-          placeholder: 'Add Title 3...',
+          label: 'Caption',
+          placeholder: 'Add Caption...',
           display: { type: 'text-input' },
         },
         image: {

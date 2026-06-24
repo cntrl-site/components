@@ -806,7 +806,8 @@ const LightboxOverlay = ({
   const {
     isSwipeDragging,
     backdropStyle: swipeBackdropStyle,
-    dismissAreaStyle,
+    mediaAreaStyle,
+    chromeStyle: swipeChromeStyle,
     swipeHandlers,
   } = useLightboxSwipeDismiss({
     enabled: allowImageScroll,
@@ -1143,7 +1144,6 @@ const LightboxOverlay = ({
         className={`${P}-lightbox-content`}
         data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
         data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
-        style={dismissAreaStyle}
         onClick={(event) => event.stopPropagation()}
         onPointerDown={(event) => {
           swipeHandlers.onPointerDown?.(event);
@@ -1171,6 +1171,7 @@ const LightboxOverlay = ({
             top: 0,
             bottom: type === 'A' ? 0 : 'auto',
             ...(type === 'B' ? { backgroundColor: contentBackgroundColor, position: 'relative' } : {}),
+            ...swipeChromeStyle,
           }}
         >
           <div
@@ -1233,7 +1234,7 @@ const LightboxOverlay = ({
         <div
           ref={stripRef}
           className={`${P}-lightbox-strip`}
-          style={{ gap: imageGap }}
+          style={{ gap: imageGap, ...mediaAreaStyle }}
           data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
         >
           {flatItems.map((item, flatIndex) => {
@@ -1290,6 +1291,7 @@ const LightboxOverlay = ({
                 gap: thumbnailGap,
                 bottom: thumbnailMarginBottom,
                 '--thumbnail-active-color': thumbnailActiveColor,
+                ...swipeChromeStyle,
               } as React.CSSProperties}
             >
               {images.map((item, index) => {

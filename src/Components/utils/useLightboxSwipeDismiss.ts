@@ -37,7 +37,11 @@ export const useLightboxSwipeDismiss = ({
     Math.max(0, 1 - offset / (dismissThreshold * 1.5))
   ), [dismissThreshold]);
 
-  const getDismissAreaTransform = useCallback((offset: number) => {
+  const getChromeOpacity = useCallback((offset: number) => (
+    Math.max(0, 1 - offset / (dismissThreshold * 0.45))
+  ), [dismissThreshold]);
+
+  const getMediaAreaTransform = useCallback((offset: number) => {
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
     const scale = Math.max(0.88, 1 - (offset / viewportHeight) * 0.12);
     return `translateY(${offset}px) scale(${scale})`;
@@ -144,19 +148,25 @@ export const useLightboxSwipeDismiss = ({
 
   const isSwipeDragging = dragOffsetY > 0;
   const transition = isAnimating ? `transform ${animMs}ms ease` : 'none';
+  const opacityTransition = isAnimating ? `opacity ${animMs}ms ease` : 'none';
+  const isChromeFading = dragOffsetY > 0 || isAnimating;
 
   return {
     isSwipeDragging,
     backdropStyle: {
       opacity: getBackdropOpacity(dragOffsetY),
-      transition: isAnimating ? `opacity ${animMs}ms ease` : 'none',
+      transition: opacityTransition,
     } as React.CSSProperties,
-    dismissAreaStyle: {
-      transform: getDismissAreaTransform(dragOffsetY),
+    mediaAreaStyle: {
+      transform: getMediaAreaTransform(dragOffsetY),
       transition,
       touchAction: isSwipeDragging ? 'none' : undefined,
       willChange: isSwipeDragging ? 'transform' : undefined,
     } as React.CSSProperties,
+    chromeStyle: isChromeFading ? {
+      opacity: getChromeOpacity(dragOffsetY),
+      transition: opacityTransition,
+    } as React.CSSProperties : undefined,
     swipeHandlers: enabled ? {
       onPointerDown,
       onPointerMove,
