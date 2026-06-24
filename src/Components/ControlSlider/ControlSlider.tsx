@@ -31,7 +31,7 @@ const alignmentClassName: Record<Alignment, string> = {
 
 export function ControlSlider({ settings, content, styles: sliderStyles, isEditor }: SliderProps) {
   const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption;
+  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = sliderStyles.imageCaption ?? {};
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
   const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
