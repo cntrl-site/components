@@ -126,9 +126,9 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__'] },
+        { type: 'row', items: ['direction' ] },
         { type: 'row', items: [ 'speed', 'imageFit'] },
         { type: 'row', items: [ 'imageMaxWidth', 'imageMaxHeight'] },
-        { type: 'row', items: ['direction' ] },
         { type: 'row', title: 'Hover Settings', items: [
           {type: 'row', title: '', items: ['hoverEffect', 'pauseOnHover']}
         ]},

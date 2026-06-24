@@ -39,7 +39,7 @@ const schema: ComponentSchemaV1 = {
         title: 'Pause on hover',
         type: 'string',
         scope: 'common',
-        display: { type: 'toggle', enum: ['on', 'off'] },
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
       gap: {
         type: 'number',

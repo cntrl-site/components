@@ -127,8 +127,8 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
   const { align, speed, direction, pauseOnHover, gap, cardWidth, corners, stroke, strokeColor, bgColor, padding, logoMarginTop, logoWidth, logoHeight, captionMarginTop } = settings;
   const showControls = Boolean(isEditMode);
   const hasContent = (content?.length ?? 0) > 0;
-  const autoplayEnabled = speed > 0 && (!isEditor || Boolean(isPreviewMode));
-  const useMarqueeTrack = hasContent && (autoplayEnabled || Boolean(isEditor));
+  const autoplayEnabled = speed > 0 && (!isEditor || isPreviewMode);
+  const useMarqueeTrack = hasContent && (autoplayEnabled || isEditor);
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -137,7 +137,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
   const [trackHeight, setTrackHeight] = useState(0);
-  const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
+  const hoverPauseEnabled = autoplayEnabled && (pauseOnHover === 'on');
   const [isHovering, setIsHovering] = useState(false);
   const measureLayerRef = useRef<HTMLDivElement>(null);
   const [measuredTextMinPx, setMeasuredTextMinPx] = useState(0);
