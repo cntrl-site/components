@@ -124,14 +124,11 @@ function getCSS(P: string): string {
 
 .${P}-lightbox-strip[data-mouse-dragging="true"] {
   scroll-snap-type: none;
-}
-
-.${P}-lightbox-content[data-mouse-dragging="true"] {
   cursor: grabbing;
   user-select: none;
 }
 
-.${P}-lightbox-content[data-mouse-draggable="true"] {
+.${P}-lightbox-strip[data-mouse-draggable="true"] {
   cursor: grab;
 }
 
@@ -770,7 +767,7 @@ const LightboxOverlay = ({
       </div>
     ));
   };
-  const contentRef = useRef<HTMLDivElement>(null);
+  const dismissAreaRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
@@ -970,13 +967,12 @@ const LightboxOverlay = ({
     });
   };
 
-  const onContentPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
     if (isDragBlockedTarget(event.target as HTMLElement)) return;
     const strip = stripRef.current;
-    const content = contentRef.current;
-    if (!strip || !content) return;
+    if (!strip) return;
     mouseDragRef.current = {
       isActive: true,
       startX: event.clientX,
@@ -985,10 +981,10 @@ const LightboxOverlay = ({
     };
     setStripSnapEnabled(false);
     resetChromeIdleTimer();
-    content.setPointerCapture(event.pointerId);
+    strip.setPointerCapture(event.pointerId);
   };
 
-  const onContentPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
@@ -1007,18 +1003,17 @@ const LightboxOverlay = ({
     }
   };
 
-  const endContentMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+  const endStripMouseDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
-    const content = contentRef.current;
-    if (!strip || !content) return;
+    if (!strip) return;
     const hadMoved = mouseDragRef.current.hasMoved;
     const startScrollLeft = mouseDragRef.current.scrollLeft;
     mouseDragRef.current.isActive = false;
     setIsMouseDragging(false);
-    if (content.hasPointerCapture(event.pointerId)) {
-      content.releasePointerCapture(event.pointerId);
+    if (strip.hasPointerCapture(event.pointerId)) {
+      strip.releasePointerCapture(event.pointerId);
     }
     normalizeInfiniteScroll();
     setStripSnapEnabled(true);
@@ -1052,14 +1047,14 @@ const LightboxOverlay = ({
       return;
     }
     resetChromeIdleTimer();
-    const content = contentRef.current;
-    if (!content) return;
+    const dismissArea = dismissAreaRef.current;
+    if (!dismissArea) return;
     const onPointerActivity = () => resetChromeIdleTimer();
-    content.addEventListener('pointermove', onPointerActivity);
-    content.addEventListener('pointerdown', onPointerActivity);
+    dismissArea.addEventListener('pointermove', onPointerActivity);
+    dismissArea.addEventListener('pointerdown', onPointerActivity);
     return () => {
-      content.removeEventListener('pointermove', onPointerActivity);
-      content.removeEventListener('pointerdown', onPointerActivity);
+      dismissArea.removeEventListener('pointermove', onPointerActivity);
+      dismissArea.removeEventListener('pointerdown', onPointerActivity);
       if (chromeIdleTimerRef.current) {
         clearTimeout(chromeIdleTimerRef.current);
       }
@@ -1161,30 +1156,75 @@ const LightboxOverlay = ({
     >
       <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor, ...swipeBackdropStyle }} />
       <div
-        ref={contentRef}
-        className={`${P}-lightbox-content`}
-        data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
-        data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => {
-          swipeHandlers.onPointerDown?.(event);
-          if (allowMouseDrag) onContentPointerDown(event);
+        ref={dismissAreaRef}
+        className={`${P}-lightbox-dismiss-area`}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
         }}
-        onPointerMove={(event) => {
-          swipeHandlers.onPointerMove?.(event);
-          if (allowMouseDrag) onContentPointerMove(event);
-        }}
-        onPointerUp={(event) => {
-          swipeHandlers.onPointerUp?.(event);
-          if (allowMouseDrag) endContentMouseDrag(event);
-        }}
-        onPointerCancel={(event) => {
-          swipeHandlers.onPointerCancel?.(event);
-          if (allowMouseDrag) endContentMouseDrag(event);
-        }}
+        {...swipeHandlers}
       >
-
-<div
+        <div
+          className={`${P}-lightbox-content`}
+          style={mediaAreaStyle}
+          onClick={(event) => event.stopPropagation()}
+        >
+        <div
+          ref={stripRef}
+          className={`${P}-lightbox-strip`}
+          style={{ gap: imageGap }}
+          data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
+          data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
+          onPointerDown={onStripPointerDown}
+          onPointerMove={onStripPointerMove}
+          onPointerUp={endStripMouseDrag}
+          onPointerCancel={endStripMouseDrag}
+        >
+          {flatItems.map((item, flatIndex) => {
+            const itemObjectFit = item.image.objectFit ?? 'contain';
+            const sourceIndex = flatIndex % images.length;
+            const copyIndex = Math.floor(flatIndex / images.length);
+            const imageGapControlSize = getGapControlSize(imageGap);
+            const imageGapControlRight = `calc(-0.5 * (${imageGapControlSize} + ${imageGap}))`;
+            return (
+              <div
+                key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
+                ref={(element) => itemRefs.current[flatIndex] = element}
+                className={`${P}-strip-item`}
+                style={{ height: '100%'}}
+              >
+                <img
+                  src={item.image.url}
+                  draggable={false}
+                  style={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    height: '100%',
+                    objectFit: itemObjectFit,
+                  }}
+                />
+                {showControls && sourceIndex < images.length - 1 && (
+                  <div
+                    data-controls="imageGap"
+                    data-controls-axis="x"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: imageGapControlRight,
+                      width: imageGapControlSize,
+                      height: '100%',
+                      pointerEvents: 'auto',
+                      zIndex: 3,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        </div>
+        <div
           className={`${P}-lightbox-content-inner`}
           style={{
             width: '100%',
@@ -1258,56 +1298,6 @@ const LightboxOverlay = ({
               style={{ height: contentMarginBottom, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
             />
           )}
-        </div>
-
-
-        <div
-          ref={stripRef}
-          className={`${P}-lightbox-strip`}
-          style={{ gap: imageGap, ...mediaAreaStyle }}
-          data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
-        >
-          {flatItems.map((item, flatIndex) => {
-            const itemObjectFit = item.image.objectFit ?? 'contain';
-            const sourceIndex = flatIndex % images.length;
-            const copyIndex = Math.floor(flatIndex / images.length);
-            const imageGapControlSize = getGapControlSize(imageGap);
-            const imageGapControlRight = `calc(-0.5 * (${imageGapControlSize} + ${imageGap}))`;
-            return (
-              <div
-                key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
-                ref={(element) => itemRefs.current[flatIndex] = element}
-                className={`${P}-strip-item`}
-                style={{ height: '100%'}}
-              >
-                <img
-                  src={item.image.url}
-                  draggable={false}
-                  style={{
-                    display: 'block',
-                    maxWidth: '100%',
-                    height: '100%',
-                    objectFit: itemObjectFit,
-                  }}
-                />
-                {showControls && sourceIndex < images.length - 1 && (
-                  <div
-                    data-controls="imageGap"
-                    data-controls-axis="x"
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      right: imageGapControlRight,
-                      width: imageGapControlSize,
-                      height: '100%',
-                      pointerEvents: 'auto',
-                      zIndex: 3,
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
         </div>
         {images.length > 1 && thumbnailVisibility === 'on' && (() => {
           const thumbnailMarginBottomControlSize = getGapControlSize(thumbnailMarginBottom);

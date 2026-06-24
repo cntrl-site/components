@@ -378,7 +378,7 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         type: 'B',
-        imageGap: 0.05,
+        imageGap: 0.01,
         maxHeight: 80,
         maxWidth: 80,
         textMaxWidth: 0.4,

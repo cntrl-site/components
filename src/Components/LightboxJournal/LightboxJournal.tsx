@@ -12,6 +12,8 @@ import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 const LIGHTBOX_ANIM_MS = 300;
 const TEXT_FADE_MS = 400;
 const SLIDE_FADE_MS = 300;
+const STRIP_NAV_SWIPE_MIN_PX = 50;
+const STRIP_NAV_TAP_MAX_PX = 10;
 const JOURNAL_URL_PARAM_PREFIX = 'cntrl-lightbox-journal';
 const LEGACY_JOURNAL_URL_PARAM_KEY = JOURNAL_URL_PARAM_PREFIX;
 const LEGACY_JOURNAL_URL_PARAM_PREFIX = `${JOURNAL_URL_PARAM_PREFIX}-`;
@@ -691,6 +693,11 @@ const LightboxOverlay = ({
   const lightboxRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const stripNavGestureRef = useRef<{
+    startX: number;
+    startY: number;
+    pointerId: number;
+  } | null>(null);
 
   const getIncomingTitlesMeasureWidth = useCallback(() => {
     const stack = titlesStackRef.current;
@@ -816,23 +823,70 @@ const LightboxOverlay = ({
     }
   }, [activeSlideIndex, clearTitlesFadeTimer, getIncomingTitlesMeasureWidth, slides, syncUrlToSlide, textTransition]);
 
-  const onStripPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!allowDesktopNav) return;
-    if (event.pointerType !== 'mouse') return;
-    if (slides.length <= 1) return;
-    if (event.button !== 0) return;
+  const resetStripNavGesture = useCallback(() => {
+    stripNavGestureRef.current = null;
+  }, []);
+
+  const onStripPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!allowDesktopNav || slides.length <= 1) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
     const target = event.target as HTMLElement;
     if (target.closest('[data-controls]')) return;
+
+    stripNavGestureRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      pointerId: event.pointerId,
+    };
+  }, [allowDesktopNav, slides.length]);
+
+  const onStripPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!allowDesktopNav || slides.length <= 1) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (isSwipeDragging) {
+      resetStripNavGesture();
+      return;
+    }
+
+    const gesture = stripNavGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    resetStripNavGesture();
+
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-controls]')) return;
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (absX >= STRIP_NAV_SWIPE_MIN_PX && absX > absY) {
+      goToSlide(deltaX > 0 ? activeSlideIndex - 1 : activeSlideIndex + 1);
+      return;
+    }
+
+    if (absX > STRIP_NAV_TAP_MAX_PX || absY > STRIP_NAV_TAP_MAX_PX) return;
+
     const navRect = lightboxRef.current?.getBoundingClientRect();
     const midPoint = navRect
       ? navRect.left + navRect.width / 2
       : window.innerWidth / 2;
-    if (event.clientX < midPoint) {
-      goToSlide(activeSlideIndex - 1);
-    } else {
-      goToSlide(activeSlideIndex + 1);
+    goToSlide(event.clientX < midPoint ? activeSlideIndex - 1 : activeSlideIndex + 1);
+  }, [
+    activeSlideIndex,
+    allowDesktopNav,
+    goToSlide,
+    isSwipeDragging,
+    resetStripNavGesture,
+    slides.length,
+  ]);
+
+  const onStripPointerCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = stripNavGestureRef.current;
+    if (gesture?.pointerId === event.pointerId) {
+      resetStripNavGesture();
     }
-  };
+  }, [resetStripNavGesture]);
 
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
@@ -1111,7 +1165,9 @@ const LightboxOverlay = ({
           <div
             className={`${P}-lightbox-strip`}
             data-desktop-nav={allowDesktopNav && slides.length > 1 ? 'true' : 'false'}
+            onPointerDown={allowDesktopNav ? onStripPointerDown : undefined}
             onPointerUp={allowDesktopNav ? onStripPointerUp : undefined}
+            onPointerCancel={allowDesktopNav ? onStripPointerCancel : undefined}
           >
           <div className={`${P}-slide-stack`}>
             {outgoingSlide && isSlideFading ? (

@@ -65,8 +65,8 @@ export const useLightboxSwipeDismiss = ({
     window.setTimeout(() => {
       onClose();
       resetGesture();
-      setDragOffsetY(0);
-      setIsAnimating(false);
+      // Keep the exit transform until unmount — resetting here snaps content back
+      // while the lightbox opacity fade is still running, which causes a blink.
     }, Math.min(animMs, 200));
   }, [animMs, onClose, resetGesture]);
 
