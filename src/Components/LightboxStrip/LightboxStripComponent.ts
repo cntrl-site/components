@@ -484,7 +484,7 @@ const schema: ComponentSchemaV1 = {
         then: { name: 'properties.contentMarginBottom.display.visible', value: false },
       },
       {
-        if: { name: 'thumbnailActive', value: 'color' },
+        if: { name: 'thumbnailActive', value: 'outline' },
         then: { name: 'properties.thumbnailActiveColor.display.visible', value: true },
       },
     ],
