@@ -6,30 +6,44 @@ import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
+import { useLightboxSwipeDismiss } from '../utils/useLightboxSwipeDismiss';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
 const TEXT_FADE_MS = 400;
 const SLIDE_FADE_MS = 300;
-const JOURNAL_URL_PARAM_KEY = 'cntrl-lightbox-journal';
-const LEGACY_JOURNAL_URL_PARAM_PREFIX = `${JOURNAL_URL_PARAM_KEY}-`;
+const JOURNAL_URL_PARAM_PREFIX = 'cntrl-lightbox-journal';
+const LEGACY_JOURNAL_URL_PARAM_KEY = JOURNAL_URL_PARAM_PREFIX;
+const LEGACY_JOURNAL_URL_PARAM_PREFIX = `${JOURNAL_URL_PARAM_PREFIX}-`;
+
+const getJournalUrlParamKey = (itemId: string) => `${JOURNAL_URL_PARAM_PREFIX}-${itemId}`;
 
 const isJournalUrlParamKey = (key: string) =>
-  key === JOURNAL_URL_PARAM_KEY || key.startsWith(LEGACY_JOURNAL_URL_PARAM_PREFIX);
+  key === LEGACY_JOURNAL_URL_PARAM_KEY || key.startsWith(LEGACY_JOURNAL_URL_PARAM_PREFIX);
 
-const findJournalUrlSlideNumber = (): number | null => {
+const parseJournalSlideNumber = (value: string | null) => {
+  if (!value) return null;
+  const slideNumber = Number.parseInt(value, 10);
+  if (Number.isFinite(slideNumber) && slideNumber >= 1) {
+    return slideNumber;
+  }
+  return null;
+};
+
+const findJournalUrlSlideNumber = (itemId?: string | null): number | null => {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
-  const value = params.get(JOURNAL_URL_PARAM_KEY);
-  if (value) {
-    const slideNumber = Number.parseInt(value, 10);
-    if (Number.isFinite(slideNumber) && slideNumber >= 1) {
-      return slideNumber;
-    }
+  if (itemId) {
+    const slideNumber = parseJournalSlideNumber(params.get(getJournalUrlParamKey(itemId)));
+    if (slideNumber) return slideNumber;
   }
+  const legacySlideNumber = parseJournalSlideNumber(params.get(LEGACY_JOURNAL_URL_PARAM_KEY));
+  if (legacySlideNumber) return legacySlideNumber;
   for (const [key] of params) {
     if (!key.startsWith(LEGACY_JOURNAL_URL_PARAM_PREFIX)) continue;
-    const slideNumber = Number.parseInt(key.slice(LEGACY_JOURNAL_URL_PARAM_PREFIX.length), 10);
+    const suffix = key.slice(LEGACY_JOURNAL_URL_PARAM_PREFIX.length);
+    if (!/^\d+$/.test(suffix)) continue;
+    const slideNumber = Number.parseInt(suffix, 10);
     if (Number.isFinite(slideNumber) && slideNumber >= 1) {
       return slideNumber;
     }
@@ -44,7 +58,7 @@ const slideNumberToIndex = (slideNumber: number, slideCount: number) => {
   return slideIndex;
 };
 
-const setJournalUrlParam = (slideNumber: number, replace = true) => {
+const setJournalUrlParam = (slideNumber: number, itemId?: string | null, replace = true) => {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
   [...url.searchParams.keys()].forEach((key) => {
@@ -52,18 +66,25 @@ const setJournalUrlParam = (slideNumber: number, replace = true) => {
       url.searchParams.delete(key);
     }
   });
-  url.searchParams.set(JOURNAL_URL_PARAM_KEY, String(slideNumber));
+  if (itemId) {
+    url.searchParams.set(getJournalUrlParamKey(itemId), String(slideNumber));
+  } else {
+    url.searchParams.set(LEGACY_JOURNAL_URL_PARAM_KEY, String(slideNumber));
+  }
   const historyMethod = replace ? 'replaceState' : 'pushState';
   const nextUrl = `${url.pathname}${url.search}${url.hash}`;
   window.history[historyMethod](window.history.state, '', nextUrl);
 };
 
-const clearJournalUrlParam = () => {
+const clearJournalUrlParam = (itemId?: string | null) => {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
   let changed = false;
   [...url.searchParams.keys()].forEach((key) => {
-    if (isJournalUrlParamKey(key)) {
+    const shouldDelete = itemId
+      ? key === getJournalUrlParamKey(itemId) || key === LEGACY_JOURNAL_URL_PARAM_KEY
+      : isJournalUrlParamKey(key);
+    if (shouldDelete) {
       url.searchParams.delete(key);
       changed = true;
     }
@@ -74,19 +95,22 @@ const clearJournalUrlParam = () => {
   }
 };
 
-const hasJournalUrlParam = () => {
+const hasJournalUrlParam = (itemId?: string | null) => {
   if (typeof window === 'undefined') return false;
-  return [...new URLSearchParams(window.location.search).keys()]
-    .some((key) => isJournalUrlParamKey(key));
+  const params = new URLSearchParams(window.location.search);
+  if (itemId) {
+    return params.has(getJournalUrlParamKey(itemId));
+  }
+  return [...params.keys()].some((key) => isJournalUrlParamKey(key));
 };
 
-const removeJournalUrlParam = (didPushHistory: boolean) => {
-  if (!hasJournalUrlParam()) return;
+const removeJournalUrlParam = (didPushHistory: boolean, itemId?: string | null) => {
+  if (!hasJournalUrlParam(itemId)) return;
   if (didPushHistory) {
     window.history.back();
     return;
   }
-  clearJournalUrlParam();
+  clearJournalUrlParam(itemId);
 };
 
 function getCSS(P: string): string {
@@ -537,6 +561,7 @@ type LightboxOverlayProps = {
   isPreviewMode?: boolean;
   initialSlideIndex?: number;
   enableUrlSync?: boolean;
+  journalItemId?: string | null;
   onBeforeClose?: () => void;
   onClose: () => void;
 };
@@ -630,11 +655,13 @@ const LightboxOverlay = ({
   contentMarginRight,
   initialSlideIndex = 0,
   enableUrlSync = false,
+  journalItemId = null,
   onBeforeClose,
   onClose,
 }: LightboxOverlayProps) => {
   const showControls = Boolean(isEditMode);
   const allowDesktopNav = !isEditor || Boolean(isPreviewMode);
+  const allowSwipeDismiss = !isEditMode && (!isEditor || Boolean(isPreviewMode));
   const slides = useMemo(
     () => buildJournalSlides(entries, journalType),
     [entries, journalType],
@@ -700,10 +727,27 @@ const LightboxOverlay = ({
     }, LIGHTBOX_ANIM_MS);
   }, [isEditMode, onBeforeClose, onClose]);
 
+  const isSwipeBlockedTarget = useCallback((target: HTMLElement) => Boolean(
+    target.closest('[data-controls]')
+    || target.closest(`.${P}-close-icon`)
+  ), [P]);
+
+  const {
+    isSwipeDragging,
+    backdropStyle: swipeBackdropStyle,
+    dismissAreaStyle,
+    swipeHandlers,
+  } = useLightboxSwipeDismiss({
+    enabled: allowSwipeDismiss,
+    onClose: handleClose,
+    animMs: LIGHTBOX_ANIM_MS,
+    isBlockedTarget: isSwipeBlockedTarget,
+  });
+
   const syncUrlToSlide = useCallback((slideIndex: number) => {
     if (!enableUrlSync) return;
-    setJournalUrlParam(slideIndex + 1, true);
-  }, [enableUrlSync]);
+    setJournalUrlParam(slideIndex + 1, journalItemId, true);
+  }, [enableUrlSync, journalItemId]);
 
   const goToSlide = useCallback((index: number) => {
     if (slides.length === 0) return;
@@ -771,8 +815,9 @@ const LightboxOverlay = ({
 
   const onStripPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowDesktopNav) return;
+    if (event.pointerType !== 'mouse') return;
     if (slides.length <= 1) return;
-    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    if (event.button !== 0) return;
     const target = event.target as HTMLElement;
     if (target.closest('[data-controls]')) return;
     const navRect = lightboxRef.current?.getBoundingClientRect();
@@ -1031,7 +1076,10 @@ const LightboxOverlay = ({
       ref={lightboxRef}
       data-selection="none"
       className={`${P}-lightbox${isEditor ? ` ${P}-lightbox-editor` : ''}${isEditMode ? ` ${P}-lightbox-edit-mode` : ''}`}
-      onClick={handleClose}
+      onClick={() => {
+        if (isSwipeDragging) return;
+        handleClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label="Journal gallery"
@@ -1042,16 +1090,26 @@ const LightboxOverlay = ({
         pointerEvents: isVisible ? 'auto' : 'none',
       }}
     >
-      <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor }} />
+      <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor, ...swipeBackdropStyle }} />
       <div
-        className={`${P}-lightbox-content`}
-        onClick={(event) => event.stopPropagation()}
+        className={`${P}-lightbox-dismiss-area`}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          ...dismissAreaStyle,
+        }}
+        {...swipeHandlers}
       >
         <div
-          className={`${P}-lightbox-strip`}
-          data-desktop-nav={allowDesktopNav && slides.length > 1 ? 'true' : 'false'}
-          onPointerUp={allowDesktopNav ? onStripPointerUp : undefined}
+          className={`${P}-lightbox-content`}
+          onClick={(event) => event.stopPropagation()}
         >
+          <div
+            className={`${P}-lightbox-strip`}
+            data-desktop-nav={allowDesktopNav && slides.length > 1 ? 'true' : 'false'}
+            onPointerUp={allowDesktopNav ? onStripPointerUp : undefined}
+          >
           <div className={`${P}-slide-stack`}>
             {outgoingSlide && isSlideFading ? (
               <div
@@ -1082,10 +1140,10 @@ const LightboxOverlay = ({
               </div>
             </div>
           </div>
+          </div>
         </div>
-      </div>
 
-      <div className={`${P}-lightbox-chrome`} style={{ width: '100%', height: '100%' }}>
+        <div className={`${P}-lightbox-chrome`} style={{ width: '100%', height: '100%' }}>
         <div
           data-controls={showControls ? 'contentMarginTop' : undefined}
           className={showControls ? `${P}-control` : undefined}
@@ -1200,6 +1258,7 @@ const LightboxOverlay = ({
             className={showControls ? `${P}-control` : undefined}
             style={{ width: contentMarginRight, flexShrink: 0 }}
           />
+        </div>
         </div>
       </div>
     </div>
@@ -1363,8 +1422,9 @@ type LightboxJournalProps = {
   portalId?: string;
 } & CommonComponentProps;
 
-export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPreviewMode, portalId }: LightboxJournalProps) => {
+export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPreviewMode, portalId, metadata }: LightboxJournalProps) => {
   const { prefix: P } = useScopedStyles();
+  const itemId = metadata?.itemId ?? null;
   const {
     cover,
     coverFit,
@@ -1406,9 +1466,9 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   const removeJournalUrl = useCallback(() => {
     if (!shouldSyncUrl) return;
     isClosingFromUrlRef.current = true;
-    removeJournalUrlParam(urlHistoryPushedRef.current);
+    removeJournalUrlParam(urlHistoryPushedRef.current, itemId);
     urlHistoryPushedRef.current = false;
-  }, [shouldSyncUrl]);
+  }, [shouldSyncUrl, itemId]);
 
   const openLightbox = (slideIndex = 0) => {
     if (isEditMode || entries.length === 0) return;
@@ -1418,7 +1478,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     setLightboxInitialSlideIndex(normalizedSlideIndex);
     if (shouldSyncUrl) {
       const hadParam = hasJournalUrlParam();
-      setJournalUrlParam(normalizedSlideIndex + 1, hadParam);
+      setJournalUrlParam(normalizedSlideIndex + 1, itemId, hadParam);
       urlHistoryPushedRef.current = !hadParam;
     }
     setLightboxOpen(true);
@@ -1432,13 +1492,13 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   useEffect(() => {
     if (!shouldSyncUrl || didApplyInitialUrlRef.current) return;
     didApplyInitialUrlRef.current = true;
-    const slideNumber = findJournalUrlSlideNumber();
+    const slideNumber = findJournalUrlSlideNumber(itemId);
     if (!slideNumber) return;
     const slideIndex = slideNumberToIndex(slideNumber, buildJournalSlides(entries, type).length);
     if (slideIndex < 0) return;
     setLightboxInitialSlideIndex(slideIndex);
     setLightboxOpen(true);
-  }, [entries, shouldSyncUrl, type]);
+  }, [entries, itemId, shouldSyncUrl, type]);
 
   useEffect(() => {
     if (!shouldSyncUrl) return;
@@ -1448,7 +1508,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
         setLightboxOpen(false);
         return;
       }
-      const slideNumber = findJournalUrlSlideNumber();
+      const slideNumber = findJournalUrlSlideNumber(itemId);
       if (!slideNumber) {
         setLightboxOpen(false);
         return;
@@ -1464,7 +1524,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
-  }, [entries, shouldSyncUrl, type]);
+  }, [entries, itemId, shouldSyncUrl, type]);
 
   return (
     <>
@@ -1527,6 +1587,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             isPreviewMode={isPreviewMode}
             initialSlideIndex={lightboxInitialSlideIndex}
             enableUrlSync={shouldSyncUrl}
+            journalItemId={itemId}
             onBeforeClose={removeJournalUrl}
             onClose={closeLightbox}
           />,

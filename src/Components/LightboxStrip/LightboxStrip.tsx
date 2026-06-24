@@ -6,6 +6,7 @@ import { useScopedStyles } from '../utils/useScopedStyles';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
+import { useLightboxSwipeDismiss } from '../utils/useLightboxSwipeDismiss';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
@@ -796,6 +797,24 @@ const LightboxOverlay = ({
     }, LIGHTBOX_ANIM_MS);
   }, [isEditMode, onClose]);
 
+  const isDragBlockedTarget = useCallback((target: HTMLElement) => Boolean(
+    target.closest('[data-controls]')
+    || target.closest(`.${P}-thumbnails`)
+    || target.closest(`.${P}-close-icon`)
+  ), [P]);
+
+  const {
+    isSwipeDragging,
+    backdropStyle: swipeBackdropStyle,
+    dismissAreaStyle,
+    swipeHandlers,
+  } = useLightboxSwipeDismiss({
+    enabled: allowImageScroll,
+    onClose: handleClose,
+    animMs: LIGHTBOX_ANIM_MS,
+    isBlockedTarget: isDragBlockedTarget,
+  });
+
   const measureSetWidth = () => {
     if (!isLoopEnabled || images.length === 0) {
       setWidthRef.current = 0;
@@ -928,12 +947,6 @@ const LightboxOverlay = ({
       behavior,
     });
   };
-
-  const isDragBlockedTarget = (target: HTMLElement) => (
-    target.closest('[data-controls]')
-    || target.closest(`.${P}-thumbnails`)
-    || target.closest(`.${P}-close-icon`)
-  );
 
   const onContentPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
@@ -1111,7 +1124,10 @@ const LightboxOverlay = ({
     <div
       data-selection="none"
       className={`${P}-lightbox${isEditor ? ` ${P}-lightbox-editor` : ''}${isEditMode ? ` ${P}-lightbox-edit-mode` : ''}`}
-      onClick={handleClose}
+      onClick={() => {
+        if (isSwipeDragging) return;
+        handleClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label="Image gallery"
@@ -1121,17 +1137,30 @@ const LightboxOverlay = ({
         pointerEvents: isVisible ? 'auto' : 'none',
       }}
     >
-      <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor }} />
+      <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor, ...swipeBackdropStyle }} />
       <div
         ref={contentRef}
         className={`${P}-lightbox-content`}
         data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
         data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
+        style={dismissAreaStyle}
         onClick={(event) => event.stopPropagation()}
-        onPointerDown={allowMouseDrag ? onContentPointerDown : undefined}
-        onPointerMove={allowMouseDrag ? onContentPointerMove : undefined}
-        onPointerUp={allowMouseDrag ? endContentMouseDrag : undefined}
-        onPointerCancel={allowMouseDrag ? endContentMouseDrag : undefined}
+        onPointerDown={(event) => {
+          swipeHandlers.onPointerDown?.(event);
+          if (allowMouseDrag) onContentPointerDown(event);
+        }}
+        onPointerMove={(event) => {
+          swipeHandlers.onPointerMove?.(event);
+          if (allowMouseDrag) onContentPointerMove(event);
+        }}
+        onPointerUp={(event) => {
+          swipeHandlers.onPointerUp?.(event);
+          if (allowMouseDrag) endContentMouseDrag(event);
+        }}
+        onPointerCancel={(event) => {
+          swipeHandlers.onPointerCancel?.(event);
+          if (allowMouseDrag) endContentMouseDrag(event);
+        }}
       >
 
 <div
