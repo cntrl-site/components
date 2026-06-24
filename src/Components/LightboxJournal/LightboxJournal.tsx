@@ -503,6 +503,8 @@ function getCSS(P: string): string {
   left: 0;
   width: 100%;
   height: 100%;
+  min-width: 20px;
+  min-height: 20px;
   pointer-events: auto;
   z-index: 10;
 }

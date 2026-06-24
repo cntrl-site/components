@@ -322,8 +322,26 @@ function getCSS(P: string): string {
   left: 0;
   width: 100%;
   height: 100%;
+  min-width: 20px;
+  min-height: 20px;
   pointer-events: auto;
   z-index: 10;
+}
+
+.${P}-control[data-controls="contentMarginTop"]::after,
+.${P}-control[data-controls="contentMarginBottom"]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 4px;
+  background: #FF5C02;
+  border: 1px solid #FFFFFF;
+  border-radius: 5px;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 `;
 }
@@ -448,6 +466,7 @@ export type LightboxStripSettings = {
   title3TextAlign?: 'left' | 'center' | 'right' | 'justify';
   title3TextAppearance?: TextStyles['textAppearance'];
   contentMarginTop: number;
+  contentMarginBottom: number;
   contentMarginLeft: number;
   contentMarginRight: number;
   closeIcon:  string | null;
@@ -633,6 +652,7 @@ type LightboxOverlayProps = {
   title2Style: React.CSSProperties;
   title3Style: React.CSSProperties;
   contentMarginTop: string;
+  contentMarginBottom: string;
   contentMarginLeft: string;
   contentMarginRight: string;
   isEditor?: boolean;
@@ -679,6 +699,7 @@ const LightboxOverlay = ({
   title2Style,
   title3Style,
   contentMarginTop,
+  contentMarginBottom,
   contentMarginLeft,
   contentMarginRight,
   onClose,
@@ -1176,6 +1197,7 @@ const LightboxOverlay = ({
         >
           <div
             data-controls={showControls ? 'contentMarginTop' : undefined}
+            data-controls-static-handle={showControls ? '' : undefined}
             className={showControls ? `${P}-control` : undefined}
             style={{ height: contentMarginTop, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
           />
@@ -1228,6 +1250,14 @@ const LightboxOverlay = ({
               style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
             />
           </div>
+          {type === 'B' && (
+            <div
+              data-controls={showControls ? 'contentMarginBottom' : undefined}
+              data-controls-static-handle={showControls ? '' : undefined}
+              className={showControls ? `${P}-control` : undefined}
+              style={{ height: contentMarginBottom, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
+            />
+          )}
         </div>
 
 
@@ -1394,8 +1424,9 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
     closeIconMaxWidth,
     closeIconColor,
     closeIconHoverColor, 
-    contentMarginTop, 
-    contentMarginLeft, 
+    contentMarginTop,
+    contentMarginBottom,
+    contentMarginLeft,
     contentMarginRight
   } = settings;
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -1473,6 +1504,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             title2Style={title2Style}
             title3Style={title3Style}
             contentMarginTop={scaled(contentMarginTop ?? 0)}
+            contentMarginBottom={scaled(contentMarginBottom ?? 0)}
             contentMarginLeft={scaled(contentMarginLeft ?? 0)}
             contentMarginRight={scaled(contentMarginRight ?? 0)}
             closeIcon={closeIcon}
