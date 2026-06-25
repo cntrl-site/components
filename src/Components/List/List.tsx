@@ -1358,6 +1358,7 @@ function ListPaddingControl({
     <div
       className={className}
       style={{ ...areaStyle, pointerEvents: 'none' }}
+      data-controls-center-only-drag=""
       {...rest}
     >
       <div style={getListPaddingControlHitStyle(P, hitPlacement)} />

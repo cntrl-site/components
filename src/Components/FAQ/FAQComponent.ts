@@ -2,6 +2,17 @@ import { FAQ } from './FAQ';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './FAQ.tsx?raw';
 
+function createRangeControlLayoutProperty(title: string) {
+  return {
+    type: 'number' as const,
+    scope: 'layout' as const,
+    title,
+    min: 0,
+    max: 100,
+    display: { type: 'range-control' as const },
+  };
+}
+
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
@@ -42,7 +53,9 @@ const paletteBookmarkItems = [
   'questionColor',
   'answerColor',
   'dividerColor',
+  'iconColor',
   'questionHoverColor',
+  'iconHoverColor',
   'dividerHoverColor',
   'backgroundHoverColor',
 ] as const;
@@ -67,11 +80,10 @@ const schema: ComponentSchemaV1 = {
           },
         },
         answer: {
-          type: 'string',
           label: 'Answer',
           placeholder: 'Add answer...',
           display: {
-            type: 'text-input',
+            type: 'rich-text',
           },
         },
       },
@@ -79,15 +91,30 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         question: 'What is your return policy?',
-        answer: 'You can return any item within 30 days of purchase.',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'You can return any item within 30 days of purchase.' }],
+          },
+        ],
       },
       {
         question: 'How long does shipping take?',
-        answer: 'Standard shipping typically takes 5–7 business days.',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'Standard shipping typically takes 5–7 business days.' }],
+          },
+        ],
       },
       {
         question: 'Do you offer international delivery?',
-        answer: 'Yes, we ship to most countries worldwide.',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'Yes, we ship to most countries worldwide.' }],
+          },
+        ],
       },
     ],
   },
@@ -105,7 +132,7 @@ const schema: ComponentSchemaV1 = {
       cellMinHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Cell min height',
+        title: 'Min height',
         display: { type: 'numeric-input' },
         min: 0,
         max: 9999,
@@ -124,11 +151,11 @@ const schema: ComponentSchemaV1 = {
         title: 'Style',
         display: { type: 'toggle-cycle', enum: ['solid', 'dashed', 'dotted'] },
       },
-      hover: {
+      entryHoverEffect: {
         type: 'string',
         scope: 'common',
-        title: 'Hover',
-        display: { type: 'toggle-cycle', enum: ['off', 'color'] },
+        title: 'Effect',
+        display: { type: 'toggle-cycle', enum: ['none', 'default', 'blinds', 'reveal'] },
       },
       autoclose: {
         type: 'string',
@@ -145,16 +172,17 @@ const schema: ComponentSchemaV1 = {
       iconMaxWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon Max Width',
-        display: { type: 'full-width-input' },
+        title: 'Max Width',
+        display: { type: 'numeric-input' },
         min: 0,
-        max: 1,
+        max: 9999,
       },
+      iconPaddingRight: createRangeControlLayoutProperty('Icon Padding Right'),
       iconAnimation: {
         type: 'string',
         scope: 'common',
         title: 'Icon Animation',
-        display: { type: 'toggle-cycle', enum: ['180', '90', '45'] },
+        display: { type: 'toggle-cycle', enum: ['rotate 180', 'rotate 90', 'rotate 45'] },
       },
       questionColor: {
         type: 'string',
@@ -174,10 +202,22 @@ const schema: ComponentSchemaV1 = {
         title: 'Divider Default',
         display: { type: 'palette-color-picker' },
       },
+      iconColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Default',
+        display: { type: 'palette-color-picker' },
+      },
       questionHoverColor: {
         type: 'string',
         scope: 'common',
         title: 'Question Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      iconHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Hover',
         display: { type: 'palette-color-picker' },
       },
       dividerHoverColor: {
@@ -276,17 +316,25 @@ const schema: ComponentSchemaV1 = {
         title: 'Answer Text Appearance',
         display: { type: 'text-appearance' },
       },
+      questionPaddingLeft: createRangeControlLayoutProperty('Question Padding Left'),
+      questionPaddingTop: createRangeControlLayoutProperty('Question Padding Top'),
+      questionPaddingBottom: createRangeControlLayoutProperty('Question Padding Bottom'),
+      answerPaddingLeft: createRangeControlLayoutProperty('Answer Padding Left'),
+      answerPaddingTop: createRangeControlLayoutProperty('Answer Padding Top'),
+      answerPaddingBottom: createRangeControlLayoutProperty('Answer Padding Bottom'),
     },
     defaults: {
       dividerStyle: 'solid',
-      hover: 'color',
+      entryHoverEffect: 'default',
       autoclose: 'off',
       icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVZJ586KJS8G0PKNERN87KMN.svg',
-      iconAnimation: '45',
+      iconAnimation: 'rotate 45',
       questionColor: '#000000',
       answerColor: '#000000',
       dividerColor: '#000000',
+      iconColor: '#000000',
       questionHoverColor: '#666666',
+      iconHoverColor: '#666666',
       dividerHoverColor: '#000000',
       backgroundHoverColor: '#000000',
       questionFontFamily: 'Arial',
@@ -301,7 +349,7 @@ const schema: ComponentSchemaV1 = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      answerFontFamily: 'Goudy Bookletter 1911',
+      answerFontFamily: 'Arial',
       answerFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -320,20 +368,34 @@ const schema: ComponentSchemaV1 = {
         cellMinHeight: 0,
         dividerWidth: 0.001389,
         iconMaxWidth: 0.025,
+        iconPaddingRight: 0,
         questionFontSize: 0.1066,
         questionLineHeight: 0.0853,
         answerFontSize: 0.056,
         answerLineHeight: 0.0448,
+        questionPaddingLeft: 0,
+        questionPaddingTop: 0.01,
+        questionPaddingBottom: 0.01,
+        answerPaddingLeft: 0,
+        answerPaddingTop: 0.01,
+        answerPaddingBottom: 0.01,
       },
       d: {
         wrapperWidth: 1,
         cellMinHeight: 0,
         dividerWidth: 0.000694,
         iconMaxWidth: 0.00833,
+        iconPaddingRight: 0,
         questionFontSize: 0.027,
         questionLineHeight: 0.0222,
         answerFontSize: 0.01,
         answerLineHeight: 0.0082,
+        questionPaddingLeft: 0,
+        questionPaddingTop: 0.01,
+        questionPaddingBottom: 0.01,
+        answerPaddingLeft: 0,
+        answerPaddingTop: 0.01,
+        answerPaddingBottom: 0.01,
       },
     },
     layout: [
@@ -342,7 +404,7 @@ const schema: ComponentSchemaV1 = {
       'cellMinHeight',
       'dividerWidth',
       'dividerStyle',
-      'hover',
+      'entryHoverEffect',
       'autoclose',
       'icon',
       'iconMaxWidth',
@@ -358,7 +420,7 @@ const schema: ComponentSchemaV1 = {
       layout: [
         '__componentName__',
         { type: 'row', title: '', items: ['wrapperWidth', 'cellMinHeight'] },
-        { type: 'row', title: '', items: ['hover', 'autoclose'] },
+        { type: 'row', title: '', items: ['entryHoverEffect', 'autoclose'] },
         { type: 'row', title: 'Divider', items: ['dividerWidth', 'dividerStyle'] },
         { type: 'row', title: 'Icon', items: ['icon', 'iconMaxWidth'] },
         { type: 'row', title: '', items: ['iconAnimation'] },
@@ -402,7 +464,9 @@ const schema: ComponentSchemaV1 = {
         'questionColor',
         'answerColor',
         'dividerColor',
+        'iconColor',
         'questionHoverColor',
+        'iconHoverColor',
         'dividerHoverColor',
         'backgroundHoverColor',
       ],
