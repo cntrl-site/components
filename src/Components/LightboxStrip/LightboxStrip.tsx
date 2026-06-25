@@ -649,20 +649,25 @@ function resolveStripTitleWidths(
     return widths;
   }
 
-  const resolvedWidths = [...widths];
-  let overflow = totalWidth - 1;
+  const { widths: shrunkWidths } = [...widths].reverse().reduce<{
+    overflow: number;
+    widths: number[];
+  }>(
+    ({ overflow, widths: acc }, width) => {
+      if (overflow <= 0 || width <= 0) {
+        return { overflow, widths: [width, ...acc] };
+      }
 
-  for (let index = resolvedWidths.length - 1; index >= 0 && overflow > 0; index -= 1) {
-    if (resolvedWidths[index] <= 0) {
-      continue;
-    }
+      const shrinkAmount = Math.min(overflow, width);
+      return {
+        overflow: overflow - shrinkAmount,
+        widths: [width - shrinkAmount, ...acc],
+      };
+    },
+    { overflow: totalWidth - 1, widths: [] },
+  );
 
-    const shrinkAmount = Math.min(overflow, resolvedWidths[index]);
-    resolvedWidths[index] -= shrinkAmount;
-    overflow -= shrinkAmount;
-  }
-
-  return resolvedWidths;
+  return shrunkWidths;
 }
 
 function getEffectiveStripTitleWidths(
@@ -767,15 +772,12 @@ function getStripTitleOffsetBeforeSlot(
   marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
   slotIndex: number,
 ): number {
-  let offset = 0;
-  for (let index = 0; index < slotIndex; index += 1) {
-    const slot = slots[index];
-    if (slot?.marginLeftKey) {
-      offset += marginByKey[slot.marginLeftKey] ?? 0;
-    }
-    offset += resolvedWidths[index] ?? 0;
-  }
-  return offset;
+  return slots.slice(0, slotIndex).reduce(
+    (offset, slot, index) => offset
+      + (slot?.marginLeftKey ? marginByKey[slot.marginLeftKey] ?? 0 : 0)
+      + (resolvedWidths[index] ?? 0),
+    0,
+  );
 }
 
 function stripTextFieldsToCss(
@@ -930,17 +932,12 @@ const LightboxOverlay = ({
     [title2MarginLeft, title3MarginLeft],
   );
   const getTitleBoundaryOffset = useCallback(
-    (upToIndex: number) => {
-      let offset = 0;
-      for (let index = 0; index <= upToIndex; index += 1) {
-        const slot = titleSlots[index];
-        if (slot?.marginLeftKey) {
-          offset += titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
-        }
-        offset += resolvedTitleWidths[index] ?? 0;
-      }
-      return offset;
-    },
+    (upToIndex: number) => titleSlots.slice(0, upToIndex + 1).reduce(
+      (offset, slot, index) => offset
+        + (slot?.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0)
+        + (resolvedTitleWidths[index] ?? 0),
+      0,
+    ),
     [titleSlots, titleMarginLeftByKey, resolvedTitleWidths],
   );
 
@@ -1131,19 +1128,16 @@ const LightboxOverlay = ({
     }
   };
 
-  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
-    let closestFlatIndex = 0;
-    let closestDistance = Infinity;
-    itemRefs.current.forEach((item, flatIndex) => {
-      if (!item) return;
+  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => itemRefs.current.reduce(
+    (closest, item, flatIndex) => {
+      if (!item) return closest;
       const distance = Math.abs(item.offsetLeft - scrollLeft);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestFlatIndex = flatIndex;
-      }
-    });
-    return closestFlatIndex;
-  };
+      return distance < closest.distance
+        ? { flatIndex, distance }
+        : closest;
+    },
+    { flatIndex: 0, distance: Infinity },
+  ).flatIndex;
 
   const updateActiveIndex = () => {
     if (!stripRef.current || images.length === 0) return;
@@ -1255,18 +1249,16 @@ const LightboxOverlay = ({
       ? (nextItem ? nextItem.offsetLeft - currentItem.offsetLeft : currentItem.offsetWidth)
       : 0;
 
-    let targetFlatIndex = currentFlatIndex;
-    if (span > 0) {
-      if (scrollDelta > span * DRAG_SNAP_RATIO) {
-        targetFlatIndex += 1;
-      } else if (scrollDelta < -span * DRAG_SNAP_RATIO) {
-        targetFlatIndex -= 1;
-      }
-    }
-
-    if (!isLoopEnabled) {
-      targetFlatIndex = Math.max(0, Math.min(flatItems.length - 1, targetFlatIndex));
-    }
+    const scrollAdjustment = span > 0
+      ? (scrollDelta > span * DRAG_SNAP_RATIO
+        ? 1
+        : scrollDelta < -span * DRAG_SNAP_RATIO
+          ? -1
+          : 0)
+      : 0;
+    const targetFlatIndex = isLoopEnabled
+      ? currentFlatIndex + scrollAdjustment
+      : Math.max(0, Math.min(flatItems.length - 1, currentFlatIndex + scrollAdjustment));
 
     const targetItem = itemRefs.current[targetFlatIndex];
     if (!targetItem) {

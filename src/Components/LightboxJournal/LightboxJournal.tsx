@@ -82,17 +82,13 @@ const setJournalUrlParam = (slideNumber: number, itemId?: string | null, replace
 const clearJournalUrlParam = (itemId?: string | null) => {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
-  let changed = false;
-  [...url.searchParams.keys()].forEach((key) => {
-    const shouldDelete = itemId
+  const keysToDelete = [...url.searchParams.keys()].filter((key) => (
+    itemId
       ? key === getJournalUrlParamKey(itemId) || key === LEGACY_JOURNAL_URL_PARAM_KEY
-      : isJournalUrlParamKey(key);
-    if (shouldDelete) {
-      url.searchParams.delete(key);
-      changed = true;
-    }
-  });
-  if (changed) {
+      : isJournalUrlParamKey(key)
+  ));
+  keysToDelete.forEach((key) => url.searchParams.delete(key));
+  if (keysToDelete.length > 0) {
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
     window.history.replaceState(window.history.state, '', nextUrl);
   }
@@ -615,10 +611,10 @@ const getEntryImages = (entry: LightboxJournalItem | undefined): LightboxJournal
 const getTotalImageCount = (entries: LightboxJournalItem[]) =>
   entries.reduce((sum, entry) => sum + getEntryImages(entry).length, 0);
 const getEntryImageRange = (entries: LightboxJournalItem[], entryIndex: number) => {
-  let start = 1;
-  for (let i = 0; i < entryIndex; i++) {
-    start += getEntryImages(entries[i]).length;
-  }
+  const start = entries.slice(0, entryIndex).reduce(
+    (sum, entry) => sum + getEntryImages(entry).length,
+    1,
+  );
   const imageCount = getEntryImages(entries[entryIndex]).length;
   return { start, end: start + imageCount - 1 };
 };
@@ -736,19 +732,25 @@ function resolveJournalTitleWidths(
   if (totalWidth <= 1) {
     return widths;
   }
-  const resolvedWidths = [...widths];
-  let overflow = totalWidth - 1;
+  const { widths: shrunkWidths } = [...widths].reverse().reduce<{
+    overflow: number;
+    widths: number[];
+  }>(
+    ({ overflow, widths: acc }, width) => {
+      if (overflow <= 0 || width <= 0) {
+        return { overflow, widths: [width, ...acc] };
+      }
 
-  for (let index = resolvedWidths.length - 1; index >= 0 && overflow > 0; index -= 1) {
-    if (resolvedWidths[index] <= 0) {
-      continue;
-    }
-    const shrinkAmount = Math.min(overflow, resolvedWidths[index]);
-    resolvedWidths[index] -= shrinkAmount;
-    overflow -= shrinkAmount;
-  }
+      const shrinkAmount = Math.min(overflow, width);
+      return {
+        overflow: overflow - shrinkAmount,
+        widths: [width - shrinkAmount, ...acc],
+      };
+    },
+    { overflow: totalWidth - 1, widths: [] },
+  );
 
-  return resolvedWidths;
+  return shrunkWidths;
 }
 
 function getEffectiveJournalTitleWidths(
@@ -774,15 +776,12 @@ function getJournalTitleOffsetBeforeSlot(
   marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
   slotIndex: number,
 ): number {
-  let offset = 0;
-  for (let index = 0; index < slotIndex; index += 1) {
-    const slot = slots[index];
-    if (slot?.marginLeftKey) {
-      offset += marginByKey[slot.marginLeftKey] ?? 0;
-    }
-    offset += resolvedWidths[index] ?? 0;
-  }
-  return offset;
+  return slots.slice(0, slotIndex).reduce(
+    (offset, slot, index) => offset
+      + (slot?.marginLeftKey ? marginByKey[slot.marginLeftKey] ?? 0 : 0)
+      + (resolvedWidths[index] ?? 0),
+    0,
+  );
 }
 
 function getJournalTitleBoundaryOffset(
@@ -791,15 +790,12 @@ function getJournalTitleBoundaryOffset(
   marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
   upToIndex: number,
 ): number {
-  let offset = 0;
-  for (let index = 0; index <= upToIndex; index += 1) {
-    const slot = slots[index];
-    if (slot?.marginLeftKey) {
-      offset += marginByKey[slot.marginLeftKey] ?? 0;
-    }
-    offset += resolvedWidths[index] ?? 0;
-  }
-  return offset;
+  return slots.slice(0, upToIndex + 1).reduce(
+    (offset, slot, index) => offset
+      + (slot?.marginLeftKey ? marginByKey[slot.marginLeftKey] ?? 0 : 0)
+      + (resolvedWidths[index] ?? 0),
+    0,
+  );
 }
 
 const LightboxOverlay = ({
@@ -876,12 +872,11 @@ const LightboxOverlay = ({
     if (!stack) return undefined;
     const contentArea = stack.closest(`.${P}-lightbox-content-area`) as HTMLElement | null;
     if (!contentArea) return stack.getBoundingClientRect().width;
-    let fixedSiblingsWidth = 0;
-    Array.from(contentArea.children).forEach((child) => {
-      if (!(child instanceof HTMLElement)) return;
-      if (child.contains(stack)) return;
-      fixedSiblingsWidth += child.getBoundingClientRect().width;
-    });
+    const fixedSiblingsWidth = Array.from(contentArea.children).reduce((sum, child) => {
+      if (!(child instanceof HTMLElement)) return sum;
+      if (child.contains(stack)) return sum;
+      return sum + child.getBoundingClientRect().width;
+    }, 0);
     return contentArea.getBoundingClientRect().width - fixedSiblingsWidth;
   }, [P]);
 
@@ -942,22 +937,24 @@ const LightboxOverlay = ({
     const transitionKey = slideTransitionKeyRef.current;
     const shouldFadeTitles = textTransition === 'fade' && getEntryTitleKey(outgoingSlide?.entry) !== getEntryTitleKey(incomingSlide?.entry);
     const measuredOutgoingTitlesHeight = titlesStackRef.current?.getBoundingClientRect().height;
-    let measuredIncomingTitlesHeight: number | undefined;
-    let incomingTitlesMeasureWidth: number | undefined;
-    if (shouldFadeTitles) {
-      incomingTitlesMeasureWidth = getIncomingTitlesMeasureWidth();
+    const titleFadeMeasure = shouldFadeTitles ? (() => {
+      const incomingTitlesMeasureWidth = getIncomingTitlesMeasureWidth();
       flushSync(() => {
         setIncomingMeasureEntry(incomingSlide.entry);
       });
       if (titlesMeasureRef.current && incomingTitlesMeasureWidth) {
         titlesMeasureRef.current.style.width = `${incomingTitlesMeasureWidth}px`;
       }
-      measuredIncomingTitlesHeight = titlesMeasureRef.current?.getBoundingClientRect().height;
+      const measuredIncomingTitlesHeight = titlesMeasureRef.current?.getBoundingClientRect().height;
       if (titlesMeasureRef.current) {
         titlesMeasureRef.current.style.width = '';
       }
-    }
-    const lockedTitlesHeight = Math.max(measuredOutgoingTitlesHeight ?? 0, measuredIncomingTitlesHeight ?? 0) || undefined;
+      return { measuredIncomingTitlesHeight, incomingTitlesMeasureWidth };
+    })() : undefined;
+    const lockedTitlesHeight = Math.max(
+      measuredOutgoingTitlesHeight ?? 0,
+      titleFadeMeasure?.measuredIncomingTitlesHeight ?? 0,
+    ) || undefined;
 
     setSlideTransitionKey(transitionKey);
     setPrevSlideIndex(activeSlideIndex);
@@ -970,8 +967,8 @@ const LightboxOverlay = ({
       if (lockedTitlesHeight) {
         setTitlesStackMinHeight(lockedTitlesHeight);
       }
-      if (incomingTitlesMeasureWidth) {
-        setTitlesStackWidth(incomingTitlesMeasureWidth);
+      if (titleFadeMeasure?.incomingTitlesMeasureWidth) {
+        setTitlesStackWidth(titleFadeMeasure.incomingTitlesMeasureWidth);
       }
       setPrevEntryIndex(outgoingSlide?.entryIndex ?? null);
       setIsTitlesFading(true);
