@@ -8,17 +8,15 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
 import { useLightboxSwipeDismiss } from '../utils/useLightboxSwipeDismiss';
 import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
-import { animateScrollLeft } from '../utils/animateScrollLeft';
-import { cubicBezierEasing } from '../utils/cubicBezierEasing';
+import { animateStripScroll, getDistanceScaledDuration } from '../utils/animateStripScroll';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
-const SNAP_SCROLL_MS = 750;
+const SNAP_SCROLL_MIN_MS = 900;
+const SNAP_SCROLL_MAX_MS = 1500;
+const SNAP_SCROLL_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
 const CONTROLS_IDLE_MS = 3000;
 const THUMB_MAX_SIZE_PX = 42;
-
-// Decelerates into the snap — fast start, velocity eases to zero at the end.
-const easeSnapScroll = cubicBezierEasing(0, 0, 0.2, 1);
 
 function getCSS(P: string): string {
   return `
@@ -118,16 +116,22 @@ function getCSS(P: string): string {
   flex: 1;
   width: 100%;
   min-height: 0;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
   max-width: 100%;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   box-sizing: border-box;
   touch-action: pan-x;
   scrollbar-width: none;
+}
+
+.${P}-lightbox-strip-track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: 100%;
+  min-width: min-content;
+  backface-visibility: hidden;
 }
 
 .${P}-lightbox-strip[data-mouse-dragging="true"] {
@@ -997,6 +1001,7 @@ const LightboxOverlay = ({
   });
   const dismissAreaRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
   const mouseDragRef = useRef({
@@ -1134,12 +1139,21 @@ const LightboxOverlay = ({
     scrollAnimRef.current = null;
   };
 
+  const clearStripTrackTransform = () => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.style.transition = '';
+    track.style.transform = '';
+    track.style.willChange = '';
+  };
+
   const finishStripScroll = (
     strip: HTMLDivElement,
     targetLeft: number,
     activeIndex?: number,
     onComplete?: () => void,
   ) => {
+    clearStripTrackTransform();
     strip.scrollLeft = targetLeft;
     normalizeInfiniteScroll();
     if (activeIndex !== undefined) {
@@ -1164,7 +1178,8 @@ const LightboxOverlay = ({
     } = {},
   ) => {
     const strip = stripRef.current;
-    if (!strip) return;
+    const track = trackRef.current;
+    if (!strip || !track) return;
 
     cancelScrollAnimation();
     setStripSnapEnabled(false);
@@ -1174,9 +1189,17 @@ const LightboxOverlay = ({
       return;
     }
 
-    scrollAnimRef.current = animateScrollLeft(strip, targetLeft, {
-      duration: SNAP_SCROLL_MS,
-      ease: easeSnapScroll,
+    const distance = Math.abs(targetLeft - strip.scrollLeft);
+    const duration = getDistanceScaledDuration(
+      distance,
+      SNAP_SCROLL_MIN_MS,
+      SNAP_SCROLL_MAX_MS,
+      strip.clientWidth * 0.55,
+    );
+
+    scrollAnimRef.current = animateStripScroll(strip, track, targetLeft, {
+      duration,
+      easing: SNAP_SCROLL_EASING,
       onComplete: () => {
         scrollAnimRef.current = null;
         finishStripScroll(strip, targetLeft, activeIndex, onComplete);
@@ -1255,6 +1278,7 @@ const LightboxOverlay = ({
     const strip = stripRef.current;
     if (!strip) return;
     cancelScrollAnimation();
+    clearStripTrackTransform();
     mouseDragRef.current = {
       isActive: true,
       startX: event.clientX,
@@ -1458,7 +1482,6 @@ const LightboxOverlay = ({
           ref={stripRef}
           className={`${P}-lightbox-strip`}
           data-lightbox-scrollable=""
-          style={{ gap: imageGap }}
           data-mouse-draggable={allowMouseDrag && images.length > 0 ? 'true' : 'false'}
           data-mouse-dragging={isMouseDragging ? 'true' : 'false'}
           onPointerDown={onStripPointerDown}
@@ -1466,6 +1489,11 @@ const LightboxOverlay = ({
           onPointerUp={endStripMouseDrag}
           onPointerCancel={endStripMouseDrag}
         >
+          <div
+            ref={trackRef}
+            className={`${P}-lightbox-strip-track`}
+            style={{ gap: imageGap }}
+          >
           {flatItems.map((item, flatIndex) => {
             const itemObjectFit = item.image.objectFit ?? 'contain';
             const sourceIndex = flatIndex % images.length;
@@ -1507,6 +1535,7 @@ const LightboxOverlay = ({
               </div>
             );
           })}
+          </div>
         </div>
         </div>
         <div
