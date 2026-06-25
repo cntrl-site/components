@@ -455,7 +455,7 @@ function getCSS(P: string): string {
   animation: ${P}-titles-fade-out ${TEXT_FADE_MS}ms ease-in-out forwards;
 }
 
-.${P}-lightbox-chrome {
+.${P}-lightbox-overlay-content {
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -747,7 +747,7 @@ const LightboxOverlay = ({
     isSwipeDragging,
     backdropStyle: swipeBackdropStyle,
     mediaAreaStyle,
-    chromeStyle: swipeChromeStyle,
+    overlayContentStyle: swipeOverlayContentStyle,
     swipeHandlers,
     dismissAreaStyle,
   } = useLightboxSwipeDismiss({
@@ -1202,7 +1202,7 @@ const LightboxOverlay = ({
           </div>
         </div>
 
-        <div className={`${P}-lightbox-chrome`} style={{ width: '100%', height: '100%', ...swipeChromeStyle }}>
+        <div className={`${P}-lightbox-overlay-content`} style={{ width: '100%', height: '100%', ...swipeOverlayContentStyle }}>
         <div
           data-controls={showControls ? 'contentMarginTop' : undefined}
           className={showControls ? `${P}-control` : undefined}

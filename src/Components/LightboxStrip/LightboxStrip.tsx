@@ -173,7 +173,7 @@ function getCSS(P: string): string {
   transition: opacity ${LIGHTBOX_ANIM_MS}ms ease;
 }
 
-.${P}-thumbnails[data-chrome-hidden="true"] {
+.${P}-thumbnails[data-overlay-content-hidden="true"] {
   opacity: 0;
   pointer-events: none;
 }
@@ -247,7 +247,7 @@ function getCSS(P: string): string {
   transition: opacity ${LIGHTBOX_ANIM_MS}ms ease;
 }
 
-.${P}-close-icon[data-chrome-hidden="true"] {
+.${P}-close-icon[data-overlay-content-hidden="true"] {
   opacity: 0;
   pointer-events: none;
 }
@@ -316,6 +316,13 @@ function getCSS(P: string): string {
   pointer-events: none;
   display: flex;
   flex-direction: column;
+  opacity: 1;
+  transition: opacity ${LIGHTBOX_ANIM_MS}ms ease;
+}
+
+.${P}-lightbox-content-inner[data-overlay-content-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .${P}-lightbox-content-area {
@@ -855,9 +862,9 @@ const LightboxOverlay = ({
   title3MarginLeft,
   onClose,
 }: LightboxOverlayProps) => {
-  const showControls = Boolean(isEditMode);
-  const hideChromeOnIdle = !isEditMode;
-  const allowImageScroll = !isEditMode && (!isEditor || Boolean(isPreviewMode));
+  const showControls = isEditMode;
+  const allowImageScroll = !isEditMode && (!isEditor || isPreviewMode);
+  const hideOverlayContentOnIdle = allowImageScroll;
   const allowMouseDrag = allowImageScroll;
   const allowThumbnailHover = allowImageScroll;
   const isThumbCover = isImageRatioCover(thumbnailObjectFit);
@@ -1019,26 +1026,27 @@ const LightboxOverlay = ({
   );
   const [isMouseDragging, setIsMouseDragging] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [chromeVisible, setChromeVisible] = useState(true);
+  const [overlayContentVisible, setOverlayContentVisible] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(activeIndex);
   activeIndexRef.current = activeIndex;
   const lockedActiveIndexRef = useRef<number | null>(null);
   const isClosingRef = useRef(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const chromeIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overlayContentIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isOverlayContentHidden = hideOverlayContentOnIdle && !overlayContentVisible;
 
-  const resetChromeIdleTimer = useCallback(() => {
-    if (!hideChromeOnIdle) return;
-    setChromeVisible(true);
-    if (chromeIdleTimerRef.current) {
-      clearTimeout(chromeIdleTimerRef.current);
+  const resetOverlayContentIdleTimer = useCallback(() => {
+    if (!hideOverlayContentOnIdle) return;
+    setOverlayContentVisible(true);
+    if (overlayContentIdleTimerRef.current) {
+      clearTimeout(overlayContentIdleTimerRef.current);
     }
-    chromeIdleTimerRef.current = setTimeout(() => {
+    overlayContentIdleTimerRef.current = setTimeout(() => {
       if (mouseDragRef.current.isActive) return;
-      setChromeVisible(false);
+      setOverlayContentVisible(false);
     }, CONTROLS_IDLE_MS);
-  }, [hideChromeOnIdle]);
+  }, [hideOverlayContentOnIdle]);
 
   const handleClose = useCallback(() => {
     if (isEditMode || isClosingRef.current) return;
@@ -1059,11 +1067,11 @@ const LightboxOverlay = ({
     isSwipeDragging,
     backdropStyle: swipeBackdropStyle,
     mediaAreaStyle,
-    chromeStyle: swipeChromeStyle,
+    overlayContentStyle: swipeOverlayContentStyle,
     swipeHandlers,
     dismissAreaStyle,
   } = useLightboxSwipeDismiss({
-    enabled: allowImageScroll,
+    enabled: allowImageScroll ?? false,
     onClose: handleClose,
     animMs: LIGHTBOX_ANIM_MS,
     isBlockedTarget: isDragBlockedTarget,
@@ -1125,7 +1133,6 @@ const LightboxOverlay = ({
 
   const releaseActiveIndexLock = () => {
     lockedActiveIndexRef.current = null;
-    updateActiveIndex();
   };
 
   const setStripSnapEnabled = (enabled: boolean) => {
@@ -1247,9 +1254,15 @@ const LightboxOverlay = ({
       return;
     }
 
+    const snapTargetIndex = targetFlatIndex % images.length;
+    if (behavior === 'smooth') {
+      lockedActiveIndexRef.current = snapTargetIndex;
+    }
+    setActiveIndex(snapTargetIndex);
     scrollStripTo(targetItem.offsetLeft, {
       behavior,
-      activeIndex: targetFlatIndex % images.length,
+      activeIndex: snapTargetIndex,
+      onComplete: behavior === 'smooth' ? releaseActiveIndexLock : undefined,
     });
   };
 
@@ -1279,6 +1292,7 @@ const LightboxOverlay = ({
     if (!strip) return;
     cancelScrollAnimation();
     clearStripTrackTransform();
+    lockedActiveIndexRef.current = null;
     mouseDragRef.current = {
       isActive: true,
       startX: event.clientX,
@@ -1286,7 +1300,7 @@ const LightboxOverlay = ({
       hasMoved: false,
     };
     setStripSnapEnabled(false);
-    resetChromeIdleTimer();
+    resetOverlayContentIdleTimer();
     strip.setPointerCapture(event.pointerId);
   };
 
@@ -1305,7 +1319,7 @@ const LightboxOverlay = ({
       strip.scrollLeft = mouseDragRef.current.scrollLeft - deltaX;
       normalizeInfiniteScroll(true);
       updateActiveIndex();
-      resetChromeIdleTimer();
+      resetOverlayContentIdleTimer();
     }
   };
 
@@ -1328,7 +1342,7 @@ const LightboxOverlay = ({
       setStripSnapEnabled(true);
       updateActiveIndex();
     }
-    resetChromeIdleTimer();
+    resetOverlayContentIdleTimer();
   };
 
   useLightboxScrollLock();
@@ -1341,31 +1355,31 @@ const LightboxOverlay = ({
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
-      if (chromeIdleTimerRef.current) {
-        clearTimeout(chromeIdleTimerRef.current);
+      if (overlayContentIdleTimerRef.current) {
+        clearTimeout(overlayContentIdleTimerRef.current);
       }
     };
   }, []);
 
   useEffect(() => {
-    if (!hideChromeOnIdle) {
-      setChromeVisible(true);
+    if (!hideOverlayContentOnIdle) {
+      setOverlayContentVisible(true);
       return;
     }
-    resetChromeIdleTimer();
+    resetOverlayContentIdleTimer();
     const dismissArea = dismissAreaRef.current;
     if (!dismissArea) return;
-    const onPointerActivity = () => resetChromeIdleTimer();
+    const onPointerActivity = () => resetOverlayContentIdleTimer();
     dismissArea.addEventListener('pointermove', onPointerActivity);
     dismissArea.addEventListener('pointerdown', onPointerActivity);
     return () => {
       dismissArea.removeEventListener('pointermove', onPointerActivity);
       dismissArea.removeEventListener('pointerdown', onPointerActivity);
-      if (chromeIdleTimerRef.current) {
-        clearTimeout(chromeIdleTimerRef.current);
+      if (overlayContentIdleTimerRef.current) {
+        clearTimeout(overlayContentIdleTimerRef.current);
       }
     };
-  }, [hideChromeOnIdle, resetChromeIdleTimer]);
+  }, [hideOverlayContentOnIdle, resetOverlayContentIdleTimer]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -1405,30 +1419,11 @@ const LightboxOverlay = ({
   useEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
-    let scrollEndTimer: ReturnType<typeof setTimeout> | null = null;
     const onScroll = () => {
       normalizeInfiniteScroll();
       updateActiveIndex();
-      if (lockedActiveIndexRef.current !== null) {
-        if (scrollEndTimer) clearTimeout(scrollEndTimer);
-        scrollEndTimer = setTimeout(() => {
-          if (lockedActiveIndexRef.current !== null) {
-            releaseActiveIndexLock();
-          }
-        }, 150);
-      }
-    };
-    const onScrollEnd = () => {
-      if (lockedActiveIndexRef.current !== null) {
-        if (scrollEndTimer) {
-          clearTimeout(scrollEndTimer);
-          scrollEndTimer = null;
-        }
-        releaseActiveIndexLock();
-      }
     };
     strip.addEventListener('scroll', onScroll, { passive: true });
-    strip.addEventListener('scrollend', onScrollEnd);
     const observer = new ResizeObserver(() => {
       measureSetWidth();
       normalizeInfiniteScroll();
@@ -1436,10 +1431,8 @@ const LightboxOverlay = ({
     });
     observer.observe(strip);
     return () => {
-      if (scrollEndTimer) clearTimeout(scrollEndTimer);
       cancelScrollAnimation();
       strip.removeEventListener('scroll', onScroll);
-      strip.removeEventListener('scrollend', onScrollEnd);
       observer.disconnect();
     };
   }, [images.length, isLoopEnabled]);
@@ -1540,12 +1533,13 @@ const LightboxOverlay = ({
         </div>
         <div
           className={`${P}-lightbox-content-inner`}
+          data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
           style={{
             width: '100%',
             height: '100%',
             top: 0,
             bottom: 0,
-            ...swipeChromeStyle,
+            ...swipeOverlayContentStyle,
           }}
         >
           <div
@@ -1577,7 +1571,7 @@ const LightboxOverlay = ({
               {closeIcon && (
                 <div
                   className={`${P}-close-icon`}
-                  data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
+                  data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
                   style={{
                     width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
                     height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
@@ -1612,13 +1606,13 @@ const LightboxOverlay = ({
               className={`${P}-thumbnails`}
               data-lightbox-scrollable=""
               data-thumbnail-active={thumbnailActive}
-              data-chrome-hidden={hideChromeOnIdle && !chromeVisible ? 'true' : 'false'}
+              data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
               onClick={(event) => event.stopPropagation()}
               style={{
                 gap: thumbnailGap,
                 bottom: thumbnailMarginBottom,
                 '--thumbnail-active-color': thumbnailActiveColor,
-                ...swipeChromeStyle,
+                ...swipeOverlayContentStyle,
               } as React.CSSProperties}
             >
               {images.map((item, index) => {

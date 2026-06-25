@@ -37,7 +37,7 @@ export const useLightboxSwipeDismiss = ({
     Math.max(0, 1 - offset / (dismissThreshold * 1.5))
   ), [dismissThreshold]);
 
-  const getChromeOpacity = useCallback((offset: number) => (
+  const getOverlayContentOpacity = useCallback((offset: number) => (
     Math.max(0, 1 - offset / (dismissThreshold * 0.45))
   ), [dismissThreshold]);
 
@@ -150,7 +150,7 @@ export const useLightboxSwipeDismiss = ({
   const isSwipeDragging = dragOffsetY > 0;
   const transition = isAnimating ? `transform ${animMs}ms ease` : 'none';
   const opacityTransition = isAnimating ? `opacity ${animMs}ms ease` : 'none';
-  const isChromeFading = dragOffsetY > 0 || isAnimating;
+  const isOverlayContentFading = dragOffsetY > 0 || isAnimating;
 
   return {
     isSwipeDragging,
@@ -164,8 +164,8 @@ export const useLightboxSwipeDismiss = ({
       touchAction: isSwipeDragging ? 'none' : undefined,
       willChange: isSwipeDragging ? 'transform' : undefined,
     } as React.CSSProperties,
-    chromeStyle: isChromeFading ? {
-      opacity: getChromeOpacity(dragOffsetY),
+    overlayContentStyle: isOverlayContentFading ? {
+      opacity: getOverlayContentOpacity(dragOffsetY),
       transition: opacityTransition,
     } as React.CSSProperties : undefined,
     swipeHandlers: enabled ? {
