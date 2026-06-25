@@ -268,21 +268,36 @@ function getCSS(P: string): string {
   min-width: 0;
   display: flex;
   flex-direction: row;
-  align-items: center;
 }
 
 .${P}-title-cell {
   position: relative;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .${P}-title1,
 .${P}-title2,
 .${P}-title3 {
   margin: 0;
-  flex-shrink: 1;
   min-width: 0;
+}
+
+.${P}-title-resize-handle {
+  background: transparent;
+}
+
+.${P}-title-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background: #FF5C02;
+  pointer-events: none;
 }
 .${P}-lightbox-content-inner {
   position: absolute;
@@ -297,14 +312,8 @@ function getCSS(P: string): string {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: center;
   flex: 1;
   min-width: 0;
-}
-
-.${P}-lightbox-chrome-bar {
-  box-sizing: border-box;
-  width: 100%;
 }
 
 .${P}-control {
@@ -327,8 +336,7 @@ function getCSS(P: string): string {
   z-index: 10;
 }
 
-.${P}-control[data-controls="contentMarginTop"]::after,
-.${P}-control[data-controls="contentMarginBottom"]::after {
+.${P}-control[data-controls="contentMarginTop"]::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -419,9 +427,7 @@ export type LightboxStripSettings = {
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed: boolean;
   };
-  type: 'A' | 'B';
   backgroundColor: string;
-  contentBackgroundColor?: string;
   thumbnailVisibility: 'on' | 'off';
   thumbnailObjectFit: {
     display: 'Fit' | 'Cover';
@@ -434,9 +440,11 @@ export type LightboxStripSettings = {
   thumbnailGap: number;
   thumbnailMarginBottom?: number;
   imageGap?: number;
-  textMaxWidth: number;
-  title1Gap?: number;
-  title2Gap?: number;
+  title1Width: number;
+  title2Width: number;
+  title3Width: number;
+  title2MarginLeft: number;
+  title3MarginLeft: number;
   title1Color: string;
   title2Color: string;
   title3Color: string;
@@ -465,7 +473,6 @@ export type LightboxStripSettings = {
   title3TextAlign?: 'left' | 'center' | 'right' | 'justify';
   title3TextAppearance?: TextStyles['textAppearance'];
   contentMarginTop: number;
-  contentMarginBottom: number;
   contentMarginLeft: number;
   contentMarginRight: number;
   closeIcon:  string | null;
@@ -571,6 +578,143 @@ const STRIP_TEXT_STYLE_DEFAULT_FONT_SIZES: Record<StripTextStylePrefix, number> 
   title3: 0.02,
 };
 
+export const STRIP_TITLE_WIDTH_KEYS = ['title1Width', 'title2Width', 'title3Width'] as const;
+
+export type StripTitleWidthKey = typeof STRIP_TITLE_WIDTH_KEYS[number];
+
+const TITLE_RESIZE_HANDLE_WIDTH = 0.004;
+const MIN_TITLE_WIDTH_PX = 50;
+const ARTICLE_DESIGN_WIDTH = 1440;
+const MIN_TITLE_WIDTH = MIN_TITLE_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
+const STRIP_TITLES_CONTENT_WIDTH = 1;
+
+const DEFAULT_STRIP_TITLE_WIDTHS: Record<StripTitleWidthKey, number> = {
+  title1Width: 0.13,
+  title2Width: 0.13,
+  title3Width: 0.14,
+};
+
+function getStripTitleWidthsFromSettings(
+  settings: LightboxStripSettings,
+): Record<StripTitleWidthKey, number> {
+  return Object.fromEntries(
+    STRIP_TITLE_WIDTH_KEYS.map((key) => [
+      key,
+      typeof settings[key] === 'number' ? settings[key] : DEFAULT_STRIP_TITLE_WIDTHS[key],
+    ]),
+  ) as Record<StripTitleWidthKey, number>;
+}
+
+function resolveStripTitleWidths(
+  count: number,
+  contentWidth: number,
+  storedWidths: number[],
+): number[] {
+  if (count <= 0) {
+    return [];
+  }
+
+  const widths = storedWidths.slice(0, count);
+  const totalWidth = widths.reduce((sum, width) => sum + width, 0);
+  const minTotalWidth = MIN_TITLE_WIDTH * count;
+
+  if (totalWidth <= contentWidth || totalWidth <= minTotalWidth) {
+    return widths;
+  }
+
+  const resolvedWidths = [...widths];
+  let overflow = totalWidth - contentWidth;
+
+  for (let index = resolvedWidths.length - 1; index >= 0 && overflow > 0; index -= 1) {
+    const shrinkable = resolvedWidths[index] - MIN_TITLE_WIDTH;
+    if (shrinkable <= 0) {
+      continue;
+    }
+
+    const shrinkAmount = Math.min(overflow, shrinkable);
+    resolvedWidths[index] -= shrinkAmount;
+    overflow -= shrinkAmount;
+  }
+
+  return resolvedWidths;
+}
+
+function getEffectiveStripTitleWidths(
+  count: number,
+  contentWidth: number,
+  storedWidths: number[],
+): number[] {
+  return resolveStripTitleWidths(count, contentWidth, storedWidths);
+}
+
+function getStripTitleMaxWidth(
+  columnIndex: number,
+  resolvedWidths: number[],
+  contentWidth: number,
+): number {
+  const otherWidths = resolvedWidths
+    .filter((_, index) => index !== columnIndex)
+    .reduce((sum, width) => sum + width, 0);
+
+  return Math.max(
+    MIN_TITLE_WIDTH,
+    contentWidth - otherWidths,
+  );
+}
+
+type StripTitleSlot = {
+  prefix: StripTextStylePrefix;
+  widthKey: StripTitleWidthKey;
+  marginLeftKey?: 'title2MarginLeft' | 'title3MarginLeft';
+  className: string;
+  style: React.CSSProperties;
+  text: string;
+};
+
+function buildStripTitleSlots(
+  prefix: string,
+  title1: string,
+  title2: string,
+  title3: string,
+  title1Style: React.CSSProperties,
+  title2Style: React.CSSProperties,
+  title3Style: React.CSSProperties,
+): StripTitleSlot[] {
+  const slots: StripTitleSlot[] = [];
+
+  if (title1) {
+    slots.push({
+      prefix: 'title1',
+      widthKey: 'title1Width',
+      className: `${prefix}-title1`,
+      style: title1Style,
+      text: title1,
+    });
+  }
+  if (title2) {
+    slots.push({
+      prefix: 'title2',
+      widthKey: 'title2Width',
+      marginLeftKey: 'title2MarginLeft',
+      className: `${prefix}-title2`,
+      style: title2Style,
+      text: title2,
+    });
+  }
+  if (title3) {
+    slots.push({
+      prefix: 'title3',
+      widthKey: 'title3Width',
+      marginLeftKey: 'title3MarginLeft',
+      className: `${prefix}-title3`,
+      style: title3Style,
+      text: title3,
+    });
+  }
+
+  return slots;
+}
+
 function resolveStripTextFields(
   settings: LightboxStripSettings,
   prefix: StripTextStylePrefix,
@@ -621,12 +765,10 @@ function stripTextFieldsToCss(
 
 type LightboxOverlayProps = {
   prefix: string;
-  type: 'A' | 'B';
   images: LightboxStripItem[];
   backgroundColor: string;
   thumbnailGap: string;
   thumbnailMarginBottom: string;
-  contentBackgroundColor?: string;
   imageGap: string;
   closeIcon: string | null;
   closeIconMaxWidth: number;
@@ -641,9 +783,9 @@ type LightboxOverlayProps = {
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'outline' | 'color' | 'scale-up';
   thumbnailActiveColor: string;
-  textMaxWidth: string;
-  title1Gap: string;
-  title2Gap: string;
+  title1Width: number;
+  title2Width: number;
+  title3Width: number;
   title1: string;
   title2: string;
   title3: string;
@@ -651,9 +793,10 @@ type LightboxOverlayProps = {
   title2Style: React.CSSProperties;
   title3Style: React.CSSProperties;
   contentMarginTop: string;
-  contentMarginBottom: string;
   contentMarginLeft: string;
   contentMarginRight: string;
+  title2MarginLeft: number;
+  title3MarginLeft: number;
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
@@ -670,9 +813,7 @@ const getGapControlSize = (gap: string) => `max(${gap}, ${GAP_LABEL_AREA_PX}px)`
 const LightboxOverlay = ({
   prefix: P,
   images,
-  type,
   backgroundColor,
-  contentBackgroundColor,
   thumbnailGap,
   thumbnailMarginBottom,
   imageGap,
@@ -688,9 +829,9 @@ const LightboxOverlay = ({
   thumbnailObjectFit,
   thumbnailActive,
   thumbnailActiveColor,
-  textMaxWidth,
-  title1Gap,
-  title2Gap,
+  title1Width,
+  title2Width,
+  title3Width,
   title1,
   title2,
   title3,
@@ -698,9 +839,10 @@ const LightboxOverlay = ({
   title2Style,
   title3Style,
   contentMarginTop,
-  contentMarginBottom,
   contentMarginLeft,
   contentMarginRight,
+  title2MarginLeft,
+  title3MarginLeft,
   onClose,
 }: LightboxOverlayProps) => {
   const showControls = Boolean(isEditMode);
@@ -735,40 +877,118 @@ const LightboxOverlay = ({
   };
 
   const hasTitles = Boolean(title1 || title2 || title3);
+  const titleSlots = useMemo(
+    () => buildStripTitleSlots(P, title1, title2, title3, title1Style, title2Style, title3Style),
+    [P, title1, title2, title3, title1Style, title2Style, title3Style],
+  );
+  const titleWidthByKey = useMemo(
+    () => ({
+      title1Width,
+      title2Width,
+      title3Width,
+    }),
+    [title1Width, title2Width, title3Width],
+  );
+  const storedTitleWidths = useMemo(
+    () => titleSlots.map((slot) => titleWidthByKey[slot.widthKey]),
+    [titleSlots, titleWidthByKey],
+  );
+  const resolvedTitleWidths = useMemo(
+    () => resolveStripTitleWidths(titleSlots.length, STRIP_TITLES_CONTENT_WIDTH, storedTitleWidths),
+    [titleSlots.length, storedTitleWidths],
+  );
+  const effectiveTitleWidths = useMemo(
+    () => getEffectiveStripTitleWidths(titleSlots.length, STRIP_TITLES_CONTENT_WIDTH, storedTitleWidths),
+    [titleSlots.length, storedTitleWidths],
+  );
+  const scaledTitleWidth = useCallback(
+    (value: number) => scalingValue(value, isEditor ?? false),
+    [isEditor],
+  );
+  const titleMarginLeftByKey = useMemo(
+    () => ({
+      title2MarginLeft,
+      title3MarginLeft,
+    }),
+    [title2MarginLeft, title3MarginLeft],
+  );
+  const getTitleBoundaryOffset = useCallback(
+    (upToIndex: number) => {
+      let offset = 0;
+      for (let index = 0; index <= upToIndex; index += 1) {
+        const slot = titleSlots[index];
+        if (slot?.marginLeftKey) {
+          offset += titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+        }
+        offset += resolvedTitleWidths[index] ?? 0;
+      }
+      return offset;
+    },
+    [titleSlots, titleMarginLeftByKey, resolvedTitleWidths],
+  );
 
-  const renderTitles = (showGapControls = false) => {
-    type TitleSlot = {
-      className: string;
-      style: React.CSSProperties;
-      text: string;
-      gapKey?: 'title1Gap' | 'title2Gap';
-      gap?: string;
-    };
+  const renderTitles = () => titleSlots.flatMap((slot, index) => {
+    const marginLeft = slot.marginLeftKey
+      ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0
+      : 0;
+    const elements = [];
 
-    const slots: TitleSlot[] = [];
-    if (title1) {
-      slots.push({ className: `${P}-title1`, style: title1Style, text: title1, gapKey: 'title1Gap', gap: title1Gap });
-    }
-    if (title2) {
-      slots.push({ className: `${P}-title2`, style: title2Style, text: title2, gapKey: 'title2Gap', gap: title2Gap });
-    }
-    if (title3) {
-      slots.push({ className: `${P}-title3`, style: title3Style, text: title3 });
+    if (slot.marginLeftKey) {
+      elements.push(
+        <div
+          key={`${slot.className}-margin`}
+          data-controls={showControls ? slot.marginLeftKey : undefined}
+          data-controls-axis={showControls ? 'x' : undefined}
+          className={showControls ? `${P}-control` : undefined}
+          style={{ width: scaledTitleWidth(marginLeft), flexShrink: 0 }}
+        />,
+      );
     }
 
-    return slots.map((slot, index) => (
+    elements.push(
       <div
         key={slot.className}
         className={`${P}-title-cell`}
-        style={index < slots.length - 1 && slot.gap ? { marginRight: slot.gap } : undefined}
+        style={{ width: scaledTitleWidth(effectiveTitleWidths[index] ?? 0) }}
       >
-        <p className={slot.className} style={{ ...slot.style, maxWidth: textMaxWidth }}>{slot.text}</p>
-        {showGapControls && showControls && slot.gapKey && slot.gap && index < slots.length - 1
-          ? renderGapControl(slot.gapKey, slot.gap)
-          : null}
+        <p className={slot.className} style={slot.style}>{slot.text}</p>
+      </div>,
+    );
+
+    return elements;
+  });
+
+  const renderTitleWidthControls = () => titleSlots.map((slot, colIndex) => {
+    const maxTitleWidth = getStripTitleMaxWidth(
+      colIndex,
+      resolvedTitleWidths,
+      STRIP_TITLES_CONTENT_WIDTH,
+    );
+    const boundaryOffset = getTitleBoundaryOffset(colIndex);
+    const titleWidthHandleOffset = boundaryOffset - TITLE_RESIZE_HANDLE_WIDTH / 2;
+
+    return (
+      <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div
+          data-controls={slot.widthKey}
+          data-controls-static-handle=""
+          data-controls-axis="x"
+          data-controls-min={String(MIN_TITLE_WIDTH_PX)}
+          data-controls-max-fraction={String(maxTitleWidth)}
+          data-controls-variant="column-width"
+          className={`${P}-title-resize-handle`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaledTitleWidth(titleWidthHandleOffset),
+            width: scaledTitleWidth(TITLE_RESIZE_HANDLE_WIDTH),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
       </div>
-    ));
-  };
+    );
+  });
   const dismissAreaRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -1232,10 +1452,9 @@ const LightboxOverlay = ({
           className={`${P}-lightbox-content-inner`}
           style={{
             width: '100%',
-            height: type === 'A' ? '100%' : 'auto',
+            height: '100%',
             top: 0,
-            bottom: type === 'A' ? 0 : 'auto',
-            ...(type === 'B' ? { backgroundColor: contentBackgroundColor, position: 'relative' } : {}),
+            bottom: 0,
             ...swipeChromeStyle,
           }}
         >
@@ -1246,7 +1465,6 @@ const LightboxOverlay = ({
             style={{ height: contentMarginTop, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
           />
           <div
-            className={type === 'B' ? `${P}-lightbox-chrome-bar` : undefined}
             style={{
               display: 'flex',
               flexDirection: 'row',
@@ -1262,7 +1480,8 @@ const LightboxOverlay = ({
             <div className={`${P}-lightbox-content-area`}>
               {hasTitles && (
                 <div className={`${P}-titles-row`}>
-                  {renderTitles(true)}
+                  {renderTitles()}
+                  {showControls && titleSlots.length > 0 ? renderTitleWidthControls() : null}
                 </div>
               )}
               {closeIcon && (
@@ -1294,14 +1513,6 @@ const LightboxOverlay = ({
               style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
             />
           </div>
-          {type === 'B' && (
-            <div
-              data-controls={showControls ? 'contentMarginBottom' : undefined}
-              data-controls-static-handle={showControls ? '' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ height: contentMarginBottom, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
-            />
-          )}
         </div>
         {images.length > 1 && thumbnailVisibility === 'on' && (() => {
           const thumbnailMarginBottomControlSize = getGapControlSize(thumbnailMarginBottom);
@@ -1402,9 +1613,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
   const { 
     cover,
     coverFit,
-    type,
     backgroundColor,
-    contentBackgroundColor,
     thumbnailVisibility,
     thumbnailObjectFit,
     thumbnailTrigger,
@@ -1413,15 +1622,16 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
     thumbnailGap,
     thumbnailMarginBottom,
     imageGap,
-    textMaxWidth,
-    title1Gap,
-    title2Gap,
+    title1Width,
+    title2Width,
+    title3Width,
+    title2MarginLeft,
+    title3MarginLeft,
     closeIcon,
     closeIconMaxWidth,
     closeIconColor,
     closeIconHoverColor, 
     contentMarginTop,
-    contentMarginBottom,
     contentMarginLeft,
     contentMarginRight
   } = settings;
@@ -1478,10 +1688,8 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
         return createPortal(
           <LightboxOverlay
             prefix={P}
-            type={type}
             images={items}
             backgroundColor={backgroundColor}
-            contentBackgroundColor={contentBackgroundColor}
             thumbnailGap={scaled(thumbnailGap)}
             thumbnailMarginBottom={scaled(thumbnailMarginBottom ?? 0.02)}
             imageGap={scaled(imageGap ?? 0)}
@@ -1490,9 +1698,11 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             thumbnailTrigger={thumbnailTrigger}
             thumbnailActive={thumbnailActive}
             thumbnailActiveColor={thumbnailActiveColor}
-            textMaxWidth={scaled(textMaxWidth)}
-            title1Gap={scaled(title1Gap ?? 0)}
-            title2Gap={scaled(title2Gap ?? 0)}
+            title1Width={title1Width}
+            title2Width={title2Width}
+            title3Width={title3Width}
+            title2MarginLeft={title2MarginLeft ?? 0}
+            title3MarginLeft={title3MarginLeft ?? 0}
             title1={title1}
             title2={title2}
             title3={title3}
@@ -1500,7 +1710,6 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             title2Style={title2Style}
             title3Style={title3Style}
             contentMarginTop={scaled(contentMarginTop ?? 0)}
-            contentMarginBottom={scaled(contentMarginBottom ?? 0)}
             contentMarginLeft={scaled(contentMarginLeft ?? 0)}
             contentMarginRight={scaled(contentMarginRight ?? 0)}
             closeIcon={closeIcon}
