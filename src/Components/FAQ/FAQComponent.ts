@@ -39,10 +39,12 @@ const textStyleProperties = {
 };
 
 const paletteBookmarkItems = [
-  'titleColor',
-  'titleHoverColor',
-  'contentColor',
-  'contentHoverColor',
+  'questionColor',
+  'answerColor',
+  'dividerColor',
+  'questionHoverColor',
+  'dividerHoverColor',
+  'backgroundHoverColor',
 ] as const;
 
 const schema: ComponentSchemaV1 = {
@@ -56,18 +58,18 @@ const schema: ComponentSchemaV1 = {
     items: {
       type: 'object',
       properties: {
-        title: {
+        question: {
           type: 'string',
-          label: 'Title',
-          placeholder: 'Add title...',
+          label: 'Question',
+          placeholder: 'Add question...',
           display: {
             type: 'text-input',
           },
         },
-        content: {
+        answer: {
           type: 'string',
-          label: 'Content',
-          placeholder: 'Add content...',
+          label: 'Answer',
+          placeholder: 'Add answer...',
           display: {
             type: 'text-input',
           },
@@ -76,16 +78,16 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       {
-        title: 'What is your return policy?',
-        content: 'You can return any item within 30 days of purchase.',
+        question: 'What is your return policy?',
+        answer: 'You can return any item within 30 days of purchase.',
       },
       {
-        title: 'How long does shipping take?',
-        content: 'Standard shipping typically takes 5–7 business days.',
+        question: 'How long does shipping take?',
+        answer: 'Standard shipping typically takes 5–7 business days.',
       },
       {
-        title: 'Do you offer international delivery?',
-        content: 'Yes, we ship to most countries worldwide.',
+        question: 'Do you offer international delivery?',
+        answer: 'Yes, we ship to most countries worldwide.',
       },
     ],
   },
@@ -108,6 +110,20 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 9999,
       },
+      dividerWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Width',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      dividerStyle: {
+        type: 'string',
+        scope: 'common',
+        title: 'Style',
+        display: { type: 'toggle-cycle', enum: ['solid', 'dashed', 'dotted'] },
+      },
       hover: {
         type: 'string',
         scope: 'common',
@@ -120,142 +136,179 @@ const schema: ComponentSchemaV1 = {
         title: 'Autoclose',
         display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
-      titleColor: {
+      icon: {
+        type: ['string', 'null'] as const,
+        scope: 'common',
+        title: 'Icon',
+        display: { type: 'icon-switch-control' },
+      },
+      iconMaxWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Icon Max Width',
+        display: { type: 'full-width-input' },
+        min: 0,
+        max: 1,
+      },
+      iconAnimation: {
         type: 'string',
         scope: 'common',
-        title: 'Title Default',
-        display: { type: 'palette-color-picker' },
+        title: 'Icon Animation',
+        display: { type: 'toggle-cycle', enum: ['180', '90', '45'] },
       },
-      titleHoverColor: {
+      questionColor: {
         type: 'string',
         scope: 'common',
-        title: 'Title Hover',
+        title: 'Question Default',
         display: { type: 'palette-color-picker' },
       },
-      contentColor: {
+      answerColor: {
         type: 'string',
         scope: 'common',
-        title: 'Content Default',
+        title: 'Answer Default',
         display: { type: 'palette-color-picker' },
       },
-      contentHoverColor: {
+      dividerColor: {
         type: 'string',
         scope: 'common',
-        title: 'Content Hover',
+        title: 'Divider Default',
         display: { type: 'palette-color-picker' },
       },
-      titleFontFamily: {
+      questionHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Question Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      dividerHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Divider Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      backgroundHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'BG Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      questionFontFamily: {
         type: 'string',
         scope: 'common',
         title: 'Font family',
         display: { type: 'font-family-select' },
       },
-      titleFontSettings: {
+      questionFontSettings: {
         ...textStyleProperties.fontSettings,
         scope: 'common',
         title: '',
         display: { type: 'font-settings-weight' },
       },
-      titleFontSize: {
+      questionFontSize: {
         type: 'number',
         scope: 'layout',
-        title: 'Title Font Size',
+        title: 'Question Font Size',
         display: { type: 'font-size' },
       },
-      titleLineHeight: {
+      questionLineHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Title Line Height',
+        title: 'Question Line Height',
         display: { type: 'line-height-input' },
       },
-      titleLetterSpacing: {
+      questionLetterSpacing: {
         type: 'number',
         scope: 'layout',
-        title: 'Title Letter Spacing',
+        title: 'Question Letter Spacing',
         display: { type: 'letter-spacing-input' },
       },
-      titleWordSpacing: {
+      questionWordSpacing: {
         type: 'number',
         scope: 'layout',
-        title: 'Title Word Spacing',
+        title: 'Question Word Spacing',
         display: { type: 'word-spacing-input' },
       },
-      titleTextAppearance: {
+      questionTextAppearance: {
         type: 'object',
         scope: 'layout',
-        title: 'Title Text Appearance',
+        title: 'Question Text Appearance',
         display: { type: 'text-appearance' },
       },
-      contentFontFamily: {
+      answerFontFamily: {
         type: 'string',
         scope: 'common',
         title: 'Font family',
         display: { type: 'font-family-select' },
       },
-      contentFontSettings: {
+      answerFontSettings: {
         ...textStyleProperties.fontSettings,
         scope: 'common',
         title: '',
         display: { type: 'font-settings-weight' },
       },
-      contentFontSize: {
+      answerFontSize: {
         type: 'number',
         scope: 'layout',
-        title: 'Content Font Size',
+        title: 'Answer Font Size',
         display: { type: 'font-size' },
       },
-      contentLineHeight: {
+      answerLineHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Content Line Height',
+        title: 'Answer Line Height',
         display: { type: 'line-height-input' },
       },
-      contentLetterSpacing: {
+      answerLetterSpacing: {
         type: 'number',
         scope: 'layout',
-        title: 'Content Letter Spacing',
+        title: 'Answer Letter Spacing',
         display: { type: 'letter-spacing-input' },
       },
-      contentWordSpacing: {
+      answerWordSpacing: {
         type: 'number',
         scope: 'layout',
-        title: 'Content Word Spacing',
+        title: 'Answer Word Spacing',
         display: { type: 'word-spacing-input' },
       },
-      contentTextAppearance: {
+      answerTextAppearance: {
         type: 'object',
         scope: 'layout',
-        title: 'Content Text Appearance',
+        title: 'Answer Text Appearance',
         display: { type: 'text-appearance' },
       },
     },
     defaults: {
+      dividerStyle: 'solid',
       hover: 'color',
       autoclose: 'off',
-      titleColor: '#000000',
-      titleHoverColor: '#666666',
-      contentColor: '#000000',
-      contentHoverColor: '#666666',
-      titleFontFamily: 'Arial',
-      titleFontSettings: {
+      icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KVZJ586KJS8G0PKNERN87KMN.svg',
+      iconAnimation: '45',
+      questionColor: '#000000',
+      answerColor: '#000000',
+      dividerColor: '#000000',
+      questionHoverColor: '#666666',
+      dividerHoverColor: '#000000',
+      backgroundHoverColor: '#000000',
+      questionFontFamily: 'Arial',
+      questionFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
       },
-      titleLetterSpacing: 0,
-      titleWordSpacing: 0,
-      titleTextAppearance: {
+      questionLetterSpacing: 0,
+      questionWordSpacing: 0,
+      questionTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      contentFontFamily: 'Goudy Bookletter 1911',
-      contentFontSettings: {
+      answerFontFamily: 'Goudy Bookletter 1911',
+      answerFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
       },
-      contentLetterSpacing: 0,
-      contentWordSpacing: 0,
-      contentTextAppearance: {
+      answerLetterSpacing: 0,
+      answerWordSpacing: 0,
+      answerTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
         fontVariant: 'normal',
@@ -265,26 +318,35 @@ const schema: ComponentSchemaV1 = {
       m: {
         wrapperWidth: 1,
         cellMinHeight: 0,
-        titleFontSize: 0.1066,
-        titleLineHeight: 0.0853,
-        contentFontSize: 0.056,
-        contentLineHeight: 0.0448,
+        dividerWidth: 0.001389,
+        iconMaxWidth: 0.025,
+        questionFontSize: 0.1066,
+        questionLineHeight: 0.0853,
+        answerFontSize: 0.056,
+        answerLineHeight: 0.0448,
       },
       d: {
         wrapperWidth: 1,
         cellMinHeight: 0,
-        titleFontSize: 0.027,
-        titleLineHeight: 0.0222,
-        contentFontSize: 0.01,
-        contentLineHeight: 0.0082,
+        dividerWidth: 0.000694,
+        iconMaxWidth: 0.00833,
+        questionFontSize: 0.027,
+        questionLineHeight: 0.0222,
+        answerFontSize: 0.01,
+        answerLineHeight: 0.0082,
       },
     },
     layout: [
       '__componentName__',
       'wrapperWidth',
       'cellMinHeight',
+      'dividerWidth',
+      'dividerStyle',
       'hover',
       'autoclose',
+      'icon',
+      'iconMaxWidth',
+      'iconAnimation',
     ],
   },
   panels: [
@@ -297,6 +359,9 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         { type: 'row', title: '', items: ['wrapperWidth', 'cellMinHeight'] },
         { type: 'row', title: '', items: ['hover', 'autoclose'] },
+        { type: 'row', title: 'Divider', items: ['dividerWidth', 'dividerStyle'] },
+        { type: 'row', title: 'Icon', items: ['icon', 'iconMaxWidth'] },
+        { type: 'row', title: '', items: ['iconAnimation'] },
       ],
     },
     {
@@ -308,22 +373,22 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         {
           type: 'group',
-          title: 'Title',
+          title: 'Question',
           items: [
-            'titleFontFamily',
-            'titleFontSettings',
-            { type: 'row', items: ['titleFontSize', 'titleLineHeight', 'titleLetterSpacing', 'titleWordSpacing'] },
-            'titleTextAppearance',
+            'questionFontFamily',
+            'questionFontSettings',
+            { type: 'row', items: ['questionFontSize', 'questionLineHeight', 'questionLetterSpacing', 'questionWordSpacing'] },
+            'questionTextAppearance',
           ],
         },
         {
           type: 'group',
-          title: 'Content',
+          title: 'Answer',
           items: [
-            'contentFontFamily',
-            'contentFontSettings',
-            { type: 'row', items: ['contentFontSize', 'contentLineHeight', 'contentLetterSpacing', 'contentWordSpacing'] },
-            'contentTextAppearance',
+            'answerFontFamily',
+            'answerFontSettings',
+            { type: 'row', items: ['answerFontSize', 'answerLineHeight', 'answerLetterSpacing', 'answerWordSpacing'] },
+            'answerTextAppearance',
           ],
         },
       ],
@@ -333,7 +398,14 @@ const schema: ComponentSchemaV1 = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['titleColor', 'titleHoverColor', 'contentColor', 'contentHoverColor'],
+      default: [
+        'questionColor',
+        'answerColor',
+        'dividerColor',
+        'questionHoverColor',
+        'dividerHoverColor',
+        'backgroundHoverColor',
+      ],
     },
   },
 };
@@ -357,7 +429,7 @@ export const FAQComponent = {
   },
   assetsPaths: {
     content: [],
-    parameters: [],
+    parameters: [{ path: 'icon' }],
   },
   schema,
   sourceCode: formSourceRaw,

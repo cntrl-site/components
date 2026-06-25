@@ -2,35 +2,43 @@ import { useCallback, useMemo, useState } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
+import { SvgImage } from '../helpers/SvgImage/SvgImage';
 
 type FAQContentItem = {
-  title?: string;
-  content?: string;
+  question?: string;
+  answer?: string;
 };
 
 type FAQSettings = {
   wrapperWidth?: number;
   cellMinHeight?: number;
+  dividerWidth?: number;
+  dividerStyle?: 'solid' | 'dashed' | 'dotted';
   hover?: 'off' | 'color';
   autoclose?: 'on' | 'off';
-  titleColor?: string;
-  titleHoverColor?: string;
-  contentColor?: string;
-  contentHoverColor?: string;
-  titleFontFamily?: string;
-  titleFontSettings?: { fontWeight: number; fontStyle: string };
-  titleFontSize?: number;
-  titleLineHeight?: number;
-  titleLetterSpacing?: number;
-  titleWordSpacing?: number;
-  titleTextAppearance?: TextStyles['textAppearance'];
-  contentFontFamily?: string;
-  contentFontSettings?: { fontWeight: number; fontStyle: string };
-  contentFontSize?: number;
-  contentLineHeight?: number;
-  contentLetterSpacing?: number;
-  contentWordSpacing?: number;
-  contentTextAppearance?: TextStyles['textAppearance'];
+  icon?: string | null;
+  iconMaxWidth?: number;
+  iconAnimation?: '180' | '90' | '45';
+  questionColor?: string;
+  answerColor?: string;
+  dividerColor?: string;
+  questionHoverColor?: string;
+  dividerHoverColor?: string;
+  backgroundHoverColor?: string;
+  questionFontFamily?: string;
+  questionFontSettings?: { fontWeight: number; fontStyle: string };
+  questionFontSize?: number;
+  questionLineHeight?: number;
+  questionLetterSpacing?: number;
+  questionWordSpacing?: number;
+  questionTextAppearance?: TextStyles['textAppearance'];
+  answerFontFamily?: string;
+  answerFontSettings?: { fontWeight: number; fontStyle: string };
+  answerFontSize?: number;
+  answerLineHeight?: number;
+  answerLetterSpacing?: number;
+  answerWordSpacing?: number;
+  answerTextAppearance?: TextStyles['textAppearance'];
 };
 
 type FAQProps = {
@@ -46,16 +54,20 @@ type FAQProps = {
 const PANEL_ANIM_MS = 300;
 
 type ColorKeys =
-  | 'titleColor'
-  | 'titleHoverColor'
-  | 'contentColor'
-  | 'contentHoverColor';
+  | 'questionColor'
+  | 'answerColor'
+  | 'dividerColor'
+  | 'questionHoverColor'
+  | 'dividerHoverColor'
+  | 'backgroundHoverColor';
 
 const COLOR_VAR_MAP: Record<ColorKeys, string> = {
-  titleColor: 'title-color',
-  titleHoverColor: 'title-hover-color',
-  contentColor: 'content-color',
-  contentHoverColor: 'content-hover-color',
+  questionColor: 'question-color',
+  answerColor: 'answer-color',
+  dividerColor: 'divider-color',
+  questionHoverColor: 'question-hover-color',
+  dividerHoverColor: 'divider-hover-color',
+  backgroundHoverColor: 'background-hover-color',
 };
 
 const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
@@ -105,16 +117,33 @@ function getCSS(P: string): string {
 .${P}-item {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom-width: var(--${P}-divider-width);
+  border-bottom-style: var(--${P}-divider-style);
+  border-bottom-color: var(--${P}-divider-color);
+  transition: background-color 250ms, border-color 250ms;
 }
 .${P}-item:first-child {
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  border-top-width: var(--${P}-divider-width);
+  border-top-style: var(--${P}-divider-style);
+  border-top-color: var(--${P}-divider-color);
 }
-.${P}-title-button {
+.${P}-hover-enabled .${P}-item:hover,
+.${P}-wrapper.${P}-state-hover .${P}-item {
+  background-color: var(--${P}-background-hover-color);
+  border-bottom-color: var(--${P}-divider-hover-color, var(--${P}-divider-color));
+}
+.${P}-hover-enabled .${P}-item:has(+ .${P}-item:hover) {
+  border-bottom-color: var(--${P}-divider-hover-color, var(--${P}-divider-color));
+}
+.${P}-hover-enabled .${P}-item:hover:first-child,
+.${P}-wrapper.${P}-state-hover .${P}-item:first-child {
+  border-top-color: var(--${P}-divider-hover-color, var(--${P}-divider-color));
+}
+.${P}-question-button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: var(--${P}-title-min-height, unset);
+  min-height: var(--${P}-question-min-height, unset);
   gap: ${sv(12)};
   width: 100%;
   margin: 0;
@@ -122,20 +151,20 @@ function getCSS(P: string): string {
   background: none;
   cursor: pointer;
   text-align: left;
-  color: var(--${P}-title-color);
+  color: var(--${P}-question-color);
   font: inherit;
   transition: color 250ms;
   padding-left: 0;
 }
-.${P}-hover-enabled .${P}-item:hover .${P}-title-button,
-.${P}-hover-enabled .${P}-title-button:hover,
-.${P}-wrapper.${P}-state-hover .${P}-title-button {
-  color: var(--${P}-title-hover-color, var(--${P}-title-color));
+.${P}-hover-enabled .${P}-item:hover .${P}-question-button,
+.${P}-hover-enabled .${P}-question-button:hover,
+.${P}-wrapper.${P}-state-hover .${P}-question-button {
+  color: var(--${P}-question-hover-color, var(--${P}-question-color));
 }
-.${P}-editor .${P}-title-button {
+.${P}-editor .${P}-question-button {
   cursor: default;
 }
-.${P}-title {
+.${P}-question {
   margin: 0;
   flex: 1;
   min-width: 0;
@@ -147,32 +176,42 @@ function getCSS(P: string): string {
 .${P}-text-tight-leading {
   display: block;
   flex-shrink: 0;
-  padding-top: var(--${P}-title-leading-gap, 0);
-  padding-bottom: var(--${P}-title-leading-gap, 0);
+  padding-top: var(--${P}-question-leading-gap, 0);
+  padding-bottom: var(--${P}-question-leading-gap, 0);
 }
 .${P}-icon {
   flex-shrink: 0;
-  width: ${sv(12)};
-  height: ${sv(12)};
+  width: var(--${P}-icon-max-width);
+  height: var(--${P}-icon-max-width);
   position: relative;
   transition: transform ${PANEL_ANIM_MS}ms ease;
 }
-.${P}-icon::before,
-.${P}-icon::after {
-  content: "";
+.${P}-icon-custom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.${P}-icon-image {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100%;
-  height: 1px;
-  background: currentColor;
   transform: translate(-50%, -50%);
+  transition: background-color 250ms;
 }
-.${P}-icon::after {
-  transform: translate(-50%, -50%) rotate(90deg);
+.${P}-hover-enabled .${P}-item:hover .${P}-icon-image,
+.${P}-hover-enabled .${P}-question-button:hover .${P}-icon-image,
+.${P}-wrapper.${P}-state-hover .${P}-icon-image {
+  --fill: var(--${P}-question-hover-color, var(--${P}-question-color)) !important;
+  --hover-fill: var(--${P}-question-hover-color, var(--${P}-question-color)) !important;
 }
-.${P}-item-open .${P}-icon {
+.${P}-item-open .${P}-icon-anim-45 {
   transform: rotate(45deg);
+}
+.${P}-item-open .${P}-icon-anim-90 {
+  transform: rotate(90deg);
+}
+.${P}-item-open .${P}-icon-anim-180 {
+  transform: rotate(180deg);
 }
 .${P}-panel {
   display: grid;
@@ -186,28 +225,22 @@ function getCSS(P: string): string {
   overflow: hidden;
   min-height: 0;
 }
-.${P}-content {
-  color: var(--${P}-content-color);
-  transition: color 250ms;
+.${P}-answer {
+  color: var(--${P}-answer-color);
 }
-.${P}-content-text {
+.${P}-answer-text {
   margin: 0;
   color: inherit;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-.${P}-hover-enabled .${P}-panel-inner:hover .${P}-content,
-.${P}-hover-enabled .${P}-content:hover,
-.${P}-wrapper.${P}-state-hover .${P}-content {
-  color: var(--${P}-content-hover-color, var(--${P}-content-color));
-}
 `;
 }
 
 function resolveTextStyle(
   fontFamily: string | undefined,
-  fontSettings: FAQSettings['titleFontSettings'],
+  fontSettings: FAQSettings['questionFontSettings'],
   fontSize: number | undefined,
   lineHeight: number | undefined,
   letterSpacing: number | undefined,
@@ -235,79 +268,91 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, activeEvent }:
   const {
     wrapperWidth = 1,
     cellMinHeight = 0,
+    dividerWidth = 0.000694,
+    dividerStyle = 'solid',
     hover = 'color',
     autoclose = 'off',
-    titleColor = '#000000',
-    titleHoverColor = '#666666',
-    contentColor = '#000000',
-    contentHoverColor = '#666666',
-    titleFontFamily,
-    titleFontSettings,
-    titleFontSize,
-    titleLineHeight,
-    titleLetterSpacing,
-    titleWordSpacing,
-    titleTextAppearance,
-    contentFontFamily,
-    contentFontSettings,
-    contentFontSize,
-    contentLineHeight,
-    contentLetterSpacing,
-    contentWordSpacing,
-    contentTextAppearance,
+    icon,
+    iconMaxWidth = 0.00833,
+    iconAnimation = '45',
+    questionColor = '#000000',
+    answerColor = '#000000',
+    dividerColor = '#0000001F',
+    questionHoverColor = '#666666',
+    dividerHoverColor = '#000000',
+    backgroundHoverColor = '#0000000A',
+    questionFontFamily,
+    questionFontSettings,
+    questionFontSize,
+    questionLineHeight,
+    questionLetterSpacing,
+    questionWordSpacing,
+    questionTextAppearance,
+    answerFontFamily,
+    answerFontSettings,
+    answerFontSize,
+    answerLineHeight,
+    answerLetterSpacing,
+    answerWordSpacing,
+    answerTextAppearance,
   } = settings;
   const items = content ?? [];
   const [openIndices, setOpenIndices] = useState<Set<number>>(() => new Set());
   const isInteractive = !isEditor || isPreviewMode;
   const hoverEnabledClass = isInteractive && hover === 'color' ? `${P}-hover-enabled` : '';
+  const iconSrc = icon ?? '';
+  const useCustomIcon = Boolean(iconSrc);
+  const iconAnimClass = `${P}-icon-anim-${iconAnimation}`;
 
-  const titleTypographyCss = omitTextColors(textStylesToCss(
+  const questionTypographyCss = omitTextColors(textStylesToCss(
     resolveTextStyle(
-      titleFontFamily,
-      titleFontSettings,
-      titleFontSize,
-      titleLineHeight,
-      titleLetterSpacing,
-      titleWordSpacing,
-      titleTextAppearance,
-      titleColor,
+      questionFontFamily,
+      questionFontSettings,
+      questionFontSize,
+      questionLineHeight,
+      questionLetterSpacing,
+      questionWordSpacing,
+      questionTextAppearance,
+      questionColor,
     ),
     isEditor,
   ));
-  const contentTypographyCss = omitTextColors(textStylesToCss(
+  const answerTypographyCss = omitTextColors(textStylesToCss(
     resolveTextStyle(
-      contentFontFamily,
-      contentFontSettings,
-      contentFontSize,
-      contentLineHeight,
-      contentLetterSpacing,
-      contentWordSpacing,
-      contentTextAppearance,
-      contentColor,
+      answerFontFamily,
+      answerFontSettings,
+      answerFontSize,
+      answerLineHeight,
+      answerLetterSpacing,
+      answerWordSpacing,
+      answerTextAppearance,
+      answerColor,
     ),
     isEditor,
   ));
 
-  const titleTextClassName = getTextClassName(
-    titleFontSize,
-    titleLineHeight,
-    `${P}-title`,
+  const questionTextClassName = getTextClassName(
+    questionFontSize,
+    questionLineHeight,
+    `${P}-question`,
     `${P}-text-tight-leading`,
   );
-  const contentTextClassName = getTextClassName(
-    contentFontSize,
-    contentLineHeight,
-    `${P}-content-text`,
+  const answerTextClassName = getTextClassName(
+    answerFontSize,
+    answerLineHeight,
+    `${P}-answer-text`,
     `${P}-text-tight-leading`,
   );
-  const titleTextLeadingVars = getTextLeadingVars(titleFontSize, titleLineHeight, `${P}-title`, isEditor);
-  const contentTextLeadingVars = getTextLeadingVars(contentFontSize, contentLineHeight, `${P}-title`, isEditor);
+  const questionTextLeadingVars = getTextLeadingVars(questionFontSize, questionLineHeight, `${P}-question`, isEditor);
+  const answerTextLeadingVars = getTextLeadingVars(answerFontSize, answerLineHeight, `${P}-question`, isEditor);
 
   const colorVars = buildColorVars(P, {
-    titleColor,
-    titleHoverColor,
-    contentColor,
-    contentHoverColor,
+    questionColor,
+    answerColor,
+    dividerColor,
+    questionHoverColor,
+    dividerHoverColor,
+    backgroundHoverColor,
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
@@ -333,9 +378,14 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, activeEvent }:
   }, [isInteractive, autoclose]);
 
   const scopedCss = useMemo(() => getCSS(P), [P]);
-  const titleMinHeightVar = cellMinHeight > 0
-    ? { [`--${P}-title-min-height`]: scalingValue(cellMinHeight, isEditor ?? false) } as React.CSSProperties
-    : undefined;
+  const wrapperStyleVars = {
+    [`--${P}-divider-width`]: scalingValue(dividerWidth, isEditor ?? false),
+    [`--${P}-divider-style`]: dividerStyle,
+    [`--${P}-icon-max-width`]: scalingValue(iconMaxWidth, isEditor ?? false),
+    ...(cellMinHeight > 0
+      ? { [`--${P}-question-min-height`]: scalingValue(cellMinHeight, isEditor ?? false) }
+      : {}),
+  } as React.CSSProperties;
 
   return (
     <>
@@ -346,13 +396,13 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, activeEvent }:
           style={{
             width: scalingValue(wrapperWidth, isEditor ?? false),
             maxWidth: '100%',
-            ...titleMinHeightVar,
+            ...wrapperStyleVars,
           }}
         >
           {items.map((item, index) => {
             const isOpen = openIndices.has(index);
-            const title = item.title?.trim() ?? '';
-            const body = item.content?.trim() ?? '';
+            const question = item.question?.trim() ?? '';
+            const answer = item.answer?.trim() ?? '';
 
             return (
               <div
@@ -361,22 +411,35 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, activeEvent }:
               >
                 <button
                   type="button"
-                  className={`${P}-title-button`}
+                  className={`${P}-question-button`}
                   aria-expanded={isOpen}
-                  style={{ ...titleTypographyCss, ...titleTextLeadingVars }}
+                  style={{ ...questionTypographyCss, ...questionTextLeadingVars }}
                   onClick={() => toggleItem(index)}
                 >
-                  <span className={titleTextClassName}>{title}</span>
-                  {body && <span className={`${P}-icon`} aria-hidden="true" />}
+                  <span className={questionTextClassName}>{question}</span>
+                  {answer && (
+                    useCustomIcon ? (
+                      <span className={`${P}-icon ${P}-icon-custom ${iconAnimClass}`} aria-hidden="true">
+                        <SvgImage
+                          url={iconSrc}
+                          fill={questionColor}
+                          hoverFill={questionHoverColor}
+                          className={`${P}-icon-image`}
+                        />
+                      </span>
+                    ) : (
+                      <span className={`${P}-icon ${P}-icon-default ${iconAnimClass}`} aria-hidden="true" />
+                    )
+                  )}
                 </button>
-                {body && (
+                {answer && (
                   <div className={`${P}-panel`} aria-hidden={!isOpen}>
                     <div className={`${P}-panel-inner`}>
                       <div
-                        className={`${P}-content`}
-                        style={{ ...contentTypographyCss, ...contentTextLeadingVars }}
+                        className={`${P}-answer`}
+                        style={{ ...answerTypographyCss, ...answerTextLeadingVars }}
                       >
-                        <span className={contentTextClassName}>{body}</span>
+                        <span className={answerTextClassName}>{answer}</span>
                       </div>
                     </div>
                   </div>
