@@ -8,11 +8,17 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
 import { useLightboxSwipeDismiss } from '../utils/useLightboxSwipeDismiss';
 import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
+import { animateScrollLeft } from '../utils/animateScrollLeft';
+import { cubicBezierEasing } from '../utils/cubicBezierEasing';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 const LIGHTBOX_ANIM_MS = 300;
+const SNAP_SCROLL_MS = 750;
 const CONTROLS_IDLE_MS = 3000;
 const THUMB_MAX_SIZE_PX = 42;
+
+// Decelerates into the snap — fast start, velocity eases to zero at the end.
+const easeSnapScroll = cubicBezierEasing(0, 0, 0.2, 1);
 
 function getCSS(P: string): string {
   return `
@@ -999,6 +1005,7 @@ const LightboxOverlay = ({
     scrollLeft: 0,
     hasMoved: false,
   });
+  const scrollAnimRef = useRef<(() => void) | null>(null);
   const isLoopEnabled = images.length > 1;
   const loopCopies = isLoopEnabled ? LOOP_COPIES : 1;
   const flatItems = useMemo(
@@ -1116,23 +1123,74 @@ const LightboxOverlay = ({
     updateActiveIndex();
   };
 
+  const setStripSnapEnabled = (enabled: boolean) => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    strip.style.scrollSnapType = enabled ? '' : 'none';
+  };
+
+  const cancelScrollAnimation = () => {
+    scrollAnimRef.current?.();
+    scrollAnimRef.current = null;
+  };
+
+  const finishStripScroll = (
+    strip: HTMLDivElement,
+    targetLeft: number,
+    activeIndex?: number,
+    onComplete?: () => void,
+  ) => {
+    strip.scrollLeft = targetLeft;
+    normalizeInfiniteScroll();
+    if (activeIndex !== undefined) {
+      setActiveIndex(activeIndex);
+    } else {
+      updateActiveIndex();
+    }
+    setStripSnapEnabled(true);
+    onComplete?.();
+  };
+
+  const scrollStripTo = (
+    targetLeft: number,
+    {
+      behavior = 'smooth',
+      activeIndex,
+      onComplete,
+    }: {
+      behavior?: ScrollBehavior;
+      activeIndex?: number;
+      onComplete?: () => void;
+    } = {},
+  ) => {
+    const strip = stripRef.current;
+    if (!strip) return;
+
+    cancelScrollAnimation();
+    setStripSnapEnabled(false);
+
+    if (behavior === 'auto') {
+      finishStripScroll(strip, targetLeft, activeIndex, onComplete);
+      return;
+    }
+
+    scrollAnimRef.current = animateScrollLeft(strip, targetLeft, {
+      duration: SNAP_SCROLL_MS,
+      ease: easeSnapScroll,
+      onComplete: () => {
+        scrollAnimRef.current = null;
+        finishStripScroll(strip, targetLeft, activeIndex, onComplete);
+      },
+    });
+  };
+
   const snapToNearestItem = (behavior: ScrollBehavior = 'smooth') => {
     const strip = stripRef.current;
     if (!strip || images.length === 0) return;
     const flatIndex = getNearestFlatIndex();
     const item = itemRefs.current[flatIndex];
     if (!item) return;
-    strip.scrollTo({
-      left: item.offsetLeft,
-      behavior,
-    });
-    setActiveIndex(flatIndex % images.length);
-  };
-
-  const setStripSnapEnabled = (enabled: boolean) => {
-    const strip = stripRef.current;
-    if (!strip) return;
-    strip.style.scrollSnapType = enabled ? '' : 'none';
+    scrollStripTo(item.offsetLeft, { behavior, activeIndex: flatIndex % images.length });
   };
 
   const snapAfterDrag = (startScrollLeft: number, behavior: ScrollBehavior = 'smooth') => {
@@ -1166,11 +1224,10 @@ const LightboxOverlay = ({
       return;
     }
 
-    strip.scrollTo({
-      left: targetItem.offsetLeft,
+    scrollStripTo(targetItem.offsetLeft, {
       behavior,
+      activeIndex: targetFlatIndex % images.length,
     });
-    setActiveIndex(targetFlatIndex % images.length);
   };
 
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
@@ -1184,9 +1241,10 @@ const LightboxOverlay = ({
       lockedActiveIndexRef.current = null;
     }
     setActiveIndex(index);
-    strip.scrollTo({
-      left: item.offsetLeft,
+    scrollStripTo(item.offsetLeft, {
       behavior,
+      activeIndex: index,
+      onComplete: behavior === 'smooth' ? releaseActiveIndexLock : undefined,
     });
   };
 
@@ -1196,6 +1254,7 @@ const LightboxOverlay = ({
     if (isDragBlockedTarget(event.target as HTMLElement)) return;
     const strip = stripRef.current;
     if (!strip) return;
+    cancelScrollAnimation();
     mouseDragRef.current = {
       isActive: true,
       startX: event.clientX,
@@ -1239,10 +1298,10 @@ const LightboxOverlay = ({
       strip.releasePointerCapture(event.pointerId);
     }
     normalizeInfiniteScroll();
-    setStripSnapEnabled(true);
     if (hadMoved) {
       snapAfterDrag(startScrollLeft);
     } else {
+      setStripSnapEnabled(true);
       updateActiveIndex();
     }
     resetChromeIdleTimer();
@@ -1254,6 +1313,7 @@ const LightboxOverlay = ({
     const frame = requestAnimationFrame(() => setIsVisible(true));
     return () => {
       cancelAnimationFrame(frame);
+      cancelScrollAnimation();
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -1353,6 +1413,7 @@ const LightboxOverlay = ({
     observer.observe(strip);
     return () => {
       if (scrollEndTimer) clearTimeout(scrollEndTimer);
+      cancelScrollAnimation();
       strip.removeEventListener('scroll', onScroll);
       strip.removeEventListener('scrollend', onScrollEnd);
       observer.disconnect();
