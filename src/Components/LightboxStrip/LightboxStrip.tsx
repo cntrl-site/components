@@ -294,8 +294,24 @@ function getCSS(P: string): string {
   min-width: 0;
 }
 
-.${P}-title-resize-handle {
+.${P}-title-resize-handle,
+.${P}-padding-control-handle {
   background: transparent;
+}
+
+.${P}-padding-control-handle[data-controls-axis="x"][data-controls-variant="column-padding"]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 12px;
+  background: #FF5C02;
+  border: 1px solid #FFFFFF;
+  border-radius: 5px;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 
 .${P}-title-resize-handle::after {
@@ -600,10 +616,7 @@ export const STRIP_TITLE_WIDTH_KEYS = ['title1Width', 'title2Width', 'title3Widt
 export type StripTitleWidthKey = typeof STRIP_TITLE_WIDTH_KEYS[number];
 
 const TITLE_RESIZE_HANDLE_WIDTH = 0.004;
-const MIN_TITLE_WIDTH_PX = 50;
-const ARTICLE_DESIGN_WIDTH = 1440;
-const MIN_TITLE_WIDTH = MIN_TITLE_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
-const STRIP_TITLES_CONTENT_WIDTH = 1;
+const TITLE_PADDING_HANDLE_WIDTH = 0.004;
 
 const DEFAULT_STRIP_TITLE_WIDTHS: Record<StripTitleWidthKey, number> = {
   title1Width: 0.13,
@@ -624,7 +637,6 @@ function getStripTitleWidthsFromSettings(
 
 function resolveStripTitleWidths(
   count: number,
-  contentWidth: number,
   storedWidths: number[],
 ): number[] {
   if (count <= 0) {
@@ -633,22 +645,19 @@ function resolveStripTitleWidths(
 
   const widths = storedWidths.slice(0, count);
   const totalWidth = widths.reduce((sum, width) => sum + width, 0);
-  const minTotalWidth = MIN_TITLE_WIDTH * count;
-
-  if (totalWidth <= contentWidth || totalWidth <= minTotalWidth) {
+  if (totalWidth <= 1) {
     return widths;
   }
 
   const resolvedWidths = [...widths];
-  let overflow = totalWidth - contentWidth;
+  let overflow = totalWidth - 1;
 
   for (let index = resolvedWidths.length - 1; index >= 0 && overflow > 0; index -= 1) {
-    const shrinkable = resolvedWidths[index] - MIN_TITLE_WIDTH;
-    if (shrinkable <= 0) {
+    if (resolvedWidths[index] <= 0) {
       continue;
     }
 
-    const shrinkAmount = Math.min(overflow, shrinkable);
+    const shrinkAmount = Math.min(overflow, resolvedWidths[index]);
     resolvedWidths[index] -= shrinkAmount;
     overflow -= shrinkAmount;
   }
@@ -658,25 +667,20 @@ function resolveStripTitleWidths(
 
 function getEffectiveStripTitleWidths(
   count: number,
-  contentWidth: number,
   storedWidths: number[],
 ): number[] {
-  return resolveStripTitleWidths(count, contentWidth, storedWidths);
+  return resolveStripTitleWidths(count, storedWidths);
 }
 
 function getStripTitleMaxWidth(
   columnIndex: number,
   resolvedWidths: number[],
-  contentWidth: number,
 ): number {
   const otherWidths = resolvedWidths
     .filter((_, index) => index !== columnIndex)
     .reduce((sum, width) => sum + width, 0);
 
-  return Math.max(
-    MIN_TITLE_WIDTH,
-    contentWidth - otherWidths,
-  );
+  return Math.max(1 - otherWidths);
 }
 
 type StripTitleSlot = {
@@ -755,6 +759,23 @@ function resolveStripTextFields(
     textAppearance: read('textAppearance') as StripTextStyleFields['textAppearance'],
     color: settings[STRIP_TEXT_STYLE_COLOR_KEYS[prefix]] as string | undefined,
   };
+}
+
+function getStripTitleOffsetBeforeSlot(
+  slots: StripTitleSlot[],
+  resolvedWidths: number[],
+  marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
+  slotIndex: number,
+): number {
+  let offset = 0;
+  for (let index = 0; index < slotIndex; index += 1) {
+    const slot = slots[index];
+    if (slot?.marginLeftKey) {
+      offset += marginByKey[slot.marginLeftKey] ?? 0;
+    }
+    offset += resolvedWidths[index] ?? 0;
+  }
+  return offset;
 }
 
 function stripTextFieldsToCss(
@@ -872,27 +893,6 @@ const LightboxOverlay = ({
     ? ({ '--image-aspect-ratio': getAspectRatio(thumbnailObjectFit) } as React.CSSProperties)
     : undefined;
 
-  const renderGapControl = (controlKey: string, gap: string, isReverse = false) => {
-    const gapControlSize = getGapControlSize(gap);
-    const gapControlRight = `calc(-0.5 * (${gapControlSize} + ${gap}))`;
-    return (
-      <div
-        data-controls={controlKey}
-        data-controls-axis="x"
-        {...(isReverse ? { 'data-controls-reverse': 'true' } : undefined)}
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: gapControlRight,
-          width: gapControlSize,
-          height: '100%',
-          pointerEvents: 'auto',
-          zIndex: 3,
-        }}
-      />
-    );
-  };
-
   const hasTitles = Boolean(title1 || title2 || title3);
   const titleSlots = useMemo(
     () => buildStripTitleSlots(P, title1, title2, title3, title1Style, title2Style, title3Style),
@@ -911,11 +911,11 @@ const LightboxOverlay = ({
     [titleSlots, titleWidthByKey],
   );
   const resolvedTitleWidths = useMemo(
-    () => resolveStripTitleWidths(titleSlots.length, STRIP_TITLES_CONTENT_WIDTH, storedTitleWidths),
+    () => resolveStripTitleWidths(titleSlots.length, storedTitleWidths),
     [titleSlots.length, storedTitleWidths],
   );
   const effectiveTitleWidths = useMemo(
-    () => getEffectiveStripTitleWidths(titleSlots.length, STRIP_TITLES_CONTENT_WIDTH, storedTitleWidths),
+    () => getEffectiveStripTitleWidths(titleSlots.length, storedTitleWidths),
     [titleSlots.length, storedTitleWidths],
   );
   const scaledTitleWidth = useCallback(
@@ -944,42 +944,63 @@ const LightboxOverlay = ({
     [titleSlots, titleMarginLeftByKey, resolvedTitleWidths],
   );
 
-  const renderTitles = () => titleSlots.flatMap((slot, index) => {
+  const renderTitles = () => titleSlots.map((slot, index) => {
     const marginLeft = slot.marginLeftKey
       ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0
       : 0;
-    const elements = [];
 
-    if (slot.marginLeftKey) {
-      elements.push(
-        <div
-          key={`${slot.className}-margin`}
-          data-controls={showControls ? slot.marginLeftKey : undefined}
-          data-controls-axis={showControls ? 'x' : undefined}
-          className={showControls ? `${P}-control` : undefined}
-          style={{ width: scaledTitleWidth(marginLeft), flexShrink: 0 }}
-        />,
-      );
-    }
-
-    elements.push(
+    return (
       <div
         key={slot.className}
         className={`${P}-title-cell`}
-        style={{ width: scaledTitleWidth(effectiveTitleWidths[index] ?? 0) }}
+        style={{
+          width: scaledTitleWidth(effectiveTitleWidths[index] ?? 0),
+          ...(marginLeft > 0 ? { marginLeft: scaledTitleWidth(marginLeft) } : {}),
+        }}
       >
         <p className={slot.className} style={slot.style}>{slot.text}</p>
-      </div>,
+      </div>
     );
+  });
 
-    return elements;
+  const renderTitleMarginControls = () => titleSlots.flatMap((slot, colIndex) => {
+    if (!slot.marginLeftKey) return [];
+
+    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+    const offsetBeforeMargin = getStripTitleOffsetBeforeSlot(
+      titleSlots,
+      resolvedTitleWidths,
+      titleMarginLeftByKey,
+      colIndex,
+    );
+    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+
+    return (
+      <div
+        key={slot.marginLeftKey}
+        data-controls={slot.marginLeftKey}
+        data-controls-static-handle=""
+        data-controls-axis="x"
+        data-controls-variant="column-padding"
+        data-controls-min="0"
+        data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
+        className={`${P}-padding-control-handle`}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: scaledTitleWidth(offsetBeforeMargin),
+          width: scaledTitleWidth(marginHandleWidth),
+          height: '100%',
+          pointerEvents: 'auto',
+        }}
+      />
+    );
   });
 
   const renderTitleWidthControls = () => titleSlots.map((slot, colIndex) => {
     const maxTitleWidth = getStripTitleMaxWidth(
       colIndex,
       resolvedTitleWidths,
-      STRIP_TITLES_CONTENT_WIDTH,
     );
     const boundaryOffset = getTitleBoundaryOffset(colIndex);
     const titleWidthHandleOffset = boundaryOffset - TITLE_RESIZE_HANDLE_WIDTH / 2;
@@ -990,7 +1011,6 @@ const LightboxOverlay = ({
           data-controls={slot.widthKey}
           data-controls-static-handle=""
           data-controls-axis="x"
-          data-controls-min={String(MIN_TITLE_WIDTH_PX)}
           data-controls-max-fraction={String(maxTitleWidth)}
           data-controls-variant="column-width"
           className={`${P}-title-resize-handle`}
@@ -1565,7 +1585,12 @@ const LightboxOverlay = ({
               {hasTitles && (
                 <div className={`${P}-titles-row`}>
                   {renderTitles()}
-                  {showControls && titleSlots.length > 0 ? renderTitleWidthControls() : null}
+                  {showControls && titleSlots.length > 0 ? (
+                    <>
+                      {renderTitleMarginControls()}
+                      {renderTitleWidthControls()}
+                    </>
+                  ) : null}
                 </div>
               )}
               {closeIcon && (

@@ -217,7 +217,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Thumbnail Gap',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       thumbnailMarginBottom: {
@@ -225,7 +224,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Thumbnail Margin Bottom',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       imageGap: {
@@ -233,7 +231,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Image Gap',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       backgroundColor: {
@@ -316,7 +313,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Title 1 width',
         min: 0,
-        max: 100,
         display: { type: 'range-control' },
       },
       title2Width: {
@@ -324,7 +320,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Title 2 width',
         min: 0,
-        max: 100,
         display: { type: 'range-control' },
       },
       title3Width: {
@@ -332,7 +327,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Title 3 width',
         min: 0,
-        max: 100,
         display: { type: 'range-control' },
       },
       title2MarginLeft: {
@@ -340,7 +334,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Title 2 margin left',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       title3MarginLeft: {
@@ -348,7 +341,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Title 3 margin left',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       title1Color: {
@@ -375,7 +367,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Content margin top',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       contentMarginLeft: {
@@ -383,7 +374,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Content margin left',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
       contentMarginRight: {
@@ -391,7 +381,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Content margin right',
         min: 0,
-        max: 200,
         display: { type: 'range-control' },
       },
     },

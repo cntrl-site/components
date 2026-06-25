@@ -380,13 +380,13 @@ function getCSS(P: string): string {
   min-width: 0;
   display: flex;
   flex-direction: row;
-  align-items: center;
 }
 
 .${P}-title-cell {
   position: relative;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .${P}-text-bar-cell {
@@ -401,8 +401,39 @@ function getCSS(P: string): string {
 .${P}-title2,
 .${P}-title3 {
   margin: 0;
-  flex-shrink: 1;
   min-width: 0;
+}
+
+.${P}-title-resize-handle,
+.${P}-padding-control-handle {
+  background: transparent;
+}
+
+.${P}-padding-control-handle[data-controls-axis="x"][data-controls-variant="column-padding"]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 12px;
+  background: #FF5C02;
+  border: 1px solid #FFFFFF;
+  border-radius: 5px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.${P}-title-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background: #FF5C02;
+  pointer-events: none;
 }
 
 .${P}-titles-stack {
@@ -551,8 +582,11 @@ type LightboxOverlayProps = {
   closeIconMaxWidth: number;
   closeIconColor: string;
   closeIconHoverColor: string;
-  textMaxWidth: string;
-  titlesGap: string;
+  title1Width: number;
+  title2Width: number;
+  title3Width: number;
+  title2MarginLeft: number;
+  title3MarginLeft: number;
   countCloseGap: string;
   textTransition: 'none' | 'fade';
   title1Style: React.CSSProperties;
@@ -632,6 +666,142 @@ const shouldShowCounter = (
   entries: LightboxJournalItem[],
 ) => (journalType === 'B' ? slides.length > 1 : getTotalImageCount(entries) > 1);
 
+type JournalTitleWidthKey = 'title1Width' | 'title2Width' | 'title3Width';
+
+const TITLE_RESIZE_HANDLE_WIDTH = 0.004;
+const TITLE_PADDING_HANDLE_WIDTH = 0.004;
+
+const DEFAULT_JOURNAL_TITLE_WIDTHS: Record<JournalTitleWidthKey, number> = {
+  title1Width: 0.13,
+  title2Width: 0.13,
+  title3Width: 0.14,
+};
+
+type JournalTitleSlot = {
+  widthKey: JournalTitleWidthKey;
+  marginLeftKey?: 'title2MarginLeft' | 'title3MarginLeft';
+  className: string;
+  style: React.CSSProperties;
+  text: string;
+};
+
+function buildJournalTitleSlots(
+  prefix: string,
+  entry: LightboxJournalItem,
+  title1Style: React.CSSProperties,
+  title2Style: React.CSSProperties,
+  title3Style: React.CSSProperties,
+): JournalTitleSlot[] {
+  const slots: JournalTitleSlot[] = [];
+
+  if (entry.title1) {
+    slots.push({
+      widthKey: 'title1Width',
+      className: `${prefix}-title1`,
+      style: title1Style,
+      text: entry.title1,
+    });
+  }
+  if (entry.title2) {
+    slots.push({
+      widthKey: 'title2Width',
+      marginLeftKey: 'title2MarginLeft',
+      className: `${prefix}-title2`,
+      style: title2Style,
+      text: entry.title2,
+    });
+  }
+  if (entry.title3) {
+    slots.push({
+      widthKey: 'title3Width',
+      marginLeftKey: 'title3MarginLeft',
+      className: `${prefix}-title3`,
+      style: title3Style,
+      text: entry.title3,
+    });
+  }
+
+  return slots;
+}
+
+function resolveJournalTitleWidths(
+  count: number,
+  storedWidths: number[],
+): number[] {
+  if (count <= 0) {
+    return [];
+  }
+  const widths = storedWidths.slice(0, count);
+  const totalWidth = widths.reduce((sum, width) => sum + width, 0);
+  if (totalWidth <= 1) {
+    return widths;
+  }
+  const resolvedWidths = [...widths];
+  let overflow = totalWidth - 1;
+
+  for (let index = resolvedWidths.length - 1; index >= 0 && overflow > 0; index -= 1) {
+    if (resolvedWidths[index] <= 0) {
+      continue;
+    }
+    const shrinkAmount = Math.min(overflow, resolvedWidths[index]);
+    resolvedWidths[index] -= shrinkAmount;
+    overflow -= shrinkAmount;
+  }
+
+  return resolvedWidths;
+}
+
+function getEffectiveJournalTitleWidths(
+  count: number,
+  storedWidths: number[],
+): number[] {
+  return resolveJournalTitleWidths(count, storedWidths);
+}
+
+function getJournalTitleMaxWidth(
+  columnIndex: number,
+  resolvedWidths: number[],
+): number {
+  const otherWidths = resolvedWidths
+    .filter((_, index) => index !== columnIndex)
+    .reduce((sum, width) => sum + width, 0);
+  return Math.max(1 - otherWidths);
+}
+
+function getJournalTitleOffsetBeforeSlot(
+  slots: JournalTitleSlot[],
+  resolvedWidths: number[],
+  marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
+  slotIndex: number,
+): number {
+  let offset = 0;
+  for (let index = 0; index < slotIndex; index += 1) {
+    const slot = slots[index];
+    if (slot?.marginLeftKey) {
+      offset += marginByKey[slot.marginLeftKey] ?? 0;
+    }
+    offset += resolvedWidths[index] ?? 0;
+  }
+  return offset;
+}
+
+function getJournalTitleBoundaryOffset(
+  slots: JournalTitleSlot[],
+  resolvedWidths: number[],
+  marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
+  upToIndex: number,
+): number {
+  let offset = 0;
+  for (let index = 0; index <= upToIndex; index += 1) {
+    const slot = slots[index];
+    if (slot?.marginLeftKey) {
+      offset += marginByKey[slot.marginLeftKey] ?? 0;
+    }
+    offset += resolvedWidths[index] ?? 0;
+  }
+  return offset;
+}
+
 const LightboxOverlay = ({
   prefix: P,
   entries,
@@ -648,8 +818,11 @@ const LightboxOverlay = ({
   closeIconMaxWidth,
   closeIconColor,
   closeIconHoverColor,
-  textMaxWidth,
-  titlesGap,
+  title1Width,
+  title2Width,
+  title3Width,
+  title2MarginLeft,
+  title3MarginLeft,
   countCloseGap,
   textTransition,
   title1Style,
@@ -668,10 +841,7 @@ const LightboxOverlay = ({
   const showControls = Boolean(isEditMode);
   const allowDesktopNav = !isEditor || Boolean(isPreviewMode);
   const allowSwipeDismiss = !isEditMode && (!isEditor || Boolean(isPreviewMode));
-  const slides = useMemo(
-    () => buildJournalSlides(entries, journalType),
-    [entries, journalType],
-  );
+  const slides = useMemo(() => buildJournalSlides(entries, journalType), [entries, journalType]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(initialSlideIndex);
   const activeSlide = slides[activeSlideIndex];
   const activeEntry = activeSlide?.entry;
@@ -770,8 +940,7 @@ const LightboxOverlay = ({
     const incomingSlide = slides[normalizedIndex];
     slideTransitionKeyRef.current += 1;
     const transitionKey = slideTransitionKeyRef.current;
-    const shouldFadeTitles = textTransition === 'fade'
-      && getEntryTitleKey(outgoingSlide?.entry) !== getEntryTitleKey(incomingSlide?.entry);
+    const shouldFadeTitles = textTransition === 'fade' && getEntryTitleKey(outgoingSlide?.entry) !== getEntryTitleKey(incomingSlide?.entry);
     const measuredOutgoingTitlesHeight = titlesStackRef.current?.getBoundingClientRect().height;
     let measuredIncomingTitlesHeight: number | undefined;
     let incomingTitlesMeasureWidth: number | undefined;
@@ -850,14 +1019,11 @@ const LightboxOverlay = ({
       resetStripNavGesture();
       return;
     }
-
     const gesture = stripNavGestureRef.current;
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     resetStripNavGesture();
-
     const target = event.target as HTMLElement;
     if (target.closest('[data-controls]')) return;
-
     const deltaX = event.clientX - gesture.startX;
     const deltaY = event.clientY - gesture.startY;
     const absX = Math.abs(deltaX);
@@ -867,22 +1033,13 @@ const LightboxOverlay = ({
       goToSlide(deltaX > 0 ? activeSlideIndex - 1 : activeSlideIndex + 1);
       return;
     }
-
     if (absX > STRIP_NAV_TAP_MAX_PX || absY > STRIP_NAV_TAP_MAX_PX) return;
-
     const navRect = lightboxRef.current?.getBoundingClientRect();
     const midPoint = navRect
       ? navRect.left + navRect.width / 2
       : window.innerWidth / 2;
     goToSlide(event.clientX < midPoint ? activeSlideIndex - 1 : activeSlideIndex + 1);
-  }, [
-    activeSlideIndex,
-    allowDesktopNav,
-    goToSlide,
-    isSwipeDragging,
-    resetStripNavGesture,
-    slides.length,
-  ]);
+  }, [activeSlideIndex, allowDesktopNav, goToSlide, isSwipeDragging, resetStripNavGesture, slides.length]);
 
   const onStripPointerCancel = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
     const gesture = stripNavGestureRef.current;
@@ -998,52 +1155,136 @@ const LightboxOverlay = ({
 
   const outgoingEntry = prevEntryIndex !== null ? entries[prevEntryIndex] : null;
   const outgoingSlide = prevSlideIndex !== null ? slides[prevSlideIndex] : null;
-  const hasTitles = Boolean(
-    activeEntry?.title1 || activeEntry?.title2 || activeEntry?.title3
-    || outgoingEntry?.title1 || outgoingEntry?.title2 || outgoingEntry?.title3,
-  );
+  const hasTitles =  activeEntry?.title1 || activeEntry?.title2 || activeEntry?.title3 || outgoingEntry?.title1 || outgoingEntry?.title2 || outgoingEntry?.title3;
   const hasCounter = shouldShowCounter(journalType, slides, entries);
-  const hasCloseIcon = Boolean(closeIcon);
-  const titlesGapStyle = { gap: titlesGap };
+  const hasCloseIcon = closeIcon !== null;
   const persistentControlsGapStyle = hasCounter && hasCloseIcon ? { gap: countCloseGap } : undefined;
+  const scaled = useCallback((value: number) => scalingValue(value, isEditor ?? false), [isEditor]);
+  const titleWidthByKey = useMemo(
+    () => ({
+      title1Width: title1Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title1Width,
+      title2Width: title2Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title2Width,
+      title3Width: title3Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title3Width,
+    }),
+    [title1Width, title2Width, title3Width],
+  );
+  const titleMarginLeftByKey = useMemo(
+    () => ({
+      title2MarginLeft,
+      title3MarginLeft,
+    }),
+    [title2MarginLeft, title3MarginLeft],
+  );
+  const activeTitleSlots = useMemo(
+    () => (activeEntry
+      ? buildJournalTitleSlots(P, activeEntry, title1Style, title2Style, title3Style)
+      : []),
+    [P, activeEntry, title1Style, title2Style, title3Style],
+  );
+  const storedTitleWidths = useMemo(
+    () => activeTitleSlots.map((slot) => titleWidthByKey[slot.widthKey]),
+    [activeTitleSlots, titleWidthByKey],
+  );
+  const resolvedTitleWidths = useMemo(
+    () => resolveJournalTitleWidths(activeTitleSlots.length, storedTitleWidths),
+    [activeTitleSlots.length, storedTitleWidths],
+  );
+  const getTitleBoundaryOffset = useCallback(
+(upToIndex: number) => getJournalTitleBoundaryOffset(
+      activeTitleSlots,
+      resolvedTitleWidths,
+      titleMarginLeftByKey,
+      upToIndex,
+    ),
+    [activeTitleSlots, resolvedTitleWidths, titleMarginLeftByKey],
+  );
 
-  const renderGapControl = (controlKey: string, gap: string, isReverse = false) => {
-    const gapControlSize = getGapControlSize(gap);
-    const gapControlRight = `calc(-0.5 * (${gapControlSize} + ${gap}))`;
+  const renderTitles = (entry: LightboxJournalItem | undefined) => {
+    if (!entry) return null;
+    const slots = buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style);
+    const entryStoredWidths = slots.map((slot) => titleWidthByKey[slot.widthKey]);
+    const effectiveWidths = getEffectiveJournalTitleWidths(
+      slots.length,
+      entryStoredWidths,
+    );
+
+    return slots.map((slot, index) => {
+      const marginLeft = slot.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0;
+      return (
+        <div
+          key={slot.className}
+          className={`${P}-title-cell`}
+          style={{
+            width: scaled(effectiveWidths[index] ?? 0),
+            ...(marginLeft > 0 ? { marginLeft: scaled(marginLeft) } : {}),
+          }}
+        >
+          <p className={slot.className} style={slot.style}>{slot.text}</p>
+        </div>
+      );
+    });
+  };
+
+  const renderTitleMarginControls = () => activeTitleSlots.flatMap((slot, colIndex) => {
+    if (!slot.marginLeftKey) return [];
+
+    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+    const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
+      activeTitleSlots,
+      resolvedTitleWidths,
+      titleMarginLeftByKey,
+      colIndex,
+    );
+    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+
     return (
       <div
-        data-controls={controlKey}
+        key={slot.marginLeftKey}
+        data-controls={slot.marginLeftKey}
+        data-controls-static-handle=""
         data-controls-axis="x"
-        {...(isReverse ? { 'data-controls-reverse': 'true' } : undefined)}
+        data-controls-variant="column-padding"
+        data-controls-min="0"
+        data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
+        className={`${P}-padding-control-handle`}
         style={{
           position: 'absolute',
           top: 0,
-          right: gapControlRight,
-          width: gapControlSize,
+          left: scaled(offsetBeforeMargin),
+          width: scaled(marginHandleWidth),
           height: '100%',
           pointerEvents: 'auto',
-          zIndex: 3,
         }}
       />
     );
-  };
+  });
 
-  const renderTitles = (entry: LightboxJournalItem | undefined, showGapControls = false) => {
-    if (!entry) return null;
+  const renderTitleWidthControls = () => activeTitleSlots.map((slot, colIndex) => {
+    const maxTitleWidth = getJournalTitleMaxWidth(colIndex, resolvedTitleWidths);
+    const boundaryOffset = getTitleBoundaryOffset(colIndex);
+    const titleWidthHandleOffset = boundaryOffset - TITLE_RESIZE_HANDLE_WIDTH / 2;
 
-    const slots = [
-      entry.title1 ? { className: `${P}-title1`, style: title1Style, text: entry.title1 } : null,
-      entry.title2 ? { className: `${P}-title2`, style: title2Style, text: entry.title2 } : null,
-      entry.title3 ? { className: `${P}-title3`, style: title3Style, text: entry.title3 } : null,
-    ].filter((slot): slot is { className: string; style: React.CSSProperties; text: string } => slot !== null);
-
-    return slots.map((slot, index) => (
-      <div key={slot.className} className={`${P}-title-cell`}>
-        <p className={slot.className} style={{ ...slot.style, maxWidth: textMaxWidth }}>{slot.text}</p>
-        {showGapControls && showControls && index < slots.length - 1 ? renderGapControl('titlesGap', titlesGap) : null}
+    return (
+      <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div
+          data-controls={slot.widthKey}
+          data-controls-static-handle=""
+          data-controls-axis="x"
+          data-controls-max-fraction={String(maxTitleWidth)}
+          data-controls-variant="column-width"
+          className={`${P}-title-resize-handle`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaled(titleWidthHandleOffset),
+            width: scaled(TITLE_RESIZE_HANDLE_WIDTH),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
       </div>
-    ));
-  };
+    );
+  });
 
   const getSlideImageCellProps = (image: LightboxJournalImage) => {
     const useRatioWrapper = !image.objectFit && isImageRatioCover(coverFit);
@@ -1182,10 +1423,7 @@ const LightboxOverlay = ({
                   finishSlideTransition(slideTransitionKey);
                 }}
               >
-                <div
-                  className={`${P}-slide-area`}
-                  // style={{ maxWidth: slideMaxWidth, maxHeight: slideMaxHeight }}
-                >
+                <div className={`${P}-slide-area`}>
                   {renderSlideImages(outgoingSlide.images)}
                 </div>
               </div>
@@ -1220,7 +1458,6 @@ const LightboxOverlay = ({
               <div className={`${P}-text-bar-cell`}>
                 <div
                   className={`${P}-titles-row`}
-                  style={titlesGapStyle}
                 >
                   {textTransition === 'fade' ? (
                     <>
@@ -1228,7 +1465,6 @@ const LightboxOverlay = ({
                         ref={titlesMeasureRef}
                         className={`${P}-titles-stack`}
                         style={{
-                          ...titlesGapStyle,
                           position: 'absolute',
                           visibility: 'hidden',
                           pointerEvents: 'none',
@@ -1240,36 +1476,45 @@ const LightboxOverlay = ({
                         }}
                         aria-hidden="true"
                       >
-                        {incomingMeasureEntry ? renderTitles(incomingMeasureEntry, false) : renderTitles(activeEntry, false)}
+                        {incomingMeasureEntry ? renderTitles(incomingMeasureEntry) : renderTitles(activeEntry)}
                       </div>
                       <div
                         ref={titlesStackRef}
                         className={`${P}-titles-stack`}
                         style={{
-                          ...titlesGapStyle,
                           ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
                           ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
                           ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
                         }}
                       >
                         {outgoingEntry && isTitlesFading ? (
-                          <div
-                            className={`${P}-titles-layer-out ${P}-titles-fade-out`}
-                            style={titlesGapStyle}
-                          >
+                          <div className={`${P}-titles-layer-out ${P}-titles-fade-out`}>
                             {renderTitles(outgoingEntry)}
                           </div>
                         ) : null}
                         <div
                           className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}`}
-                          style={titlesGapStyle}
                         >
-                          {renderTitles(activeEntry, true)}
+                          {renderTitles(activeEntry)}
                         </div>
+                        {showControls && activeTitleSlots.length > 0 ? (
+                          <>
+                            {renderTitleMarginControls()}
+                            {renderTitleWidthControls()}
+                          </>
+                        ) : null}
                       </div>
                     </>
                   ) : (
-                    renderTitles(activeEntry, true)
+                    <>
+                      {renderTitles(activeEntry)}
+                      {showControls && activeTitleSlots.length > 0 ? (
+                        <>
+                          {renderTitleMarginControls()}
+                          {renderTitleWidthControls()}
+                        </>
+                      ) : null}
+                    </>
                   )}
                 </div>
               </div>
@@ -1285,7 +1530,22 @@ const LightboxOverlay = ({
                   >
                     {formatSlideCounter(slides, activeSlideIndex, journalType, entries)}
                   </span>
-                  {showControls && hasCloseIcon ? renderGapControl('countCloseGap', countCloseGap, true) : null}
+                  {showControls && hasCloseIcon 
+                    ? <div
+                        data-controls="countCloseGap"
+                        data-controls-axis="x"
+                        data-controls-reverse="true"
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          right: `calc(-0.5 * (${getGapControlSize(countCloseGap)} + ${countCloseGap}))`,
+                          width: getGapControlSize(countCloseGap),
+                          height: '100%',
+                          pointerEvents: 'auto',
+                          zIndex: 3,
+                        }}
+                      />
+                    : null}
                 </div>
               )}
               {hasCloseIcon && (
@@ -1492,9 +1752,12 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     imageGap,
     maxWidth,
     maxHeight,
-    textMaxWidth,
     textTransition,
-    titlesGap,
+    title1Width,
+    title2Width,
+    title3Width,
+    title2MarginLeft,
+    title3MarginLeft,
     countCloseGap,
     closeIcon,
     closeIconMaxWidth,
@@ -1626,8 +1889,11 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             imageGap={scaled(imageGap ?? 0)}
             slideMaxWidth={`${maxWidth}%`}
             slideMaxHeight={`${maxHeight}%`}
-            textMaxWidth={scaled(textMaxWidth ?? 0.4)}
-            titlesGap={scaled(titlesGap ?? 0)}
+            title1Width={title1Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title1Width}
+            title2Width={title2Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title2Width}
+            title3Width={title3Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title3Width}
+            title2MarginLeft={title2MarginLeft ?? 0}
+            title3MarginLeft={title3MarginLeft ?? 0}
             countCloseGap={scaled(countCloseGap ?? 0)}
             textTransition={textTransition}
             title1Style={title1Style}
@@ -1669,9 +1935,12 @@ export type LightboxJournalSettings = {
   maxHeight: number;
   backgroundColor: string;
   imageGap?: number;
-  textMaxWidth: number;
   textTransition: 'none' | 'fade';
-  titlesGap?: number;
+  title1Width?: number;
+  title2Width?: number;
+  title3Width?: number;
+  title2MarginLeft?: number;
+  title3MarginLeft?: number;
   countCloseGap?: number;
   title1Color: string;
   title2Color: string;
