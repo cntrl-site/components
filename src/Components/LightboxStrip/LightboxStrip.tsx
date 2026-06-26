@@ -234,7 +234,7 @@ function getCSS(P: string): string {
 .${P}-close-icon {
   position: relative;
   flex-shrink: 0;
-  margin-left: auto;
+  grid-area: close;
   pointer-events: auto;
   z-index: 2;
   display: flex;
@@ -268,16 +268,68 @@ function getCSS(P: string): string {
   transform: translate(-50%, -50%);
 }
 
-.${P}-titles-row {
+.${P}-header {
   position: relative;
-  flex: 0 1 auto;
+  display: grid;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   z-index: 2;
   box-sizing: border-box;
   pointer-events: none;
   word-break: break-word;
-  min-width: 0;
+  align-items: center;
+}
+
+.${P}-header-single-row {
+  grid-template-columns: auto auto auto auto 1fr auto;
+  grid-template-areas: "margin title1 title2 title3 . close";
+}
+
+.${P}-header-two-row {
+  height: 100%;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.${P}-header-row-top {
   display: flex;
   flex-direction: row;
+  align-items: center;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.${P}-header-row-top .${P}-title-cell[data-title="title1"] {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.${P}-header-row-top .${P}-close-icon {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.${P}-header-row-bottom-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.${P}-header-row-bottom {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.${P}-header-row-bottom .${P}-title-cell {
+  flex: 0 0 auto;
 }
 
 .${P}-title-cell {
@@ -286,7 +338,6 @@ function getCSS(P: string): string {
   min-width: 0;
   box-sizing: border-box;
 }
-
 .${P}-title1,
 .${P}-title2,
 .${P}-title3 {
@@ -347,6 +398,12 @@ function getCSS(P: string): string {
   flex-direction: row;
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  align-items: flex-start;
+}
+
+.${P}-lightbox-content-area-stacked {
+  align-items: stretch;
 }
 
 .${P}-control {
@@ -453,6 +510,8 @@ export function resolveSharedStripTitles(items: LightboxStripLegacyItem[]): Shar
   return { title1: '', title2: '', title3: '' };
 }
 
+export type StripTitleHeaderLayout = 'single-row' | 'two-row';
+
 export type LightboxStripSettings = {
   cover: string | null;
   coverFit: {
@@ -476,8 +535,11 @@ export type LightboxStripSettings = {
   title1Width: number;
   title2Width: number;
   title3Width: number;
+  title1MarginLeft: number;
   title2MarginLeft: number;
   title3MarginLeft: number;
+  titleRowMarginBottom?: number;
+  titleHeaderLayout?: StripTitleHeaderLayout;
   title1Color: string;
   title2Color: string;
   title3Color: string;
@@ -506,8 +568,7 @@ export type LightboxStripSettings = {
   title3TextAlign?: 'left' | 'center' | 'right' | 'justify';
   title3TextAppearance?: TextStyles['textAppearance'];
   contentMarginTop: number;
-  contentMarginLeft: number;
-  contentMarginRight: number;
+  iconMarginLeft: number;
   closeIcon:  string | null;
   closeIconMaxWidth: number;
   closeIconColor: string;
@@ -685,13 +746,24 @@ function getStripTitleMaxWidth(
     .filter((_, index) => index !== columnIndex)
     .reduce((sum, width) => sum + width, 0);
 
-  return Math.max(1 - otherWidths);
+  return Math.max(1 - otherWidths, 0);
+}
+
+function getRowScopedStripTitleWidths(
+  slots: StripTitleSlot[],
+  widthByKey: Record<StripTitleWidthKey, number>,
+): { resolved: number[]; effective: number[] } {
+  const stored = slots.map((slot) => widthByKey[slot.widthKey] ?? 0);
+  return {
+    resolved: resolveStripTitleWidths(slots.length, stored),
+    effective: getEffectiveStripTitleWidths(slots.length, stored),
+  };
 }
 
 type StripTitleSlot = {
   prefix: StripTextStylePrefix;
   widthKey: StripTitleWidthKey;
-  marginLeftKey?: 'title2MarginLeft' | 'title3MarginLeft';
+  marginLeftKey?: 'title1MarginLeft' | 'title2MarginLeft' | 'title3MarginLeft';
   className: string;
   style: React.CSSProperties;
   text: string;
@@ -769,7 +841,7 @@ function resolveStripTextFields(
 function getStripTitleOffsetBeforeSlot(
   slots: StripTitleSlot[],
   resolvedWidths: number[],
-  marginByKey: Record<'title2MarginLeft' | 'title3MarginLeft', number>,
+  marginByKey: Record<'title1MarginLeft' | 'title2MarginLeft' | 'title3MarginLeft', number>,
   slotIndex: number,
 ): number {
   return slots.slice(0, slotIndex).reduce(
@@ -833,10 +905,12 @@ type LightboxOverlayProps = {
   title2Style: React.CSSProperties;
   title3Style: React.CSSProperties;
   contentMarginTop: string;
-  contentMarginLeft: string;
-  contentMarginRight: string;
+  iconMarginLeft: string;
+  title1MarginLeft: number;
   title2MarginLeft: number;
   title3MarginLeft: number;
+  titleRowMarginBottom?: number;
+  titleHeaderLayout?: StripTitleHeaderLayout;
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
@@ -879,13 +953,16 @@ const LightboxOverlay = ({
   title2Style,
   title3Style,
   contentMarginTop,
-  contentMarginLeft,
-  contentMarginRight,
+  iconMarginLeft,
+  title1MarginLeft,
   title2MarginLeft,
   title3MarginLeft,
+  titleRowMarginBottom = 0,
+  titleHeaderLayout = 'single-row',
   onClose,
 }: LightboxOverlayProps) => {
   const showControls = isEditMode;
+  const useTwoRowHeader = titleHeaderLayout === 'two-row';
   const allowImageScroll = !isEditMode && (!isEditor || isPreviewMode);
   const hideOverlayContentOnIdle = allowImageScroll;
   const allowMouseDrag = allowImageScroll;
@@ -920,16 +997,70 @@ const LightboxOverlay = ({
     () => getEffectiveStripTitleWidths(titleSlots.length, storedTitleWidths),
     [titleSlots.length, storedTitleWidths],
   );
+  const topRowTitleSlots = useMemo(
+    () => titleSlots.filter((slot) => slot.prefix === 'title1'),
+    [titleSlots],
+  );
+  const bottomRowTitleSlots = useMemo(
+    () => titleSlots.filter((slot) => slot.prefix === 'title2' || slot.prefix === 'title3'),
+    [titleSlots],
+  );
+  const topRowTitleWidths = useMemo(
+    () => getRowScopedStripTitleWidths(topRowTitleSlots, titleWidthByKey),
+    [topRowTitleSlots, titleWidthByKey],
+  );
+  const bottomRowTitleWidths = useMemo(
+    () => getRowScopedStripTitleWidths(bottomRowTitleSlots, titleWidthByKey),
+    [bottomRowTitleSlots, titleWidthByKey],
+  );
+  const getSlotTitleWidthContext = useCallback((
+    slot: StripTitleSlot,
+    rowLayout: 'single-row' | 'two-row-top' | 'two-row-bottom',
+  ) => {
+    const fullIndex = titleSlots.indexOf(slot);
+    if (!useTwoRowHeader || rowLayout === 'single-row') {
+      return {
+        effectiveWidth: effectiveTitleWidths[fullIndex] ?? 0,
+        resolvedWidth: resolvedTitleWidths[fullIndex] ?? 0,
+        maxWidth: getStripTitleMaxWidth(fullIndex, resolvedTitleWidths),
+      };
+    }
+    if (rowLayout === 'two-row-top') {
+      const topIndex = topRowTitleSlots.indexOf(slot);
+      return {
+        effectiveWidth: topRowTitleWidths.effective[topIndex] ?? 0,
+        resolvedWidth: topRowTitleWidths.resolved[topIndex] ?? 0,
+        maxWidth: getStripTitleMaxWidth(topIndex, topRowTitleWidths.resolved),
+      };
+    }
+    const bottomIndex = bottomRowTitleSlots.indexOf(slot);
+    return {
+      effectiveWidth: bottomRowTitleWidths.effective[bottomIndex] ?? 0,
+      resolvedWidth: bottomRowTitleWidths.resolved[bottomIndex] ?? 0,
+      maxWidth: getStripTitleMaxWidth(bottomIndex, bottomRowTitleWidths.resolved),
+    };
+  }, [
+    bottomRowTitleSlots,
+    bottomRowTitleWidths,
+    effectiveTitleWidths,
+    resolvedTitleWidths,
+    titleSlots,
+    topRowTitleSlots,
+    topRowTitleWidths,
+    useTwoRowHeader,
+  ]);
   const scaledTitleWidth = useCallback(
     (value: number) => scalingValue(value, isEditor ?? false),
     [isEditor],
   );
+  const titleRowMarginBottomScaled = scaledTitleWidth(titleRowMarginBottom ?? 0);
   const titleMarginLeftByKey = useMemo(
     () => ({
+      title1MarginLeft,
       title2MarginLeft,
       title3MarginLeft,
     }),
-    [title2MarginLeft, title3MarginLeft],
+    [title1MarginLeft, title2MarginLeft, title3MarginLeft],
   );
   const getTitleBoundaryOffset = useCallback(
     (upToIndex: number) => titleSlots.slice(0, upToIndex + 1).reduce(
@@ -937,62 +1068,161 @@ const LightboxOverlay = ({
         + (slot?.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0)
         + (resolvedTitleWidths[index] ?? 0),
       0,
+    ) + (!useTwoRowHeader ? title1MarginLeft ?? 0 : 0),
+    [titleSlots, titleMarginLeftByKey, resolvedTitleWidths, useTwoRowHeader, title1MarginLeft],
+  );
+  const getSingleRowMarginColumnOffset = useCallback(
+    () => (!useTwoRowHeader ? title1MarginLeft ?? 0 : 0),
+    [useTwoRowHeader, title1MarginLeft],
+  );
+  const getBottomRowOffsetBeforeSlot = useCallback(
+    (upToBottomIndex: number) => bottomRowTitleSlots.slice(0, upToBottomIndex).reduce(
+      (offset, slot, index) => offset
+        + (slot.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0)
+        + (bottomRowTitleWidths.resolved[index] ?? 0),
+      0,
     ),
-    [titleSlots, titleMarginLeftByKey, resolvedTitleWidths],
+    [bottomRowTitleSlots, bottomRowTitleWidths.resolved, titleMarginLeftByKey],
+  );
+  const getBottomRowBoundaryOffset = useCallback(
+    (bottomIndex: number) => {
+      const slot = bottomRowTitleSlots[bottomIndex];
+      return getBottomRowOffsetBeforeSlot(bottomIndex)
+        + (slot.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0)
+        + (bottomRowTitleWidths.resolved[bottomIndex] ?? 0);
+    },
+    [bottomRowTitleSlots, bottomRowTitleWidths.resolved, getBottomRowOffsetBeforeSlot, titleMarginLeftByKey],
   );
 
-  const renderTitles = () => titleSlots.map((slot, index) => {
+  const renderTitleCell = (slot: StripTitleSlot, index: number, rowLayout: 'single-row' | 'two-row-top' | 'two-row-bottom') => {
     const marginLeft = slot.marginLeftKey
       ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0
       : 0;
+    const { effectiveWidth, resolvedWidth, maxWidth: maxTitleWidth } = getSlotTitleWidthContext(slot, rowLayout);
+    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+    const showCellControls = showControls && rowLayout === 'two-row-top';
 
     return (
       <div
         key={slot.className}
         className={`${P}-title-cell`}
+        data-title={slot.prefix}
         style={{
-          width: scaledTitleWidth(effectiveTitleWidths[index] ?? 0),
+          ...(rowLayout === 'single-row' ? { gridArea: slot.prefix } : {}),
+          width: scaledTitleWidth(effectiveWidth),
           ...(marginLeft > 0 ? { marginLeft: scaledTitleWidth(marginLeft) } : {}),
         }}
       >
         <p className={slot.className} style={slot.style}>{slot.text}</p>
+        {showCellControls && slot.marginLeftKey ? (
+          <div
+            data-controls={slot.marginLeftKey}
+            data-controls-static-handle=""
+            data-controls-axis="x"
+            data-controls-variant="column-padding"
+            data-controls-min="0"
+            data-controls-max-fraction={String(resolvedWidth)}
+            className={`${P}-padding-control-handle`}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: scaledTitleWidth(-marginLeft),
+              width: scaledTitleWidth(marginHandleWidth),
+              height: '100%',
+              pointerEvents: 'auto',
+            }}
+          />
+        ) : null}
+        {showCellControls ? (
+          <div
+            data-controls={slot.widthKey}
+            data-controls-static-handle=""
+            data-controls-axis="x"
+            data-controls-max-fraction={String(maxTitleWidth)}
+            data-controls-variant="column-width"
+            className={`${P}-title-resize-handle`}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: scaledTitleWidth(-TITLE_RESIZE_HANDLE_WIDTH / 2),
+              width: scaledTitleWidth(TITLE_RESIZE_HANDLE_WIDTH),
+              height: '100%',
+              pointerEvents: 'auto',
+            }}
+          />
+        ) : null}
       </div>
     );
-  });
+  };
 
-  const renderTitleMarginControls = () => titleSlots.flatMap((slot, colIndex) => {
-    if (!slot.marginLeftKey) return [];
+  const renderTitleMarginControls = () => {
+    const singleRowTitle1Index = !useTwoRowHeader
+      ? titleSlots.findIndex((slot) => slot.prefix === 'title1')
+      : -1;
+    const singleRowTitle1Control = singleRowTitle1Index >= 0 ? (() => {
+      const marginLeft = title1MarginLeft ?? 0;
+      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
 
-    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
-    const offsetBeforeMargin = getStripTitleOffsetBeforeSlot(
-      titleSlots,
-      resolvedTitleWidths,
-      titleMarginLeftByKey,
-      colIndex,
-    );
-    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+      return (
+        <div
+          key="title1MarginLeft"
+          data-controls="title1MarginLeft"
+          data-controls-static-handle=""
+          data-controls-axis="x"
+          data-controls-variant="column-padding"
+          data-controls-min="0"
+          data-controls-max-fraction={String(resolvedTitleWidths[singleRowTitle1Index])}
+          className={`${P}-padding-control-handle`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: scaledTitleWidth(marginHandleWidth),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      );
+    })() : null;
 
-    return (
-      <div
-        key={slot.marginLeftKey}
-        data-controls={slot.marginLeftKey}
-        data-controls-static-handle=""
-        data-controls-axis="x"
-        data-controls-variant="column-padding"
-        data-controls-min="0"
-        data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
-        className={`${P}-padding-control-handle`}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: scaledTitleWidth(offsetBeforeMargin),
-          width: scaledTitleWidth(marginHandleWidth),
-          height: '100%',
-          pointerEvents: 'auto',
-        }}
-      />
-    );
-  });
+    const slotMarginControls = titleSlots.flatMap((slot, colIndex) => {
+      if (!slot.marginLeftKey) return [];
+
+      const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+      const offsetBeforeMargin = getStripTitleOffsetBeforeSlot(
+        titleSlots,
+        resolvedTitleWidths,
+        titleMarginLeftByKey,
+        colIndex,
+      ) + getSingleRowMarginColumnOffset();
+      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+
+      return (
+        <div
+          key={slot.marginLeftKey}
+          data-controls={slot.marginLeftKey}
+          data-controls-static-handle=""
+          data-controls-axis="x"
+          data-controls-variant="column-padding"
+          data-controls-min="0"
+          data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
+          className={`${P}-padding-control-handle`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaledTitleWidth(offsetBeforeMargin),
+            width: scaledTitleWidth(marginHandleWidth),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      );
+    });
+
+    return singleRowTitle1Control
+      ? [singleRowTitle1Control, ...slotMarginControls]
+      : slotMarginControls;
+  };
 
   const renderTitleWidthControls = () => titleSlots.map((slot, colIndex) => {
     const maxTitleWidth = getStripTitleMaxWidth(
@@ -1023,6 +1253,64 @@ const LightboxOverlay = ({
       </div>
     );
   });
+
+  const renderTwoRowBottomMarginControls = () => bottomRowTitleSlots.flatMap((slot, bottomIndex) => {
+    if (!slot.marginLeftKey) return [];
+
+    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+    const offsetBeforeMargin = getBottomRowOffsetBeforeSlot(bottomIndex);
+    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+    const { resolvedWidth } = getSlotTitleWidthContext(slot, 'two-row-bottom');
+
+    return (
+      <div
+        key={slot.marginLeftKey}
+        data-controls={slot.marginLeftKey}
+        data-controls-static-handle=""
+        data-controls-axis="x"
+        data-controls-variant="column-padding"
+        data-controls-min="0"
+        data-controls-max-fraction={String(resolvedWidth)}
+        className={`${P}-padding-control-handle`}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: scaledTitleWidth(offsetBeforeMargin),
+          width: scaledTitleWidth(marginHandleWidth),
+          height: '100%',
+          pointerEvents: 'auto',
+        }}
+      />
+    );
+  });
+
+  const renderTwoRowBottomWidthControls = () => bottomRowTitleSlots.map((slot, bottomIndex) => {
+    const { maxWidth: maxTitleWidth } = getSlotTitleWidthContext(slot, 'two-row-bottom');
+    const boundaryOffset = getBottomRowBoundaryOffset(bottomIndex);
+    const titleWidthHandleOffset = boundaryOffset - TITLE_RESIZE_HANDLE_WIDTH / 2;
+
+    return (
+      <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div
+          data-controls={slot.widthKey}
+          data-controls-static-handle=""
+          data-controls-axis="x"
+          data-controls-max-fraction={String(maxTitleWidth)}
+          data-controls-variant="column-width"
+          className={`${P}-title-resize-handle`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaledTitleWidth(titleWidthHandleOffset),
+            width: scaledTitleWidth(TITLE_RESIZE_HANDLE_WIDTH),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      </div>
+    );
+  });
+
   const dismissAreaRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -1073,6 +1361,119 @@ const LightboxOverlay = ({
       onClose();
     }, LIGHTBOX_ANIM_MS);
   }, [isEditMode, onClose]);
+
+  const renderCloseIcon = () => (
+    <div
+      className={`${P}-close-icon`}
+      data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
+      style={{
+        width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+        height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+        marginRight: iconMarginLeft,
+        ['--close-icon-hover-color' as string]: closeIconHoverColor,
+      }}
+    >
+      <button
+        type="button"
+        className={`${P}-close-icon-inner`}
+        onClick={handleClose}
+        aria-label="Close"
+      >
+        <SvgImage url={closeIcon!} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`}/>
+      </button>
+      {showControls ? (
+        <div
+          data-controls="iconMarginLeft"
+          data-controls-axis="x"
+          data-controls-reverse=""
+          className={`${P}-control`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '100%',
+            width: iconMarginLeft,
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      ) : null}
+    </div>
+  );
+
+  const renderTitle1MarginLeftSpacer = (placement: 'single-row' | 'two-row' = 'two-row') => (
+    <div
+      {...(placement === 'two-row' && showControls ? {
+        'data-controls': 'title1MarginLeft',
+        'data-controls-axis': 'x',
+        className: `${P}-control`,
+      } : {})}
+      style={{
+        width: scaledTitleWidth(title1MarginLeft ?? 0),
+        flexShrink: 0,
+        ...(placement === 'single-row'
+          ? { gridArea: 'margin' }
+          : { alignSelf: 'stretch' }),
+        ...(placement === 'two-row' && showControls ? { pointerEvents: 'auto' as const } : {}),
+      }}
+    />
+  );
+
+  const renderTwoRowHeader = () => {
+    const title1Slot = titleSlots.find((slot) => slot.prefix === 'title1');
+    const bottomSlots = titleSlots.filter((slot) => slot.prefix === 'title2' || slot.prefix === 'title3');
+    const showBottomWrap = bottomSlots.length > 0 || showControls || (titleRowMarginBottom ?? 0) > 0;
+
+    return (
+      <>
+        <div className={`${P}-header-row-top`}>
+          {renderTitle1MarginLeftSpacer()}
+          {title1Slot ? renderTitleCell(title1Slot, titleSlots.indexOf(title1Slot), 'two-row-top') : null}
+          {closeIcon ? renderCloseIcon() : null}
+        </div>
+        {showBottomWrap ? (
+          <div className={`${P}-header-row-bottom-wrap`}>
+            {bottomSlots.length > 0 ? (
+              <div className={`${P}-header-row-bottom`}>
+                {bottomSlots.map((slot) => renderTitleCell(slot, titleSlots.indexOf(slot), 'two-row-bottom'))}
+                {showControls ? (
+                  <>
+                    {renderTwoRowBottomMarginControls()}
+                    {renderTwoRowBottomWidthControls()}
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+            <div
+              data-controls={showControls ? 'titleRowMarginBottom' : undefined}
+              data-controls-axis={showControls ? 'y' : undefined}
+              data-controls-reverse={showControls ? '' : undefined}
+              className={showControls ? `${P}-control` : undefined}
+              style={{
+                height: titleRowMarginBottomScaled,
+                width: '100%',
+                flexShrink: 0,
+                pointerEvents: showControls ? 'auto' : 'none',
+              }}
+            />
+          </div>
+        ) : null}
+      </>
+    );
+  };
+
+  const renderSingleRowHeader = () => (
+    <>
+      {renderTitle1MarginLeftSpacer('single-row')}
+      {titleSlots.map((slot, index) => renderTitleCell(slot, index, 'single-row'))}
+      {showControls && titleSlots.length > 0 ? (
+        <>
+          {renderTitleMarginControls()}
+          {renderTitleWidthControls()}
+        </>
+      ) : null}
+      {closeIcon ? renderCloseIcon() : null}
+    </>
+  );
 
   const isDragBlockedTarget = useCallback((target: HTMLElement) => Boolean(
     target.closest('[data-controls]')
@@ -1510,7 +1911,7 @@ const LightboxOverlay = ({
                 key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
                 ref={(element) => itemRefs.current[flatIndex] = element}
                 className={`${P}-strip-item`}
-                style={{ height: '100%'}}
+                style={{ height: titleHeaderLayout === 'two-row' ? '75vh' : '100%'}}
               >
                 <img
                   src={item.image.url}
@@ -1565,54 +1966,21 @@ const LightboxOverlay = ({
               display: 'flex',
               flexDirection: 'row',
               width: '100%',
+              flex: 1,
+              minHeight: 0,
             }}
           >
-            <div
-              data-controls={showControls ? 'contentMarginLeft' : undefined}
-              data-controls-axis={showControls ? 'x' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginLeft, flexShrink: 0 }}
-            />
-            <div className={`${P}-lightbox-content-area`}>
-              {hasTitles && (
-                <div className={`${P}-titles-row`}>
-                  {renderTitles()}
-                  {showControls && titleSlots.length > 0 ? (
-                    <>
-                      {renderTitleMarginControls()}
-                      {renderTitleWidthControls()}
-                    </>
-                  ) : null}
-                </div>
-              )}
-              {closeIcon && (
+            <div className={`${P}-lightbox-content-area${useTwoRowHeader ? ` ${P}-lightbox-content-area-stacked` : ''}`}>
+              {(hasTitles || closeIcon) && (
                 <div
-                  className={`${P}-close-icon`}
-                  data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
-                  style={{
-                    width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-                    height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-                    ['--close-icon-hover-color' as string]: closeIconHoverColor,
-                  }}
+                  className={`${P}-header ${useTwoRowHeader ? `${P}-header-two-row` : `${P}-header-single-row`}`}
                 >
-                  <button
-                    type="button"
-                    className={`${P}-close-icon-inner`}
-                    onClick={handleClose}
-                    aria-label="Close"
-                  >
-                    <SvgImage url={closeIcon} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`}/>
-                  </button>
+                  {useTwoRowHeader
+                    ? renderTwoRowHeader()
+                    : (hasTitles || closeIcon ? renderSingleRowHeader() : null)}
                 </div>
               )}
             </div>
-            <div
-              data-controls={showControls ? 'contentMarginRight' : undefined}
-              data-controls-axis={showControls ? 'x' : undefined}
-              data-controls-reverse={showControls ? '' : undefined}
-              className={showControls ? `${P}-control` : undefined}
-              style={{ width: contentMarginRight, flexShrink: 0, pointerEvents: showControls ? 'auto' : 'none' }}
-            />
           </div>
         </div>
         {images.length > 1 && thumbnailVisibility === 'on' && (() => {
@@ -1728,13 +2096,15 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
     title3Width,
     title2MarginLeft,
     title3MarginLeft,
+    titleHeaderLayout,
     closeIcon,
     closeIconMaxWidth,
     closeIconColor,
     closeIconHoverColor, 
     contentMarginTop,
-    contentMarginLeft,
-    contentMarginRight
+    title1MarginLeft,
+    titleRowMarginBottom,
+    iconMarginLeft,
   } = settings;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1802,8 +2172,11 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             title1Width={title1Width}
             title2Width={title2Width}
             title3Width={title3Width}
+            title1MarginLeft={title1MarginLeft ?? 0}
             title2MarginLeft={title2MarginLeft ?? 0}
             title3MarginLeft={title3MarginLeft ?? 0}
+            titleRowMarginBottom={titleRowMarginBottom ?? 0}
+            titleHeaderLayout={titleHeaderLayout}
             title1={title1}
             title2={title2}
             title3={title3}
@@ -1811,8 +2184,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
             title2Style={title2Style}
             title3Style={title3Style}
             contentMarginTop={scaled(contentMarginTop ?? 0)}
-            contentMarginLeft={scaled(contentMarginLeft ?? 0)}
-            contentMarginRight={scaled(contentMarginRight ?? 0)}
+            iconMarginLeft={scaled(iconMarginLeft ?? 0)}
             closeIcon={closeIcon}
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
