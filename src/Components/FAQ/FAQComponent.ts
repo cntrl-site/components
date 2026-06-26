@@ -56,8 +56,8 @@ const paletteBookmarkItems = [
   'iconColor',
   'questionHoverColor',
   'iconHoverColor',
+  'iconActiveColor',
   'dividerHoverColor',
-  'backgroundHoverColor',
 ] as const;
 
 const schema: ComponentSchemaV1 = {
@@ -155,7 +155,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Effect',
-        display: { type: 'toggle-cycle', enum: ['none', 'default', 'blinds', 'reveal'] },
+        display: { type: 'toggle-cycle', enum: ['none', 'default'] },
       },
       autoclose: {
         type: 'string',
@@ -220,16 +220,16 @@ const schema: ComponentSchemaV1 = {
         title: 'Icon Hover',
         display: { type: 'palette-color-picker' },
       },
+      iconActiveColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Active',
+        display: { type: 'palette-color-picker' },
+      },
       dividerHoverColor: {
         type: 'string',
         scope: 'common',
         title: 'Divider Hover',
-        display: { type: 'palette-color-picker' },
-      },
-      backgroundHoverColor: {
-        type: 'string',
-        scope: 'common',
-        title: 'BG Hover',
         display: { type: 'palette-color-picker' },
       },
       questionFontFamily: {
@@ -320,6 +320,7 @@ const schema: ComponentSchemaV1 = {
       questionPaddingTop: createRangeControlLayoutProperty('Question Padding Top'),
       questionPaddingBottom: createRangeControlLayoutProperty('Question Padding Bottom'),
       answerPaddingLeft: createRangeControlLayoutProperty('Answer Padding Left'),
+      answerPaddingRight: createRangeControlLayoutProperty('Answer Padding Right'),
       answerPaddingTop: createRangeControlLayoutProperty('Answer Padding Top'),
       answerPaddingBottom: createRangeControlLayoutProperty('Answer Padding Bottom'),
     },
@@ -335,8 +336,8 @@ const schema: ComponentSchemaV1 = {
       iconColor: '#000000',
       questionHoverColor: '#666666',
       iconHoverColor: '#666666',
+      iconActiveColor: '#000000',
       dividerHoverColor: '#000000',
-      backgroundHoverColor: '#000000',
       questionFontFamily: 'Arial',
       questionFontSettings: {
         fontWeight: 400,
@@ -377,6 +378,7 @@ const schema: ComponentSchemaV1 = {
         questionPaddingTop: 0.01,
         questionPaddingBottom: 0.01,
         answerPaddingLeft: 0,
+        answerPaddingRight: 0,
         answerPaddingTop: 0.01,
         answerPaddingBottom: 0.01,
       },
@@ -394,6 +396,7 @@ const schema: ComponentSchemaV1 = {
         questionPaddingTop: 0.01,
         questionPaddingBottom: 0.01,
         answerPaddingLeft: 0,
+        answerPaddingRight: 0,
         answerPaddingTop: 0.01,
         answerPaddingBottom: 0.01,
       },
@@ -466,9 +469,9 @@ const schema: ComponentSchemaV1 = {
         'dividerColor',
         'iconColor',
         'questionHoverColor',
-        'iconHoverColor',
         'dividerHoverColor',
-        'backgroundHoverColor',
+        'iconHoverColor',
+        'iconActiveColor',
       ],
     },
   },

@@ -15,7 +15,7 @@ type FAQSettings = {
   cellMinHeight?: number;
   dividerWidth?: number;
   dividerStyle?: 'solid' | 'dashed' | 'dotted';
-  entryHoverEffect?: 'none' | 'default' | 'blinds' | 'reveal';
+  entryHoverEffect?: 'none' | 'default';
   autoclose?: 'on' | 'off';
   icon?: string | null;
   iconMaxWidth?: number;
@@ -27,8 +27,8 @@ type FAQSettings = {
   iconColor?: string;
   questionHoverColor?: string;
   iconHoverColor?: string;
+  iconActiveColor?: string;
   dividerHoverColor?: string;
-  backgroundHoverColor?: string;
   questionFontFamily?: string;
   questionFontSettings?: { fontWeight: number; fontStyle: string };
   questionFontSize?: number;
@@ -47,6 +47,7 @@ type FAQSettings = {
   questionPaddingTop?: number;
   questionPaddingBottom?: number;
   answerPaddingLeft?: number;
+  answerPaddingRight?: number;
   answerPaddingTop?: number;
   answerPaddingBottom?: number;
 };
@@ -119,8 +120,8 @@ type ColorKeys =
   | 'iconColor'
   | 'questionHoverColor'
   | 'iconHoverColor'
-  | 'dividerHoverColor'
-  | 'backgroundHoverColor';
+  | 'iconActiveColor'
+  | 'dividerHoverColor';
 
 const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   questionColor: 'question-color',
@@ -129,28 +130,14 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   iconColor: 'icon-color',
   questionHoverColor: 'question-hover-color',
   iconHoverColor: 'icon-hover-color',
+  iconActiveColor: 'icon-active-color',
   dividerHoverColor: 'divider-hover-color',
-  backgroundHoverColor: 'background-hover-color',
 };
 
 const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
-}
-
-function setRevealOpenDirectionFromMouseEnter(event: React.MouseEvent<HTMLElement>, prefix: string): void {
-  const el = event.currentTarget;
-  const rect = el.getBoundingClientRect();
-  const fromBottom = event.clientY - rect.top > rect.height / 2;
-  el.classList.toggle(`${prefix}-reveal-from-bottom`, fromBottom);
-}
-
-function setRevealCloseDirectionFromMouseLeave(event: React.MouseEvent<HTMLElement>, prefix: string): void {
-  const el = event.currentTarget;
-  const rect = el.getBoundingClientRect();
-  const exitToTop = event.clientY < rect.top + rect.height / 2;
-  el.classList.toggle(`${prefix}-reveal-from-bottom`, exitToTop);
 }
 
 function getTextClassName(
@@ -204,19 +191,11 @@ function getCSS(P: string): string {
   border-top-style: var(--${P}-divider-style);
   border-top-color: var(--${P}-divider-color);
 }
-.${P}-wrapper.${P}-entry-hover-default .${P}-item,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item {
-  transition: background-color 250ms, border-color 250ms;
+.${P}-wrapper.${P}-entry-hover-default .${P}-item {
+  transition: border-color 250ms;
 }
-.${P}-wrapper.${P}-entry-hover-default .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-question-button {
+.${P}-wrapper.${P}-entry-hover-default .${P}-question-button {
   transition: color 250ms;
-}
-.${P}-wrapper.${P}-entry-hover-default .${P}-item:not(.${P}-item-open):hover,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-item:not(.${P}-item-open) {
-  background-color: var(--${P}-background-hover-color);
 }
 .${P}-wrapper.${P}-entry-hover-default .${P}-item:not(.${P}-item-open):hover,
 .${P}-wrapper.${P}-entry-hover-default .${P}-item:has(+ .${P}-item:not(.${P}-item-open):hover),
@@ -227,71 +206,9 @@ function getCSS(P: string): string {
 .${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-item:not(.${P}-item-open):first-child {
   border-top-color: var(--${P}-divider-hover-color, var(--${P}-divider-color));
 }
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item:not(.${P}-item-open):hover,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item:has(+ .${P}-item:not(.${P}-item-open):hover),
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-item:not(.${P}-item-open),
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item:not(.${P}-item-open):hover,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item:has(+ .${P}-item:not(.${P}-item-open):hover),
-.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-item:not(.${P}-item-open) {
-  border-bottom-color: var(--${P}-divider-hover-color, var(--${P}-divider-color));
-}
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item:not(.${P}-item-open):hover:first-child,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-item:not(.${P}-item-open):first-child,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item:not(.${P}-item-open):hover:first-child,
-.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-item:not(.${P}-item-open):first-child {
-  border-top-color: var(--${P}-divider-hover-color, var(--${P}-divider-color));
-}
 .${P}-wrapper.${P}-entry-hover-default .${P}-item:not(.${P}-item-open):hover .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item:not(.${P}-item-open):hover .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item:not(.${P}-item-open):hover .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-question-button {
+.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-question-button {
   color: var(--${P}-question-hover-color, var(--${P}-question-color));
-}
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item::before,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--${P}-background-hover-color);
-  transform: scaleY(0);
-  z-index: 0;
-  pointer-events: none;
-}
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item::before {
-  transform-origin: center center;
-  opacity: 0;
-  transition: opacity 150ms, transform 0s 250ms;
-}
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item:not(.${P}-item-open):hover::before,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-item:not(.${P}-item-open)::before {
-  transform: scaleY(1);
-  opacity: 1;
-  transition: transform 250ms, opacity 250ms;
-}
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item::before {
-  transform-origin: bottom center;
-  transition: transform 120ms;
-}
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item:not(.${P}-item-open):hover::before,
-.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-item:not(.${P}-item-open)::before {
-  transform: scaleY(1);
-  transform-origin: top center;
-}
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item.${P}-reveal-from-bottom::before {
-  transform-origin: top center;
-}
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item.${P}-reveal-from-bottom:not(.${P}-item-open):hover::before,
-.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-item.${P}-reveal-from-bottom:not(.${P}-item-open)::before {
-  transform-origin: bottom center;
-}
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-panel,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-question-button,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-panel {
-  position: relative;
-  z-index: 1;
 }
 .${P}-question-button {
   display: flex;
@@ -354,13 +271,13 @@ function getCSS(P: string): string {
   transition: background-color 250ms;
 }
 .${P}-wrapper.${P}-entry-hover-default .${P}-item:not(.${P}-item-open):hover .${P}-icon-image,
-.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-icon-image,
-.${P}-wrapper.${P}-entry-hover-blinds .${P}-item:not(.${P}-item-open):hover .${P}-icon-image,
-.${P}-wrapper.${P}-entry-hover-blinds.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-icon-image,
-.${P}-wrapper.${P}-entry-hover-reveal .${P}-item:not(.${P}-item-open):hover .${P}-icon-image,
-.${P}-wrapper.${P}-entry-hover-reveal.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-icon-image {
+.${P}-wrapper.${P}-entry-hover-default.${P}-state-hover .${P}-item:not(.${P}-item-open) .${P}-icon-image {
   --fill: var(--${P}-icon-hover-color, var(--${P}-icon-color)) !important;
   --hover-fill: var(--${P}-icon-hover-color, var(--${P}-icon-color)) !important;
+}
+.${P}-item-open .${P}-icon-image {
+  --fill: var(--${P}-icon-active-color, var(--${P}-icon-color)) !important;
+  --hover-fill: var(--${P}-icon-active-color, var(--${P}-icon-color)) !important;
 }
 .${P}-item-open .${P}-icon-anim-45 {
   transform: rotate(45deg);
@@ -490,8 +407,8 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
     iconColor = '#000000',
     questionHoverColor = '#666666',
     iconHoverColor = '#666666',
+    iconActiveColor = '#000000',
     dividerHoverColor = '#000000',
-    backgroundHoverColor = '#0000000A',
     questionFontFamily,
     questionFontSettings,
     questionFontSize,
@@ -510,6 +427,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
     questionPaddingTop = 0,
     questionPaddingBottom = 0,
     answerPaddingLeft = 0,
+    answerPaddingRight = 0,
     answerPaddingTop = 0,
     answerPaddingBottom = 0,
   } = settings;
@@ -527,30 +445,25 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   const questionPaddingTopHeight = Math.max(questionPaddingTop, PADDING_HANDLE_SIZE);
   const questionPaddingBottomHeight = Math.max(questionPaddingBottom, PADDING_HANDLE_SIZE);
   const answerPaddingLeftWidth = Math.max(answerPaddingLeft, PADDING_HANDLE_SIZE);
+  const answerPaddingRightWidth = Math.max(answerPaddingRight, PADDING_HANDLE_SIZE);
   const answerPaddingTopHeight = Math.max(answerPaddingTop, PADDING_HANDLE_SIZE);
   const answerPaddingBottomHeight = Math.max(answerPaddingBottom, PADDING_HANDLE_SIZE);
   const questionPaddingLeftMaxFraction = Math.max(0, (wrapperWidth ?? 1) - iconPaddingRight - iconMaxWidth);
-  const answerPaddingLeftMaxFraction = Math.max(0, (wrapperWidth ?? 1));
+  const answerPaddingLeftMaxFraction = Math.max(0, (wrapperWidth ?? 1) - answerPaddingRight);
+  const answerPaddingRightMaxFraction = Math.max(0, (wrapperWidth ?? 1) - answerPaddingLeft);
   const iconPaddingRightWidth = Math.max(iconPaddingRight, PADDING_HANDLE_SIZE);
   const iconPaddingRightMaxFraction = Math.max(0, (wrapperWidth ?? 1) - questionPaddingLeft - iconMaxWidth);
 
   const isItemOpen = useCallback((index: number) => {
     if (showControls) {
-      return true;
+      return index === 0;
     }
 
     return openIndices.has(index);
   }, [openIndices, showControls]);
-  const entryHoverClass = isInteractive
-    ? entryHoverEffect === 'default'
-      ? `${P}-entry-hover-default`
-      : entryHoverEffect === 'blinds'
-        ? `${P}-entry-hover-blinds`
-        : entryHoverEffect === 'reveal'
-          ? `${P}-entry-hover-reveal`
-          : ''
+  const entryHoverClass = isInteractive && entryHoverEffect === 'default'
+    ? `${P}-entry-hover-default`
     : '';
-  const revealHoverActive = entryHoverEffect === 'reveal' && isInteractive;
   const iconSrc = icon ?? '';
   const useCustomIcon = iconSrc !== '';
   const iconAnimSuffix = iconAnimation.replace(/^rotate /, '');
@@ -605,8 +518,8 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
     iconColor,
     questionHoverColor,
     iconHoverColor,
+    iconActiveColor,
     dividerHoverColor,
-    backgroundHoverColor,
   }, COLOR_VAR_MAP, STATE_KEYS);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
@@ -665,8 +578,6 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                 key={index}
                 className={`${P}-item${isOpen ? ` ${P}-item-open` : ''}`.trim()}
                 data-faq-item=""
-                onMouseEnter={revealHoverActive && !isOpen ? (event) => setRevealOpenDirectionFromMouseEnter(event, P) : undefined}
-                onMouseLeave={revealHoverActive && !isOpen ? (event) => setRevealCloseDirectionFromMouseLeave(event, P) : undefined}
               >
                 <div className={`${P}-question-controls`}>
                   {showControls && isFirstItem && (
@@ -835,6 +746,25 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                                 zIndex: 2,
                               }}
                             />
+                            <FAQPaddingControl
+                              data-controls="answerPaddingRight"
+                              data-controls-static-handle=""
+                              data-controls-axis="x"
+                              data-controls-variant="column-padding"
+                              data-controls-reverse=""
+                              data-controls-min="0"
+                              data-controls-max-fraction={String(answerPaddingRightMaxFraction)}
+                              className={`${P}-padding-control-handle`}
+                              hitPlacement="center-x"
+                              areaStyle={{
+                                position: 'absolute',
+                                top: 0,
+                                right: 0,
+                                width: scaled(answerPaddingRightWidth),
+                                height: '100%',
+                                zIndex: 2,
+                              }}
+                            />
                           </>
                         )}
                         {answerPaddingTop > 0 && (
@@ -849,6 +779,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                             ...answerTypographyCss,
                             ...answerTextLeadingVars,
                             paddingLeft: scaled(answerPaddingLeft),
+                            paddingRight: scaled(answerPaddingRight),
                           }}
                         >
                           <div className={answerTextClassName}>
