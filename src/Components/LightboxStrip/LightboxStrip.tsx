@@ -17,6 +17,9 @@ const SNAP_SCROLL_MAX_MS = 1500;
 const SNAP_SCROLL_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
 const CONTROLS_IDLE_MS = 3000;
 const THUMB_MAX_SIZE_PX = 42;
+const WHEEL_SPEED = 2;
+const WHEEL_LINE_HEIGHT_PX = 16;
+const WHEEL_LERP = 0.05;
 
 function getCSS(P: string): string {
   return `
@@ -1248,6 +1251,11 @@ const LightboxOverlay = ({
     hasMoved: false,
   });
   const scrollAnimRef = useRef<(() => void) | null>(null);
+  const lastScrollLeftRef = useRef(0);
+  const scrollDirRef = useRef<'forward' | 'backward'>('forward');
+  const wheelTargetRef = useRef(0);
+  const wheelRafRef = useRef<number | null>(null);
+  const isWheelingRef = useRef(false);
   const isLoopEnabled = images.length > 1;
   const loopCopies = isLoopEnabled ? LOOP_COPIES : 1;
   const flatItems = useMemo(
@@ -1445,24 +1453,63 @@ const LightboxOverlay = ({
       if (adjustMouseDragAnchor) {
         mouseDragRef.current.scrollLeft += setWidth;
       }
+      if (isWheelingRef.current) {
+        wheelTargetRef.current += setWidth;
+      }
     } else if (strip.scrollLeft >= setWidth * 2) {
       strip.scrollLeft -= setWidth;
       if (adjustMouseDragAnchor) {
         mouseDragRef.current.scrollLeft -= setWidth;
       }
+      if (isWheelingRef.current) {
+        wheelTargetRef.current -= setWidth;
+      }
     }
   };
 
-  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => itemRefs.current.reduce(
-    (closest, item, flatIndex) => {
-      if (!item) return closest;
-      const distance = Math.abs(item.offsetLeft - scrollLeft);
-      return distance < closest.distance
-        ? { flatIndex, distance }
-        : closest;
-    },
-    { flatIndex: 0, distance: Infinity },
-  ).flatIndex;
+  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
+    const viewport = stripRef.current?.clientWidth ?? 0;
+    const viewportCenter = scrollLeft + viewport / 2;
+    let containingIndex = -1;
+    let nearest = { flatIndex: 0, distance: Infinity };
+    itemRefs.current.forEach((item, flatIndex) => {
+      if (!item) return;
+      const left = item.offsetLeft;
+      const right = left + item.offsetWidth;
+      if (containingIndex === -1 && viewportCenter >= left && viewportCenter < right) {
+        containingIndex = flatIndex;
+      }
+      const distance = Math.abs(left - scrollLeft);
+      if (distance < nearest.distance) {
+        nearest = { flatIndex, distance };
+      }
+    });
+    return containingIndex !== -1 ? containingIndex : nearest.flatIndex;
+  };
+
+  const isOversizedItem = (item: HTMLDivElement | null) => {
+    const strip = stripRef.current;
+    if (!item || !strip) return false;
+    return item.offsetWidth > strip.clientWidth + 1;
+  };
+
+  const updateOversizedSnapAlign = (direction: 'forward' | 'backward') => {
+    if (!stripRef.current) return;
+    itemRefs.current.forEach((item) => {
+      if (!item) return;
+      item.style.scrollSnapAlign = isOversizedItem(item) && direction === 'backward'
+        ? 'end'
+        : 'start';
+    });
+  };
+
+  const isViewportWithinOversizedItem = (item: HTMLDivElement | null) => {
+    const strip = stripRef.current;
+    if (!item || !strip || !isOversizedItem(item)) return false;
+    const left = item.offsetLeft;
+    const right = left + item.offsetWidth;
+    return strip.scrollLeft >= left - 1 && strip.scrollLeft + strip.clientWidth <= right + 1;
+  };
 
   const updateActiveIndex = () => {
     if (!stripRef.current || images.length === 0) return;
@@ -1485,6 +1532,37 @@ const LightboxOverlay = ({
     scrollAnimRef.current = null;
   };
 
+  const stopWheelAnimation = () => {
+    if (wheelRafRef.current !== null) {
+      cancelAnimationFrame(wheelRafRef.current);
+      wheelRafRef.current = null;
+    }
+    isWheelingRef.current = false;
+  };
+
+  const stepWheelAnimation = () => {
+    const strip = stripRef.current;
+    if (!strip) {
+      wheelRafRef.current = null;
+      isWheelingRef.current = false;
+      return;
+    }
+    const distance = wheelTargetRef.current - strip.scrollLeft;
+    if (Math.abs(distance) < 0.5) {
+      strip.scrollLeft = wheelTargetRef.current;
+      normalizeInfiniteScroll();
+      updateActiveIndex();
+      wheelRafRef.current = null;
+      isWheelingRef.current = false;
+      return;
+    }
+    strip.scrollLeft += distance * WHEEL_LERP;
+    normalizeInfiniteScroll();
+    updateActiveIndex();
+    resetOverlayContentIdleTimer();
+    wheelRafRef.current = requestAnimationFrame(stepWheelAnimation);
+  };
+
   const clearStripTrackTransform = () => {
     const track = trackRef.current;
     if (!track) return;
@@ -1501,6 +1579,7 @@ const LightboxOverlay = ({
   ) => {
     clearStripTrackTransform();
     strip.scrollLeft = targetLeft;
+    lastScrollLeftRef.current = strip.scrollLeft;
     normalizeInfiniteScroll();
     if (activeIndex !== undefined) {
       setActiveIndex(activeIndex);
@@ -1527,6 +1606,7 @@ const LightboxOverlay = ({
     const track = trackRef.current;
     if (!strip || !track) return;
 
+    stopWheelAnimation();
     cancelScrollAnimation();
     setStripSnapEnabled(false);
 
@@ -1569,6 +1649,13 @@ const LightboxOverlay = ({
     const scrollDelta = strip.scrollLeft - startScrollLeft;
     const currentFlatIndex = getNearestFlatIndex(strip.scrollLeft);
     const currentItem = itemRefs.current[currentFlatIndex];
+
+    if (isViewportWithinOversizedItem(currentItem)) {
+      setStripSnapEnabled(true);
+      updateActiveIndex();
+      return;
+    }
+
     const nextItem = itemRefs.current[currentFlatIndex + 1];
     const span = currentItem
       ? (nextItem ? nextItem.offsetLeft - currentItem.offsetLeft : currentItem.offsetWidth)
@@ -1591,12 +1678,17 @@ const LightboxOverlay = ({
       return;
     }
 
+    const movingBackward = scrollDelta < 0;
+    const targetLeft = movingBackward && isOversizedItem(targetItem)
+      ? targetItem.offsetLeft + targetItem.offsetWidth - strip.clientWidth
+      : targetItem.offsetLeft;
+
     const snapTargetIndex = targetFlatIndex % images.length;
     if (behavior === 'smooth') {
       lockedActiveIndexRef.current = snapTargetIndex;
     }
     setActiveIndex(snapTargetIndex);
-    scrollStripTo(targetItem.offsetLeft, {
+    scrollStripTo(targetLeft, {
       behavior,
       activeIndex: snapTargetIndex,
       onComplete: behavior === 'smooth' ? releaseActiveIndexLock : undefined,
@@ -1623,10 +1715,18 @@ const LightboxOverlay = ({
 
   const onStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
+    if (event.pointerType === 'touch') {
+      // Free wheel scrolling leaves native snap disabled; restore it so the
+      // touch swipe keeps its snapping behaviour.
+      stopWheelAnimation();
+      setStripSnapEnabled(true);
+      return;
+    }
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
     if (isDragBlockedTarget(event.target as HTMLElement)) return;
     const strip = stripRef.current;
     if (!strip) return;
+    stopWheelAnimation();
     cancelScrollAnimation();
     clearStripTrackTransform();
     lockedActiveIndexRef.current = null;
@@ -1755,15 +1855,75 @@ const LightboxOverlay = ({
 
   useEffect(() => {
     const strip = stripRef.current;
+    if (!strip || !allowImageScroll) return;
+
+    const onWheel = (event: WheelEvent) => {
+      // Vertical wheel (top/bottom) drives the horizontal slide; horizontal
+      // wheel/scroll is intentionally ignored so left/right scroll never navigates.
+      event.preventDefault();
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      const unit = event.deltaMode === 1
+        ? WHEEL_LINE_HEIGHT_PX
+        : event.deltaMode === 2
+          ? strip.clientHeight
+          : 1;
+      const delta = event.deltaY * unit * WHEEL_SPEED;
+      if (delta === 0) return;
+
+      cancelScrollAnimation();
+      if (!isWheelingRef.current) {
+        // Start a new wheel session: anchor the target to the current position
+        // so accumulated deltas interpolate smoothly from where we are.
+        isWheelingRef.current = true;
+        wheelTargetRef.current = strip.scrollLeft;
+        lockedActiveIndexRef.current = null;
+        setStripSnapEnabled(false);
+      }
+
+      wheelTargetRef.current += delta;
+      if (!isLoopEnabled) {
+        const maxScrollLeft = strip.scrollWidth - strip.clientWidth;
+        wheelTargetRef.current = Math.max(0, Math.min(maxScrollLeft, wheelTargetRef.current));
+      }
+      resetOverlayContentIdleTimer();
+
+      // No snap on wheel: the lerp eases toward the accumulated target and the
+      // strip rests wherever it lands. Native snapping is restored on touch.
+      if (wheelRafRef.current === null) {
+        wheelRafRef.current = requestAnimationFrame(stepWheelAnimation);
+      }
+    };
+
+    strip.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      strip.removeEventListener('wheel', onWheel);
+      stopWheelAnimation();
+    };
+  }, [allowImageScroll, images.length, isLoopEnabled]);
+
+  useEffect(() => {
+    const strip = stripRef.current;
     if (!strip) return;
     const onScroll = () => {
       normalizeInfiniteScroll();
+      const current = strip.scrollLeft;
+      const delta = current - lastScrollLeftRef.current;
+      lastScrollLeftRef.current = current;
+      const loopJump = setWidthRef.current > 0 ? setWidthRef.current * 0.5 : Infinity;
+      if (delta !== 0 && Math.abs(delta) < loopJump) {
+        const direction = delta > 0 ? 'forward' : 'backward';
+        if (direction !== scrollDirRef.current) {
+          scrollDirRef.current = direction;
+          updateOversizedSnapAlign(direction);
+        }
+      }
       updateActiveIndex();
     };
     strip.addEventListener('scroll', onScroll, { passive: true });
     const observer = new ResizeObserver(() => {
       measureSetWidth();
       normalizeInfiniteScroll();
+      updateOversizedSnapAlign(scrollDirRef.current);
       updateActiveIndex();
     });
     observer.observe(strip);
