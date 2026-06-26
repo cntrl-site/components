@@ -1601,34 +1601,40 @@ const LightboxOverlay = ({
       ? buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style)
       : [];
     const bottomSlots = slots.filter((slot) => slot.prefix === 'title2' || slot.prefix === 'title3');
-    if (bottomSlots.length === 0) return null;
+    const showMarginBottomControl = showControls && includeControls;
+    const showBottomWrap = bottomSlots.length > 0
+      || showMarginBottomControl
+      || (titleRowMarginBottom ?? 0) > 0;
+    if (!showBottomWrap) return null;
 
     return (
       <div className={`${P}-titles-row-bottom-wrap`}>
-        <div className={`${P}-titles-row-bottom`}>
-          {bottomSlots.map((slot) => renderTitleCell(
-            slot,
-            'two-row-bottom',
-            getEntryTitleCellWidthContext(slots, slot, 'two-row-bottom'),
-          ))}
-          {includeControls && showControls ? (
-            <>
-              {renderTwoRowBottomMarginControls()}
-              {renderTwoRowBottomWidthControls()}
-            </>
-          ) : null}
-        </div>
-        {(titleRowMarginBottom ?? 0) > 0 || showControls ? (
+        {bottomSlots.length > 0 ? (
+          <div className={`${P}-titles-row-bottom`}>
+            {bottomSlots.map((slot) => renderTitleCell(
+              slot,
+              'two-row-bottom',
+              getEntryTitleCellWidthContext(slots, slot, 'two-row-bottom'),
+            ))}
+            {includeControls && showControls ? (
+              <>
+                {renderTwoRowBottomMarginControls()}
+                {renderTwoRowBottomWidthControls()}
+              </>
+            ) : null}
+          </div>
+        ) : null}
+        {(titleRowMarginBottom ?? 0) > 0 || showMarginBottomControl ? (
           <div
-            data-controls={showControls ? 'titleRowMarginBottom' : undefined}
-            data-controls-axis={showControls ? 'y' : undefined}
-            data-controls-reverse={showControls ? '' : undefined}
-            className={showControls ? `${P}-control` : undefined}
+            data-controls={showMarginBottomControl ? 'titleRowMarginBottom' : undefined}
+            data-controls-axis={showMarginBottomControl ? 'y' : undefined}
+            data-controls-reverse={showMarginBottomControl ? '' : undefined}
+            className={showMarginBottomControl ? `${P}-control` : undefined}
             style={{
               height: titleRowMarginBottomScaled,
               width: '100%',
               flexShrink: 0,
-              pointerEvents: showControls ? 'auto' : 'none',
+              pointerEvents: showMarginBottomControl ? 'auto' : 'none',
             }}
           />
         ) : null}
@@ -1891,8 +1897,12 @@ const LightboxOverlay = ({
       </div>
     );
   };
-  const hasTwoRowBottomContent = activeEntry?.title2 || activeEntry?.title3
-    || outgoingEntry?.title2 || outgoingEntry?.title3;
+  const hasTwoRowBottomArea = Boolean(
+    activeEntry?.title2 || activeEntry?.title3
+    || outgoingEntry?.title2 || outgoingEntry?.title3
+    || (titleRowMarginBottom ?? 0) > 0
+    || showControls,
+  );
 
   const renderTwoRowHeaderFade = () => (
     <div
@@ -1951,7 +1961,7 @@ const LightboxOverlay = ({
           </div>
           {renderTwoRowTopControls()}
         </div>
-        {hasTwoRowBottomContent ? (
+        {hasTwoRowBottomArea ? (
         <div className={`${P}-titles-row-bottom-area`}>
           {outgoingEntry && isTitlesFading ? (
             <div className={`${titlesLayerOutClassName} ${P}-titles-layer-out-bottom ${P}-titles-fade-out`}>
@@ -1971,7 +1981,7 @@ const LightboxOverlay = ({
   );
 
   const renderTwoRowHeaderStatic = () => {
-    const hasBottomRow = activeEntry?.title2 || activeEntry?.title3;
+    const hasBottomRow = hasTwoRowBottomArea;
     return (
       <div
         style={{
