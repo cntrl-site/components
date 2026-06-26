@@ -347,7 +347,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'layout',
         title: 'Title header layout',
-        display: { type: 'toggle-cycle', enum: ['single-row', 'two-row'] },
+        display: { type: 'toggle-cycle', enum: ['desktop', 'mobile'] },
       },
       title1Color: {
         type: 'string',
@@ -423,7 +423,7 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         thumbnailVisibility: 'off',
-        titleHeaderLayout: 'two-row',
+        titleHeaderLayout: 'mobile',
         thumbnailGap: 0.04,
         thumbnailMarginBottom: 0.04,
         imageGap: 0.005,
@@ -449,7 +449,7 @@ const schema: ComponentSchemaV1 = {
       },
       d: {
         thumbnailVisibility: 'on',
-        titleHeaderLayout: 'single-row',
+        titleHeaderLayout: 'desktop',
         thumbnailGap: 0.02,
         thumbnailMarginBottom: 0.02,
         imageGap: 0.005,
