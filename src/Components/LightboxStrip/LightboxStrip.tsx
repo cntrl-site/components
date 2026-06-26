@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
@@ -2168,17 +2168,33 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const items = content ?? [];
-  const isOverlayVisible = lightboxOpen || (Boolean(isEditMode) && items.length > 0);
+  const isOverlayVisible = lightboxOpen && items.length > 0;
 
   const openLightbox = () => {
-    if (isEditMode || items.length === 0) return;
-    if (isEditor && !isPreviewMode) return;
+    if (items.length === 0) return;
+    if (isEditor && !isEditMode && !isPreviewMode) return;
     setLightboxOpen(true);
+  };
+
+  const handleCoverClick = () => {
+    if (isEditor) return;
+    openLightbox();
+  };
+
+  const handleCoverDoubleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!isEditor) return;
+    event.stopPropagation();
+    openLightbox();
   };
 
   const closeLightbox = () => {
     setLightboxOpen(false);
   };
+
+  useEffect(() => {
+    if (!isEditor || isEditMode || isPreviewMode) return;
+    setLightboxOpen(false);
+  }, [isEditor, isEditMode, isPreviewMode]);
 
   return (
     <>
@@ -2188,12 +2204,14 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
           <button
             type="button"
             className={`${P}-cover ${isImageRatioCover(coverFit) ? `${P}-ratio-wrapper-cover` : `${P}-ratio-wrapper-fit`}`}
-            onClick={openLightbox}
+            onClick={handleCoverClick}
+            onDoubleClick={handleCoverDoubleClick}
             style={{
               display: 'block',
               padding: 0,
               border: 'none',
               background: 'transparent',
+              pointerEvents: isEditor && !isEditMode && !isPreviewMode ? 'none' : undefined,
               ...(isImageRatioCover(coverFit)
                 ? ({ '--image-aspect-ratio': getAspectRatio(coverFit) } as React.CSSProperties)
                 : {}),

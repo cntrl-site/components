@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
@@ -2324,7 +2324,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     () => (content ?? []).filter((entry) => getEntryImages(entry).length > 0),
     [content],
   );
-  const isOverlayVisible = lightboxOpen || (Boolean(isEditMode) && entries.length > 0);
+  const isOverlayVisible = lightboxOpen && entries.length > 0;
   const shouldSyncUrl = !isEditor;
 
   const removeJournalUrl = useCallback(() => {
@@ -2335,8 +2335,8 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   }, [shouldSyncUrl, itemId]);
 
   const openLightbox = (slideIndex = 0) => {
-    if (isEditMode || entries.length === 0) return;
-    if (isEditor && !isPreviewMode) return;
+    if (entries.length === 0) return;
+    if (isEditor && !isEditMode && !isPreviewMode) return;
     const slides = buildJournalSlides(entries, type);
     const normalizedSlideIndex = Math.max(0, Math.min(slideIndex, slides.length - 1));
     setLightboxInitialSlideIndex(normalizedSlideIndex);
@@ -2348,10 +2348,26 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     setLightboxOpen(true);
   };
 
+  const handleCoverClick = () => {
+    if (isEditor) return;
+    openLightbox();
+  };
+
+  const handleCoverDoubleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (!isEditor) return;
+    event.stopPropagation();
+    openLightbox();
+  };
+
   const closeLightbox = useCallback(() => {
     setLightboxOpen(false);
     isClosingFromUrlRef.current = false;
   }, []);
+
+  useEffect(() => {
+    if (!isEditor || isEditMode || isPreviewMode) return;
+    setLightboxOpen(false);
+  }, [isEditor, isEditMode, isPreviewMode]);
 
   useEffect(() => {
     if (!shouldSyncUrl || didApplyInitialUrlRef.current) return;
@@ -2398,12 +2414,14 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
           <button
             type="button"
             className={`${P}-cover ${isImageRatioCover(coverFit) ? `${P}-ratio-wrapper-cover` : `${P}-ratio-wrapper-fit`}`}
-            onClick={() => openLightbox()}
+            onClick={handleCoverClick}
+            onDoubleClick={handleCoverDoubleClick}
             style={{
               display: 'block',
               padding: 0,
               border: 'none',
               background: 'transparent',
+              pointerEvents: isEditor && !isEditMode && !isPreviewMode ? 'none' : undefined,
               ...(isImageRatioCover(coverFit)
                 ? ({ '--image-aspect-ratio': getAspectRatio(coverFit) } as React.CSSProperties)
                 : {}),
