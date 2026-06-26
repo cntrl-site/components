@@ -378,6 +378,67 @@ function getCSS(P: string): string {
   flex-direction: row;
 }
 
+.${P}-titles-row-two-row {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
+  flex-direction: column;
+  width: 100%;
+}
+
+.${P}-titles-row-top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.${P}-titles-row-top .${P}-title-cell[data-title="title1"] {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.${P}-titles-row-top-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.${P}-titles-row-bottom-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.${P}-titles-row-bottom-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.${P}-titles-row-bottom {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.${P}-titles-row-bottom .${P}-title-cell {
+  flex: 0 0 auto;
+}
+
 .${P}-title-cell {
   position: relative;
   flex: 0 0 auto;
@@ -400,44 +461,18 @@ function getCSS(P: string): string {
   min-width: 0;
 }
 
-.${P}-title-resize-handle,
-.${P}-padding-control-handle {
-  background: transparent;
-}
-
-.${P}-padding-control-handle[data-controls-axis="x"][data-controls-variant="column-padding"]::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 12px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-.${P}-title-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 100%;
-  background: #FF5C02;
-  pointer-events: none;
-}
-
 .${P}-titles-stack {
   position: relative;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   min-width: 0;
+}
+
+.${P}-titles-stack-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  height: 100%;
 }
 
 .${P}-titles-layer-out {
@@ -449,12 +484,28 @@ function getCSS(P: string): string {
   z-index: 1;
 }
 
+.${P}-titles-layer-out-stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.${P}-titles-layer-out-bottom {
+  justify-content: flex-end;
+}
+
 .${P}-titles-layer-in {
   position: relative;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   min-width: 0;
+}
+
+.${P}-titles-layer-in-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .${P}-titles-layer-in-fading {
@@ -506,10 +557,26 @@ function getCSS(P: string): string {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex: 1;
   min-width: 0;
+  min-height: 0;
+}
+
+.${P}-lightbox-content-area-stacked {
+  align-items: stretch;
+  align-self: stretch;
+}
+
+.${P}-text-bar-cell-stacked {
+  align-self: stretch;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .${P}-entry-counter {
@@ -581,8 +648,11 @@ type LightboxOverlayProps = {
   title1Width: number;
   title2Width: number;
   title3Width: number;
+  title1MarginLeft: number;
   title2MarginLeft: number;
   title3MarginLeft: number;
+  titleRowMarginBottom?: number;
+  titleHeaderLayout?: JournalTitleHeaderLayout;
   countCloseGap: string;
   textTransition: 'none' | 'fade';
   title1Style: React.CSSProperties;
@@ -590,8 +660,7 @@ type LightboxOverlayProps = {
   title3Style: React.CSSProperties;
   countStyle: React.CSSProperties;
   contentMarginTop: string;
-  contentMarginLeft: string;
-  contentMarginRight: string;
+  iconMarginRight: string;
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
@@ -664,6 +733,8 @@ const shouldShowCounter = (
 
 type JournalTitleWidthKey = 'title1Width' | 'title2Width' | 'title3Width';
 
+export type JournalTitleHeaderLayout = 'single-row' | 'two-row';
+
 const TITLE_RESIZE_HANDLE_WIDTH = 0.004;
 const TITLE_PADDING_HANDLE_WIDTH = 0.004;
 
@@ -674,6 +745,7 @@ const DEFAULT_JOURNAL_TITLE_WIDTHS: Record<JournalTitleWidthKey, number> = {
 };
 
 type JournalTitleSlot = {
+  prefix: 'title1' | 'title2' | 'title3';
   widthKey: JournalTitleWidthKey;
   marginLeftKey?: 'title2MarginLeft' | 'title3MarginLeft';
   className: string;
@@ -692,6 +764,7 @@ function buildJournalTitleSlots(
 
   if (entry.title1) {
     slots.push({
+      prefix: 'title1',
       widthKey: 'title1Width',
       className: `${prefix}-title1`,
       style: title1Style,
@@ -700,6 +773,7 @@ function buildJournalTitleSlots(
   }
   if (entry.title2) {
     slots.push({
+      prefix: 'title2',
       widthKey: 'title2Width',
       marginLeftKey: 'title2MarginLeft',
       className: `${prefix}-title2`,
@@ -709,6 +783,7 @@ function buildJournalTitleSlots(
   }
   if (entry.title3) {
     slots.push({
+      prefix: 'title3',
       widthKey: 'title3Width',
       marginLeftKey: 'title3MarginLeft',
       className: `${prefix}-title3`,
@@ -767,7 +842,18 @@ function getJournalTitleMaxWidth(
   const otherWidths = resolvedWidths
     .filter((_, index) => index !== columnIndex)
     .reduce((sum, width) => sum + width, 0);
-  return Math.max(1 - otherWidths);
+  return Math.max(1 - otherWidths, 0);
+}
+
+function getRowScopedJournalTitleWidths(
+  slots: JournalTitleSlot[],
+  widthByKey: Record<JournalTitleWidthKey, number>,
+): { resolved: number[]; effective: number[] } {
+  const stored = slots.map((slot) => widthByKey[slot.widthKey] ?? 0);
+  return {
+    resolved: resolveJournalTitleWidths(slots.length, stored),
+    effective: getEffectiveJournalTitleWidths(slots.length, stored),
+  };
 }
 
 function getJournalTitleOffsetBeforeSlot(
@@ -817,8 +903,11 @@ const LightboxOverlay = ({
   title1Width,
   title2Width,
   title3Width,
+  title1MarginLeft,
   title2MarginLeft,
   title3MarginLeft,
+  titleRowMarginBottom = 0,
+  titleHeaderLayout = 'single-row',
   countCloseGap,
   textTransition,
   title1Style,
@@ -826,8 +915,7 @@ const LightboxOverlay = ({
   title3Style,
   countStyle,
   contentMarginTop,
-  contentMarginLeft,
-  contentMarginRight,
+  iconMarginRight,
   initialSlideIndex = 0,
   enableUrlSync = false,
   journalItemId = null,
@@ -835,6 +923,7 @@ const LightboxOverlay = ({
   onClose,
 }: LightboxOverlayProps) => {
   const showControls = Boolean(isEditMode);
+  const useTwoRowHeader = titleHeaderLayout === 'two-row';
   const allowDesktopNav = !isEditor || Boolean(isPreviewMode);
   const allowSwipeDismiss = !isEditMode && (!isEditor || Boolean(isPreviewMode));
   const slides = useMemo(() => buildJournalSlides(entries, journalType), [entries, journalType]);
@@ -1155,8 +1244,12 @@ const LightboxOverlay = ({
   const hasTitles =  activeEntry?.title1 || activeEntry?.title2 || activeEntry?.title3 || outgoingEntry?.title1 || outgoingEntry?.title2 || outgoingEntry?.title3;
   const hasCounter = shouldShowCounter(journalType, slides, entries);
   const hasCloseIcon = closeIcon !== null;
+  const hasHeaderContent = hasTitles || hasCounter || hasCloseIcon;
   const persistentControlsGapStyle = hasCounter && hasCloseIcon ? { gap: countCloseGap } : undefined;
+  const titlesStackClassName = `${P}-titles-stack${useTwoRowHeader ? ` ${P}-titles-stack-stacked` : ''}`;
+  const titlesLayerOutClassName = `${P}-titles-layer-out${useTwoRowHeader ? ` ${P}-titles-layer-out-stacked` : ''}`;
   const scaled = useCallback((value: number) => scalingValue(value, isEditor ?? false), [isEditor]);
+  const titleRowMarginBottomScaled = scaled(titleRowMarginBottom ?? 0);
   const titleWidthByKey = useMemo(
     () => ({
       title1Width: title1Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title1Width,
@@ -1186,75 +1279,458 @@ const LightboxOverlay = ({
     () => resolveJournalTitleWidths(activeTitleSlots.length, storedTitleWidths),
     [activeTitleSlots.length, storedTitleWidths],
   );
+  const effectiveTitleWidths = useMemo(
+    () => getEffectiveJournalTitleWidths(activeTitleSlots.length, storedTitleWidths),
+    [activeTitleSlots.length, storedTitleWidths],
+  );
+  const topRowTitleSlots = useMemo(
+    () => activeTitleSlots.filter((slot) => slot.prefix === 'title1'),
+    [activeTitleSlots],
+  );
+  const bottomRowTitleSlots = useMemo(
+    () => activeTitleSlots.filter((slot) => slot.prefix === 'title2' || slot.prefix === 'title3'),
+    [activeTitleSlots],
+  );
+  const topRowTitleWidths = useMemo(
+    () => getRowScopedJournalTitleWidths(topRowTitleSlots, titleWidthByKey),
+    [topRowTitleSlots, titleWidthByKey],
+  );
+  const bottomRowTitleWidths = useMemo(
+    () => getRowScopedJournalTitleWidths(bottomRowTitleSlots, titleWidthByKey),
+    [bottomRowTitleSlots, titleWidthByKey],
+  );
+  const getSlotTitleWidthContext = useCallback((
+    slot: JournalTitleSlot,
+    rowLayout: 'single-row' | 'two-row-top' | 'two-row-bottom',
+  ) => {
+    const fullIndex = activeTitleSlots.findIndex((s) => s.prefix === slot.prefix);
+    if (!useTwoRowHeader || rowLayout === 'single-row') {
+      return {
+        effectiveWidth: effectiveTitleWidths[fullIndex] ?? 0,
+        resolvedWidth: resolvedTitleWidths[fullIndex] ?? 0,
+        maxWidth: getJournalTitleMaxWidth(fullIndex, resolvedTitleWidths),
+      };
+    }
+    if (rowLayout === 'two-row-top') {
+      const topIndex = topRowTitleSlots.findIndex((s) => s.prefix === slot.prefix);
+      return {
+        effectiveWidth: topRowTitleWidths.effective[topIndex] ?? 0,
+        resolvedWidth: topRowTitleWidths.resolved[topIndex] ?? 0,
+        maxWidth: getJournalTitleMaxWidth(topIndex, topRowTitleWidths.resolved),
+      };
+    }
+    const bottomIndex = bottomRowTitleSlots.findIndex((s) => s.prefix === slot.prefix);
+    return {
+      effectiveWidth: bottomRowTitleWidths.effective[bottomIndex] ?? 0,
+      resolvedWidth: bottomRowTitleWidths.resolved[bottomIndex] ?? 0,
+      maxWidth: getJournalTitleMaxWidth(bottomIndex, bottomRowTitleWidths.resolved),
+    };
+  }, [
+    activeTitleSlots,
+    bottomRowTitleSlots,
+    bottomRowTitleWidths,
+    effectiveTitleWidths,
+    resolvedTitleWidths,
+    topRowTitleSlots,
+    topRowTitleWidths,
+    useTwoRowHeader,
+  ]);
   const getTitleBoundaryOffset = useCallback(
-(upToIndex: number) => getJournalTitleBoundaryOffset(
+    (upToIndex: number) => getJournalTitleBoundaryOffset(
       activeTitleSlots,
       resolvedTitleWidths,
       titleMarginLeftByKey,
       upToIndex,
+    ) + (!useTwoRowHeader ? title1MarginLeft ?? 0 : 0),
+    [activeTitleSlots, resolvedTitleWidths, titleMarginLeftByKey, useTwoRowHeader, title1MarginLeft],
+  );
+  const getSingleRowMarginColumnOffset = useCallback(
+    () => (!useTwoRowHeader ? title1MarginLeft ?? 0 : 0),
+    [useTwoRowHeader, title1MarginLeft],
+  );
+  const getBottomRowOffsetBeforeSlot = useCallback(
+    (upToBottomIndex: number) => bottomRowTitleSlots.slice(0, upToBottomIndex).reduce(
+      (offset, slot, index) => offset
+        + (slot.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0)
+        + (bottomRowTitleWidths.resolved[index] ?? 0),
+      0,
     ),
-    [activeTitleSlots, resolvedTitleWidths, titleMarginLeftByKey],
+    [bottomRowTitleSlots, bottomRowTitleWidths.resolved, titleMarginLeftByKey],
+  );
+  const getBottomRowBoundaryOffset = useCallback(
+    (bottomIndex: number) => {
+      const slot = bottomRowTitleSlots[bottomIndex];
+      return getBottomRowOffsetBeforeSlot(bottomIndex)
+        + (slot.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0)
+        + (bottomRowTitleWidths.resolved[bottomIndex] ?? 0);
+    },
+    [bottomRowTitleSlots, bottomRowTitleWidths.resolved, getBottomRowOffsetBeforeSlot, titleMarginLeftByKey],
   );
 
-  const renderTitles = (entry: LightboxJournalItem | undefined) => {
-    if (!entry) return null;
-    const slots = buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style);
-    const entryStoredWidths = slots.map((slot) => titleWidthByKey[slot.widthKey]);
-    const effectiveWidths = getEffectiveJournalTitleWidths(
-      slots.length,
-      entryStoredWidths,
-    );
+  const getEntryTitleCellWidthContext = useCallback((
+    slots: JournalTitleSlot[],
+    slot: JournalTitleSlot,
+    rowLayout: 'single-row' | 'two-row-top' | 'two-row-bottom',
+  ) => {
+    if (!useTwoRowHeader || rowLayout === 'single-row') {
+      const index = slots.findIndex((s) => s.prefix === slot.prefix);
+      const stored = slots.map((s) => titleWidthByKey[s.widthKey]);
+      const resolved = resolveJournalTitleWidths(slots.length, stored);
+      const effective = getEffectiveJournalTitleWidths(slots.length, stored);
+      return {
+        effectiveWidth: effective[index] ?? 0,
+        resolvedWidth: resolved[index] ?? 0,
+        maxWidth: getJournalTitleMaxWidth(index, resolved),
+      };
+    }
+    if (rowLayout === 'two-row-top') {
+      const topSlots = slots.filter((s) => s.prefix === 'title1');
+      const topIndex = topSlots.findIndex((s) => s.prefix === slot.prefix);
+      const { resolved, effective } = getRowScopedJournalTitleWidths(topSlots, titleWidthByKey);
+      return {
+        effectiveWidth: effective[topIndex] ?? 0,
+        resolvedWidth: resolved[topIndex] ?? 0,
+        maxWidth: getJournalTitleMaxWidth(topIndex, resolved),
+      };
+    }
+    const bottomSlots = slots.filter((s) => s.prefix === 'title2' || s.prefix === 'title3');
+    const bottomIndex = bottomSlots.findIndex((s) => s.prefix === slot.prefix);
+    const { resolved, effective } = getRowScopedJournalTitleWidths(bottomSlots, titleWidthByKey);
+    return {
+      effectiveWidth: effective[bottomIndex] ?? 0,
+      resolvedWidth: resolved[bottomIndex] ?? 0,
+      maxWidth: getJournalTitleMaxWidth(bottomIndex, resolved),
+    };
+  }, [titleWidthByKey, useTwoRowHeader]);
 
-    return slots.map((slot, index) => {
-      const marginLeft = slot.marginLeftKey ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0 : 0;
-      return (
-        <div
-          key={slot.className}
-          className={`${P}-title-cell`}
-          style={{
-            width: scaled(effectiveWidths[index] ?? 0),
-            ...(marginLeft > 0 ? { marginLeft: scaled(marginLeft) } : {}),
-          }}
-        >
-          <p className={slot.className} style={slot.style}>{slot.text}</p>
-        </div>
-      );
-    });
-  };
-
-  const renderTitleMarginControls = () => activeTitleSlots.flatMap((slot, colIndex) => {
-    if (!slot.marginLeftKey) return [];
-
-    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
-    const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
-      activeTitleSlots,
-      resolvedTitleWidths,
-      titleMarginLeftByKey,
-      colIndex,
-    );
+  const renderTitleCell = (
+    slot: JournalTitleSlot,
+    rowLayout: 'single-row' | 'two-row-top' | 'two-row-bottom',
+    widthContext?: {
+      effectiveWidth: number;
+      resolvedWidth: number;
+      maxWidth: number;
+    },
+  ) => {
+    const marginLeft = slot.marginLeftKey
+      ? titleMarginLeftByKey[slot.marginLeftKey] ?? 0
+      : 0;
+    const {
+      effectiveWidth,
+      resolvedWidth,
+      maxWidth: maxTitleWidth,
+    } = widthContext ?? getSlotTitleWidthContext(slot, rowLayout);
     const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+    const showCellControls = showControls && rowLayout === 'two-row-top';
 
     return (
       <div
-        key={slot.marginLeftKey}
-        data-controls={slot.marginLeftKey}
-        data-controls-static-handle=""
-        data-controls-axis="x"
-        data-controls-variant="column-padding"
-        data-controls-min="0"
-        data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
-        className={`${P}-padding-control-handle`}
+        key={slot.className}
+        className={`${P}-title-cell`}
+        data-title={slot.prefix}
         style={{
-          position: 'absolute',
-          top: 0,
-          left: scaled(offsetBeforeMargin),
-          width: scaled(marginHandleWidth),
-          height: '100%',
-          pointerEvents: 'auto',
+          width: scaled(effectiveWidth),
+          ...(marginLeft > 0 ? { marginLeft: scaled(marginLeft) } : {}),
         }}
-      />
+      >
+        <p className={slot.className} style={slot.style}>{slot.text}</p>
+        {showCellControls && slot.marginLeftKey ? (
+          <div
+            data-controls={slot.marginLeftKey}
+            data-controls-axis="x"
+            data-controls-variant="column-padding"
+            data-controls-min="0"
+            data-controls-max-fraction={String(resolvedWidth)}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: scaled(-marginLeft),
+              width: scaled(marginHandleWidth),
+              height: '100%',
+              pointerEvents: 'auto',
+            }}
+          />
+        ) : null}
+        {showCellControls ? (
+          <div
+            data-controls={slot.widthKey}
+            data-controls-axis="x"
+            data-controls-max-fraction={String(maxTitleWidth)}
+            data-controls-variant="column-width"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: scaled(-TITLE_RESIZE_HANDLE_WIDTH / 2),
+              width: scaled(TITLE_RESIZE_HANDLE_WIDTH),
+              height: '100%',
+              pointerEvents: 'auto',
+            }}
+          />
+        ) : null}
+      </div>
     );
-  });
+  };
+
+  const renderTitle1MarginLeftSpacer = () => (
+    <div
+      {...(showControls ? {
+        'data-controls': 'title1MarginLeft',
+        'data-controls-axis': 'x',
+        className: `${P}-control`,
+      } : {})}
+      style={{
+        width: scaled(title1MarginLeft ?? 0),
+        flexShrink: 0,
+        alignSelf: 'stretch',
+        ...(showControls ? { pointerEvents: 'auto' as const } : {}),
+      }}
+    />
+  );
+
+  const renderEntryCounter = () => (
+    <div className={`${P}-text-bar-cell`}>
+      <span
+        className={`${P}-entry-counter`}
+        style={countStyle}
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {formatSlideCounter(slides, activeSlideIndex, journalType, entries)}
+      </span>
+      {showControls && hasCloseIcon
+        ? (
+          <div
+            data-controls="countCloseGap"
+            data-controls-axis="x"
+            data-controls-reverse="true"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: `calc(-0.5 * (${getGapControlSize(countCloseGap)} + ${countCloseGap}))`,
+              width: getGapControlSize(countCloseGap),
+              height: '100%',
+              pointerEvents: 'auto',
+              zIndex: 3,
+            }}
+          />
+        )
+        : null}
+    </div>
+  );
+
+  const renderCloseIcon = () => (
+    <div
+      className={`${P}-close-icon`}
+      style={{
+        width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+        height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
+        marginRight: iconMarginRight,
+        ['--close-icon-hover-color' as string]: closeIconHoverColor,
+      }}
+    >
+      <button
+        ref={closeButtonRef}
+        type="button"
+        className={`${P}-close-icon-inner`}
+        onClick={handleClose}
+        aria-label="Close"
+      >
+        <SvgImage url={closeIcon ?? ''} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`} />
+      </button>
+      {showControls ? (
+        <div
+          data-controls="iconMarginRight"
+          data-controls-axis="x"
+          data-controls-reverse=""
+          className={`${P}-control`}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '100%',
+            width: iconMarginRight,
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      ) : null}
+    </div>
+  );
+
+  const renderTwoRowTopControls = () => {
+    if (!hasCounter && !hasCloseIcon) return null;
+
+    return (
+      <div className={`${P}-titles-row-top-controls`} style={persistentControlsGapStyle}>
+        {hasCounter ? renderEntryCounter() : null}
+        {hasCloseIcon ? renderCloseIcon() : null}
+      </div>
+    );
+  };
+
+  const renderSingleRowTitles = (entry: LightboxJournalItem | undefined) => {
+    if (!entry) return null;
+    const slots = buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style);
+
+    return (
+      <>
+        {title1MarginLeft > 0 || showControls ? renderTitle1MarginLeftSpacer() : null}
+        {slots.map((slot) => renderTitleCell(
+          slot,
+          'single-row',
+          getEntryTitleCellWidthContext(slots, slot, 'single-row'),
+        ))}
+      </>
+    );
+  };
+
+  const renderTwoRowTopTitle = (entry: LightboxJournalItem | undefined) => {
+    if (!entry) return null;
+    const slots = buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style);
+    const title1Slot = slots.find((slot) => slot.prefix === 'title1');
+    if (!title1Slot && !(title1MarginLeft > 0 || showControls)) return null;
+
+    return (
+      <>
+        {title1MarginLeft > 0 || showControls ? renderTitle1MarginLeftSpacer() : null}
+        {title1Slot ? renderTitleCell(
+          title1Slot,
+          'two-row-top',
+          getEntryTitleCellWidthContext(slots, title1Slot, 'two-row-top'),
+        ) : null}
+      </>
+    );
+  };
+
+  const renderTwoRowBottomTitles = (entry: LightboxJournalItem | undefined, includeControls = false) => {
+    const slots = entry
+      ? buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style)
+      : [];
+    const bottomSlots = slots.filter((slot) => slot.prefix === 'title2' || slot.prefix === 'title3');
+    if (bottomSlots.length === 0) return null;
+
+    return (
+      <div className={`${P}-titles-row-bottom-wrap`}>
+        <div className={`${P}-titles-row-bottom`}>
+          {bottomSlots.map((slot) => renderTitleCell(
+            slot,
+            'two-row-bottom',
+            getEntryTitleCellWidthContext(slots, slot, 'two-row-bottom'),
+          ))}
+          {includeControls && showControls ? (
+            <>
+              {renderTwoRowBottomMarginControls()}
+              {renderTwoRowBottomWidthControls()}
+            </>
+          ) : null}
+        </div>
+        {(titleRowMarginBottom ?? 0) > 0 || showControls ? (
+          <div
+            data-controls={showControls ? 'titleRowMarginBottom' : undefined}
+            data-controls-axis={showControls ? 'y' : undefined}
+            data-controls-reverse={showControls ? '' : undefined}
+            className={showControls ? `${P}-control` : undefined}
+            style={{
+              height: titleRowMarginBottomScaled,
+              width: '100%',
+              flexShrink: 0,
+              pointerEvents: showControls ? 'auto' : 'none',
+            }}
+          />
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderTwoRowTitles = (entry: LightboxJournalItem | undefined, includeControls = false) => (
+    <>
+      <div className={`${P}-titles-row-top`}>
+        {renderTwoRowTopTitle(entry)}
+        {renderTwoRowTopControls()}
+      </div>
+      {renderTwoRowBottomTitles(entry, includeControls)}
+    </>
+  );
+
+  const renderTitles = (entry: LightboxJournalItem | undefined) => {
+    if (useTwoRowHeader) {
+      return (
+        <div className={`${P}-titles-row-two-row`} style={{ width: '100%' }}>
+          {renderTwoRowTitles(entry)}
+        </div>
+      );
+    }
+    if (!entry) return null;
+    return (
+      <div className={`${P}-titles-row`} style={{ width: '100%' }}>
+        {renderSingleRowTitles(entry)}
+      </div>
+    );
+  };
+
+  const renderTitleMarginControls = () => {
+    const singleRowTitle1Index = !useTwoRowHeader
+      ? activeTitleSlots.findIndex((slot) => slot.prefix === 'title1')
+      : -1;
+    const singleRowTitle1Control = singleRowTitle1Index >= 0 ? (() => {
+      const marginLeft = title1MarginLeft ?? 0;
+      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+
+      return (
+        <div
+          key="title1MarginLeft"
+          data-controls="title1MarginLeft"
+          data-controls-axis="x"
+          data-controls-variant="column-padding"
+          data-controls-min="0"
+          data-controls-max-fraction={String(resolvedTitleWidths[singleRowTitle1Index])}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: scaled(marginHandleWidth),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      );
+    })() : null;
+
+    const slotMarginControls = activeTitleSlots.flatMap((slot, colIndex) => {
+      if (!slot.marginLeftKey) return [];
+
+      const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+      const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
+        activeTitleSlots,
+        resolvedTitleWidths,
+        titleMarginLeftByKey,
+        colIndex,
+      ) + getSingleRowMarginColumnOffset();
+      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+
+      return (
+        <div
+          key={slot.marginLeftKey}
+          data-controls={slot.marginLeftKey}
+          data-controls-axis="x"
+          data-controls-variant="column-padding"
+          data-controls-min="0"
+          data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaled(offsetBeforeMargin),
+            width: scaled(marginHandleWidth),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      );
+    });
+
+    return singleRowTitle1Control
+      ? [singleRowTitle1Control, ...slotMarginControls]
+      : slotMarginControls;
+  };
 
   const renderTitleWidthControls = () => activeTitleSlots.map((slot, colIndex) => {
     const maxTitleWidth = getJournalTitleMaxWidth(colIndex, resolvedTitleWidths);
@@ -1265,11 +1741,9 @@ const LightboxOverlay = ({
       <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <div
           data-controls={slot.widthKey}
-          data-controls-static-handle=""
-          data-controls-axis="x"
-          data-controls-max-fraction={String(maxTitleWidth)}
-          data-controls-variant="column-width"
-          className={`${P}-title-resize-handle`}
+            data-controls-axis="x"
+            data-controls-max-fraction={String(maxTitleWidth)}
+            data-controls-variant="column-width"
           style={{
             position: 'absolute',
             top: 0,
@@ -1282,6 +1756,69 @@ const LightboxOverlay = ({
       </div>
     );
   });
+
+  const renderTwoRowBottomMarginControls = () => bottomRowTitleSlots.flatMap((slot, bottomIndex) => {
+    if (!slot.marginLeftKey) return [];
+
+    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+    const offsetBeforeMargin = getBottomRowOffsetBeforeSlot(bottomIndex);
+    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+    const { resolvedWidth } = getSlotTitleWidthContext(slot, 'two-row-bottom');
+
+    return (
+      <div
+        key={slot.marginLeftKey}
+        data-controls={slot.marginLeftKey}
+        data-controls-axis="x"
+        data-controls-variant="column-padding"
+        data-controls-min="0"
+        data-controls-max-fraction={String(resolvedWidth)}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: scaled(offsetBeforeMargin),
+          width: scaled(marginHandleWidth),
+          height: '100%',
+          pointerEvents: 'auto',
+        }}
+      />
+    );
+  });
+
+  const renderTwoRowBottomWidthControls = () => bottomRowTitleSlots.map((slot, bottomIndex) => {
+    const { maxWidth: maxTitleWidth } = getSlotTitleWidthContext(slot, 'two-row-bottom');
+    const boundaryOffset = getBottomRowBoundaryOffset(bottomIndex);
+    const titleWidthHandleOffset = boundaryOffset - TITLE_RESIZE_HANDLE_WIDTH / 2;
+
+    return (
+      <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div
+          data-controls={slot.widthKey}
+            data-controls-axis="x"
+            data-controls-max-fraction={String(maxTitleWidth)}
+            data-controls-variant="column-width"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaled(titleWidthHandleOffset),
+            width: scaled(TITLE_RESIZE_HANDLE_WIDTH),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      </div>
+    );
+  });
+
+  const renderTitleControls = () => {
+    if (!showControls || activeTitleSlots.length === 0 || useTwoRowHeader) return null;
+    return (
+      <>
+        {renderTitleMarginControls()}
+        {renderTitleWidthControls()}
+      </>
+    );
+  };
 
   const getSlideImageCellProps = (image: LightboxJournalImage) => {
     const useRatioWrapper = !image.objectFit && isImageRatioCover(coverFit);
@@ -1368,6 +1905,114 @@ const LightboxOverlay = ({
     );
   };
 
+  const entryHasBottomTitles = (entry: LightboxJournalItem | null | undefined) => Boolean(
+    entry?.title2 || entry?.title3,
+  );
+  const hasTwoRowBottomContent = entryHasBottomTitles(activeEntry)
+    || entryHasBottomTitles(outgoingEntry);
+
+  const renderTwoRowHeaderFade = () => (
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        flex: 1,
+        alignSelf: 'stretch',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 0,
+        height: '100%',
+      }}
+    >
+      <div
+        ref={titlesMeasureRef}
+        className={titlesStackClassName}
+        style={{
+          position: 'absolute',
+          visibility: 'hidden',
+          pointerEvents: 'none',
+          left: 0,
+          right: 0,
+          top: 0,
+          width: '100%',
+          height: 'auto',
+        }}
+        aria-hidden="true"
+      >
+        {incomingMeasureEntry ? renderTwoRowTitles(incomingMeasureEntry) : renderTwoRowTitles(activeEntry)}
+      </div>
+      <div
+        ref={titlesStackRef}
+        className={`${P}-titles-row-two-row`}
+        style={{
+          ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
+          ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
+          ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
+        }}
+      >
+        <div className={`${P}-titles-row-top`}>
+          <div
+            className={titlesStackClassName}
+            style={{ position: 'relative', flex: 1, minWidth: 0 }}
+          >
+            {outgoingEntry && isTitlesFading ? (
+              <div className={`${titlesLayerOutClassName} ${P}-titles-fade-out`}>
+                {renderTwoRowTopTitle(outgoingEntry)}
+              </div>
+            ) : null}
+            <div
+              className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}`}
+            >
+              {renderTwoRowTopTitle(activeEntry)}
+            </div>
+          </div>
+          {renderTwoRowTopControls()}
+        </div>
+        {hasTwoRowBottomContent ? (
+        <div className={`${P}-titles-row-bottom-area`}>
+          {outgoingEntry && isTitlesFading ? (
+            <div className={`${titlesLayerOutClassName} ${P}-titles-layer-out-bottom ${P}-titles-fade-out`}>
+              {renderTwoRowBottomTitles(outgoingEntry)}
+            </div>
+          ) : null}
+          <div
+            className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}${useTwoRowHeader ? ` ${P}-titles-layer-in-stacked` : ''}`}
+          >
+            {renderTwoRowBottomTitles(activeEntry, true)}
+          </div>
+          {renderTitleControls()}
+        </div>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  const renderTwoRowHeaderStatic = () => {
+    const hasBottomRow = entryHasBottomTitles(activeEntry);
+
+    return (
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          alignSelf: 'stretch',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+          ...(hasBottomRow ? { flex: 1, height: '100%' } : {}),
+        }}
+      >
+        <div
+          className={`${P}-titles-row-two-row`}
+          style={hasBottomRow ? undefined : { flex: '0 0 auto', height: 'auto' }}
+        >
+          {renderTwoRowTitles(activeEntry, true)}
+        </div>
+        {renderTitleControls()}
+      </div>
+    );
+  };
+
   return (
     <div
       ref={lightboxRef}
@@ -1443,24 +2088,22 @@ const LightboxOverlay = ({
           className={showControls ? `${P}-control` : undefined}
           style={{ height: contentMarginTop, width: '100%' }}
         />
-        <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
-          <div
-            data-controls={showControls ? 'contentMarginLeft' : undefined}
-            data-controls-axis={showControls ? 'x' : undefined}
-            className={showControls ? `${P}-control` : undefined}
-            style={{ width: contentMarginLeft, flexShrink: 0 }}
-          />
-          <div className={`${P}-lightbox-content-area`}>
-            {hasTitles && (
-              <div className={`${P}-text-bar-cell`}>
-                <div
-                  className={`${P}-titles-row`}
-                >
-                  {textTransition === 'fade' ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          width: '100%',
+          ...(useTwoRowHeader ? { flex: 1, minHeight: 0 } : {}),
+        }}>
+          <div className={`${P}-lightbox-content-area${useTwoRowHeader ? ` ${P}-lightbox-content-area-stacked` : ''}`}>
+            {(useTwoRowHeader ? hasHeaderContent : hasTitles) && (
+              <div className={`${P}-text-bar-cell${useTwoRowHeader ? ` ${P}-text-bar-cell-stacked` : ''}`}>
+                {useTwoRowHeader
+                  ? (textTransition === 'fade' ? renderTwoRowHeaderFade() : renderTwoRowHeaderStatic())
+                  : (textTransition === 'fade' ? (
                     <>
                       <div
                         ref={titlesMeasureRef}
-                        className={`${P}-titles-stack`}
+                        className={titlesStackClassName}
                         style={{
                           position: 'absolute',
                           visibility: 'hidden',
@@ -1477,15 +2120,16 @@ const LightboxOverlay = ({
                       </div>
                       <div
                         ref={titlesStackRef}
-                        className={`${P}-titles-stack`}
+                        className={titlesStackClassName}
                         style={{
+                          width: '100%',
                           ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
                           ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
                           ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
                         }}
                       >
                         {outgoingEntry && isTitlesFading ? (
-                          <div className={`${P}-titles-layer-out ${P}-titles-fade-out`}>
+                          <div className={`${titlesLayerOutClassName} ${P}-titles-fade-out`}>
                             {renderTitles(outgoingEntry)}
                           </div>
                         ) : null}
@@ -1494,86 +2138,24 @@ const LightboxOverlay = ({
                         >
                           {renderTitles(activeEntry)}
                         </div>
-                        {showControls && activeTitleSlots.length > 0 ? (
-                          <>
-                            {renderTitleMarginControls()}
-                            {renderTitleWidthControls()}
-                          </>
-                        ) : null}
+                        {renderTitleControls()}
                       </div>
                     </>
                   ) : (
-                    <>
+                    <div style={{ position: 'relative', width: '100%' }}>
                       {renderTitles(activeEntry)}
-                      {showControls && activeTitleSlots.length > 0 ? (
-                        <>
-                          {renderTitleMarginControls()}
-                          {renderTitleWidthControls()}
-                        </>
-                      ) : null}
-                    </>
-                  )}
-                </div>
+                      {renderTitleControls()}
+                    </div>
+                  ))}
               </div>
             )}
+            {!useTwoRowHeader && (
             <div className={`${P}-lightbox-persistent-controls`} style={persistentControlsGapStyle}>
-              {hasCounter && (
-                <div className={`${P}-text-bar-cell`}>
-                  <span
-                    className={`${P}-entry-counter`}
-                    style={countStyle}
-                    aria-live="polite"
-                    aria-atomic="true"
-                  >
-                    {formatSlideCounter(slides, activeSlideIndex, journalType, entries)}
-                  </span>
-                  {showControls && hasCloseIcon 
-                    ? <div
-                        data-controls="countCloseGap"
-                        data-controls-axis="x"
-                        data-controls-reverse="true"
-                        style={{
-                          position: 'absolute',
-                          top: 0,
-                          right: `calc(-0.5 * (${getGapControlSize(countCloseGap)} + ${countCloseGap}))`,
-                          width: getGapControlSize(countCloseGap),
-                          height: '100%',
-                          pointerEvents: 'auto',
-                          zIndex: 3,
-                        }}
-                      />
-                    : null}
-                </div>
-              )}
-              {hasCloseIcon && (
-                <div
-                  className={`${P}-close-icon`}
-                  style={{
-                    width: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-                    height: scalingValue(closeIconMaxWidth ?? 0, isEditor),
-                    ['--close-icon-hover-color' as string]: closeIconHoverColor,
-                  }}
-                >
-                  <button
-                    ref={closeButtonRef}
-                    type="button"
-                    className={`${P}-close-icon-inner`}
-                    onClick={handleClose}
-                    aria-label="Close"
-                  >
-                    <SvgImage url={closeIcon ?? ''} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`} />
-                  </button>
-                </div>
-              )}
+              {hasCounter && renderEntryCounter()}
+              {hasCloseIcon && renderCloseIcon()}
             </div>
+            )}
           </div>
-          <div
-            data-controls={showControls ? 'contentMarginRight' : undefined}
-            data-controls-axis={showControls ? 'x' : undefined}
-            data-controls-reverse={showControls ? '' : undefined}
-            className={showControls ? `${P}-control` : undefined}
-            style={{ width: contentMarginRight, flexShrink: 0 }}
-          />
         </div>
         </div>
       </div>
@@ -1753,16 +2335,18 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     title1Width,
     title2Width,
     title3Width,
+    title1MarginLeft,
     title2MarginLeft,
     title3MarginLeft,
+    titleRowMarginBottom,
+    titleHeaderLayout,
     countCloseGap,
     closeIcon,
     closeIconMaxWidth,
     closeIconColor,
     closeIconHoverColor,
     contentMarginTop,
-    contentMarginLeft,
-    contentMarginRight,
+    iconMarginRight,
   } = settings;
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
 
@@ -1780,7 +2364,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
     () => (content ?? []).filter((entry) => getEntryImages(entry).length > 0),
     [content],
   );
-  const shouldSyncUrl = !isEditor || Boolean(isPreviewMode);
+  const shouldSyncUrl = !isEditor;
 
   const removeJournalUrl = useCallback(() => {
     if (!shouldSyncUrl) return;
@@ -1889,8 +2473,11 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             title1Width={title1Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title1Width}
             title2Width={title2Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title2Width}
             title3Width={title3Width ?? DEFAULT_JOURNAL_TITLE_WIDTHS.title3Width}
+            title1MarginLeft={title1MarginLeft ?? 0}
             title2MarginLeft={title2MarginLeft ?? 0}
             title3MarginLeft={title3MarginLeft ?? 0}
+            titleRowMarginBottom={titleRowMarginBottom ?? 0}
+            titleHeaderLayout={titleHeaderLayout ?? 'single-row'}
             countCloseGap={scaled(countCloseGap ?? 0)}
             textTransition={textTransition}
             title1Style={title1Style}
@@ -1898,8 +2485,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
             title3Style={title3Style}
             countStyle={countStyle}
             contentMarginTop={scaled(contentMarginTop ?? 0)}
-            contentMarginLeft={scaled(contentMarginLeft ?? 0)}
-            contentMarginRight={scaled(contentMarginRight ?? 0)}
+            iconMarginRight={scaled(iconMarginRight ?? 0)}
             closeIcon={closeIcon}
             closeIconMaxWidth={closeIconMaxWidth}
             closeIconColor={closeIconColor}
@@ -1936,8 +2522,11 @@ export type LightboxJournalSettings = {
   title1Width?: number;
   title2Width?: number;
   title3Width?: number;
+  title1MarginLeft?: number;
   title2MarginLeft?: number;
   title3MarginLeft?: number;
+  titleRowMarginBottom?: number;
+  titleHeaderLayout?: JournalTitleHeaderLayout;
   countCloseGap?: number;
   title1Color: string;
   title2Color: string;
@@ -1976,8 +2565,7 @@ export type LightboxJournalSettings = {
   countTextAlign?: 'left' | 'center' | 'right' | 'justify';
   countTextAppearance?: TextStyles['textAppearance'];
   contentMarginTop: number;
-  contentMarginLeft: number;
-  contentMarginRight: number;
+  iconMarginRight: number;
   closeIcon: string | null;
   closeIconMaxWidth: number;
   closeIconColor: string;

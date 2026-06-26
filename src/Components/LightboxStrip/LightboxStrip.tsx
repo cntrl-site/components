@@ -344,38 +344,6 @@ function getCSS(P: string): string {
   margin: 0;
   min-width: 0;
 }
-
-.${P}-title-resize-handle,
-.${P}-padding-control-handle {
-  background: transparent;
-}
-
-.${P}-padding-control-handle[data-controls-axis="x"][data-controls-variant="column-padding"]::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 12px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-.${P}-title-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 100%;
-  background: #FF5C02;
-  pointer-events: none;
-}
 .${P}-lightbox-content-inner {
   position: absolute;
   inset: 0;
@@ -426,20 +394,6 @@ function getCSS(P: string): string {
   z-index: 10;
 }
 
-.${P}-control[data-controls="contentMarginTop"]::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 5%;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 4px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
-  pointer-events: none;
-}
 `;
 }
 
@@ -511,69 +465,6 @@ export function resolveSharedStripTitles(items: LightboxStripLegacyItem[]): Shar
 }
 
 export type StripTitleHeaderLayout = 'single-row' | 'two-row';
-
-export type LightboxStripSettings = {
-  cover: string | null;
-  coverFit: {
-    display: 'Fit' | 'Cover';
-    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
-    reversed: boolean;
-  };
-  backgroundColor: string;
-  thumbnailVisibility: 'on' | 'off';
-  thumbnailObjectFit: {
-    display: 'Fit' | 'Cover';
-    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
-    reversed: boolean;
-  },
-  thumbnailTrigger: 'click' | 'hover';
-  thumbnailActive: 'outline' | 'color' | 'scale-up';
-  thumbnailActiveColor: string;
-  thumbnailGap: number;
-  thumbnailMarginBottom?: number;
-  imageGap?: number;
-  title1Width: number;
-  title2Width: number;
-  title3Width: number;
-  title1MarginLeft: number;
-  title2MarginLeft: number;
-  title3MarginLeft: number;
-  titleRowMarginBottom?: number;
-  titleHeaderLayout?: StripTitleHeaderLayout;
-  title1Color: string;
-  title2Color: string;
-  title3Color: string;
-  title1FontFamily?: string;
-  title1FontSettings?: { fontWeight: number; fontStyle: string };
-  title1FontSize?: number;
-  title1LineHeight?: number;
-  title1LetterSpacing?: number;
-  title1WordSpacing?: number;
-  title1TextAlign?: 'left' | 'center' | 'right' | 'justify';
-  title1TextAppearance?: TextStyles['textAppearance'];
-  title2FontFamily?: string;
-  title2FontSettings?: { fontWeight: number; fontStyle: string };
-  title2FontSize?: number;
-  title2LineHeight?: number;
-  title2LetterSpacing?: number;
-  title2WordSpacing?: number;
-  title2TextAlign?: 'left' | 'center' | 'right' | 'justify';
-  title2TextAppearance?: TextStyles['textAppearance'];
-  title3FontFamily?: string;
-  title3FontSettings?: { fontWeight: number; fontStyle: string };
-  title3FontSize?: number;
-  title3LineHeight?: number;
-  title3LetterSpacing?: number;
-  title3WordSpacing?: number;
-  title3TextAlign?: 'left' | 'center' | 'right' | 'justify';
-  title3TextAppearance?: TextStyles['textAppearance'];
-  contentMarginTop: number;
-  iconMarginLeft: number;
-  closeIcon:  string | null;
-  closeIconMaxWidth: number;
-  closeIconColor: string;
-  closeIconHoverColor: string;
-};
 
 export const STRIP_TEXT_STYLE_PREFIXES = ['title1', 'title2', 'title3'] as const;
 
@@ -1117,12 +1008,10 @@ const LightboxOverlay = ({
         {showCellControls && slot.marginLeftKey ? (
           <div
             data-controls={slot.marginLeftKey}
-            data-controls-static-handle=""
             data-controls-axis="x"
             data-controls-variant="column-padding"
             data-controls-min="0"
             data-controls-max-fraction={String(resolvedWidth)}
-            className={`${P}-padding-control-handle`}
             style={{
               position: 'absolute',
               top: 0,
@@ -1136,11 +1025,9 @@ const LightboxOverlay = ({
         {showCellControls ? (
           <div
             data-controls={slot.widthKey}
-            data-controls-static-handle=""
             data-controls-axis="x"
             data-controls-max-fraction={String(maxTitleWidth)}
             data-controls-variant="column-width"
-            className={`${P}-title-resize-handle`}
             style={{
               position: 'absolute',
               top: 0,
@@ -1167,12 +1054,10 @@ const LightboxOverlay = ({
         <div
           key="title1MarginLeft"
           data-controls="title1MarginLeft"
-          data-controls-static-handle=""
           data-controls-axis="x"
           data-controls-variant="column-padding"
           data-controls-min="0"
           data-controls-max-fraction={String(resolvedTitleWidths[singleRowTitle1Index])}
-          className={`${P}-padding-control-handle`}
           style={{
             position: 'absolute',
             top: 0,
@@ -1201,12 +1086,10 @@ const LightboxOverlay = ({
         <div
           key={slot.marginLeftKey}
           data-controls={slot.marginLeftKey}
-          data-controls-static-handle=""
           data-controls-axis="x"
           data-controls-variant="column-padding"
           data-controls-min="0"
           data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
-          className={`${P}-padding-control-handle`}
           style={{
             position: 'absolute',
             top: 0,
@@ -1236,11 +1119,9 @@ const LightboxOverlay = ({
       <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <div
           data-controls={slot.widthKey}
-          data-controls-static-handle=""
           data-controls-axis="x"
           data-controls-max-fraction={String(maxTitleWidth)}
           data-controls-variant="column-width"
-          className={`${P}-title-resize-handle`}
           style={{
             position: 'absolute',
             top: 0,
@@ -1266,12 +1147,10 @@ const LightboxOverlay = ({
       <div
         key={slot.marginLeftKey}
         data-controls={slot.marginLeftKey}
-        data-controls-static-handle=""
         data-controls-axis="x"
         data-controls-variant="column-padding"
         data-controls-min="0"
         data-controls-max-fraction={String(resolvedWidth)}
-        className={`${P}-padding-control-handle`}
         style={{
           position: 'absolute',
           top: 0,
@@ -1293,11 +1172,9 @@ const LightboxOverlay = ({
       <div key={`${slot.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <div
           data-controls={slot.widthKey}
-          data-controls-static-handle=""
           data-controls-axis="x"
           data-controls-max-fraction={String(maxTitleWidth)}
           data-controls-variant="column-width"
-          className={`${P}-title-resize-handle`}
           style={{
             position: 'absolute',
             top: 0,
@@ -1957,7 +1834,8 @@ const LightboxOverlay = ({
         >
           <div
             data-controls={showControls ? 'contentMarginTop' : undefined}
-            data-controls-static-handle={showControls ? '' : undefined}
+            data-controls-axis={showControls ? 'y' : undefined}
+            data-controls-handle-left-fraction={showControls ? '0.05' : undefined}
             className={showControls ? `${P}-control` : undefined}
             style={{ height: contentMarginTop, width: '100%', pointerEvents: showControls ? 'auto' : 'none' }}
           />
@@ -2199,4 +2077,67 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
       })()}
     </>
   );
+};
+
+export type LightboxStripSettings = {
+  cover: string | null;
+  coverFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
+  backgroundColor: string;
+  thumbnailVisibility: 'on' | 'off';
+  thumbnailObjectFit: {
+    display: 'Fit' | 'Cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  },
+  thumbnailTrigger: 'click' | 'hover';
+  thumbnailActive: 'outline' | 'color' | 'scale-up';
+  thumbnailActiveColor: string;
+  thumbnailGap: number;
+  thumbnailMarginBottom?: number;
+  imageGap?: number;
+  title1Width: number;
+  title2Width: number;
+  title3Width: number;
+  title1MarginLeft: number;
+  title2MarginLeft: number;
+  title3MarginLeft: number;
+  titleRowMarginBottom?: number;
+  titleHeaderLayout?: StripTitleHeaderLayout;
+  title1Color: string;
+  title2Color: string;
+  title3Color: string;
+  title1FontFamily?: string;
+  title1FontSettings?: { fontWeight: number; fontStyle: string };
+  title1FontSize?: number;
+  title1LineHeight?: number;
+  title1LetterSpacing?: number;
+  title1WordSpacing?: number;
+  title1TextAlign?: 'left' | 'center' | 'right' | 'justify';
+  title1TextAppearance?: TextStyles['textAppearance'];
+  title2FontFamily?: string;
+  title2FontSettings?: { fontWeight: number; fontStyle: string };
+  title2FontSize?: number;
+  title2LineHeight?: number;
+  title2LetterSpacing?: number;
+  title2WordSpacing?: number;
+  title2TextAlign?: 'left' | 'center' | 'right' | 'justify';
+  title2TextAppearance?: TextStyles['textAppearance'];
+  title3FontFamily?: string;
+  title3FontSettings?: { fontWeight: number; fontStyle: string };
+  title3FontSize?: number;
+  title3LineHeight?: number;
+  title3LetterSpacing?: number;
+  title3WordSpacing?: number;
+  title3TextAlign?: 'left' | 'center' | 'right' | 'justify';
+  title3TextAppearance?: TextStyles['textAppearance'];
+  contentMarginTop: number;
+  iconMarginLeft: number;
+  closeIcon:  string | null;
+  closeIconMaxWidth: number;
+  closeIconColor: string;
+  closeIconHoverColor: string;
 };
