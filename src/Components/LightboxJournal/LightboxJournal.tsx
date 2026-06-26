@@ -720,8 +720,6 @@ const shouldShowCounter = (
 
 type JournalTitleWidthKey = 'title1Width' | 'title2Width' | 'title3Width';
 
-export type JournalTitleHeaderLayout = 'single-row' | 'two-row';
-
 const TITLE_RESIZE_HANDLE_WIDTH = 0.004;
 const TITLE_PADDING_HANDLE_WIDTH = 0.004;
 
@@ -922,7 +920,7 @@ const LightboxOverlay = ({
   const countStyle = journalTextFieldsToCss('count', resolveJournalTextFields(settings, 'count'), isEditor);
 
   const showControls = Boolean(isEditMode);
-  const useTwoRowHeader = titleHeaderLayout === 'two-row';
+  const useTwoRowHeader = titleHeaderLayout === 'mobile';
   const allowDesktopNav = !isEditor || Boolean(isPreviewMode);
   const allowSwipeDismiss = !isEditMode && (!isEditor || Boolean(isPreviewMode));
   const slides = useMemo(() => buildJournalSlides(entries, journalType), [entries, journalType]);
@@ -2454,7 +2452,7 @@ export type LightboxJournalSettings = {
   title2MarginLeft?: number;
   title3MarginLeft?: number;
   titleRowMarginBottom?: number;
-  titleHeaderLayout?: JournalTitleHeaderLayout;
+  titleHeaderLayout?: 'desktop' | 'mobile';
   countCloseGap?: number;
   title1Color: string;
   title2Color: string;
