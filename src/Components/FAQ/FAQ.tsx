@@ -440,6 +440,10 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
       setOpenIndices(new Set());
     }
   }, [isPreviewMode]);
+
+  useEffect(() => {
+    setOpenIndices(new Set());
+  }, [autoclose]);
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const questionPaddingLeftWidth = Math.max(questionPaddingLeft, PADDING_HANDLE_SIZE);
   const questionPaddingTopHeight = Math.max(questionPaddingTop, PADDING_HANDLE_SIZE);

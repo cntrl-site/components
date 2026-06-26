@@ -90,29 +90,65 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       {
-        question: 'What is your return policy?',
+        question: '1. What is this product used for?',
         answer: [
           {
             type: 'paragraph',
-            children: [{ text: 'You can return any item within 30 days of purchase.' }],
+            children: [{ text: 'Our product helps you organize, manage, and improve your workflow with simple digital tools designed to save time and reduce manual work. It brings important tasks, information, and collaboration into one place so you can stay focused and work more efficiently.' }],
           },
         ],
       },
       {
-        question: 'How long does shipping take?',
+        question: '2. Do I need technical knowledge to use it?',
         answer: [
           {
             type: 'paragraph',
-            children: [{ text: 'Standard shipping typically takes 5–7 business days.' }],
+            children: [{ text: 'No. The product is designed to be easy to use, with a clear interface and guided setup so you can get started quickly. You do not need coding skills or special training to use the core features.' }],
           },
         ],
       },
       {
-        question: 'Do you offer international delivery?',
+        question: '3. Is there a free trial?',
         answer: [
           {
             type: 'paragraph',
-            children: [{ text: 'Yes, we ship to most countries worldwide.' }],
+            children: [{ text: 'Yes, you can try the product before choosing a paid plan. The trial gives you access to the main features so you can explore how it works, test it with your own workflow, and decide whether it is the right fit for your needs.' }],
+          },
+        ],
+      },
+      {
+        question: '4. Can I cancel my subscription anytime?',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'Yes. You can cancel your subscription at any time from your account settings. Your access will remain active until the end of your current billing period, and you will not be charged again after cancellation.' }],
+          },
+        ],
+      },
+      {
+        question: '5. Is my data secure?',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'Yes. We use modern security practices to protect your data, including encrypted connections and secure account access. We also follow responsible data handling practices so your information stays private and protected.' }],
+          },
+        ],
+      },
+      {
+        question: '6. Can I use the product with my team?',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'Yes. Team plans allow multiple users to collaborate, manage shared projects, assign responsibilities, and keep work organized in one place. This makes it easier for everyone to stay aligned and see the latest updates.' }],
+          },
+        ],
+      },
+      {
+        question: '7. How do I get support?',
+        answer: [
+          {
+            type: 'paragraph',
+            children: [{ text: 'You can contact our support team through the help center or by email. We’ll help you with setup, troubleshooting, billing questions, and product guidance so you can get the most out of the platform.' }],
           },
         ],
       },
@@ -485,7 +521,7 @@ export const FAQComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: '',
+    url: 'https://cdn.cntrl.site/component-assets/FAQ_List.png',
   },
   version: 1,
   defaultSize: {
