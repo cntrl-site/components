@@ -1835,8 +1835,10 @@ const LightboxOverlay = ({
 
   useLayoutEffect(() => {
     measureSetWidth();
-    scrollToIndex(activeIndexRef.current, 'auto');
-  }, [imageGap]);
+    if (!isEditMode) {
+      scrollToIndex(activeIndexRef.current, 'auto');
+    }
+  }, [imageGap, isEditMode]);
 
   useLayoutEffect(() => {
     measureSetWidth();
