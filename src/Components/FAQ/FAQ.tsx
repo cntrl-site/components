@@ -458,8 +458,6 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   const iconPaddingRightWidth = Math.max(iconPaddingRight, PADDING_HANDLE_SIZE);
   const iconPaddingRightMaxFraction = Math.max(0, (wrapperWidth ?? 1) - questionPaddingLeft - iconMaxWidth);
 
-  console.log('questionPaddingLeftMaxFraction', questionPaddingLeftMaxFraction);
-
   const controlsTargetIndex = useMemo(() => {
     if (openIndices.size === 0) {
       return 0;
