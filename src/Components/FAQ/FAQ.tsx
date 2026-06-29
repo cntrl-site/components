@@ -438,6 +438,12 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   useEffect(() => {
     setOpenIndices(new Set());
   }, [autoclose]);
+
+  useEffect(() => {
+    if (isEditor && !isEditMode && !isPreviewMode) {
+      setOpenIndices(new Set());
+    }
+  }, [isEditor, isEditMode, isPreviewMode]);
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const questionPaddingLeftWidth = Math.max(questionPaddingLeft, PADDING_HANDLE_SIZE);
   const questionPaddingTopHeight = Math.max(questionPaddingTop, PADDING_HANDLE_SIZE);
@@ -451,6 +457,8 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   const answerPaddingRightMaxFraction = Math.max(0, (wrapperWidth ?? 1) - answerPaddingLeft);
   const iconPaddingRightWidth = Math.max(iconPaddingRight, PADDING_HANDLE_SIZE);
   const iconPaddingRightMaxFraction = Math.max(0, (wrapperWidth ?? 1) - questionPaddingLeft - iconMaxWidth);
+
+  console.log('questionPaddingLeftMaxFraction', questionPaddingLeftMaxFraction);
 
   const controlsTargetIndex = useMemo(() => {
     if (openIndices.size === 0) {
