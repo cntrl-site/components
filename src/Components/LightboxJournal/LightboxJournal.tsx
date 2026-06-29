@@ -1530,7 +1530,12 @@ const LightboxOverlay = ({
         onClick={handleClose}
         aria-label="Close"
       >
-        <SvgImage url={closeIcon ?? ''} fill={closeIconColor} hoverFill={closeIconHoverColor} className={`${P}-close-icon-img`} />
+        <SvgImage
+          url={closeIcon ?? ''}
+          fill={closeIconColor}
+          hoverFill={isEditor && !isPreviewMode ? closeIconColor : closeIconHoverColor}
+          className={`${P}-close-icon-img`}
+        />
       </button>
       {showControls ? (
         <div
