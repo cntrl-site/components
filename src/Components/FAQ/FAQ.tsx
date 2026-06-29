@@ -436,12 +436,6 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   const isInteractive = !isEditor || isPreviewMode;
 
   useEffect(() => {
-    if (!isPreviewMode) {
-      setOpenIndices(new Set());
-    }
-  }, [isPreviewMode]);
-
-  useEffect(() => {
     setOpenIndices(new Set());
   }, [autoclose]);
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
@@ -458,13 +452,15 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   const iconPaddingRightWidth = Math.max(iconPaddingRight, PADDING_HANDLE_SIZE);
   const iconPaddingRightMaxFraction = Math.max(0, (wrapperWidth ?? 1) - questionPaddingLeft - iconMaxWidth);
 
-  const isItemOpen = useCallback((index: number) => {
-    if (showControls) {
-      return index === 0;
+  const controlsTargetIndex = useMemo(() => {
+    if (openIndices.size === 0) {
+      return 0;
     }
 
-    return openIndices.has(index);
-  }, [openIndices, showControls]);
+    return Math.min(...openIndices);
+  }, [openIndices]);
+
+  const isItemOpen = useCallback((index: number) => openIndices.has(index), [openIndices]);
   const entryHoverClass = isInteractive && entryHoverEffect === 'default'
     ? `${P}-entry-hover-default`
     : '';
@@ -575,7 +571,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
             const question = item.question?.trim() ?? '';
             const answer = item.answer;
             const hasAnswer = (answer?.length ?? 0) > 0;
-            const isFirstItem = index === 0;
+            const showPaddingControls = showControls && index === controlsTargetIndex;
 
             return (
               <div
@@ -584,7 +580,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                 data-faq-item=""
               >
                 <div className={`${P}-question-controls`}>
-                  {showControls && isFirstItem && (
+                  {showPaddingControls && (
                     <>
                       <FAQPaddingControl
                         data-controls="questionPaddingTop"
@@ -687,7 +683,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                       />
                     )}
                   </button>
-                  {showControls && isFirstItem && (
+                  {showPaddingControls && (
                     <FAQPaddingControl
                       data-controls="questionPaddingBottom"
                       data-controls-static-handle=""
@@ -712,7 +708,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                   <div className={`${P}-panel`} aria-hidden={!isOpen}>
                     <div className={`${P}-panel-inner`}>
                       <div className={`${P}-answer-controls`}>
-                        {showControls && isFirstItem && (
+                        {showPaddingControls && (
                           <>
                             <FAQPaddingControl
                               data-controls="answerPaddingTop"
@@ -796,7 +792,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                             style={{ height: scaled(answerPaddingBottom) }}
                           />
                         )}
-                        {showControls && isFirstItem && (
+                        {showPaddingControls && (
                           <FAQPaddingControl
                             data-controls="answerPaddingBottom"
                             data-controls-static-handle=""
