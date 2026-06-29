@@ -64,7 +64,7 @@ const schema: ComponentSchemaV1 = {
         properties: {
           display: {
             type: 'string',
-            enum: ['Fit', 'Cover'],
+            enum: ['fit', 'cover'],
           },
           ratioValue: {
             type: 'string',
@@ -81,7 +81,7 @@ const schema: ComponentSchemaV1 = {
       pauseOnHover: 'off',
       hoverEffect: 'off',
       imageFit: {
-        display: 'Fit',
+        display: 'fit',
         ratioValue: '16:9',
         reversed: false,
       },
@@ -102,7 +102,7 @@ const schema: ComponentSchemaV1 = {
     },
     displayRules: [
       {
-        if: { name: 'imageFit.display', value: 'Cover' },
+        if: { name: 'imageFit.display', value: 'cover' },
         then: { name: 'properties.hoverEffect.display.enum', value: ['off', 'brightness', 'grayscale', 'randomize'] },
       }
     ],
