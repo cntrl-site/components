@@ -9,6 +9,7 @@ import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridCompo
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
 import { ListComponent } from './List/ListComponent';
+import { FAQComponent } from './FAQ/FAQComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -20,5 +21,6 @@ export const components: Component[] = [
   TestimonialGridComponent,
   TestimonialSingleComponent,
   GridComponent,
-  ListComponent
+  ListComponent,
+  FAQComponent
 ];
