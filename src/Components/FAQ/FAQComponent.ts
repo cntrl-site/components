@@ -94,7 +94,7 @@ const schema: ComponentSchemaV1 = {
         answer: [
           {
             type: 'paragraph',
-            children: [{ text: 'A: The poem is divided into Inferno, Purgatorio, and Paradiso. These three sections follow Dante’s journey through Hell, Purgatory, and Heaven.' }],
+            children: [{ text: 'The poem is divided into Inferno, Purgatorio, and Paradiso. These three sections follow Dante’s journey through Hell, Purgatory, and Heaven.' }],
           },
         ],
       },
@@ -103,7 +103,7 @@ const schema: ComponentSchemaV1 = {
         answer: [
           {
             type: 'paragraph',
-            children: [{ text: 'A: Dante is guided by Virgil, the ancient Roman poet. Virgil represents human reason and wisdom, but because he lived before Christianity, he cannot guide Dante all the way into Heaven.' }],
+            children: [{ text: 'Dante is guided by Virgil, the ancient Roman poet. Virgil represents human reason and wisdom, but because he lived before Christianity, he cannot guide Dante all the way into Heaven.' }],
           },
         ],
       },
@@ -112,7 +112,7 @@ const schema: ComponentSchemaV1 = {
         answer: [
           {
             type: 'paragraph',
-            children: [{ text: 'A: The dark wood symbolizes Dante’s spiritual confusion and moral crisis. It shows that he has lost the “straight way” in life and needs guidance to return to truth and salvation.' }],
+            children: [{ text: 'The dark wood symbolizes Dante’s spiritual confusion and moral crisis. It shows that he has lost the “straight way” in life and needs guidance to return to truth and salvation.' }],
           },
         ],
       },
@@ -418,6 +418,25 @@ const schema: ComponentSchemaV1 = {
         answerPaddingRight: 0.16,
         answerPaddingTop: 0.0533,
         answerPaddingBottom: 0.0533,
+      },
+      t: {
+        wrapperWidth: 0.651041,
+        cellMinHeight: 0,
+        dividerWidth: 0.00390625,
+        iconMaxWidth: 0.02604166,
+        iconPaddingRight: 0.0130208,
+        questionFontSize: 0.0390625,
+        questionLineHeight: 0.044270,
+        questionLetterSpacing: -0.00091145833,
+        answerFontSize: 0.0234375,
+        answerLineHeight: 0.026041,
+        questionPaddingLeft: 0,
+        questionPaddingTop: 0.013020,
+        questionPaddingBottom: 0.013020,
+        answerPaddingLeft: 0.065104,
+        answerPaddingRight: 0.09765625,
+        answerPaddingTop: 0.026041,
+        answerPaddingBottom: 0.026041,
       },
       d: {
         wrapperWidth: 0.6388,
