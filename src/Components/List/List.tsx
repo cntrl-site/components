@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ComponentPropsWithoutRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
+import { PaddingControl } from '../helpers/PaddingControl/PaddingControl';
 import type { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
@@ -1298,7 +1299,6 @@ const STATE_KEYS = ['hover', 'focus', 'filled', 'success', 'error'] as const;
 const COL_RESIZE_HANDLE_WIDTH = 0.004;
 const COL_PADDING_HANDLE_WIDTH = 0.004;
 const ROW_PADDING_HANDLE_HEIGHT = COL_PADDING_HANDLE_WIDTH;
-const PADDING_CONTROL_HIT_SIZE = 12;
 const MIN_COLUMN_WIDTH_PX = 50;
 const ARTICLE_DESIGN_WIDTH = 1440;
 const MIN_COLUMN_WIDTH = MIN_COLUMN_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
@@ -1309,61 +1309,6 @@ export function getListMinColumnWidth(designWidthPx?: number): number {
     : ARTICLE_DESIGN_WIDTH;
 
   return MIN_COLUMN_WIDTH_PX / designWidth;
-}
-
-type ListPaddingControlHitPlacement = 'left-y' | 'center-x' | 'center';
-
-function getListPaddingControlHitStyle(
-  P: string,
-  placement: ListPaddingControlHitPlacement,
-): CSSProperties {
-  const base: CSSProperties = {
-    position: 'absolute',
-    width: PADDING_CONTROL_HIT_SIZE,
-    height: PADDING_CONTROL_HIT_SIZE,
-    pointerEvents: 'auto',
-  };
-
-  if (placement === 'left-y') {
-    return { ...base, left: 20, top: '50%', transform: 'translateY(-50%)' };
-  }
-
-  if (placement === 'center-x') {
-    return {
-      ...base,
-      left: '50%',
-      top: `var(--${P}-first-entry-handle-top, 50%)`,
-      transform: 'translate(-50%, -50%)',
-    };
-  }
-
-  return { ...base, left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
-}
-
-type ListPaddingControlProps = {
-  P: string;
-  className: string;
-  areaStyle: CSSProperties;
-  hitPlacement: ListPaddingControlHitPlacement;
-} & ComponentPropsWithoutRef<'div'>;
-
-function ListPaddingControl({
-  P,
-  className,
-  areaStyle,
-  hitPlacement,
-  ...rest
-}: ListPaddingControlProps) {
-  return (
-    <div
-      className={className}
-      style={{ ...areaStyle, pointerEvents: 'none' }}
-      data-controls-center-only-drag=""
-      {...rest}
-    >
-      <div style={getListPaddingControlHitStyle(P, hitPlacement)} />
-    </div>
-  );
 }
 
 function getEditorDesignWidth(element: HTMLElement | null | undefined): number {
@@ -2675,8 +2620,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                           />
                         )}
                         {columnPaddingBottomOverlay && (
-                          <ListPaddingControl
-                            P={P}
+                          <PaddingControl
+                            centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                             data-controls={col.paddingBottomKey}
                             data-controls-static-handle=""
                             data-controls-axis="y"
@@ -2698,8 +2643,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   })}
                   {showControls && rowIdx === 0 && isVerticalLayout && (
                     <>
-                      <ListPaddingControl
-                        P={P}
+                      <PaddingControl
+                        centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                         data-controls="textPaddingLR"
                         data-controls-static-handle=""
                         data-controls-paired=""
@@ -2717,8 +2662,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                           height: '100%',
                         }}
                       />
-                      <ListPaddingControl
-                        P={P}
+                      <PaddingControl
+                        centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                         data-controls="textPaddingLR"
                         data-controls-static-handle=""
                         data-controls-paired=""
@@ -2747,8 +2692,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   />
                 )}
                 {showControls && rowIdx === 0 && !isVerticalLayout && (
-                  <ListPaddingControl
-                    P={P}
+                  <PaddingControl
+                    centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                     data-controls="rowPaddingBottom"
                     data-controls-static-handle=""
                     data-controls-handle-left="20"
@@ -2771,8 +2716,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             })}
           {showControls && (
             <div key="row-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-              <ListPaddingControl
-                P={P}
+              <PaddingControl
+                centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                 data-controls={rowPaddingTopControlKey}
                 data-controls-static-handle=""
                 {...(!isVerticalLayout ? { 'data-controls-handle-left': '20' } : {})}
@@ -2793,8 +2738,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           )}
           {showControls && !isVerticalLayout && firstColumn && lastColumn && (
             <div key="column-edge-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-              <ListPaddingControl
-                P={P}
+              <PaddingControl
+                centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                 data-controls={firstColumn.paddingLeftKey}
                 data-controls-static-handle=""
                 data-controls-axis="x"
@@ -2813,8 +2758,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   height: '100%',
                 }}
               />
-              <ListPaddingControl
-                P={P}
+              <PaddingControl
+                centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                 data-controls={lastColumn.paddingRightKey}
                 data-controls-static-handle=""
                 data-controls-axis="x"
@@ -2853,8 +2798,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
             return (
               <div key={`${col.paddingRightKey}-padding`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-                <ListPaddingControl
-                  P={P}
+                <PaddingControl
+                  centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                   data-controls={col.paddingRightKey}
                   data-controls-static-handle=""
                   data-controls-axis="x"
@@ -2874,8 +2819,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                     height: '100%',
                   }}
                 />
-                <ListPaddingControl
-                  P={P}
+                <PaddingControl
+                  centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
                   data-controls={nextCol.paddingLeftKey}
                   data-controls-static-handle=""
                   data-controls-axis="x"

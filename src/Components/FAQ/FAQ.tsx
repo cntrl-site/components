@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ComponentPropsWithoutRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
+import { PaddingControl } from '../helpers/PaddingControl/PaddingControl';
 
 type FAQContentItem = {
   question?: string;
@@ -64,54 +66,6 @@ type FAQProps = {
 
 const PANEL_ANIM_MS = 300;
 const PADDING_HANDLE_SIZE = 0.004;
-const PADDING_CONTROL_HIT_SIZE = 12;
-
-type FAQPaddingControlHitPlacement = 'left-y' | 'center-x' | 'center';
-
-function getFAQPaddingControlHitStyle(
-  placement: FAQPaddingControlHitPlacement,
-): CSSProperties {
-  const base: CSSProperties = {
-    position: 'absolute',
-    width: PADDING_CONTROL_HIT_SIZE,
-    height: PADDING_CONTROL_HIT_SIZE,
-    pointerEvents: 'auto',
-  };
-
-  if (placement === 'left-y') {
-    return { ...base, left: 20, top: '50%', transform: 'translateY(-50%)' };
-  }
-
-  if (placement === 'center-x') {
-    return { ...base, left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
-  }
-
-  return { ...base, left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
-}
-
-type FAQPaddingControlProps = {
-  className: string;
-  areaStyle: CSSProperties;
-  hitPlacement: FAQPaddingControlHitPlacement;
-} & ComponentPropsWithoutRef<'div'>;
-
-function FAQPaddingControl({
-  className,
-  areaStyle,
-  hitPlacement,
-  ...rest
-}: FAQPaddingControlProps) {
-  return (
-    <div
-      className={className}
-      style={{ ...areaStyle, pointerEvents: 'none' }}
-      data-controls-center-only-drag=""
-      {...rest}
-    >
-      <div style={getFAQPaddingControlHitStyle(hitPlacement)} />
-    </div>
-  );
-}
 
 type ColorKeys =
   | 'questionColor'
@@ -571,7 +525,12 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div style={colorVars}>
         <div
-          className={`${P}-wrapper${isEditor && !isPreviewMode ? ` ${P}-editor` : ''} ${entryHoverClass} ${stateClass}`.trim()}
+          className={cn(
+            `${P}-wrapper`,
+            isEditor && !isPreviewMode && `${P}-editor`,
+            entryHoverClass,
+            stateClass,
+          )}
           style={{
             width: scalingValue(wrapperWidth, isEditor ?? false),
             maxWidth: '100%',
@@ -588,13 +547,13 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
             return (
               <div
                 key={index}
-                className={`${P}-item${isOpen ? ` ${P}-item-open` : ''}`.trim()}
+                className={cn(`${P}-item`, isOpen && `${P}-item-open`)}
                 data-faq-item=""
               >
                 <div className={`${P}-question-controls`}>
                   {showPaddingControls && (
                     <>
-                      <FAQPaddingControl
+                      <PaddingControl
                         data-controls="questionPaddingTop"
                         data-controls-static-handle=""
                         data-controls-handle-left="20"
@@ -612,7 +571,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                           zIndex: 2,
                         }}
                       />
-                      <FAQPaddingControl
+                      <PaddingControl
                         data-controls="questionPaddingLeft"
                         data-controls-static-handle=""
                         data-controls-axis="x"
@@ -630,7 +589,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                           zIndex: 2,
                         }}
                       />
-                      <FAQPaddingControl
+                      <PaddingControl
                         data-controls="iconPaddingRight"
                         data-controls-static-handle=""
                         data-controls-axis="x"
@@ -696,7 +655,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                     )}
                   </button>
                   {showPaddingControls && (
-                    <FAQPaddingControl
+                    <PaddingControl
                       data-controls="questionPaddingBottom"
                       data-controls-static-handle=""
                       data-controls-handle-left="20"
@@ -722,7 +681,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                       <div className={`${P}-answer-controls`}>
                         {showPaddingControls && (
                           <>
-                            <FAQPaddingControl
+                            <PaddingControl
                               data-controls="answerPaddingTop"
                               data-controls-static-handle=""
                               data-controls-handle-left="20"
@@ -740,7 +699,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                                 zIndex: 2,
                               }}
                             />
-                            <FAQPaddingControl
+                            <PaddingControl
                               data-controls="answerPaddingLeft"
                               data-controls-static-handle=""
                               data-controls-axis="x"
@@ -758,7 +717,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                                 zIndex: 2,
                               }}
                             />
-                            <FAQPaddingControl
+                            <PaddingControl
                               data-controls="answerPaddingRight"
                               data-controls-static-handle=""
                               data-controls-axis="x"
@@ -805,7 +764,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                           />
                         )}
                         {showPaddingControls && (
-                          <FAQPaddingControl
+                          <PaddingControl
                             data-controls="answerPaddingBottom"
                             data-controls-static-handle=""
                             data-controls-handle-left="20"
