@@ -155,7 +155,7 @@ const schema: ComponentSchemaV1 = {
     ],
   },
   settings: {
-    sizing: 'auto auto',
+    sizing: 'auto',
     properties: {
       wrapperWidth: {
         type: 'number',
