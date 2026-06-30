@@ -223,6 +223,12 @@ function getCSS(P: string): string {
   color: var(--${P}-question-color);
   font: inherit;
   padding-left: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.${P}-question-button:focus,
+.${P}-question-button:focus-visible {
+  outline: none;
 }
 .${P}-question-row {
   display: flex;
