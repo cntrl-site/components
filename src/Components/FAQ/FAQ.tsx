@@ -234,7 +234,7 @@ function getCSS(P: string): string {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${sv(12)};
+  gap: ${sv(20)};
   width: 100%;
   min-width: 0;
   min-height: var(--${P}-question-min-height, unset);
