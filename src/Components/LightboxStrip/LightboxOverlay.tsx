@@ -400,7 +400,7 @@ export const LightboxOverlay = ({
   const wheelTargetRef = useRef(0);
   const wheelRafRef = useRef<number | null>(null);
   const isWheelingRef = useRef(false);
-  const isLoopEnabled = images.length > 1;
+  const isLoopEnabled = images.length > 1 && (!isEditMode || !!isPreviewMode);
   const loopCopies = isLoopEnabled ? 3 : 1;
   const flatItems = useMemo(
     () => Array.from({ length: loopCopies }, () => images).flat(),
@@ -469,7 +469,14 @@ export const LightboxOverlay = ({
           data-controls-axis="x"
           data-controls-reverse=""
           className={`${P}-control`}
-          style={{ width: iconMarginLeft }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '100%',
+            width: iconMarginLeft,
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
         />
       )}
     </div>
@@ -946,19 +953,7 @@ export const LightboxOverlay = ({
 
   useEffect(() => {
     const strip = stripRef.current;
-    if (!strip) return;
-
-    if (isEditMode) {
-      const preventScroll = (event: Event) => {
-        event.preventDefault();
-      };
-      strip.addEventListener('wheel', preventScroll, { passive: false });
-      strip.addEventListener('touchmove', preventScroll, { passive: false });
-      return () => {
-        strip.removeEventListener('wheel', preventScroll);
-        strip.removeEventListener('touchmove', preventScroll);
-      };
-    }
+    if (!strip || isEditMode) return;
 
     if (!allowImageScroll) return;
 
@@ -1140,7 +1135,7 @@ export const LightboxOverlay = ({
             className={isEditMode ? `${P}-control` : undefined}
             style={{ height: contentMarginTop, width: '100%', pointerEvents: isEditMode ? 'auto' : 'none' }}
           />
-          <div style={{ display: 'flex', flexDirection: 'row', width: '100%', flex: 1, minHeight: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'row', width: '100%', flex: 1, minHeight: 0, pointerEvents: 'none' }}>
             <div className={`${P}-lightbox-content-area${useTwoRowHeader ? ` ${P}-lightbox-content-area-stacked` : ''}`}>
               {(hasTitles || closeIcon) && (
                 <div className={`${P}-header ${useTwoRowHeader ? `${P}-header-two-row` : `${P}-header-single-row`}`}>

@@ -401,10 +401,6 @@ function getCSS(P: string): string {
   z-index: 2;
   pointer-events: auto;
   flex-shrink: 0;
-  position: 'absolute',
-  top: 0,
-  left: '100%',
-  height: '100%',
 }
 
 .${P}-control::before {

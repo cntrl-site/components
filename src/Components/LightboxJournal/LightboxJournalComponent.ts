@@ -1,10 +1,10 @@
+import { LightboxJournal } from './LightboxJournal';
 import {
   createJournalTextStylePanelTab,
   getJournalTextStyleSettingKey,
   JOURNAL_TEXT_STYLE_PREFIXES,
-  JournalTextStylePrefix,
-  LightboxJournal,
-} from './LightboxJournal';
+  type JournalTextStylePrefix,
+} from './utils';
 import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
 import lightboxJournalSourceRaw from './LightboxJournal.tsx?raw';
 
