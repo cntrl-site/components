@@ -507,7 +507,7 @@ export const LightboxOverlay = ({
     return (
       <>
         <div className={`${P}-header-row-top`}>
-          {(title1MarginLeft ?? 0) > 0 || isEditMode && renderTitle1MarginLeftSpacer()}
+          {(title1MarginLeft ?? 0) > 0 || isEditMode ? renderTitle1MarginLeftSpacer() : null}
           {title1Slot && renderTitleCell(title1Slot, 'two-row-top')}
           {closeIcon && renderCloseIcon()}
         </div>
