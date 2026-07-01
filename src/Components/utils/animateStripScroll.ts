@@ -69,7 +69,7 @@ export const animateStripScroll = (
   track.style.willChange = 'transform';
   track.style.transition = 'none';
   track.style.transform = 'translate3d(0, 0, 0)';
-  void track.offsetHeight;
+  track.offsetHeight;
   track.style.transition = `transform ${duration}ms ${easing}`;
   track.style.transform = `translate3d(${offsetX}px, 0, 0)`;
 
