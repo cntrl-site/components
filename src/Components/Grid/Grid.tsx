@@ -266,7 +266,7 @@ type GridProps = {
 type AnimRect = { top: number; left: number; width: number; height: number };
 
 type LightboxProps = {
-  images: string[];
+  items: GridMedia[];
   index: number;
   imageDisplay: 'fit' | 'cover';
   originRect: AnimRect | null;
@@ -288,6 +288,58 @@ type GridMedia = {
   type?: 'image' | 'video';
 };
 
+type GridMediaPair = {
+  media: GridMedia[];
+};
+
+type GridDisplayItem = {
+  displayMedia: GridMedia;
+  lightboxMedia: GridMedia | null;
+};
+
+function isPairFormat(image: GridMedia[] | GridMediaPair[] | undefined): image is GridMediaPair[] {
+  if (!Array.isArray(image) || image.length === 0) return false;
+  const first = image[0];
+  return first !== null && typeof first === 'object' && 'media' in first && Array.isArray(first.media);
+}
+
+function getDisplayMediaForPair(pair: GridMediaPair): GridMedia | null {
+  const [first, second] = pair.media;
+  if (second?.url) return second;
+  if (first?.url) return first;
+  return null;
+}
+
+function getLightboxMediaForPair(pair: GridMediaPair): GridMedia | null {
+  const [first] = pair.media;
+  if (first?.url) return first;
+  return null;
+}
+
+function getGridDisplayItems(image: GridMedia[] | GridMediaPair[] | undefined): GridDisplayItem[] {
+  if (!Array.isArray(image) || image.length === 0) return [];
+
+  if (isPairFormat(image)) {
+    return image.flatMap(pair => {
+      const displayMedia = getDisplayMediaForPair(pair);
+      if (!displayMedia) return [];
+
+      const lightboxMedia = getLightboxMediaForPair(pair);
+      return [{
+        displayMedia,
+        lightboxMedia: lightboxMedia?.url ? lightboxMedia : null,
+      }];
+    });
+  }
+
+  return (image as GridMedia[])
+    .filter(media => media?.url)
+    .map(media => ({
+      displayMedia: media,
+      lightboxMedia: media,
+    }));
+}
+
 function isVideoMedia(media: GridMedia): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
@@ -298,23 +350,27 @@ function GridMediaItem({
   media,
   className,
   style,
-  onImageClick,
+  onMediaClick,
 }: {
   media: GridMedia;
   className: string;
   style: React.CSSProperties;
-  onImageClick?: (e: React.MouseEvent<HTMLImageElement>) => void;
+  onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isVideoMedia(media)) {
     return (
       <video
         src={media.url}
         className={className}
-        style={style}
+        style={{
+          ...style,
+          cursor: onMediaClick ? 'pointer' : 'default',
+        }}
         muted
         loop
         autoPlay
         playsInline
+        onClick={onMediaClick}
       />
     );
   }
@@ -324,30 +380,41 @@ function GridMediaItem({
       src={media.url}
       alt={media.name}
       className={className}
-      style={style}
-      onClick={onImageClick}
+      style={{
+        ...style,
+        cursor: onMediaClick ? 'pointer' : 'default',
+      }}
+      onClick={onMediaClick}
     />
   );
 }
 
-function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
+function getLightboxMediaDimensions(media: HTMLImageElement | HTMLVideoElement) {
+  if (media instanceof HTMLVideoElement) {
+    return { width: media.videoWidth, height: media.videoHeight };
+  }
+  return { width: media.naturalWidth, height: media.naturalHeight };
+}
+
+function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const isCover = imageDisplay === 'cover';
   const ghostRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
   const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>(originRect ? 'opening' : 'open');
   const [transitionsEnabled, setTransitionsEnabled] = useState(true);
   const prevIndexRef = useRef(index);
+  const currentItem = items[index];
+  const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
 
   const computeFinalRect = useCallback(() => {
     const ghost = ghostRef.current;
-    const img = imgRef.current;
-    if (!ghost || !img) return;
+    const media = mediaRef.current;
+    if (!ghost || !media) return;
     const cb = ghost.getBoundingClientRect();
     const cw = cb.width;
     const ch = cb.height;
-    const nw = img.naturalWidth;
-    const nh = img.naturalHeight;
+    const { width: nw, height: nh } = getLightboxMediaDimensions(media);
     if (!cw || !ch || !nw || !nh) return;
     if (imageDisplay === 'cover') {
       setFinalRect({ width: cw, height: ch, left: cb.left, top: cb.top });
@@ -391,6 +458,16 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   }, [index]);
 
   useEffect(() => {
+    const media = mediaRef.current;
+    if (!(media instanceof HTMLVideoElement)) return;
+    if (phase !== 'open') {
+      media.pause();
+      return;
+    }
+    void media.play().catch(() => undefined);
+  }, [index, phase, isCurrentVideo]);
+
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.preventDefault();
@@ -415,6 +492,68 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
     : reverseAnimateClose
       ? originRect
       : finalRect;
+
+  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
+    e.stopPropagation();
+    if (items.length <= 1) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
+
+    if (y > rect.height - controlsZoneHeight) {
+      return;
+    }
+
+    if (x < rect.width / 2) {
+      onPrev();
+      return;
+    }
+
+    onNext();
+  };
+
+  const handleVideoMouseMove = (e: React.MouseEvent<HTMLVideoElement>) => {
+    if (items.length <= 1) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
+
+    if (y > rect.height - controlsZoneHeight) {
+      e.currentTarget.style.cursor = 'default';
+      return;
+    }
+
+    e.currentTarget.style.cursor = x < rect.width / 2 ? 'w-resize' : 'e-resize';
+  };
+
+  const mediaStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: animatedRect?.top,
+    left: animatedRect?.left,
+    width: animatedRect?.width,
+    height: animatedRect?.height,
+    objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
+    opacity: isClosing && !reverseAnimateClose ? 0 : 1,
+    transition: isClosing && !reverseAnimateClose
+      ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+      : (reverseAnimateClose || transitionsEnabled)
+        ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+        : 'none',
+    pointerEvents: isCurrentVideo && isOpen ? 'auto' : 'none',
+    zIndex: 9998,
+  };
+
+  const navOverlayBaseStyle = finalRect ? {
+    position: 'fixed' as const,
+    top: finalRect.top,
+    height: finalRect.height,
+    width: finalRect.width / 2,
+    zIndex: 9999,
+  } : null;
 
   return (
     <div
@@ -469,9 +608,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
                 zIndex: 9999,
               }}
             >
-              {images.length > 1 &&
+              {items.length > 1 &&
                 <p className={counterClassName} style={counterStyle}>
-                  {index + 1} / {images.length}
+                  {index + 1} / {items.length}
                 </p>
               }
             </div>
@@ -500,9 +639,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
                 transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
               }}
             >
-              {images.length > 1 &&
+              {items.length > 1 &&
                 <p className={counterClassName} style={counterStyle}>
-                  {index + 1} / {images.length}
+                  {index + 1} / {items.length}
                 </p>
               }
             </div>
@@ -510,41 +649,39 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
         )}
       </div>
 
-      {animatedRect && (
-        <img
-          ref={imgRef}
-          src={images[index]}
-          onLoad={computeFinalRect}
-          style={{
-            position: 'fixed',
-            top: animatedRect.top,
-            left: animatedRect.left,
-            width: animatedRect.width,
-            height: animatedRect.height,
-            objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
-            opacity: isClosing && !reverseAnimateClose ? 0 : 1,
-            transition: isClosing && !reverseAnimateClose
-              ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-              : (reverseAnimateClose || transitionsEnabled)
-                ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-                : 'none',
-            pointerEvents: 'none',
-            zIndex: 9998,
-          }}
-        />
+      {animatedRect && currentItem && (
+        isCurrentVideo ? (
+          <video
+            key={currentItem.url}
+            ref={mediaRef as React.RefObject<HTMLVideoElement>}
+            src={currentItem.url}
+            controls={phase === 'open'}
+            autoPlay
+            playsInline
+            onLoadedMetadata={computeFinalRect}
+            onClick={handleVideoClick}
+            onMouseMove={handleVideoMouseMove}
+            style={mediaStyle}
+          />
+        ) : (
+          <img
+            key={currentItem.url}
+            ref={mediaRef as React.RefObject<HTMLImageElement>}
+            src={currentItem.url}
+            alt={currentItem.name}
+            onLoad={computeFinalRect}
+            style={mediaStyle}
+          />
+        )
       )}
 
-      {isOpen && finalRect && (
+      {isOpen && navOverlayBaseStyle && items.length > 1 && !isCurrentVideo && (
         <>
           <div
             style={{
-              position: 'fixed',
-              top: finalRect.top,
-              left: finalRect.left,
-              width: finalRect.width / 2,
-              height: finalRect.height,
+              ...navOverlayBaseStyle,
+              left: finalRect!.left,
               cursor: 'w-resize',
-              zIndex: 9999,
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -553,13 +690,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
           />
           <div
             style={{
-              position: 'fixed',
-              top: finalRect.top,
-              left: finalRect.left + finalRect.width / 2,
-              width: finalRect.width / 2,
-              height: finalRect.height,
+              ...navOverlayBaseStyle,
+              left: finalRect!.left + finalRect!.width / 2,
               cursor: 'e-resize',
-              zIndex: 9999,
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -784,16 +917,18 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   })();
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxItems, setLightboxItems] = useState<GridMedia[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxOriginRect, setLightboxOriginRect] = useState<AnimRect | null>(null);
 
-  const openLightbox = (e: React.MouseEvent<HTMLImageElement>, urls: string[], idx: number) => {
+  const canOpenLightboxMedia = lightbox === 'on' && (!isEditor || isPreviewMode);
+
+  const openLightbox = (e: React.MouseEvent<HTMLElement>, items: GridMedia[], idx: number) => {
     if (isEditor && !isPreviewMode) return;
     if (lightbox === 'off') return;
     const r = e.currentTarget.getBoundingClientRect();
     setLightboxOriginRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-    setLightboxImages(urls);
+    setLightboxItems(items);
     setLightboxIndex(idx);
     setLightboxOpen(true);
   };
@@ -926,22 +1061,30 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </>
             );
 
+            const displayItems = getGridDisplayItems(item.gallery);
+            const lightboxItemsForEntry = displayItems
+              .filter(entry => entry.lightboxMedia)
+              .map(entry => entry.lightboxMedia!);
+
             const imageContent = (
               <div className={imageWrapperClassName} style={imageWrapperStyle}>
-                {(item.image?.length ?? 0) === 0
+                {displayItems.length === 0
                   ? null
                   : slider === 'off'
                     ?
                     (() => {
-                      const media = item.image[0] as GridMedia;
-                      const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
-                      const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
+                      const { displayMedia, lightboxMedia } = displayItems[0];
+                      const lightboxIndex = lightboxMedia
+                        ? lightboxItemsForEntry.findIndex(item => item.url === lightboxMedia.url)
+                        : -1;
                       return (
                         <GridMediaItem
-                          media={media}
-                          className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                          media={displayMedia}
+                          className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                           style={imageStyle}
-                          onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, 0)}
+                          onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
+                            ? (e) => openLightbox(e, lightboxItemsForEntry, lightboxIndex)
+                            : undefined}
                         />
                       );
                     })()
@@ -949,11 +1092,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     <>
                     {isFitSlider && (
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
-                        {item.image.map((media: GridMedia) => (
-                          isVideoMedia(media) ? (
-                            <video key={`sizer-${media.url}`} src={media.url} muted playsInline />
+                        {displayItems.map(({ displayMedia }) => (
+                          isVideoMedia(displayMedia) ? (
+                            <video key={`sizer-${displayMedia.url}`} src={displayMedia.url} muted playsInline />
                           ) : (
-                            <img key={`sizer-${media.url}`} src={media.url} alt="" />
+                            <img key={`sizer-${displayMedia.url}`} src={displayMedia.url} alt="" />
                           )
                         ))}
                       </div>
@@ -991,17 +1134,19 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                         }, 0);
                       }}
                     >
-                      {item.image.map((media: GridMedia, imgIndex: number) => {
-                        const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
-                        const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
-                        const imageIndex = imageOnly.findIndex((entry: GridMedia) => entry.url === media.url);
+                      {displayItems.map(({ displayMedia, lightboxMedia }, imgIndex) => {
+                        const lightboxIndex = lightboxMedia
+                          ? lightboxItemsForEntry.findIndex(item => item.url === lightboxMedia.url)
+                          : -1;
                         return (
                           <SplideSlide key={imgIndex}>
                             <GridMediaItem
-                              media={media}
-                              className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                              media={displayMedia}
+                              className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
-                              onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, imageIndex)}
+                              onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
+                                ? (e) => openLightbox(e, lightboxItemsForEntry, lightboxIndex)
+                                : undefined}
                             />
                           </SplideSlide>
                         );
@@ -1082,14 +1227,14 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
-              images={lightboxImages}
+              items={lightboxItems}
               index={lightboxIndex}
               imageDisplay={resolveLightboxImageDisplay(lightboxImageDisplay)}
               originRect={lightboxOriginRect}
               reverseClose={slider === 'off'}
               onClose={() => setLightboxOpen(false)}
-              onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)}
-              onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)}
+              onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxItems.length) % lightboxItems.length)}
+              onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxItems.length)}
               counterClassName={lightboxCounterClassName}
               counterStyle={lightboxCounterFieldCss}
             />

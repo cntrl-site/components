@@ -74,25 +74,35 @@ const schema: ComponentSchemaV1 = {
               type: 'text-input',
             },
           },
-          image: {
-            type: 'object',
-            label: 'Image',
+          gallery: {
+            type: 'array',
+            label: 'Gallery',
             display: {
-              type: 'media-list-input',
+              type: 'media-pair-list-input',
             },
-            properties: {
-              url: { type: 'string' },
-              name: { type: 'string' },
-              type: {
-                type: 'string',
-                enum: ['image', 'video'],
-              },
-              objectFit: {
-                type: 'string',
-                enum: ['cover', 'contain'],
+            items: {
+              type: 'object',
+              properties: {
+                media: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      url: { type: 'string' },
+                      name: { type: 'string' },
+                      type: {
+                        type: 'string',
+                        enum: ['image', 'video'],
+                      },
+                      objectFit: {
+                        type: 'string',
+                        enum: ['cover', 'contain'],
+                      },
+                    },
+                  },
+                },
               },
             },
-            required: ['url', 'name'],
           },
           link: {
             type: 'string',
@@ -103,95 +113,170 @@ const schema: ComponentSchemaV1 = {
             },
           },
         },
-        required: ['image'],
+        required: ['gallery'],
       },
       default: [
         {
           title: `Flying Over the Old Town`,
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Doors of Matera',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Cattedrale di Santa Maria',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'City Through the Cracks',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Private Stone Gardens',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
-            objectFit: 'cover',
-          },
-          {
-            url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
-            objectFit: 'cover',
-          },
-          {
-            url: 'https://cdn.cntrl.site/component-assets/grid(7).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
+          }, {
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
+          }, {
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(7).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Leaving the Old Town',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Under the Sun',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Citygates View',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
         {
           title: 'Around the City',
           subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
-          image: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
-            objectFit: 'cover',
+          gallery: [{
+            media: [{
+              url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
+              name: '',
+              objectFit: 'cover',
+            }, {
+              url: '',
+              name: '',
+              objectFit: 'cover',
+            }],
           }],
           link: ''
         },
@@ -737,7 +822,7 @@ export const GridComponent = {
     }
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
     parameters: [],
   },
   schema,
