@@ -210,6 +210,7 @@ function getCSS(P: string): string {
 
 .${P}-slide-image {
   display: block;
+  user-select: none;
 }
 
 .${P}-slide-image-cover {

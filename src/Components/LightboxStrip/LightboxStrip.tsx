@@ -160,6 +160,10 @@ function getCSS(P: string): string {
   scroll-snap-align: start;
 }
 
+.${P}-strip-item img {
+  user-select: none;
+}
+
 .${P}-thumbnails {
   position: absolute;
   left: 50%;
