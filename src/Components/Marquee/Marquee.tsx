@@ -163,7 +163,7 @@ type MarqueeItemCardProps = {
   item: MarqueeItem;
   prefix: string;
   imageFit: {
-    display: 'Fit' | 'Cover';
+    display: 'fit' | 'cover';
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed: boolean;
   };
@@ -195,7 +195,7 @@ const MarqueeItemCard = ({
     if (el?.complete) onFirstSetImageDone?.();
   }, [isFirstSet, item.image?.url, onFirstSetImageDone]);
 
-  const isCover = imageFit.display === 'Cover';
+  const isCover = imageFit.display === 'cover';
   const ratioValue = imageFit.ratioValue ?? '1:1';
   const ratioReversed = imageFit.reversed ?? false;
   const [rW, rH] = ratioValue.split(':').map(Number);
@@ -497,7 +497,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
   }, [content]);
 
   const renderCardWrapper = (item: MarqueeItem, copyIndex: number, slotIndex: number, isFirstSet?: boolean) => {
-    const displayItem = showHoverEffects && hoverEffect === 'randomize' && imageFit.display === 'Cover' ? (swappedSlots[slotIndex] ?? item) : item;
+    const displayItem = showHoverEffects && hoverEffect === 'randomize' && imageFit.display === 'cover' ? (swappedSlots[slotIndex] ?? item) : item;
     const gapLabelSize = `max(${scaled(gap)}, ${GAP_LABEL_AREA_PX}px)`;
     const gapControlRight = `calc(-0.5 * (${gapLabelSize} + ${scaled(gap)}))`;
     return (
@@ -505,7 +505,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
         key={`${copyIndex}-${slotIndex}`}
         className={`${P}-marquee-card`}
         data-marquee-item-index={slotIndex}
-        onMouseEnter={showHoverEffects && hoverEffect === 'randomize' && imageFit.display === 'Cover' ? () => handleRandomizeEnter(slotIndex, item) : undefined}
+        onMouseEnter={showHoverEffects && hoverEffect === 'randomize' && imageFit.display === 'cover' ? () => handleRandomizeEnter(slotIndex, item) : undefined}
       >
         <MarqueeItemCard
           item={displayItem}
@@ -616,7 +616,7 @@ export type MarqueeSettings = {
   imageMaxWidth: number;
   imageMaxHeight: number;
   imageFit: {
-    display: 'Fit' | 'Cover';
+    display: 'fit' | 'cover';
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed: boolean;
   };

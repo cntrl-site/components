@@ -9,6 +9,7 @@ import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridCompo
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
 import { ListComponent } from './List/ListComponent';
+import { FAQComponent } from './FAQ/FAQComponent';
 import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
 import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
 
@@ -16,13 +17,14 @@ export const components: Component[] = [
   ControlSliderComponent,
   ControlImageRevealSliderComponent,
   LightboxComponent,
-  LightboxStripComponent,
-  LightboxJournalComponent,
   FormComponent,
   OnelinerFormComponent,
   MarqueeComponent,
   TestimonialGridComponent,
   TestimonialSingleComponent,
   GridComponent,
-  ListComponent
+  ListComponent,
+  FAQComponent,
+  LightboxStripComponent,
+  LightboxJournalComponent,
 ];
