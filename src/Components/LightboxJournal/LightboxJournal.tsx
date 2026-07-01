@@ -394,6 +394,7 @@ function getCSS(P: string): string {
   flex-direction: row;
   align-items: flex-start;
   z-index: 1;
+  overflow: visible;
 }
 
 .${P}-titles-layer-out-stacked {
@@ -424,6 +425,12 @@ function getCSS(P: string): string {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: visible;
+}
+
+.${P}-titles-fade-in,
+.${P}-titles-fade-out {
+  overflow: visible;
 }
 
 @keyframes ${P}-titles-fade-in {

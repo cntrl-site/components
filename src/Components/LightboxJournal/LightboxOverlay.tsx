@@ -186,6 +186,11 @@ export const LightboxOverlay = ({
     setJournalUrlParam(slideIndex + 1, journalItemId, true);
   }, [enableUrlSync, journalItemId]);
 
+  const measureTitlesLayoutHeight = useCallback((element: HTMLElement | null | undefined) => {
+    if (!element) return undefined;
+    return element.getBoundingClientRect().height;
+  }, []);
+
   const goToSlide = useCallback((index: number) => {
     if (slides.length === 0) return;
     const normalizedIndex = ((index % slides.length) + slides.length) % slides.length;
@@ -195,7 +200,7 @@ export const LightboxOverlay = ({
     slideTransitionKeyRef.current += 1;
     const transitionKey = slideTransitionKeyRef.current;
     const shouldFadeTitles = textTransition === 'fade' && getEntryTitleKey(outgoingSlide?.entry) !== getEntryTitleKey(incomingSlide?.entry);
-    const measuredOutgoingTitlesHeight = titlesStackRef.current?.getBoundingClientRect().height;
+    const measuredOutgoingTitlesHeight = measureTitlesLayoutHeight(titlesMeasureRef.current);
     const titleFadeMeasure = shouldFadeTitles ? (() => {
       const incomingTitlesMeasureWidth = getIncomingTitlesMeasureWidth();
       flushSync(() => {
@@ -204,7 +209,7 @@ export const LightboxOverlay = ({
       if (titlesMeasureRef.current && incomingTitlesMeasureWidth) {
         titlesMeasureRef.current.style.width = `${incomingTitlesMeasureWidth}px`;
       }
-      const measuredIncomingTitlesHeight = titlesMeasureRef.current?.getBoundingClientRect().height;
+      const measuredIncomingTitlesHeight = measureTitlesLayoutHeight(titlesMeasureRef.current);
       if (titlesMeasureRef.current) {
         titlesMeasureRef.current.style.width = '';
       }
@@ -249,7 +254,7 @@ export const LightboxOverlay = ({
       setIncomingMeasureEntry(null);
       prevEntryIndexRef.current = incomingSlide.entryIndex;
     }
-  }, [activeSlideIndex, clearTitlesFadeTimer, getIncomingTitlesMeasureWidth, slides, syncUrlToSlide, textTransition]);
+  }, [activeSlideIndex, clearTitlesFadeTimer, getIncomingTitlesMeasureWidth, measureTitlesLayoutHeight, slides, syncUrlToSlide, textTransition]);
 
   const resetStripNavGesture = useCallback(() => {
     stripNavGestureRef.current = null;
@@ -1105,7 +1110,6 @@ export const LightboxOverlay = ({
         style={{
           ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
           ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
-          ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
         }}
       >
         <div className={`${P}-titles-row-top`}>
@@ -1281,7 +1285,6 @@ export const LightboxOverlay = ({
                           width: '100%',
                           ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
                           ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
-                          ...(isTitlesFading ? { overflow: 'hidden' } : undefined),
                         }}
                       >
                         {outgoingEntry && isTitlesFading ? (
