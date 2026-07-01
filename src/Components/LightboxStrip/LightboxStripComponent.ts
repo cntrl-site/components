@@ -451,7 +451,7 @@ const schema: ComponentSchemaV1 = {
         thumbnailVisibility: 'on',
         titleHeaderLayout: 'desktop',
         thumbnailGap: 0.02,
-        thumbnailMarginBottom: 0.02,
+        thumbnailMarginBottom: 0.007,
         imageGap: 0.005,
         title1Width: 0.13,
         title2Width: 0.13,
