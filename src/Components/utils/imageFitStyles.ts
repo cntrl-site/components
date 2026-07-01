@@ -1,10 +1,10 @@
 export type ImageRatioFit = {
-  display: 'Fit' | 'Cover';
+  display: 'fit' | 'cover';
   ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
   reversed: boolean;
 };
 
-export const isImageRatioCover = (fit: ImageRatioFit): boolean => fit.display === 'Cover';
+export const isImageRatioCover = (fit: ImageRatioFit): boolean => fit.display === 'cover';
 
 export const getAspectRatio = (fit: ImageRatioFit): string => {
   const ratioValue = fit.ratioValue ?? '1:1';

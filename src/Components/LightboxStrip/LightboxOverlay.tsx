@@ -1185,7 +1185,7 @@ export const LightboxOverlay = ({
                       draggable={false}
                       style={
                         {...thumbAspectRatioStyle,
-                        ...(thumbnailObjectFit.display === 'Cover' ? { width: THUMB_MAX_SIZE_PX } : { width: '100%' }),}
+                        ...(thumbnailObjectFit.display === 'cover' ? { width: THUMB_MAX_SIZE_PX } : { width: '100%' }),}
                       }
                     />
                   </button>

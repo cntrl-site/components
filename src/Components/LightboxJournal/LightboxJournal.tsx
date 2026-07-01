@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { type TextStyles } from '../utils/textStylesToCss';
-import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
+import { getAspectRatio, isImageRatioCover, type ImageRatioFit } from '../utils/imageFitStyles';
 import { LightboxOverlay } from './LightboxOverlay';
 import { buildJournalSlides, findJournalUrlSlideNumber, getEntryImages, hasJournalUrlParam, removeJournalUrlParam, setJournalUrlParam, slideNumberToIndex } from './utils';
 
@@ -682,11 +682,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
 
 export type LightboxJournalSettings = {
   cover: string | null;
-  coverFit: {
-    display: 'Fit' | 'Cover';
-    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
-    reversed: boolean;
-  };
+  coverFit: ImageRatioFit;
   type: 'A' | 'B';
   maxWidth: number;
   maxHeight: number;

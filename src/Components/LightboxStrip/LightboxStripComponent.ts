@@ -201,7 +201,7 @@ const schema: ComponentSchemaV1 = {
         properties: {
           display: {
             type: 'string',
-            enum: ['Fit', 'Cover'],
+            enum: ['fit', 'cover'],
           },
           ratioValue: {
             type: 'string',
@@ -279,7 +279,7 @@ const schema: ComponentSchemaV1 = {
         properties: {
           display: {
             type: 'string',
-            enum: ['Fit', 'Cover'],
+            enum: ['fit', 'cover'],
           },
           ratioValue: {
             type: 'string',
@@ -400,7 +400,7 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
       coverFit: {
-        display: 'Cover',
+        display: 'cover',
         ratioValue: '16:9',
         reversed: false,
       },
