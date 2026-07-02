@@ -394,6 +394,7 @@ export const LightboxOverlay = ({
     scrollLeft: 0,
     hasMoved: false,
   });
+  const windowDragEndRef = useRef<((event: globalThis.PointerEvent) => void) | null>(null);
   const scrollAnimRef = useRef<(() => void) | null>(null);
   const lastScrollLeftRef = useRef(0);
   const scrollDirRef = useRef<'forward' | 'backward'>('forward');
@@ -838,6 +839,40 @@ export const LightboxOverlay = ({
     });
   };
 
+  const removeWindowDragListeners = () => {
+    if (!windowDragEndRef.current) return;
+    window.removeEventListener('pointerup', windowDragEndRef.current);
+    window.removeEventListener('pointercancel', windowDragEndRef.current);
+    windowDragEndRef.current = null;
+  };
+
+  const finishStripMouseDrag = (pointerId?: number) => {
+    if (!mouseDragRef.current.isActive) return;
+    removeWindowDragListeners();
+    const strip = stripRef.current;
+    if (!strip) return;
+    const hadMoved = mouseDragRef.current.hasMoved;
+    const startScrollLeft = mouseDragRef.current.scrollLeft;
+    normalizeInfiniteScroll(true);
+    mouseDragRef.current = {
+      isActive: false,
+      startX: 0,
+      scrollLeft: 0,
+      hasMoved: false,
+    };
+    setIsMouseDragging(false);
+    if (pointerId !== undefined && strip.hasPointerCapture(pointerId)) {
+      strip.releasePointerCapture(pointerId);
+    }
+    if (hadMoved) {
+      snapAfterDrag(startScrollLeft);
+    } else {
+      setStripSnapEnabled(true);
+      updateActiveIndex();
+    }
+    resetOverlayContentIdleTimer();
+  };
+
   const onStripPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType === 'touch') {
@@ -865,6 +900,14 @@ export const LightboxOverlay = ({
     setStripSnapEnabled(false);
     resetOverlayContentIdleTimer();
     strip.setPointerCapture(event.pointerId);
+    removeWindowDragListeners();
+    const onWindowEnd = (windowEvent: globalThis.PointerEvent) => {
+      if (windowEvent.pointerType !== 'mouse') return;
+      finishStripMouseDrag(windowEvent.pointerId);
+    };
+    windowDragEndRef.current = onWindowEnd;
+    window.addEventListener('pointerup', onWindowEnd);
+    window.addEventListener('pointercancel', onWindowEnd);
   };
 
   const onStripPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -872,6 +915,10 @@ export const LightboxOverlay = ({
     if (event.pointerType !== 'mouse') return;
     const strip = stripRef.current;
     if (!strip || !mouseDragRef.current.isActive) return;
+    if (event.buttons === 0) {
+      finishStripMouseDrag(event.pointerId);
+      return;
+    }
     const deltaX = event.clientX - mouseDragRef.current.startX;
     if (Math.abs(deltaX) > MOUSE_DRAG_THRESHOLD_PX) {
       mouseDragRef.current.hasMoved = true;
@@ -898,23 +945,12 @@ export const LightboxOverlay = ({
   const endStripMouseDrag = (event: PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType !== 'mouse') return;
-    const strip = stripRef.current;
-    if (!strip) return;
-    const hadMoved = mouseDragRef.current.hasMoved;
-    const startScrollLeft = mouseDragRef.current.scrollLeft;
-    mouseDragRef.current.isActive = false;
-    setIsMouseDragging(false);
-    if (strip.hasPointerCapture(event.pointerId)) {
-      strip.releasePointerCapture(event.pointerId);
-    }
-    normalizeInfiniteScroll();
-    if (hadMoved) {
-      snapAfterDrag(startScrollLeft);
-    } else {
-      setStripSnapEnabled(true);
-      updateActiveIndex();
-    }
-    resetOverlayContentIdleTimer();
+    finishStripMouseDrag(event.pointerId);
+  };
+
+  const onStripLostPointerCapture = (event: PointerEvent<HTMLDivElement>) => {
+    if (!allowMouseDrag || event.pointerType !== 'mouse') return;
+    finishStripMouseDrag(event.pointerId);
   };
 
   useLightboxScrollLock();
@@ -924,6 +960,7 @@ export const LightboxOverlay = ({
     return () => {
       cancelAnimationFrame(frame);
       cancelScrollAnimation();
+      removeWindowDragListeners();
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -1028,7 +1065,7 @@ export const LightboxOverlay = ({
     const strip = stripRef.current;
     if (!strip) return;
     const onScroll = () => {
-      normalizeInfiniteScroll();
+      normalizeInfiniteScroll(mouseDragRef.current.isActive);
       const current = strip.scrollLeft;
       const delta = current - lastScrollLeftRef.current;
       lastScrollLeftRef.current = current;
@@ -1045,7 +1082,7 @@ export const LightboxOverlay = ({
     strip.addEventListener('scroll', onScroll, { passive: true });
     const observer = new ResizeObserver(() => {
       measureSetWidth();
-      normalizeInfiniteScroll();
+      normalizeInfiniteScroll(mouseDragRef.current.isActive);
       updateOversizedSnapAlign(scrollDirRef.current);
       updateActiveIndex();
     });
@@ -1097,6 +1134,7 @@ export const LightboxOverlay = ({
           onPointerMove={onStripPointerMove}
           onPointerUp={endStripMouseDrag}
           onPointerCancel={endStripMouseDrag}
+          onLostPointerCapture={onStripLostPointerCapture}
         >
           <div ref={trackRef} className={`${P}-lightbox-strip-track`} style={{ gap: imageGap }}>
           {flatItems.map((item, flatIndex) => {
