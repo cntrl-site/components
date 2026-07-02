@@ -400,6 +400,7 @@ export const LightboxOverlay = ({
   const wheelTargetRef = useRef(0);
   const wheelRafRef = useRef<number | null>(null);
   const isWheelingRef = useRef(false);
+  const debugDragStartIndexRef = useRef<number | null>(null);
   const isLoopEnabled = images.length > 1 && (!isEditMode || !!isPreviewMode);
   const loopCopies = isLoopEnabled ? 3 : 1;
   const flatItems = useMemo(
@@ -665,6 +666,12 @@ export const LightboxOverlay = ({
 
   const releaseActiveIndexLock = () => {
     lockedActiveIndexRef.current = null;
+    // #region agent log
+    const strip = stripRef.current;
+    if (strip) {
+      fetch('http://127.0.0.1:7916/ingest/05b80f60-0d98-4176-9acb-551465211f52',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8d1a00'},body:JSON.stringify({sessionId:'8d1a00',runId:'pre-fix-2',hypothesisId:'L',location:'LightboxOverlay.tsx:releaseActiveIndexLock',message:'index lock released',data:{scrollLeft:strip.scrollLeft,nearestIndex:getNearestFlatIndex()%images.length,activeIndex:activeIndexRef.current},timestamp:Date.now()})}).catch(()=>{});
+    }
+    // #endregion
   };
 
   const setStripSnapEnabled = (enabled: boolean) => {
@@ -727,6 +734,11 @@ export const LightboxOverlay = ({
     } else {
       updateActiveIndex();
     }
+    // #region agent log
+    const intendedIndex = activeIndex ?? getNearestFlatIndex() % images.length;
+    const actualIndex = getNearestFlatIndex() % images.length;
+    fetch('http://127.0.0.1:7916/ingest/05b80f60-0d98-4176-9acb-551465211f52',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8d1a00'},body:JSON.stringify({sessionId:'8d1a00',runId:'pre-fix-2',hypothesisId:'K',location:'LightboxOverlay.tsx:finishStripScroll',message:'scroll settled',data:{targetLeft,scrollLeft:strip.scrollLeft,intendedIndex,actualIndex,indexMismatch:intendedIndex!==actualIndex},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     setStripSnapEnabled(true);
     onComplete?.();
   };
@@ -772,19 +784,19 @@ export const LightboxOverlay = ({
     const strip = stripRef.current;
     if (!strip || images.length === 0) return;
     const scrollDelta = strip.scrollLeft - startScrollLeft;
-    const currentFlatIndex = getNearestFlatIndex(strip.scrollLeft);
-    const currentItem = itemRefs.current[currentFlatIndex];
-    if (isViewportWithinOversizedItem(currentItem)) {
+    const startFlatIndex = getNearestFlatIndex(startScrollLeft);
+    const startItem = itemRefs.current[startFlatIndex];
+    if (isViewportWithinOversizedItem(startItem)) {
       setStripSnapEnabled(true);
       updateActiveIndex();
       return;
     }
-    const nextItem = itemRefs.current[currentFlatIndex + 1];
-    const span = currentItem ? (nextItem ? nextItem.offsetLeft - currentItem.offsetLeft : currentItem.offsetWidth) : 0;
+    const nextItem = itemRefs.current[startFlatIndex + 1];
+    const span = startItem ? (nextItem ? nextItem.offsetLeft - startItem.offsetLeft : startItem.offsetWidth) : 0;
     const scrollAdjustment = span > 0 ? (scrollDelta > span * DRAG_SNAP_RATIO ? 1 : scrollDelta < -span * DRAG_SNAP_RATIO ? -1: 0) : 0;
     const targetFlatIndex = isLoopEnabled
-      ? currentFlatIndex + scrollAdjustment
-      : Math.max(0, Math.min(flatItems.length - 1, currentFlatIndex + scrollAdjustment));
+      ? startFlatIndex + scrollAdjustment
+      : Math.max(0, Math.min(flatItems.length - 1, startFlatIndex + scrollAdjustment));
     const targetItem = itemRefs.current[targetFlatIndex];
     if (!targetItem) {
       snapToNearestItem(behavior);
@@ -795,6 +807,10 @@ export const LightboxOverlay = ({
       ? targetItem.offsetLeft + targetItem.offsetWidth - strip.clientWidth
       : targetItem.offsetLeft;
     const snapTargetIndex = targetFlatIndex % images.length;
+    const endFlatIndex = getNearestFlatIndex(strip.scrollLeft);
+    // #region agent log
+    fetch('http://127.0.0.1:7916/ingest/05b80f60-0d98-4176-9acb-551465211f52',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8d1a00'},body:JSON.stringify({sessionId:'8d1a00',runId:'pre-fix-2',hypothesisId:'B_J',location:'LightboxOverlay.tsx:snapAfterDrag',message:'drag snap decision',data:{startScrollLeft,scrollLeft:strip.scrollLeft,scrollDelta,startFlatIndex,endFlatIndex,scrollAdjustment,targetFlatIndex,startIndex:startFlatIndex%images.length,endIndex:endFlatIndex%images.length,targetIndex:snapTargetIndex,indexDelta:snapTargetIndex-(startFlatIndex%images.length),endMinusStart:endFlatIndex-startFlatIndex},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     if (behavior === 'smooth') lockedActiveIndexRef.current = snapTargetIndex;
     setActiveIndex(snapTargetIndex);
     scrollStripTo(targetLeft, {
@@ -845,6 +861,7 @@ export const LightboxOverlay = ({
       scrollLeft: strip.scrollLeft,
       hasMoved: false,
     };
+    debugDragStartIndexRef.current = getNearestFlatIndex(strip.scrollLeft) % images.length;
     setStripSnapEnabled(false);
     resetOverlayContentIdleTimer();
     strip.setPointerCapture(event.pointerId);
@@ -865,6 +882,15 @@ export const LightboxOverlay = ({
       strip.scrollLeft = mouseDragRef.current.scrollLeft - deltaX;
       normalizeInfiniteScroll(true);
       updateActiveIndex();
+      // #region agent log
+      if (debugDragStartIndexRef.current !== null) {
+        const dragIndex = getNearestFlatIndex() % images.length;
+        const dragIndexDelta = Math.abs(dragIndex - debugDragStartIndexRef.current);
+        if (dragIndexDelta >= 2) {
+          fetch('http://127.0.0.1:7916/ingest/05b80f60-0d98-4176-9acb-551465211f52',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8d1a00'},body:JSON.stringify({sessionId:'8d1a00',runId:'pre-fix-2',hypothesisId:'J',location:'LightboxOverlay.tsx:onStripPointerMove',message:'during drag multi-index',data:{startIndex:debugDragStartIndexRef.current,dragIndex,dragIndexDelta,scrollLeft:strip.scrollLeft,deltaX},timestamp:Date.now()})}).catch(()=>{});
+        }
+      }
+      // #endregion
       resetOverlayContentIdleTimer();
     }
   };

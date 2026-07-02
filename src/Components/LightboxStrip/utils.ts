@@ -17,7 +17,7 @@ export const WHEEL_SPEED = 2;
 export const WHEEL_LINE_HEIGHT_PX = 16;
 export const WHEEL_LERP = 0.05;
 export const MOUSE_DRAG_THRESHOLD_PX = 1;
-export const DRAG_SNAP_RATIO = 0.15;
+export const DRAG_SNAP_RATIO = 0.5;
 export const GAP_LABEL_AREA_PX = 20;
 export const TITLE_RESIZE_HANDLE_WIDTH = 0.004;
 
