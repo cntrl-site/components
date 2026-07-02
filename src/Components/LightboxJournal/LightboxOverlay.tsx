@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
@@ -422,9 +422,11 @@ export const LightboxOverlay = ({
   const hasCounter = shouldShowCounter(journalType, slides, entries);
   const hasCloseIcon = closeIcon !== null;
   const hasHeaderContent = hasTitles || hasCounter || hasCloseIcon;
-  const persistentControlsGapStyle = hasCounter && hasCloseIcon ? { gap: countCloseGap } : undefined;
+  const headerControlsGapStyle = hasCounter && hasCloseIcon ? { gap: countCloseGap } : undefined;
   const titlesStackClassName = `${P}-titles-stack${useTwoRowHeader ? ` ${P}-titles-stack-stacked` : ''}`;
   const titlesLayerOutClassName = `${P}-titles-layer-out${useTwoRowHeader ? ` ${P}-titles-layer-out-stacked` : ''}`;
+  const titlesLayerOutTopClassName = `${P}-titles-layer-out`;
+  const showTitle1MarginLeftSpacer = (title1MarginLeft ?? 0) > 0 || isEditMode;
   const titleRowMarginBottomScaled = scaled(titleRowMarginBottom);
   const titleWidthByKey = useMemo(
     () => ({
@@ -648,18 +650,34 @@ export const LightboxOverlay = ({
       }}
     />
   );
+  // Needed for baseline alignment
+  const renderTitleBaselineStrut = () => (
+    <span
+      className={`${P}-titles-baseline-strut`}
+      style={title1Style}
+      aria-hidden="true"
+    >
+      {'\u00a0'}
+    </span>
+  );
 
-  const renderEntryCounter = () => (
-    <div className={`${P}-text-bar-cell`}>
-      <span
-        className={`${P}-entry-counter`}
-        style={countStyle}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {formatSlideCounter(slides, activeSlideIndex, journalType, entries)}
-      </span>
-      {isEditMode && hasCloseIcon && (
+  const renderEntryCounterSpan = () => (
+    <span
+      className={`${P}-entry-counter`}
+      style={countStyle}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {formatSlideCounter(slides, activeSlideIndex, journalType, entries)}
+    </span>
+  );
+
+  const renderEntryCounterInline = () => {
+    if (!hasCounter) return null;
+    if (isEditMode && hasCloseIcon) {
+      return (
+        <div className={`${P}-text-bar-cell`} style={{ flexShrink: 0 }}>
+          {renderEntryCounterSpan()}
           <div
             data-controls="countCloseGap"
             data-controls-axis="x"
@@ -674,7 +692,92 @@ export const LightboxOverlay = ({
               zIndex: 3,
             }}
           />
-        )}
+        </div>
+      );
+    }
+    return renderEntryCounterSpan();
+  };
+
+  const renderHeaderTrailingControls = () => {
+    if (!hasCounter && !hasCloseIcon) return null;
+    return (
+      <div
+        className={`${P}-titles-row-header-controls`}
+        style={headerControlsGapStyle}
+      >
+        {renderEntryCounterInline()}
+        {hasCloseIcon ? renderCloseIcon() : null}
+      </div>
+    );
+  };
+
+  const renderSingleRowHeaderStatic = () => (
+    <div
+      className={`${P}-titles-row ${P}-titles-row-header`}
+      style={{
+        width: '100%',
+        position: 'relative',
+      }}
+    >
+      {(hasCounter || hasTitles) ? renderTitleBaselineStrut() : null}
+      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer() : null}
+      {renderSingleRowTitles(activeEntry)}
+      <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
+      {renderHeaderTrailingControls()}
+      {renderTitleControls()}
+    </div>
+  );
+
+  const renderSingleRowHeaderFade = () => (
+    <div
+      className={`${P}-titles-row ${P}-titles-row-header`}
+      style={{ width: '100%' }}
+    >
+      {(hasCounter || hasTitles) ? renderTitleBaselineStrut() : null}
+      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer() : null}
+      <div
+        className={`${P}-titles-row-titles`}
+        style={isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined}
+      >
+        <div
+          ref={titlesMeasureRef}
+          className={titlesStackClassName}
+          style={{
+            position: 'absolute',
+            visibility: 'hidden',
+            pointerEvents: 'none',
+            left: 0,
+            right: 0,
+            top: 0,
+            width: '100%',
+            height: 'auto',
+          }}
+          aria-hidden="true"
+        >
+          {incomingMeasureEntry ? renderTitles(incomingMeasureEntry) : renderTitles(activeEntry)}
+        </div>
+        <div
+          ref={titlesStackRef}
+          className={titlesStackClassName}
+          style={{
+            position: isTitlesFading ? 'absolute' : 'relative',
+            inset: isTitlesFading ? 0 : undefined,
+            width: '100%',
+            ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
+          }}
+        >
+          {outgoingEntry && isTitlesFading ? (
+            <div className={`${titlesLayerOutClassName} ${P}-titles-fade-out`}>
+              {renderTitles(outgoingEntry)}
+            </div>
+          ) : null}
+          <div className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}`}>
+            {renderTitles(activeEntry)}
+          </div>
+        </div>
+        {renderTitleControls()}
+      </div>
+      {renderHeaderTrailingControls()}
     </div>
   );
 
@@ -721,16 +824,33 @@ export const LightboxOverlay = ({
     </div>
   );
 
-  const renderTwoRowTopControls = () => {
-    if (!hasCounter && !hasCloseIcon) return null;
-
-    return (
-      <div className={`${P}-titles-row-top-controls`} style={persistentControlsGapStyle}>
-        {hasCounter ? renderEntryCounter() : null}
-        {hasCloseIcon ? renderCloseIcon() : null}
-      </div>
-    );
-  };
+  const renderTwoRowTopRow = (titleContent: ReactNode, titlesMinHeight?: number) => (
+    <div
+      className={`${P}-titles-row-top`}
+    >
+      {(hasCounter || hasTitles) ? renderTitleBaselineStrut() : null}
+      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer() : null}
+      {titlesMinHeight !== undefined ? (
+        <div
+          className={`${P}-titles-row-titles`}
+          style={{
+            position: 'relative',
+            flex: 1,
+            minWidth: 0,
+            minHeight: titlesMinHeight,
+          }}
+        >
+          {titleContent}
+        </div>
+      ) : (
+        <>
+          {titleContent}
+          <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
+        </>
+      )}
+      {renderHeaderTrailingControls()}
+    </div>
+  );
 
   const renderSingleRowTitles = (entry: LightboxJournalItem | undefined) => {
     if (!entry) return null;
@@ -738,7 +858,6 @@ export const LightboxOverlay = ({
 
     return (
       <>
-        {title1MarginLeft > 0 || isEditMode ? renderTitle1MarginLeftSpacer() : null}
         {slots.map((slot) => renderTitleCell(
           slot,
           'single-row',
@@ -752,17 +871,12 @@ export const LightboxOverlay = ({
     if (!entry) return null;
     const slots = buildJournalTitleSlots(P, entry, title1Style, title2Style, title3Style);
     const title1Slot = slots.find((slot) => slot.prefix === 'title1');
-    if (!title1Slot && !(title1MarginLeft > 0 || isEditMode)) return null;
+    if (!title1Slot) return null;
 
-    return (
-      <>
-        {title1MarginLeft > 0 || isEditMode ? renderTitle1MarginLeftSpacer() : null}
-        {title1Slot ? renderTitleCell(
-          title1Slot,
-          'two-row-top',
-          getEntryTitleCellWidthContext(slots, title1Slot, 'two-row-top'),
-        ) : null}
-      </>
+    return renderTitleCell(
+      title1Slot,
+      'two-row-top',
+      getEntryTitleCellWidthContext(slots, title1Slot, 'two-row-top'),
     );
   };
 
@@ -814,10 +928,7 @@ export const LightboxOverlay = ({
 
   const renderTwoRowTitles = (entry: LightboxJournalItem | undefined, includeControls = false) => (
     <>
-      <div className={`${P}-titles-row-top`}>
-        {renderTwoRowTopTitle(entry)}
-        {renderTwoRowTopControls()}
-      </div>
+      {renderTwoRowTopRow(renderTwoRowTopTitle(entry))}
       {renderTwoRowBottomTitles(entry, includeControls)}
     </>
   );
@@ -1112,13 +1223,17 @@ export const LightboxOverlay = ({
           ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
         }}
       >
-        <div className={`${P}-titles-row-top`}>
+        {renderTwoRowTopRow(
           <div
             className={titlesStackClassName}
-            style={{ position: 'relative', flex: 1, minWidth: 0 }}
+            style={{
+              position: isTitlesFading ? 'absolute' : 'relative',
+              inset: isTitlesFading ? 0 : undefined,
+              width: '100%',
+            }}
           >
             {outgoingEntry && isTitlesFading ? (
-              <div className={`${titlesLayerOutClassName} ${P}-titles-fade-out`}>
+              <div className={`${titlesLayerOutTopClassName} ${P}-titles-fade-out`}>
                 {renderTwoRowTopTitle(outgoingEntry)}
               </div>
             ) : null}
@@ -1127,9 +1242,9 @@ export const LightboxOverlay = ({
             >
               {renderTwoRowTopTitle(activeEntry)}
             </div>
-          </div>
-          {renderTwoRowTopControls()}
-        </div>
+          </div>,
+          isTitlesFading && titlesStackMinHeight ? titlesStackMinHeight : undefined,
+        )}
         {hasTwoRowBottomArea ? (
         <div className={`${P}-titles-row-bottom-area`}>
           {outgoingEntry && isTitlesFading ? (
@@ -1186,8 +1301,7 @@ export const LightboxOverlay = ({
       aria-modal="true"
       aria-label="Journal gallery"
       tabIndex={hasCloseIcon ? undefined : -1}
-      style={{
-        opacity: isVisible ? 1 : 0,
+      style={{ opacity: isVisible ? 1 : 0,
         transition: `opacity 300ms ease`,
         pointerEvents: isVisible ? 'auto' : 'none',
       }}
@@ -1195,12 +1309,7 @@ export const LightboxOverlay = ({
       <div className={`${P}-lightbox-backdrop`} style={{ backgroundColor, ...swipeBackdropStyle }} />
       <div
         className={`${P}-lightbox-dismiss-area`}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          ...dismissAreaStyle,
-        }}
+        style={dismissAreaStyle}
         {...swipeHandlers}
       >
         <div
@@ -1255,61 +1364,14 @@ export const LightboxOverlay = ({
           ...(useTwoRowHeader ? { flex: 1, minHeight: 0 } : {}),
         }}>
           <div className={`${P}-lightbox-content-area${useTwoRowHeader ? ` ${P}-lightbox-content-area-stacked` : ''}`}>
-            {(useTwoRowHeader ? hasHeaderContent : hasTitles) && (
-              <div className={`${P}-text-bar-cell${useTwoRowHeader ? ` ${P}-text-bar-cell-stacked` : ''}`}>
+            {hasHeaderContent && (
+              <div
+                className={`${P}-text-bar-cell${useTwoRowHeader ? ` ${P}-text-bar-cell-stacked` : ''}`}
+                style={!useTwoRowHeader ? { flex: 1, minWidth: 0, width: '100%' } : undefined}
+              >
                 {useTwoRowHeader
                   ? (textTransition === 'fade' ? renderTwoRowHeaderFade() : renderTwoRowHeaderStatic())
-                  : (textTransition === 'fade' ? (
-                    <>
-                      <div
-                        ref={titlesMeasureRef}
-                        className={titlesStackClassName}
-                        style={{
-                          position: 'absolute',
-                          visibility: 'hidden',
-                          pointerEvents: 'none',
-                          left: 0,
-                          right: 0,
-                          top: 0,
-                          width: '100%',
-                          height: 'auto',
-                        }}
-                        aria-hidden="true"
-                      >
-                        {incomingMeasureEntry ? renderTitles(incomingMeasureEntry) : renderTitles(activeEntry)}
-                      </div>
-                      <div
-                        ref={titlesStackRef}
-                        className={titlesStackClassName}
-                        style={{
-                          width: '100%',
-                          ...(isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined),
-                          ...(isTitlesFading && titlesStackWidth ? { width: titlesStackWidth, maxWidth: '100%' } : undefined),
-                        }}
-                      >
-                        {outgoingEntry && isTitlesFading ? (
-                          <div className={`${titlesLayerOutClassName} ${P}-titles-fade-out`}>
-                            {renderTitles(outgoingEntry)}
-                          </div>
-                        ) : null}
-                        <div className={`${P}-titles-layer-in${isTitlesFading ? ` ${P}-titles-layer-in-fading ${P}-titles-fade-in` : ''}`}>
-                          {renderTitles(activeEntry)}
-                        </div>
-                        {renderTitleControls()}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ position: 'relative', width: '100%' }}>
-                      {renderTitles(activeEntry)}
-                      {renderTitleControls()}
-                    </div>
-                  ))}
-              </div>
-            )}
-            {!useTwoRowHeader && (
-              <div className={`${P}-lightbox-persistent-controls`} style={persistentControlsGapStyle}>
-                {hasCounter && renderEntryCounter()}
-                {hasCloseIcon && renderCloseIcon()}
+                  : (textTransition === 'fade' ? renderSingleRowHeaderFade() : renderSingleRowHeaderStatic())}
               </div>
             )}
           </div>

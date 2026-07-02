@@ -94,6 +94,12 @@ function getCSS(P: string): string {
   pointer-events: none;
 }
 
+.${P}-lightbox-dismiss-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .${P}-lightbox-strip {
   position: relative;
   flex: 1;
@@ -276,6 +282,33 @@ function getCSS(P: string): string {
   align-items: baseline;
 }
 
+.${P}-titles-row-header {
+  flex: 1;
+  align-items: baseline;
+}
+
+.${P}-titles-row-header-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  flex-shrink: 0;
+}
+
+.${P}-titles-baseline-strut {
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.${P}-titles-row-titles {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  align-self: flex-start;
+}
+
 .${P}-titles-row-two-row {
   display: flex;
   flex: 1;
@@ -298,14 +331,6 @@ function getCSS(P: string): string {
 .${P}-titles-row-top .${P}-title-cell[data-title="title1"] {
   flex: 0 0 auto;
   min-width: 0;
-}
-
-.${P}-titles-row-top-controls {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  flex-shrink: 0;
-  margin-left: auto;
 }
 
 .${P}-titles-row-bottom-wrap {
@@ -380,6 +405,7 @@ function getCSS(P: string): string {
   display: flex;
   flex-direction: row;
   align-items: baseline;
+  align-self: flex-start;
   min-width: 0;
 }
 
@@ -464,22 +490,11 @@ function getCSS(P: string): string {
   isolation: isolate;
 }
 
-.${P}-lightbox-persistent-controls {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  flex-shrink: 0;
-  isolation: isolate;
-}
-
 .${P}-lightbox-content-area {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: flex-start;
   flex: 1;
   min-width: 0;
   min-height: 0;

@@ -442,7 +442,7 @@ const schema: ComponentSchemaV1 = {
         titleHeaderLayout: 'desktop',
         title1Width: 0.35,
         title2Width: 0.248,
-        title3Width: 0.14,
+        title3Width: 0.1,
         title1MarginLeft: 0.01,
         title2MarginLeft: 0.1,
         title3MarginLeft: 0.1,

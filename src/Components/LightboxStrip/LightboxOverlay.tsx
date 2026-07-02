@@ -1115,12 +1115,7 @@ export const LightboxOverlay = ({
       <div
         ref={dismissAreaRef}
         className={`${P}-lightbox-dismiss-area`}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          ...dismissAreaStyle,
-        }}
+        style={dismissAreaStyle}
         {...swipeHandlers}
       >
         <div className={`${P}-lightbox-content`} style={mediaAreaStyle} onClick={(event) => event.stopPropagation()}>

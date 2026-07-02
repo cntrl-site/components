@@ -116,6 +116,12 @@ function getCSS(P: string): string {
   pointer-events: none;
 }
 
+.${P}-lightbox-dismiss-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .${P}-lightbox-strip {
   position: relative;
   flex: 1;
