@@ -412,6 +412,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeDismiss, setSwipeDismiss] = useState(false);
   const prevIndexRef = useRef(index);
+  const suppressVideoClickNavRef = useRef(false);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
 
@@ -479,13 +480,6 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
       if (e.touches.length !== 1) return;
       const touch = e.touches[0];
 
-      if (isCurrentVideo && mediaRef.current) {
-        const rect = mediaRef.current.getBoundingClientRect();
-        const y = touch.clientY - rect.top;
-        const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-        if (y > rect.height - controlsZoneHeight) return;
-      }
-
       touchStartRef.current = { x: touch.clientX, y: touch.clientY };
       isSwipingRef.current = false;
     };
@@ -548,7 +542,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [phase, isCurrentVideo]);
+  }, [phase]);
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -588,10 +582,13 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
 
   const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
     e.stopPropagation();
+    if (suppressVideoClickNavRef.current) {
+      suppressVideoClickNavRef.current = false;
+      return;
+    }
     if (items.length <= 1) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const controlsZoneHeight = Math.min(52, rect.height * 0.2);
 
@@ -599,12 +596,17 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
       return;
     }
 
-    if (x < rect.width / 2) {
+    if (e.clientX - rect.left < rect.width / 2) {
       onPrev();
       return;
     }
 
     onNext();
+  };
+
+  const handleVideoTouchStart = (e: React.TouchEvent<HTMLVideoElement>) => {
+    e.stopPropagation();
+    suppressVideoClickNavRef.current = true;
   };
 
   const handleVideoMouseMove = (e: React.MouseEvent<HTMLVideoElement>) => {
@@ -646,6 +648,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
             ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
             : 'none',
     pointerEvents: isCurrentVideo && isOpen ? 'auto' : 'none',
+    touchAction: isCurrentVideo && isOpen ? 'auto' : undefined,
     zIndex: 9998,
   };
 
@@ -762,6 +765,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
             controls={phase === 'open'}
             playsInline
             onLoadedMetadata={computeFinalRect}
+            onTouchStart={handleVideoTouchStart}
             onClick={handleVideoClick}
             onMouseMove={handleVideoMouseMove}
             style={mediaStyle}
