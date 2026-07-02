@@ -936,7 +936,7 @@ export const LightboxOverlay = ({
   const renderTitles = (entry: LightboxJournalItem | undefined) => {
     if (useTwoRowHeader) {
       return (
-        <div className={`${P}-titles-row-two-row`} style={{ width: '100%' }}>
+        <div className={`${P}-titles-row-two-row`}>
           {renderTwoRowTitles(entry)}
         </div>
       );
@@ -1351,7 +1351,7 @@ export const LightboxOverlay = ({
           </div>
         </div>
 
-        <div className={`${P}-lightbox-overlay-content`} style={{ width: '100%', height: '100%', ...swipeOverlayContentStyle }}>
+        <div className={`${P}-lightbox-overlay-content`} style={swipeOverlayContentStyle}>
         <div
           data-controls={isEditMode ? 'contentMarginTop' : undefined}
           className={isEditMode ? `${P}-control` : undefined}

@@ -1179,13 +1179,7 @@ export const LightboxOverlay = ({
         <div
           className={`${P}-lightbox-content-inner`}
           data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
-          style={{
-            width: '100%',
-            height: '100%',
-            top: 0,
-            bottom: 0,
-            ...swipeOverlayContentStyle,
-          }}
+          style={swipeOverlayContentStyle}
         >
           <div
             data-controls={isEditMode ? 'contentMarginTop' : undefined}
