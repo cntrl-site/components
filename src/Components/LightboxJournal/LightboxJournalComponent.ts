@@ -137,7 +137,7 @@ const textStylePropertiesByPrefix = JOURNAL_TEXT_STYLE_PREFIXES.reduce<Record<st
 const textStyleDefaultsByPrefix = JOURNAL_TEXT_STYLE_PREFIXES.reduce<Record<string, JournalSchemaDefaultValue>>(
   (defaults, prefix) => ({
     ...defaults,
-    [getJournalTextStyleSettingKey(prefix, 'fontFamily')]: 'Arial',
+    [getJournalTextStyleSettingKey(prefix, 'fontFamily')]: 'Goudy Bookletter 1911',
     [getJournalTextStyleSettingKey(prefix, 'fontSettings')]: {
       fontWeight: 400,
       fontStyle: 'normal',
@@ -385,7 +385,7 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/lightbox_journal_1.jpg',
+      cover: 'https://cdn.cntrl.site/component-assets/journal_1.jpg',
       coverFit: {
         display: 'fit',
         ratioValue: '1:1',
@@ -399,8 +399,9 @@ const schema: ComponentSchemaV1 = {
       title1Color: '#000000',
       title2Color: '#000000',
       title3Color: '#000000',
-      countColor: '#ffffff',
+      countColor: '#000000',
       ...textStyleDefaultsByPrefix,
+      countFontFamily: 'Arial',
     },
     layoutDefaults: {
       m: {
@@ -439,8 +440,8 @@ const schema: ComponentSchemaV1 = {
         closeIconMaxWidth: 0.015,
         contentMarginTop: 0.01,
         titleHeaderLayout: 'desktop',
-        title1Width: 0.13,
-        title2Width: 0.13,
+        title1Width: 0.35,
+        title2Width: 0.248,
         title3Width: 0.14,
         title1MarginLeft: 0.01,
         title2MarginLeft: 0.1,
@@ -449,14 +450,14 @@ const schema: ComponentSchemaV1 = {
         iconMarginRight: 0.01,
         countCloseGap: 0.02,
         ...createTextStyleLayoutDefaults({
-          title1FontSize: 0.01,
-          title1LineHeight: 0.01,
-          title2FontSize: 0.01,
-          title2LineHeight: 0.01,
-          title3FontSize: 0.01,
-          title3LineHeight: 0.01,
-          countFontSize: 0.01,
-          countLineHeight: 0.01,
+          title1FontSize: 0.0098,
+          title1LineHeight: 0.0098,
+          title2FontSize: 0.0098,
+          title2LineHeight: 0.0098,
+          title3FontSize: 0.0098,
+          title3LineHeight: 0.0098,
+          countFontSize: 0.008,
+          countLineHeight: 0.0098,
         }),
       },
     },
@@ -551,46 +552,53 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       {
-        title1: 'Journal Entry 1',
-        title2: 'summer vacation',
-        title3: 'July 1978',
+        title1: 'Dorothy Manners & Julanne Johnston',
+        title2: 'by Evans Studio',
+        title3: 'Screenland',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_2.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/journal_2.jpg',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_3.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/journal_3.jpg',
             name: '',
             objectFit: 'contain',
           },
         ],
       },
       {
-        title1: 'Journal Entry 2',
-        title2: 'spring break',
-        title3: 'March 1979',
+        title1: 'Inez Nadeau',
+        title2: 'Melbourne Spurr',
+        title3: 'Screenland',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_4.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/journal_4.jpg',
             name: '',
             objectFit: 'contain',
-          },
+          }
+        ],
+      },
+      {
+        title1: 'Colleen Moore',
+        title2: 'Clarence S. Bull',
+        title3: 'Screenland',
+        image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_5.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/journal_5.jpg',
             name: '',
             objectFit: 'contain',
           },
         ],
       },
       {
-        title1: 'Journal Entry 3',
-        title2: 'winter vacation',
-        title3: 'January 1980',
+        title1: 'Gloria Swanson',
+        title2: 'Donald Biddle Keyes',
+        title3: 'Screenland',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_6.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/journal_6.jpg',
             name: '',
             objectFit: 'contain',
           },
