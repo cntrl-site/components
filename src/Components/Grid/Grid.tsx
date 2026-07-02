@@ -443,6 +443,7 @@ function LightboxVideo({
       src={src}
       controls={phase === 'open'}
       playsInline
+      preload='auto'
       onLoadedMetadata={onLoadedMetadata}
       onClick={onClick}
       onMouseMove={onMouseMove}
