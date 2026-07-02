@@ -236,6 +236,7 @@ function getCSS(P: string): string {
 .${P}-close-icon {
   position: relative;
   flex-shrink: 0;
+  align-self: center;
   pointer-events: auto;
   z-index: 2;
   display: flex;
@@ -272,6 +273,7 @@ function getCSS(P: string): string {
   min-width: 0;
   display: flex;
   flex-direction: row;
+  align-items: baseline;
 }
 
 .${P}-titles-row-two-row {
@@ -287,7 +289,7 @@ function getCSS(P: string): string {
 .${P}-titles-row-top {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: baseline;
   width: 100%;
   flex-shrink: 0;
   margin-bottom: 0;
@@ -301,7 +303,7 @@ function getCSS(P: string): string {
 .${P}-titles-row-top-controls {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: baseline;
   flex-shrink: 0;
   margin-left: auto;
 }
@@ -347,7 +349,7 @@ function getCSS(P: string): string {
   flex: 0 1 auto;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: baseline;
 }
 
 .${P}-title1,
@@ -377,7 +379,7 @@ function getCSS(P: string): string {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: baseline;
   min-width: 0;
 }
 
@@ -392,7 +394,7 @@ function getCSS(P: string): string {
   inset: 0;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: baseline;
   z-index: 1;
   overflow: visible;
 }
@@ -410,7 +412,7 @@ function getCSS(P: string): string {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: baseline;
   min-width: 0;
 }
 
@@ -467,7 +469,7 @@ function getCSS(P: string): string {
   z-index: 1;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: baseline;
   flex-shrink: 0;
   isolation: isolate;
 }
@@ -476,7 +478,7 @@ function getCSS(P: string): string {
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   flex: 1;
   min-width: 0;
