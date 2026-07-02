@@ -281,6 +281,7 @@ type LightboxProps = {
 const LIGHTBOX_ANIM_MS = 500;
 const SLIDER_TRANSITION_MS = 750;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const SWIPE_CLOSE_THRESHOLD = 72;
 
 type GridMedia = {
   url: string;
@@ -398,11 +399,18 @@ function getLightboxMediaDimensions(media: HTMLImageElement | HTMLVideoElement) 
 
 function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const isCover = imageDisplay === 'cover';
+  const containerRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeOffsetRef = useRef(0);
+  const isSwipingRef = useRef(false);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
   const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>(originRect ? 'opening' : 'open');
   const [transitionsEnabled, setTransitionsEnabled] = useState(true);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeDismiss, setSwipeDismiss] = useState(false);
   const prevIndexRef = useRef(index);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
@@ -453,18 +461,101 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
   useEffect(() => {
     if (prevIndexRef.current !== index) {
       setTransitionsEnabled(false);
+      setSwipeOffset(0);
+      setSwipeDismiss(false);
+      setIsSwiping(false);
+      swipeOffsetRef.current = 0;
+      isSwipingRef.current = false;
+      touchStartRef.current = null;
     }
     prevIndexRef.current = index;
   }, [index]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || phase !== 'open') return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+
+      if (isCurrentVideo && mediaRef.current) {
+        const rect = mediaRef.current.getBoundingClientRect();
+        const y = touch.clientY - rect.top;
+        const controlsZoneHeight = Math.min(52, rect.height * 0.2);
+        if (y > rect.height - controlsZoneHeight) return;
+      }
+
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      isSwipingRef.current = false;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+
+      if (deltaY <= 0) return;
+      if (Math.abs(deltaY) <= Math.abs(deltaX)) return;
+
+      isSwipingRef.current = true;
+      setIsSwiping(true);
+      swipeOffsetRef.current = deltaY;
+      setSwipeOffset(deltaY);
+      e.preventDefault();
+    };
+
+    const handleTouchEnd = () => {
+      if (!touchStartRef.current) return;
+
+      const offset = swipeOffsetRef.current;
+      const wasSwiping = isSwipingRef.current;
+
+      if (wasSwiping && offset > SWIPE_CLOSE_THRESHOLD) {
+        const dismissOffset = window.innerHeight;
+        swipeOffsetRef.current = dismissOffset;
+        setSwipeDismiss(true);
+        setSwipeOffset(dismissOffset);
+        setPhase('closing');
+      } else if (wasSwiping) {
+        swipeOffsetRef.current = 0;
+        setSwipeOffset(0);
+      }
+
+      if (wasSwiping) {
+        const blockClick = (clickEvent: Event) => {
+          clickEvent.stopPropagation();
+          clickEvent.preventDefault();
+          container.removeEventListener('click', blockClick, true);
+        };
+        container.addEventListener('click', blockClick, true);
+      }
+
+      touchStartRef.current = null;
+      isSwipingRef.current = false;
+      setIsSwiping(false);
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [phase, isCurrentVideo]);
 
   useEffect(() => {
     const media = mediaRef.current;
     if (!(media instanceof HTMLVideoElement)) return;
     if (phase !== 'open') {
       media.pause();
-      return;
     }
-    void media.play().catch(() => undefined);
   }, [index, phase, isCurrentVideo]);
 
   useEffect(() => {
@@ -486,7 +577,9 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
 
   const isOpen = phase === 'open';
   const isClosing = phase === 'closing';
-  const reverseAnimateClose = isClosing && reverseClose && !!originRect;
+  const reverseAnimateClose = isClosing && reverseClose && !!originRect && !swipeDismiss;
+  const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
+  const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
   const animatedRect = phase === 'opening'
     ? (originRect ?? finalRect)
     : reverseAnimateClose
@@ -537,12 +630,21 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
     width: animatedRect?.width,
     height: animatedRect?.height,
     objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
-    opacity: isClosing && !reverseAnimateClose ? 0 : 1,
-    transition: isClosing && !reverseAnimateClose
-      ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-      : (reverseAnimateClose || transitionsEnabled)
-        ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-        : 'none',
+    transform: swipeOffset > 0 ? `translateY(${swipeOffset}px)` : undefined,
+    opacity: swipeOffset > 0
+      ? swipeMediaOpacity
+      : isClosing && !reverseAnimateClose
+        ? 0
+        : 1,
+    transition: isSwiping
+      ? 'none'
+      : swipeDismiss
+        ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+        : isClosing && !reverseAnimateClose
+          ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+          : (reverseAnimateClose || transitionsEnabled)
+            ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+            : 'none',
     pointerEvents: isCurrentVideo && isOpen ? 'auto' : 'none',
     zIndex: 9998,
   };
@@ -557,6 +659,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
@@ -564,6 +667,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
         width: '100vw',
         height: '100vh',
         zIndex: 9997,
+        touchAction: phase === 'open' ? 'none' : undefined,
       }}
       onClick={handleClose}
     >
@@ -572,8 +676,8 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
           position: 'absolute',
           inset: 0,
           background: 'rgba(28,31,34,0.9)',
-          opacity: isOpen ? 1 : 0,
-          transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
+          opacity: isOpen ? swipeBackdropOpacity : 0,
+          transition: isSwiping ? 'none' : `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
           pointerEvents: 'none',
         }}
       />
@@ -656,7 +760,6 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
             ref={mediaRef as React.RefObject<HTMLVideoElement>}
             src={currentItem.url}
             controls={phase === 'open'}
-            autoPlay
             playsInline
             onLoadedMetadata={computeFinalRect}
             onClick={handleVideoClick}
