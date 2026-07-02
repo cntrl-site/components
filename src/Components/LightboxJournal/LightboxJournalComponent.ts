@@ -385,10 +385,10 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
+      cover: 'https://cdn.cntrl.site/component-assets/lightbox_journal_1.jpg',
       coverFit: {
-        display: 'cover',
-        ratioValue: '16:9',
+        display: 'fit',
+        ratioValue: '1:1',
         reversed: false,
       },
       closeIcon: defaultCloseIconUrl,
@@ -556,12 +556,12 @@ const schema: ComponentSchemaV1 = {
         title3: 'July 1978',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_1.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_2.jpg',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_2.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_3.jpg',
             name: '',
             objectFit: 'contain',
           },
@@ -573,12 +573,12 @@ const schema: ComponentSchemaV1 = {
         title3: 'March 1979',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_3.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_4.jpg',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_4.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_5.jpg',
             name: '',
             objectFit: 'contain',
           },
@@ -590,7 +590,7 @@ const schema: ComponentSchemaV1 = {
         title3: 'January 1980',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_5.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/lightbox_journal_6.jpg',
             name: '',
             objectFit: 'contain',
           },

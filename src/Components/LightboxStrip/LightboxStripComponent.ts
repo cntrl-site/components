@@ -398,17 +398,17 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/LightboxJournal_1.jpg',
+      cover: 'https://cdn.cntrl.site/component-assets/lightbox_strip_1.jpg',
       coverFit: {
-        display: 'cover',
-        ratioValue: '16:9',
+        display: 'fit',
+        ratioValue: '1:1',
         reversed: false,
       },
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#ffffff',
       closeIconHoverColor: '#cccccc',
       thumbnailObjectFit: {
-        display: 'Fit',
+        display: 'fit',
         ratioValue: '16:9',
         reversed: false,
       },
@@ -453,7 +453,7 @@ const schema: ComponentSchemaV1 = {
         thumbnailGap: 0.02,
         thumbnailMarginBottom: 0.007,
         imageGap: 0.005,
-        title1Width: 0.13,
+        title1Width: 0.3,
         title2Width: 0.13,
         title3Width: 0.14,
         title1MarginLeft: 0.02,
@@ -566,38 +566,45 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_1.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/lightbox_strip_2.jpg',
           name: '',
           objectFit: 'contain',
         },
-        title1: 'Ethan Parker',
-        title2: 'Midnight Atlas',
-        title3: 'Portland, OR',
+        title1: 'Giovanni Andrea Vavassore',
+        title2: 'ESEMPLA',
+        title3: 'Venice, 1500',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_2.jpg',
-          name: '',
-          objectFit: 'contain',
-        },
-      },
-      {
-        image: {
-          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_3.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/lightbox_strip_3.jpg',
           name: '',
           objectFit: 'contain',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_4.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/lightbox_strip_4.jpg',
           name: '',
           objectFit: 'contain',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/LightboxStrip_5.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/lightbox_strip_5.jpg',
+          name: '',
+          objectFit: 'contain',
+        },
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/lightbox_strip_6.jpg',
+          name: '',
+          objectFit: 'contain',
+        },
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/lightbox_strip_7.jpg',
           name: '',
           objectFit: 'contain',
         },
