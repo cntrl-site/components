@@ -376,6 +376,7 @@ function GridMediaItem({
           cursor: onMediaClick ? 'pointer' : 'default',
         }}
         muted
+        autoPlay
         loop
         playsInline
         onClick={onMediaClick}
