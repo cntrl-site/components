@@ -539,10 +539,9 @@ const schema: ComponentSchemaV1 = {
           label: 'Image',
           display: {
             isObjectFitEditable: false,
+            defaultObjectFit: 'contain',
             type: 'media-input',
-            supportsMainImage: true,
           },
-          
         },
         title1: {
           type: 'string',
