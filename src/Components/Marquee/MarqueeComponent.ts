@@ -147,6 +147,7 @@ const schema: ComponentSchemaV1 = {
           type: 'object',
           label: 'Image',
           display: {
+            isObjectFitEditable: false,
             type: 'media-input',
           },
         },

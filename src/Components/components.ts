@@ -10,6 +10,8 @@ import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingl
 import { GridComponent } from './Grid/GridComponent';
 import { ListComponent } from './List/ListComponent';
 import { FAQComponent } from './FAQ/FAQComponent';
+import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
+import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -22,5 +24,7 @@ export const components: Component[] = [
   TestimonialSingleComponent,
   GridComponent,
   ListComponent,
-  FAQComponent
+  FAQComponent,
+  LightboxStripComponent,
+  LightboxJournalComponent,
 ];
