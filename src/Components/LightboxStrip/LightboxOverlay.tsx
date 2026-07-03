@@ -18,7 +18,7 @@ import {
   getStripTitleOffsetBeforeSlot,
   LIGHTBOX_ANIM_MS,
   MOUSE_DRAG_THRESHOLD_PX,
-  resolveSharedStripTitles,
+  resolveStripItemTitles,
   resolveStripTextFields,
   resolveStripTitleWidths,
   SNAP_SCROLL_EASING,
@@ -84,7 +84,11 @@ export const LightboxOverlay = ({
   const imageGap = scaled(imageGapSetting ?? 0);
   const contentMarginTop = scaled(contentMarginTopSetting ?? 0);
   const iconMarginLeft = scaled(iconMarginLeftSetting ?? 0);
-  const { title1, title2, title3 } = resolveSharedStripTitles(images);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
+  const activeItem = images[activeIndex];
+  const { title1, title2, title3 } = resolveStripItemTitles(activeItem);
   const title1Style = stripTextFieldsToCss('title1', resolveStripTextFields(settings, 'title1'), isEditor);
   const title2Style = stripTextFieldsToCss('title2', resolveStripTextFields(settings, 'title2'), isEditor);
   const title3Style = stripTextFieldsToCss('title3', resolveStripTextFields(settings, 'title3'), isEditor);
@@ -100,7 +104,7 @@ export const LightboxOverlay = ({
   const hasTitles = Boolean(title1 || title2 || title3);
   const titleSlots = useMemo(
     () => buildStripTitleSlots(P, title1, title2, title3, title1Style, title2Style, title3Style),
-    [P, title1, title2, title3, title1Style, title2Style, title3Style],
+    [P, activeIndex, title1, title2, title3, title1Style, title2Style, title3Style],
   );
   const titleWidthByKey = useMemo(() => ({title1Width, title2Width, title3Width}),[title1Width, title2Width, title3Width]);
   const storedTitleWidths = useMemo(() => titleSlots.map((slot) => titleWidthByKey[slot.widthKey]), [titleSlots, titleWidthByKey]);
@@ -417,9 +421,6 @@ export const LightboxOverlay = ({
   const [isMouseDragging, setIsMouseDragging] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [overlayContentVisible, setOverlayContentVisible] = useState(true);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const activeIndexRef = useRef(activeIndex);
-  activeIndexRef.current = activeIndex;
   const lockedActiveIndexRef = useRef<number | null>(null);
   const isClosingRef = useRef(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);

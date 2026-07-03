@@ -463,7 +463,7 @@ const schema: ComponentSchemaV1 = {
         titleRowMarginBottom: 0,
         closeIconMaxWidth: 0.02,
         backgroundColor: 'rgba(28, 31, 34, 0.9)',
-        contentMarginTop: 0.02,
+        contentMarginTop: 0.025,
         iconMarginLeft: 0.02,
         ...createTextStyleLayoutDefaults({
           title1FontSize: 0.015,
@@ -530,7 +530,6 @@ const schema: ComponentSchemaV1 = {
     type: 'array',
     settings: {
       addItemFromFileExplorer: true,
-      stripFieldsOnAdd: ['title1', 'title2', 'title3', 'text'],
     },
     items: {
       type: 'object',
@@ -582,6 +581,9 @@ const schema: ComponentSchemaV1 = {
           name: '',
           objectFit: 'contain',
         },
+        title1: 'Giovanni Andrea Vavassore',
+        title2: 'ESEMPLA',
+        title3: 'Venice, 1500',
       },
       {
         image: {
@@ -589,6 +591,9 @@ const schema: ComponentSchemaV1 = {
           name: '',
           objectFit: 'contain',
         },
+        title1: 'Giovanni Andrea Vavassore',
+        title2: 'ESEMPLA',
+        title3: 'Venice, 1500',
       },
       {
         image: {
@@ -596,6 +601,9 @@ const schema: ComponentSchemaV1 = {
           name: '',
           objectFit: 'contain',
         },
+        title1: 'Giovanni Andrea Vavassore',
+        title2: 'ESEMPLA',
+        title3: 'Venice, 1500',
       },
       {
         image: {
@@ -603,6 +611,9 @@ const schema: ComponentSchemaV1 = {
           name: '',
           objectFit: 'contain',
         },
+        title1: 'Giovanni Andrea Vavassore',
+        title2: 'ESEMPLA',
+        title3: 'Venice, 1500',
       },
       {
         image: {
@@ -610,6 +621,9 @@ const schema: ComponentSchemaV1 = {
           name: '',
           objectFit: 'contain',
         },
+        title1: 'Giovanni Andrea Vavassore',
+        title2: 'ESEMPLA',
+        title3: 'Venice, 1500',
       },
     ],
   },

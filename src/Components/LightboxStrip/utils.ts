@@ -4,8 +4,13 @@ import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 import type {
   LightboxStripItem,
   LightboxStripSettings,
-  SharedStripTitles,
 } from './LightboxStrip';
+
+export type StripItemTitles = {
+  title1: string;
+  title2: string;
+  title3: string;
+};
 
 export const LIGHTBOX_ANIM_MS = 300;
 export const SNAP_SCROLL_MIN_MS = 900;
@@ -103,7 +108,7 @@ export const getGapControlSize = (gap: string) => `max(${gap}, ${GAP_LABEL_AREA_
 
 export const extractTitlesFromLegacyText = (
   text: LightboxStripLegacyItem['text'],
-): Partial<SharedStripTitles> => {
+): Partial<StripItemTitles> => {
   if (!Array.isArray(text) || text.length === 0) return {};
 
   const paragraph = text.find((node) => node?.type === 'paragraph') ?? text[0];
@@ -121,29 +126,25 @@ export const extractTitlesFromLegacyText = (
   };
 };
 
-export const resolveSharedStripTitles = (items: LightboxStripLegacyItem[]): SharedStripTitles => {
-  for (const item of items) {
-    if (item.title1 || item.title2 || item.title3) {
-      return {
-        title1: item.title1 ?? '',
-        title2: item.title2 ?? '',
-        title3: item.title3 ?? '',
-      };
-    }
+export const resolveStripItemTitles = (item?: LightboxStripLegacyItem | null): StripItemTitles => {
+  if (!item) {
+    return { title1: '', title2: '', title3: '' };
   }
 
-  for (const item of items) {
-    const fromText = extractTitlesFromLegacyText(item.text);
-    if (fromText.title1 || fromText.title2 || fromText.title3) {
-      return {
-        title1: fromText.title1 ?? '',
-        title2: fromText.title2 ?? '',
-        title3: fromText.title3 ?? '',
-      };
-    }
+  if (item.title1 || item.title2 || item.title3) {
+    return {
+      title1: item.title1 ?? '',
+      title2: item.title2 ?? '',
+      title3: item.title3 ?? '',
+    };
   }
 
-  return { title1: '', title2: '', title3: '' };
+  const fromText = extractTitlesFromLegacyText(item.text);
+  return {
+    title1: fromText.title1 ?? '',
+    title2: fromText.title2 ?? '',
+    title3: fromText.title3 ?? '',
+  };
 };
 
 export const getStripTextStyleSettingKey = (

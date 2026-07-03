@@ -11,7 +11,7 @@ export {
   createStripTextStyleTabContentItems,
   extractTitlesFromLegacyText,
   getStripTextStyleSettingKey,
-  resolveSharedStripTitles,
+  resolveStripItemTitles,
   STRIP_GLOBAL_TEXT_STYLE_KEYS,
   STRIP_TEXT_STYLE_PREFIXES,
   STRIP_TEXT_STYLE_TAB_LABELS,
@@ -437,12 +437,6 @@ export type LightboxStripItem = {
   title1?: string;
   title2?: string;
   title3?: string;
-};
-
-export type SharedStripTitles = {
-  title1: string;
-  title2: string;
-  title3: string;
 };
 
 export type LightboxStripSettings = {
