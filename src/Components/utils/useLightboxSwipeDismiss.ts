@@ -175,7 +175,7 @@ export const useLightboxSwipeDismiss = ({
       onPointerCancel,
     } : {},
     dismissAreaStyle: enabled ? {
-      touchAction: 'none',
+      touchAction: isSwipeDragging ? 'none' : 'pan-x',
     } as React.CSSProperties : undefined,
   };
 };

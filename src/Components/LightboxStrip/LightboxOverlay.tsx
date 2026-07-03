@@ -9,6 +9,7 @@ import type { LightboxStripItem, LightboxStripSettings } from './LightboxStrip';
 import {
   buildStripTitleSlots,
   CONTROLS_IDLE_MS,
+  STRIP_SWIPE_MIN_PX,
   DRAG_SNAP_RATIO,
   getEffectiveStripTitleWidths,
   getGapControlSize,
@@ -388,10 +389,16 @@ export const LightboxOverlay = ({
   const trackRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
+  const touchSwipeStartRef = useRef<{
+    startX: number;
+    startY: number;
+    startActiveIndex: number;
+  } | null>(null);
   const mouseDragRef = useRef({
     isActive: false,
     startX: 0,
     scrollLeft: 0,
+    startActiveIndex: 0,
     hasMoved: false,
   });
   const windowDragEndRef = useRef<((event: globalThis.PointerEvent) => void) | null>(null);
@@ -596,7 +603,7 @@ export const LightboxOverlay = ({
     if (!isLoopEnabled) return;
     const strip = stripRef.current;
     const setWidth = measureSetWidth();
-    if (!strip || setWidth <= 0) return;
+    if (!strip || setWidth <= 0 || setWidth < strip.clientWidth * 0.25) return;
     if (strip.scrollLeft <= 0) {
       strip.scrollLeft += setWidth;
       if (adjustMouseDragAnchor) {
@@ -616,6 +623,23 @@ export const LightboxOverlay = ({
     }
   };
 
+  const resolveNearestFlatIndexForSource = (sourceIndex: number, scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
+    if (!isLoopEnabled) return sourceIndex;
+    let bestFlat = images.length + sourceIndex;
+    let bestDistance = Infinity;
+    for (let copy = 0; copy < loopCopies; copy++) {
+      const flat = copy * images.length + sourceIndex;
+      const item = itemRefs.current[flat];
+      if (!item) continue;
+      const distance = Math.abs(item.offsetLeft - scrollLeft);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestFlat = flat;
+      }
+    }
+    return bestFlat;
+  };
+
   const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
     const viewport = stripRef.current?.clientWidth ?? 0;
     const viewportCenter = scrollLeft + viewport / 2;
@@ -628,7 +652,7 @@ export const LightboxOverlay = ({
       if (containingIndex === -1 && viewportCenter >= left && viewportCenter < right) {
         containingIndex = flatIndex;
       }
-      const distance = Math.abs(left - scrollLeft);
+      const distance = Math.abs((left + item.offsetWidth / 2) - viewportCenter);
       if (distance < nearest.distance) {
         nearest = { flatIndex, distance };
       }
@@ -732,6 +756,20 @@ export const LightboxOverlay = ({
     onComplete?.();
   };
 
+  const ensureViewportOnItem = (strip: HTMLDivElement) => {
+    const flatIndex = getNearestFlatIndex();
+    const item = itemRefs.current[flatIndex];
+    if (!item) return;
+    const viewportCenter = strip.scrollLeft + strip.clientWidth / 2;
+    const left = item.offsetLeft;
+    const right = left + item.offsetWidth;
+    if (viewportCenter < left || viewportCenter >= right) {
+      strip.scrollLeft = left;
+      lastScrollLeftRef.current = left;
+      clearStripTrackTransform();
+    }
+  };
+
   const scrollStripTo = (targetLeft: number, { behavior = 'smooth', activeIndex,onComplete }: { behavior?: ScrollBehavior; activeIndex?: number; onComplete?: () => void } = {}) => {
     const strip = stripRef.current;
     const track = trackRef.current;
@@ -743,6 +781,7 @@ export const LightboxOverlay = ({
       finishStripScroll(strip, targetLeft, activeIndex, onComplete);
       return;
     }
+    ensureViewportOnItem(strip);
     const distance = Math.abs(targetLeft - strip.scrollLeft);
     const duration = getDistanceScaledDuration(
       distance,
@@ -763,16 +802,22 @@ export const LightboxOverlay = ({
   const snapToNearestItem = (behavior: ScrollBehavior = 'smooth') => {
     const strip = stripRef.current;
     if (!strip || images.length === 0) return;
-    const flatIndex = getNearestFlatIndex();
+    const sourceIndex = getNearestFlatIndex() % images.length;
+    const flatIndex = resolveNearestFlatIndexForSource(sourceIndex, strip.scrollLeft);
     const item = itemRefs.current[flatIndex];
     if (!item) return;
-    scrollStripTo(item.offsetLeft, { behavior, activeIndex: flatIndex % images.length });
+    scrollStripTo(item.offsetLeft, { behavior, activeIndex: sourceIndex });
   };
 
-  const snapAfterDrag = (startScrollLeft: number, behavior: ScrollBehavior = 'smooth') => {
+  const snapAfterDrag = (
+    startScrollLeft: number,
+    behavior: ScrollBehavior = 'smooth',
+    gestureStartActiveIndex?: number,
+    endScrollLeft?: number,
+  ) => {
     const strip = stripRef.current;
     if (!strip || images.length === 0) return;
-    const scrollDelta = strip.scrollLeft - startScrollLeft;
+    const scrollDelta = (endScrollLeft ?? strip.scrollLeft) - startScrollLeft;
     const startFlatIndex = getNearestFlatIndex(startScrollLeft);
     const startItem = itemRefs.current[startFlatIndex];
     if (isViewportWithinOversizedItem(startItem)) {
@@ -782,34 +827,26 @@ export const LightboxOverlay = ({
     }
     const nextItem = itemRefs.current[startFlatIndex + 1];
     const span = startItem ? (nextItem ? nextItem.offsetLeft - startItem.offsetLeft : startItem.offsetWidth) : 0;
-    const scrollAdjustment = span > 0 ? (scrollDelta > span * DRAG_SNAP_RATIO ? 1 : scrollDelta < -span * DRAG_SNAP_RATIO ? -1: 0) : 0;
-    const targetFlatIndex = isLoopEnabled
-      ? startFlatIndex + scrollAdjustment
-      : Math.max(0, Math.min(flatItems.length - 1, startFlatIndex + scrollAdjustment));
-    const targetItem = itemRefs.current[targetFlatIndex];
-    if (!targetItem) {
-      snapToNearestItem(behavior);
+    const scrollAdjustment = span > 0
+      ? (scrollDelta > span * DRAG_SNAP_RATIO ? 1 : scrollDelta < -span * DRAG_SNAP_RATIO ? -1 : 0)
+      : 0;
+    if (scrollAdjustment !== 0) {
+      const baseIndex = gestureStartActiveIndex ?? (startFlatIndex % images.length);
+      const targetIndex = isLoopEnabled
+        ? (baseIndex + scrollAdjustment + images.length) % images.length
+        : Math.max(0, Math.min(images.length - 1, baseIndex + scrollAdjustment));
+      scrollToIndex(targetIndex, behavior);
       return;
     }
-    const movingBackward = scrollDelta < 0;
-    const targetLeft = movingBackward && isOversizedItem(targetItem)
-      ? targetItem.offsetLeft + targetItem.offsetWidth - strip.clientWidth
-      : targetItem.offsetLeft;
-    const snapTargetIndex = targetFlatIndex % images.length;
-    if (behavior === 'smooth') lockedActiveIndexRef.current = snapTargetIndex;
-    setActiveIndex(snapTargetIndex);
-    scrollStripTo(targetLeft, {
-      behavior,
-      activeIndex: snapTargetIndex,
-      onComplete: behavior === 'smooth' ? releaseActiveIndexLock : undefined,
-    });
+    snapToNearestItem(behavior);
   };
 
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
     const strip = stripRef.current;
-    const flatIndex = isLoopEnabled ? images.length + index : index;
+    if (!strip || images.length === 0) return;
+    const flatIndex = resolveNearestFlatIndexForSource(index, strip.scrollLeft);
     const item = itemRefs.current[flatIndex];
-    if (!strip || !item) return;
+    if (!item) return;
     if (behavior === 'smooth') {
       lockedActiveIndexRef.current = index;
     } else {
@@ -830,26 +867,50 @@ export const LightboxOverlay = ({
     windowDragEndRef.current = null;
   };
 
+  const tryNavigateFromPointerSwipe = (
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    startActiveIndex: number,
+  ) => {
+    const deltaX = endX - startX;
+    const deltaY = endY - startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (absX < STRIP_SWIPE_MIN_PX || absX <= absY) return false;
+
+    const direction = deltaX < 0 ? 1 : -1;
+    const nextIndex = isLoopEnabled
+      ? (startActiveIndex + direction + images.length) % images.length
+      : Math.max(0, Math.min(images.length - 1, startActiveIndex + direction));
+    if (nextIndex === startActiveIndex) return false;
+
+    scrollToIndex(nextIndex);
+    return true;
+  };
+
   const finishStripMouseDrag = (pointerId?: number) => {
     if (!mouseDragRef.current.isActive) return;
     removeWindowDragListeners();
     const strip = stripRef.current;
     if (!strip) return;
-    const hadMoved = mouseDragRef.current.hasMoved;
-    const startScrollLeft = mouseDragRef.current.scrollLeft;
+    const { scrollLeft: startScrollLeft, startActiveIndex, hasMoved } = mouseDragRef.current;
+    const endScrollLeft = strip.scrollLeft;
     normalizeInfiniteScroll(true);
     mouseDragRef.current = {
       isActive: false,
       startX: 0,
       scrollLeft: 0,
+      startActiveIndex: 0,
       hasMoved: false,
     };
     setIsMouseDragging(false);
     if (pointerId !== undefined && strip.hasPointerCapture(pointerId)) {
       strip.releasePointerCapture(pointerId);
     }
-    if (hadMoved) {
-      snapAfterDrag(startScrollLeft);
+    if (hasMoved) {
+      snapAfterDrag(startScrollLeft, 'smooth', startActiveIndex, endScrollLeft);
     } else {
       setStripSnapEnabled(true);
       updateActiveIndex();
@@ -857,13 +918,32 @@ export const LightboxOverlay = ({
     resetOverlayContentIdleTimer();
   };
 
+  const finishTouchSwipe = (endClientX: number, endClientY: number) => {
+    const touchStart = touchSwipeStartRef.current;
+    touchSwipeStartRef.current = null;
+    if (!touchStart) return;
+    tryNavigateFromPointerSwipe(
+      touchStart.startX,
+      touchStart.startY,
+      endClientX,
+      endClientY,
+      touchStart.startActiveIndex,
+    );
+    resetOverlayContentIdleTimer();
+  };
+
   const onStripPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
     if (event.pointerType === 'touch') {
-      // Free wheel scrolling leaves native snap disabled; restore it so the
-      // touch swipe keeps its snapping behaviour.
+      // Wheel scrolling leaves native snap disabled; restore it so touch keeps snap behaviour.
       stopWheelAnimation();
       setStripSnapEnabled(true);
+      if (isDragBlockedTarget(event.target as HTMLElement)) return;
+      touchSwipeStartRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        startActiveIndex: activeIndexRef.current,
+      };
       return;
     }
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
@@ -878,6 +958,7 @@ export const LightboxOverlay = ({
       isActive: true,
       startX: event.clientX,
       scrollLeft: strip.scrollLeft,
+      startActiveIndex: activeIndexRef.current,
       hasMoved: false,
     };
     setStripSnapEnabled(false);
@@ -918,6 +999,14 @@ export const LightboxOverlay = ({
 
   const endStripMouseDrag = (event: PointerEvent<HTMLDivElement>) => {
     if (!allowMouseDrag) return;
+    if (event.pointerType === 'touch') {
+      if (event.type === 'pointerup') {
+        finishTouchSwipe(event.clientX, event.clientY);
+      } else {
+        touchSwipeStartRef.current = null;
+      }
+      return;
+    }
     if (event.pointerType !== 'mouse') return;
     finishStripMouseDrag(event.pointerId);
   };
