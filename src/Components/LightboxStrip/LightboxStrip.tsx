@@ -4,8 +4,9 @@ import { CommonComponentProps } from '../props';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { getAspectRatio, isImageRatioCover, type ImageRatioFit } from '../utils/imageFitStyles';
 import type { TextStyles } from '../utils/textStylesToCss';
+import { scalingValue } from '../utils/scalingValue';
 import { LightboxOverlay } from './LightboxOverlay';
-import { LIGHTBOX_ANIM_MS, THUMB_MAX_SIZE_PX } from './utils';
+import { LIGHTBOX_ANIM_MS } from './utils';
 export {
   createStripTextStylePanelTab,
   createStripTextStyleTabContentItems,
@@ -178,19 +179,12 @@ function getCSS(P: string): string {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   max-width: calc(100% - 32px);
   overflow-x: auto;
   scrollbar-width: none;
   pointer-events: auto;
-  opacity: 1;
-  transition: opacity ${LIGHTBOX_ANIM_MS}ms ease;
-}
-
-.${P}-thumbnails[data-overlay-content-hidden="true"] {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .${P}-lightbox-editor .${P}-thumbnails {
@@ -207,15 +201,9 @@ function getCSS(P: string): string {
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid transparent;
+  border: none;
   background: transparent;
   cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.${P}-thumb[data-active="true"] {
-  opacity: 1;
 }
 
 .${P}-thumbnails[data-thumbnail-active="outline"] .${P}-thumb[data-active="true"] {
@@ -233,15 +221,11 @@ function getCSS(P: string): string {
 
 .${P}-thumb-image {
   display: block;
-  height: ${THUMB_MAX_SIZE_PX}px;
   object-fit: contain;
-  transition: filter 0.2s ease;
 }
 
 .${P}-thumb-image-cover {
   aspect-ratio: var(--image-aspect-ratio);
-  max-width: ${THUMB_MAX_SIZE_PX}px;
-  max-height: ${THUMB_MAX_SIZE_PX}px;
   width: auto;
   height: auto;
   object-fit: cover;
@@ -444,6 +428,7 @@ export type LightboxStripSettings = {
   coverFit: ImageRatioFit;
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
+  thumnailSize: number;
   thumbnailObjectFit: ImageRatioFit;
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'outline' | 'color' | 'scale-up';

@@ -25,7 +25,6 @@ import {
   SNAP_SCROLL_MAX_MS,
   SNAP_SCROLL_MIN_MS,
   stripTextFieldsToCss,
-  THUMB_MAX_SIZE_PX,
   TITLE_RESIZE_HANDLE_WIDTH,
   WHEEL_LERP,
   WHEEL_LINE_HEIGHT_PX,
@@ -54,6 +53,7 @@ export const LightboxOverlay = ({
 }: LightboxOverlayProps) => {
   const {
     backgroundColor,
+    thumnailSize: thumnailSizeSetting,
     thumbnailGap: thumbnailGapSetting,
     thumbnailMarginBottom: thumbnailMarginBottomSetting,
     imageGap: imageGapSetting,
@@ -79,6 +79,7 @@ export const LightboxOverlay = ({
   } = settings;
 
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const thumbnailSize = scaled(thumnailSizeSetting);
   const thumbnailGap = scaled(thumbnailGapSetting);
   const thumbnailMarginBottom = scaled(thumbnailMarginBottomSetting ?? 0.02);
   const imageGap = scaled(imageGapSetting ?? 0);
@@ -807,7 +808,17 @@ export const LightboxOverlay = ({
     const flatIndex = resolveNearestFlatIndexForSource(sourceIndex, strip.scrollLeft);
     const item = itemRefs.current[flatIndex];
     if (!item) return;
-    scrollStripTo(item.offsetLeft, { behavior, activeIndex: sourceIndex });
+    if (behavior === 'smooth') {
+      lockedActiveIndexRef.current = sourceIndex;
+    } else {
+      lockedActiveIndexRef.current = null;
+    }
+    setActiveIndex(sourceIndex);
+    scrollStripTo(item.offsetLeft, {
+      behavior,
+      activeIndex: sourceIndex,
+      onComplete: behavior === 'smooth' ? releaseActiveIndexLock : undefined,
+    });
   };
 
   const snapAfterDrag = (
@@ -1272,13 +1283,11 @@ export const LightboxOverlay = ({
               className={`${P}-thumbnails`}
               data-lightbox-scrollable=""
               data-thumbnail-active={thumbnailActive}
-              data-overlay-content-hidden={isOverlayContentHidden ? 'true' : 'false'}
               onClick={(event) => event.stopPropagation()}
               style={{
                 gap: thumbnailGap,
                 bottom: thumbnailMarginBottom,
                 '--thumbnail-active-color': thumbnailActiveColor,
-                ...swipeOverlayContentStyle,
               } as CSSProperties}
             >
               {images.map((item, index) => {
@@ -1302,7 +1311,7 @@ export const LightboxOverlay = ({
                       draggable={false}
                       style={
                         {...thumbAspectRatioStyle,
-                        ...(thumbnailObjectFit.display === 'cover' ? { width: THUMB_MAX_SIZE_PX } : { width: '100%' }),}
+                        ...(thumbnailObjectFit.display === 'cover' ? { maxWidth: thumbnailSize, maxHeight: thumbnailSize } : { maxWidth: thumbnailSize }),}
                       }
                     />
                   </button>

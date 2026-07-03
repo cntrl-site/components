@@ -17,7 +17,6 @@ export const SNAP_SCROLL_MIN_MS = 900;
 export const SNAP_SCROLL_MAX_MS = 1500;
 export const SNAP_SCROLL_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
 export const CONTROLS_IDLE_MS = 3000;
-export const THUMB_MAX_SIZE_PX = 50;
 export const WHEEL_SPEED = 2;
 export const WHEEL_LINE_HEIGHT_PX = 16;
 export const WHEEL_LERP = 0.05;

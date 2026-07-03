@@ -949,70 +949,35 @@ export const LightboxOverlay = ({
     );
   };
 
-  const renderTitleMarginControls = () => {
-    const singleRowTitle1Index = !useTwoRowHeader
-      ? activeTitleSlots.findIndex((slot) => slot.prefix === 'title1')
-      : -1;
-    const singleRowTitle1Control = !useTwoRowHeader && (isEditMode || (title1MarginLeft ?? 0) > 0) ? (() => {
-      const marginLeft = title1MarginLeft ?? 0;
-      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
-      const title1MaxFraction = singleRowTitle1Index >= 0
-        ? resolvedTitleWidths[singleRowTitle1Index]
-        : title1Width;
+  const renderTitleMarginControls = () => activeTitleSlots.flatMap((slot, colIndex) => {
+    if (!slot.marginLeftKey) return [];
+    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+    const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
+      activeTitleSlots,
+      resolvedTitleWidths,
+      titleMarginLeftByKey,
+      colIndex,
+    ) + getSingleRowMarginColumnOffset();
+    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
 
-      return (
-        <div
-          key="title1MarginLeft"
-          data-controls="title1MarginLeft"
-          data-controls-axis="x"
-          data-controls-min="0"
-          data-controls-max-fraction={String(title1MaxFraction)}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: scaled(marginHandleWidth),
-            height: '100%',
-            pointerEvents: 'auto',
-          }}
-        />
-      );
-    })() : null;
-
-    const slotMarginControls = activeTitleSlots.flatMap((slot, colIndex) => {
-      if (!slot.marginLeftKey) return [];
-      const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
-      const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
-        activeTitleSlots,
-        resolvedTitleWidths,
-        titleMarginLeftByKey,
-        colIndex,
-      ) + getSingleRowMarginColumnOffset();
-      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
-
-      return (
-        <div
-          key={slot.marginLeftKey}
-          data-controls={slot.marginLeftKey}
-          data-controls-axis="x"
-          data-controls-min="0"
-          data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: scaled(offsetBeforeMargin),
-            width: scaled(marginHandleWidth),
-            height: '100%',
-            pointerEvents: 'auto',
-          }}
-        />
-      );
-    });
-
-    return singleRowTitle1Control
-      ? [singleRowTitle1Control, ...slotMarginControls]
-      : slotMarginControls;
-  };
+    return (
+      <div
+        key={slot.marginLeftKey}
+        data-controls={slot.marginLeftKey}
+        data-controls-axis="x"
+        data-controls-min="0"
+        data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: scaled(offsetBeforeMargin),
+          width: scaled(marginHandleWidth),
+          height: '100%',
+          pointerEvents: 'auto',
+        }}
+      />
+    );
+  });
 
   const renderTitleWidthControls = () => activeTitleSlots.map((slot, colIndex) => {
     const maxTitleWidth = getJournalTitleMaxWidth(colIndex, resolvedTitleWidths);
