@@ -2,7 +2,7 @@ import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 
@@ -266,7 +266,7 @@ type GridProps = {
 type AnimRect = { top: number; left: number; width: number; height: number };
 
 type LightboxProps = {
-  images: string[];
+  items: GridMedia[];
   index: number;
   imageDisplay: 'fit' | 'cover';
   originRect: AnimRect | null;
@@ -281,40 +281,105 @@ type LightboxProps = {
 const LIGHTBOX_ANIM_MS = 500;
 const SLIDER_TRANSITION_MS = 750;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const SWIPE_CLOSE_THRESHOLD = 72;
+const SWIPE_NAV_THRESHOLD = 50;
+
+type SwipeAxis = 'none' | 'horizontal' | 'vertical';
 
 type GridMedia = {
   url: string;
   name?: string;
-  type?: 'image' | 'video';
+  type: 'image' | 'video';
 };
+
+type GridMediaPair = {
+  media: GridMedia[];
+};
+
+type GridDisplayItem = {
+  displayMedia: GridMedia;
+  lightboxMedia: GridMedia | null;
+};
+
+function isPairFormat(image: GridMedia[] | GridMediaPair[] | undefined): image is GridMediaPair[] {
+  if (!Array.isArray(image) || image.length === 0) return false;
+  const first = image[0];
+  return first !== null && typeof first === 'object' && 'media' in first && Array.isArray(first.media);
+}
+
+function getDisplayMediaForPair(pair: GridMediaPair): GridMedia | null {
+  const [first, second] = pair.media;
+  if (second?.url) return second;
+  if (first?.url) return first;
+  return null;
+}
+
+function getLightboxMediaForPair(pair: GridMediaPair): GridMedia | null {
+  const [first] = pair.media;
+  if (first?.url) return first;
+  return null;
+}
+
+function getGridDisplayItems(image: GridMedia[] | GridMediaPair[] | undefined): GridDisplayItem[] {
+  if (!Array.isArray(image) || image.length === 0) return [];
+
+  if (isPairFormat(image)) {
+    return image.flatMap(pair => {
+      const displayMedia = getDisplayMediaForPair(pair);
+      if (!displayMedia) return [];
+
+      const lightboxMedia = getLightboxMediaForPair(pair);
+      return [{
+        displayMedia,
+        lightboxMedia: lightboxMedia?.url ? lightboxMedia : null,
+      }];
+    });
+  }
+
+  return (image as GridMedia[])
+    .filter(media => media?.url)
+    .map(media => ({
+      displayMedia: media,
+      lightboxMedia: media,
+    }));
+}
 
 function isVideoMedia(media: GridMedia): boolean {
   if (media.type === 'video') return true;
-  if (media.type === 'image') return false;
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url);
+  return false;
+}
+
+function unloadVideoElement(video: HTMLVideoElement) {
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
 }
 
 function GridMediaItem({
   media,
   className,
   style,
-  onImageClick,
+  onMediaClick,
 }: {
   media: GridMedia;
   className: string;
   style: React.CSSProperties;
-  onImageClick?: (e: React.MouseEvent<HTMLImageElement>) => void;
+  onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isVideoMedia(media)) {
     return (
       <video
         src={media.url}
         className={className}
-        style={style}
+        style={{
+          ...style,
+          cursor: onMediaClick ? 'pointer' : 'default',
+        }}
         muted
-        loop
         autoPlay
+        loop
         playsInline
+        onClick={onMediaClick}
       />
     );
   }
@@ -324,35 +389,142 @@ function GridMediaItem({
       src={media.url}
       alt={media.name}
       className={className}
-      style={style}
-      onClick={onImageClick}
+      style={{
+        ...style,
+        cursor: onMediaClick ? 'pointer' : 'default',
+      }}
+      onClick={onMediaClick}
     />
   );
 }
 
-function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
+function getGhostRect(ghost: HTMLElement): AnimRect {
+  const cb = ghost.getBoundingClientRect();
+  return { width: cb.width, height: cb.height, left: cb.left, top: cb.top };
+}
+
+function getLightboxMediaDimensions(media: HTMLImageElement | HTMLVideoElement) {
+  if (media instanceof HTMLVideoElement) {
+    return { width: media.videoWidth, height: media.videoHeight };
+  }
+  return { width: media.naturalWidth, height: media.naturalHeight };
+}
+
+function LightboxVideo({
+  src,
+  phase,
+  mediaRef,
+  mediaStyle,
+  onLoadedMetadata,
+  onClick,
+  onMouseMove,
+  onTransitionEnd,
+}: {
+  src: string;
+  phase: 'opening' | 'open' | 'closing';
+  mediaRef: React.RefObject<HTMLVideoElement>;
+  mediaStyle: React.CSSProperties;
+  onLoadedMetadata: () => void;
+  onClick: (e: React.MouseEvent<HTMLVideoElement>) => void;
+  onMouseMove: (e: React.MouseEvent<HTMLVideoElement>) => void;
+  onTransitionEnd: (e: React.TransitionEvent<HTMLVideoElement>) => void;
+}) {
+  useEffect(() => {
+    const video = mediaRef.current;
+    if (!video) return;
+
+    return () => {
+      unloadVideoElement(video);
+    };
+  }, [src, mediaRef]);
+
+  return (
+    <video
+      ref={mediaRef}
+      src={src}
+      controls={phase === 'open'}
+      playsInline
+      preload='auto'
+      onLoadedMetadata={onLoadedMetadata}
+      onClick={onClick}
+      onMouseMove={onMouseMove}
+      onTransitionEnd={onTransitionEnd}
+      style={mediaStyle}
+    />
+  );
+}
+
+function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const isCover = imageDisplay === 'cover';
+  const containerRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeOffsetRef = useRef(0);
+  const swipeDeltaXRef = useRef(0);
+  const swipeAxisRef = useRef<SwipeAxis>('none');
+  const isSwipingRef = useRef(false);
+  const touchInteractionRef = useRef(false);
+  const navSwipeAnimatingRef = useRef(false);
+  const navSwipeCommitTimerRef = useRef<number | null>(null);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
   const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>(originRect ? 'opening' : 'open');
   const [transitionsEnabled, setTransitionsEnabled] = useState(true);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [navSwipeOffset, setNavSwipeOffset] = useState(0);
+  const [navSwipeAnimating, setNavSwipeAnimating] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeDismiss, setSwipeDismiss] = useState(false);
   const prevIndexRef = useRef(index);
+  const currentItem = items[index];
+  const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
+  const isHorizontalNavActive = navSwipeOffset !== 0 || navSwipeAnimating;
+
+  const setNavSwipeAnimatingState = useCallback((value: boolean) => {
+    navSwipeAnimatingRef.current = value;
+    setNavSwipeAnimating(value);
+  }, []);
+
+  const clearNavSwipeCommitTimer = useCallback(() => {
+    if (navSwipeCommitTimerRef.current !== null) {
+      window.clearTimeout(navSwipeCommitTimerRef.current);
+      navSwipeCommitTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleNavSwipeSnapBackEnd = useCallback(() => {
+    clearNavSwipeCommitTimer();
+    navSwipeCommitTimerRef.current = window.setTimeout(() => {
+      clearNavSwipeCommitTimer();
+      setNavSwipeAnimatingState(false);
+    }, LIGHTBOX_ANIM_MS + 32);
+  }, [clearNavSwipeCommitTimer, setNavSwipeAnimatingState]);
 
   const computeFinalRect = useCallback(() => {
     const ghost = ghostRef.current;
-    const img = imgRef.current;
-    if (!ghost || !img) return;
+    const media = mediaRef.current;
+    if (!ghost) return;
     const cb = ghost.getBoundingClientRect();
     const cw = cb.width;
     const ch = cb.height;
-    const nw = img.naturalWidth;
-    const nh = img.naturalHeight;
-    if (!cw || !ch || !nw || !nh) return;
+    if (!cw || !ch) return;
+
     if (imageDisplay === 'cover') {
       setFinalRect({ width: cw, height: ch, left: cb.left, top: cb.top });
       return;
     }
+
+    if (!media) {
+      setFinalRect(getGhostRect(ghost));
+      return;
+    }
+
+    const { width: nw, height: nh } = getLightboxMediaDimensions(media);
+    if (!nw || !nh) {
+      setFinalRect(getGhostRect(ghost));
+      return;
+    }
+
     const ir = nw / nh;
     const cr = cw / ch;
     if (ir > cr) {
@@ -384,11 +556,174 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
   }, [phase, onClose]);
 
   useEffect(() => {
-    if (prevIndexRef.current !== index) {
-      setTransitionsEnabled(false);
+    return () => {
+      clearNavSwipeCommitTimer();
+    };
+  }, [clearNavSwipeCommitTimer]);
+
+  useLayoutEffect(() => {
+    if (prevIndexRef.current === index) return;
+
+    clearNavSwipeCommitTimer();
+    setTransitionsEnabled(false);
+    setSwipeOffset(0);
+    setNavSwipeOffset(0);
+    setNavSwipeAnimatingState(false);
+    setSwipeDismiss(false);
+    setIsSwiping(false);
+    swipeOffsetRef.current = 0;
+    swipeDeltaXRef.current = 0;
+    swipeAxisRef.current = 'none';
+    isSwipingRef.current = false;
+    touchStartRef.current = null;
+    touchInteractionRef.current = false;
+
+    const ghost = ghostRef.current;
+    if (ghost) {
+      setFinalRect(getGhostRect(ghost));
     }
+
     prevIndexRef.current = index;
-  }, [index]);
+  }, [index, setNavSwipeAnimatingState, clearNavSwipeCommitTimer]);
+
+  useEffect(() => {
+    if (phase !== 'open') return;
+
+    const blockSwipeClick = () => {
+      const blockClick = (clickEvent: Event) => {
+        clickEvent.stopPropagation();
+        clickEvent.preventDefault();
+        document.removeEventListener('click', blockClick, true);
+      };
+      document.addEventListener('click', blockClick, true);
+    };
+
+    const commitNavSwipe = (deltaX: number) => {
+      clearNavSwipeCommitTimer();
+      navSwipeAnimatingRef.current = false;
+      setNavSwipeAnimating(false);
+      setNavSwipeOffset(0);
+      setIsSwiping(false);
+      isSwipingRef.current = false;
+      swipeDeltaXRef.current = 0;
+      swipeAxisRef.current = 'none';
+      setTransitionsEnabled(false);
+
+      const ghost = ghostRef.current;
+      if (ghost) {
+        setFinalRect(getGhostRect(ghost));
+      }
+
+      if (deltaX < 0) onNext();
+      else onPrev();
+    };
+
+    const startNavSwipeRelease = (deltaX: number) => {
+      if (Math.abs(deltaX) > SWIPE_NAV_THRESHOLD && items.length > 1) {
+        commitNavSwipe(deltaX);
+        return;
+      }
+
+      setNavSwipeAnimatingState(true);
+      setNavSwipeOffset(0);
+      scheduleNavSwipeSnapBackEnd();
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1 || navSwipeAnimatingRef.current) return;
+      const touch = e.touches[0];
+
+      touchInteractionRef.current = true;
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      swipeAxisRef.current = 'none';
+      swipeDeltaXRef.current = 0;
+      isSwipingRef.current = false;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current || e.touches.length !== 1 || navSwipeAnimatingRef.current) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartRef.current.x;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+
+      if (swipeAxisRef.current === 'none') {
+        if (Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) return;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (items.length <= 1) return;
+          swipeAxisRef.current = 'horizontal';
+        } else if (deltaY > 0) {
+          swipeAxisRef.current = 'vertical';
+        } else {
+          return;
+        }
+      }
+
+      if (swipeAxisRef.current === 'horizontal') {
+        isSwipingRef.current = true;
+        setIsSwiping(true);
+        swipeDeltaXRef.current = deltaX;
+        setNavSwipeOffset(deltaX);
+        e.preventDefault();
+        return;
+      }
+
+      if (swipeAxisRef.current === 'vertical') {
+        isSwipingRef.current = true;
+        setIsSwiping(true);
+        swipeOffsetRef.current = deltaY;
+        setSwipeOffset(deltaY);
+        e.preventDefault();
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!touchStartRef.current) return;
+
+      const axis = swipeAxisRef.current;
+      const wasSwiping = isSwipingRef.current;
+
+      if (wasSwiping && axis === 'horizontal') {
+        startNavSwipeRelease(swipeDeltaXRef.current);
+        blockSwipeClick();
+      } else if (wasSwiping && axis === 'vertical') {
+        const offset = swipeOffsetRef.current;
+
+        if (offset > SWIPE_CLOSE_THRESHOLD) {
+          const dismissOffset = window.innerHeight;
+          swipeOffsetRef.current = dismissOffset;
+          setSwipeDismiss(true);
+          setSwipeOffset(dismissOffset);
+          setPhase('closing');
+        } else {
+          swipeOffsetRef.current = 0;
+          setSwipeOffset(0);
+        }
+
+        blockSwipeClick();
+      } else if (axis === 'horizontal' && Math.abs(swipeDeltaXRef.current) > 0) {
+        startNavSwipeRelease(swipeDeltaXRef.current);
+        blockSwipeClick();
+      }
+
+      touchStartRef.current = null;
+      swipeAxisRef.current = 'none';
+      swipeDeltaXRef.current = 0;
+      isSwipingRef.current = false;
+      setIsSwiping(false);
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [phase, items.length, onNext, onPrev, setNavSwipeAnimatingState, scheduleNavSwipeSnapBackEnd]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -409,15 +744,108 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
 
   const isOpen = phase === 'open';
   const isClosing = phase === 'closing';
-  const reverseAnimateClose = isClosing && reverseClose && !!originRect;
+  const reverseAnimateClose = isClosing && reverseClose && !!originRect && !swipeDismiss;
+  const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
+  const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
   const animatedRect = phase === 'opening'
     ? (originRect ?? finalRect)
     : reverseAnimateClose
       ? originRect
       : finalRect;
 
+  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
+    e.stopPropagation();
+    if (touchInteractionRef.current) {
+      touchInteractionRef.current = false;
+      return;
+    }
+    if (items.length <= 1) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
+
+    if (y > rect.height - controlsZoneHeight) {
+      return;
+    }
+
+    if (e.clientX - rect.left < rect.width / 2) {
+      onPrev();
+      return;
+    }
+
+    onNext();
+  };
+
+  const handleVideoMouseMove = (e: React.MouseEvent<HTMLVideoElement>) => {
+    if (items.length <= 1) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
+
+    if (y > rect.height - controlsZoneHeight) {
+      e.currentTarget.style.cursor = 'default';
+      return;
+    }
+
+    e.currentTarget.style.cursor = x < rect.width / 2 ? 'w-resize' : 'e-resize';
+  };
+
+  const handleNavSwipeTransitionEnd = useCallback((e: React.TransitionEvent<HTMLElement>) => {
+    if (e.propertyName !== 'transform' || !navSwipeAnimatingRef.current) return;
+
+    clearNavSwipeCommitTimer();
+    setNavSwipeAnimatingState(false);
+  }, [clearNavSwipeCommitTimer, setNavSwipeAnimatingState]);
+
+  const mediaTransform = isHorizontalNavActive
+    ? `translateX(${navSwipeOffset}px)`
+    : swipeOffset > 0
+      ? `translateY(${swipeOffset}px)`
+      : undefined;
+
+  const mediaStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: animatedRect?.top,
+    left: animatedRect?.left,
+    width: animatedRect?.width,
+    height: animatedRect?.height,
+    objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
+    transform: mediaTransform,
+    opacity: swipeOffset > 0
+      ? swipeMediaOpacity
+      : isClosing && !reverseAnimateClose
+        ? 0
+        : 1,
+    transition: (isSwiping && !navSwipeAnimating)
+      ? 'none'
+      : navSwipeAnimating
+        ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+        : swipeDismiss
+          ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+          : isClosing && !reverseAnimateClose
+            ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+            : (reverseAnimateClose || transitionsEnabled)
+              ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+              : 'none',
+    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
+    touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
+    zIndex: 9998,
+  };
+
+  const navOverlayBaseStyle = finalRect ? {
+    position: 'fixed' as const,
+    top: finalRect.top,
+    height: finalRect.height,
+    width: finalRect.width / 2,
+    zIndex: 9999,
+  } : null;
+
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
@@ -425,6 +853,7 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
         width: '100vw',
         height: '100vh',
         zIndex: 9997,
+        touchAction: phase === 'open' ? 'none' : undefined,
       }}
       onClick={handleClose}
     >
@@ -433,8 +862,8 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
           position: 'absolute',
           inset: 0,
           background: 'rgba(28,31,34,0.9)',
-          opacity: isOpen ? 1 : 0,
-          transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
+          opacity: isOpen ? swipeBackdropOpacity : 0,
+          transition: isSwiping ? 'none' : `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
           pointerEvents: 'none',
         }}
       />
@@ -469,9 +898,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
                 zIndex: 9999,
               }}
             >
-              {images.length > 1 &&
+              {items.length > 1 &&
                 <p className={counterClassName} style={counterStyle}>
-                  {index + 1} / {images.length}
+                  {index + 1} / {items.length}
                 </p>
               }
             </div>
@@ -500,9 +929,9 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
                 transition: `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
               }}
             >
-              {images.length > 1 &&
+              {items.length > 1 &&
                 <p className={counterClassName} style={counterStyle}>
-                  {index + 1} / {images.length}
+                  {index + 1} / {items.length}
                 </p>
               }
             </div>
@@ -510,58 +939,62 @@ function Lightbox({ images, index, imageDisplay, originRect, reverseClose, onClo
         )}
       </div>
 
-      {animatedRect && (
-        <img
-          ref={imgRef}
-          src={images[index]}
-          onLoad={computeFinalRect}
-          style={{
-            position: 'fixed',
-            top: animatedRect.top,
-            left: animatedRect.left,
-            width: animatedRect.width,
-            height: animatedRect.height,
-            objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
-            opacity: isClosing && !reverseAnimateClose ? 0 : 1,
-            transition: isClosing && !reverseAnimateClose
-              ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-              : (reverseAnimateClose || transitionsEnabled)
-                ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-                : 'none',
-            pointerEvents: 'none',
-            zIndex: 9998,
-          }}
-        />
+      {animatedRect && currentItem && (
+        isCurrentVideo ? (
+          <LightboxVideo
+            key={`${index}-${currentItem.url}`}
+            src={currentItem.url}
+            phase={phase}
+            mediaRef={mediaRef as React.RefObject<HTMLVideoElement>}
+            mediaStyle={mediaStyle}
+            onLoadedMetadata={computeFinalRect}
+            onClick={handleVideoClick}
+            onMouseMove={handleVideoMouseMove}
+            onTransitionEnd={handleNavSwipeTransitionEnd}
+          />
+        ) : (
+          <img
+            key={`${index}-${currentItem.url}`}
+            ref={mediaRef as React.RefObject<HTMLImageElement>}
+            src={currentItem.url}
+            alt={currentItem.name}
+            onLoad={computeFinalRect}
+            onTransitionEnd={handleNavSwipeTransitionEnd}
+            style={mediaStyle}
+          />
+        )
       )}
 
-      {isOpen && finalRect && (
+      {isOpen && navOverlayBaseStyle && items.length > 1 && !isCurrentVideo && (
         <>
           <div
             style={{
-              position: 'fixed',
-              top: finalRect.top,
-              left: finalRect.left,
-              width: finalRect.width / 2,
-              height: finalRect.height,
+              ...navOverlayBaseStyle,
+              left: finalRect!.left,
               cursor: 'w-resize',
-              zIndex: 9999,
+              pointerEvents: isHorizontalNavActive ? 'none' : 'auto',
             }}
             onClick={(e) => {
+              if (touchInteractionRef.current) {
+                touchInteractionRef.current = false;
+                return;
+              }
               e.stopPropagation();
               onPrev();
             }}
           />
           <div
             style={{
-              position: 'fixed',
-              top: finalRect.top,
-              left: finalRect.left + finalRect.width / 2,
-              width: finalRect.width / 2,
-              height: finalRect.height,
+              ...navOverlayBaseStyle,
+              left: finalRect!.left + finalRect!.width / 2,
               cursor: 'e-resize',
-              zIndex: 9999,
+              pointerEvents: isHorizontalNavActive ? 'none' : 'auto',
             }}
             onClick={(e) => {
+              if (touchInteractionRef.current) {
+                touchInteractionRef.current = false;
+                return;
+              }
               e.stopPropagation();
               onNext();
             }}
@@ -784,16 +1217,18 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   })();
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxItems, setLightboxItems] = useState<GridMedia[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxOriginRect, setLightboxOriginRect] = useState<AnimRect | null>(null);
 
-  const openLightbox = (e: React.MouseEvent<HTMLImageElement>, urls: string[], idx: number) => {
+  const canOpenLightboxMedia = lightbox === 'on' && (!isEditor || isPreviewMode);
+
+  const openLightbox = (e: React.MouseEvent<HTMLElement>, items: GridMedia[], idx: number) => {
     if (isEditor && !isPreviewMode) return;
     if (lightbox === 'off') return;
     const r = e.currentTarget.getBoundingClientRect();
     setLightboxOriginRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-    setLightboxImages(urls);
+    setLightboxItems(items);
     setLightboxIndex(idx);
     setLightboxOpen(true);
   };
@@ -926,22 +1361,30 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </>
             );
 
+            const displayItems = getGridDisplayItems(item.gallery);
+            const lightboxItemsForEntry = displayItems
+              .filter(entry => entry.lightboxMedia)
+              .map(entry => entry.lightboxMedia!);
+
             const imageContent = (
               <div className={imageWrapperClassName} style={imageWrapperStyle}>
-                {(item.image?.length ?? 0) === 0
+                {displayItems.length === 0
                   ? null
                   : slider === 'off'
                     ?
                     (() => {
-                      const media = item.image[0] as GridMedia;
-                      const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
-                      const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
+                      const { displayMedia, lightboxMedia } = displayItems[0];
+                      const lightboxIndex = lightboxMedia
+                        ? lightboxItemsForEntry.findIndex(item => item.url === lightboxMedia.url)
+                        : -1;
                       return (
                         <GridMediaItem
-                          media={media}
-                          className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                          media={displayMedia}
+                          className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                           style={imageStyle}
-                          onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, 0)}
+                          onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
+                            ? (e) => openLightbox(e, lightboxItemsForEntry, lightboxIndex)
+                            : undefined}
                         />
                       );
                     })()
@@ -949,11 +1392,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     <>
                     {isFitSlider && (
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
-                        {item.image.map((media: GridMedia) => (
-                          isVideoMedia(media) ? (
-                            <video key={`sizer-${media.url}`} src={media.url} muted playsInline />
+                        {displayItems.map(({ displayMedia }) => (
+                          isVideoMedia(displayMedia) ? (
+                            <video key={`sizer-${displayMedia.url}`} src={displayMedia.url} muted playsInline />
                           ) : (
-                            <img key={`sizer-${media.url}`} src={media.url} alt="" />
+                            <img key={`sizer-${displayMedia.url}`} src={displayMedia.url} alt="" />
                           )
                         ))}
                       </div>
@@ -991,17 +1434,19 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                         }, 0);
                       }}
                     >
-                      {item.image.map((media: GridMedia, imgIndex: number) => {
-                        const imageOnly = item.image.filter((entry: GridMedia) => !isVideoMedia(entry));
-                        const imageUrls = imageOnly.map((entry: GridMedia) => entry.url);
-                        const imageIndex = imageOnly.findIndex((entry: GridMedia) => entry.url === media.url);
+                      {displayItems.map(({ displayMedia, lightboxMedia }, imgIndex) => {
+                        const lightboxIndex = lightboxMedia
+                          ? lightboxItemsForEntry.findIndex(item => item.url === lightboxMedia.url)
+                          : -1;
                         return (
                           <SplideSlide key={imgIndex}>
                             <GridMediaItem
-                              media={media}
-                              className={`${P}-item-${isVideoMedia(media) ? 'video' : 'image'}`.trim()}
+                              media={displayMedia}
+                              className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
-                              onImageClick={isVideoMedia(media) ? undefined : (e) => openLightbox(e, imageUrls, imageIndex)}
+                              onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
+                                ? (e) => openLightbox(e, lightboxItemsForEntry, lightboxIndex)
+                                : undefined}
                             />
                           </SplideSlide>
                         );
@@ -1082,14 +1527,14 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
-              images={lightboxImages}
+              items={lightboxItems}
               index={lightboxIndex}
               imageDisplay={resolveLightboxImageDisplay(lightboxImageDisplay)}
               originRect={lightboxOriginRect}
               reverseClose={slider === 'off'}
               onClose={() => setLightboxOpen(false)}
-              onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)}
-              onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)}
+              onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxItems.length) % lightboxItems.length)}
+              onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxItems.length)}
               counterClassName={lightboxCounterClassName}
               counterStyle={lightboxCounterFieldCss}
             />
