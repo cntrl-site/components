@@ -84,6 +84,7 @@ function getCSS(P: string): string {
 .${P}-lightbox-editor {
   inset: auto;
   top: 0;
+  overflow: hidden;
   left: var(--cntrl-article-left, 0);
   width: var(--cntrl-article-width, 100vw) !important;
   height: var(--cntrl-viewport-height, 100vh) !important;
@@ -171,23 +172,31 @@ function getCSS(P: string): string {
   user-select: none;
 }
 
-.${P}-thumbnails {
+.${P}-thumbnails-wrap {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 16px;
+  right: 16px;
   z-index: 2;
+  pointer-events: auto;
+}
+
+.${P}-thumbnails {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.${P}-thumbnails-track {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: flex-end;
   justify-content: center;
-  max-width: calc(100% - 32px);
-  overflow-x: auto;
-  scrollbar-width: none;
-  pointer-events: auto;
+  width: max-content;
+  min-width: 100%;
 }
 
-.${P}-lightbox-editor .${P}-thumbnails {
+.${P}-lightbox-editor.${P}-lightbox-edit-mode .${P}-thumbnails {
   overflow: visible;
 }
 
@@ -206,18 +215,17 @@ function getCSS(P: string): string {
   cursor: pointer;
 }
 
-.${P}-thumbnails[data-thumbnail-active="outline"] .${P}-thumb[data-active="true"] {
+.${P}-thumbnails-track[data-thumbnail-active="outline"] .${P}-thumb[data-active="true"] {
   border-color: var(--thumbnail-active-color, #ffffff);
 }
 
-.${P}-thumbnails[data-thumbnail-active="color"] .${P}-thumb:not([data-active="true"]) .${P}-thumb-image {
+.${P}-thumbnails-track[data-thumbnail-active="color"] .${P}-thumb:not([data-active="true"]) .${P}-thumb-image {
   filter: grayscale(1);
 }
 
-.${P}-thumbnails[data-thumbnail-active="scale-up"] .${P}-thumb[data-active="true"] {
+.${P}-thumbnails-track[data-thumbnail-active="scale-up"] .${P}-thumb[data-active="true"] {
   transform: scale(1.15);
 }
-
 
 .${P}-thumb-image {
   display: block;
@@ -428,7 +436,7 @@ export type LightboxStripSettings = {
   coverFit: ImageRatioFit;
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
-  thumnailSize: number;
+  thumbnailSize: number;
   thumbnailObjectFit: ImageRatioFit;
   thumbnailTrigger: 'click' | 'hover';
   thumbnailActive: 'outline' | 'color' | 'scale-up';

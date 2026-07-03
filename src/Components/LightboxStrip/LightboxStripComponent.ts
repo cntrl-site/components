@@ -213,7 +213,7 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
-      thumnailSize: {
+      thumbnailSize: {
         type: 'number',
         scope: 'layout',
         title: 'Thumbnail Size',
@@ -430,7 +430,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        thumnailSize: 0.1,
+        thumbnailSize: 0.1,
         thumbnailVisibility: 'off',
         titleHeaderLayout: 'mobile',
         thumbnailGap: 0.04,
@@ -457,7 +457,7 @@ const schema: ComponentSchemaV1 = {
         }),
       },
       d: {
-        thumnailSize: 0.03,
+        thumbnailSize: 0.03,
         thumbnailVisibility: 'on',
         titleHeaderLayout: 'desktop',
         thumbnailGap: 0.02,

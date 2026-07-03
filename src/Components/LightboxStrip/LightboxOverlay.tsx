@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, startTransition, type CSSProperties, type PointerEvent } from 'react';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
@@ -53,7 +53,7 @@ export const LightboxOverlay = ({
 }: LightboxOverlayProps) => {
   const {
     backgroundColor,
-    thumnailSize: thumnailSizeSetting,
+    thumbnailSize: thumbnailSizeSetting,
     thumbnailGap: thumbnailGapSetting,
     thumbnailMarginBottom: thumbnailMarginBottomSetting,
     imageGap: imageGapSetting,
@@ -79,7 +79,10 @@ export const LightboxOverlay = ({
   } = settings;
 
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
-  const thumbnailSize = scaled(thumnailSizeSetting);
+  const thumbnailSizeSettingResolved = thumbnailSizeSetting
+    ?? (settings as LightboxStripSettings & { thumnailSize?: number }).thumnailSize
+    ?? 0.03;
+  const thumbnailSize = scaled(thumbnailSizeSettingResolved);
   const thumbnailGap = scaled(thumbnailGapSetting);
   const thumbnailMarginBottom = scaled(thumbnailMarginBottomSetting ?? 0.02);
   const imageGap = scaled(imageGapSetting ?? 0);
@@ -392,6 +395,8 @@ export const LightboxOverlay = ({
   const dismissAreaRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const thumbnailsRef = useRef<HTMLDivElement>(null);
+  const thumbRefs = useRef<(HTMLDivElement | null)[]>([]);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const setWidthRef = useRef(0);
   const touchSwipeStartRef = useRef<{
@@ -423,6 +428,8 @@ export const LightboxOverlay = ({
   const [isVisible, setIsVisible] = useState(false);
   const [overlayContentVisible, setOverlayContentVisible] = useState(true);
   const lockedActiveIndexRef = useRef<number | null>(null);
+  const thumbScrollRafRef = useRef<number | null>(null);
+  const thumbScrollForceRevealRef = useRef(false);
   const isClosingRef = useRef(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overlayContentIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -684,10 +691,107 @@ export const LightboxOverlay = ({
     return strip.scrollLeft >= left - 1 && strip.scrollLeft + strip.clientWidth <= right + 1;
   };
 
+  const getDragAdjustedActiveIndex = (
+    scrollLeft: number,
+    startScrollLeft: number,
+    startActiveIndex: number,
+  ) => {
+    const scrollDelta = scrollLeft - startScrollLeft;
+    const startFlatIndex = getNearestFlatIndex(startScrollLeft);
+    const startItem = itemRefs.current[startFlatIndex];
+    if (isViewportWithinOversizedItem(startItem)) {
+      return getNearestFlatIndex(scrollLeft) % images.length;
+    }
+    const nextItem = itemRefs.current[startFlatIndex + 1];
+    const span = startItem ? (nextItem ? nextItem.offsetLeft - startItem.offsetLeft : startItem.offsetWidth) : 0;
+    const scrollAdjustment = span > 0
+      ? (scrollDelta > span * DRAG_SNAP_RATIO ? 1 : scrollDelta < -span * DRAG_SNAP_RATIO ? -1 : 0)
+      : 0;
+    if (scrollAdjustment === 0) return startActiveIndex;
+    return isLoopEnabled
+      ? (startActiveIndex + scrollAdjustment + images.length) % images.length
+      : Math.max(0, Math.min(images.length - 1, startActiveIndex + scrollAdjustment));
+  };
+
+  const scrollActiveThumbIntoView = useCallback((forceReveal = false) => {
+    if (thumbnailVisibility !== 'on' || isEditMode) return;
+    const container = thumbnailsRef.current;
+    const activeIdx = activeIndexRef.current;
+    const thumb = thumbRefs.current[activeIdx];
+    if (!container || !thumb || container.scrollWidth <= container.clientWidth) return;
+
+    const scrollLeft = container.scrollLeft;
+    const visibleRight = scrollLeft + container.clientWidth;
+    const thumbLeft = thumb.offsetLeft;
+    const thumbRight = thumbLeft + thumb.offsetWidth;
+    if (thumbLeft >= scrollLeft && thumbRight <= visibleRight) return;
+
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    let targetScrollLeft = scrollLeft;
+
+    if (!forceReveal && lockedActiveIndexRef.current === null) {
+      const prev = thumbRefs.current[activeIdx - 1];
+      const next = thumbRefs.current[activeIdx + 1];
+      const step = prev
+        ? thumb.offsetLeft - prev.offsetLeft
+        : next
+          ? next.offsetLeft - thumb.offsetLeft
+          : thumb.offsetWidth;
+      if (thumbRight > visibleRight) targetScrollLeft += step;
+      else if (thumbLeft < scrollLeft) targetScrollLeft -= step;
+    } else if (thumbRight > visibleRight) {
+      targetScrollLeft = thumbRight - container.clientWidth;
+    } else {
+      targetScrollLeft = thumbLeft;
+    }
+
+    container.scrollLeft = Math.max(0, Math.min(maxScroll, targetScrollLeft));
+  }, [isEditMode, thumbnailVisibility]);
+
+  const scheduleThumbScroll = useCallback((forceReveal = false) => {
+    if (forceReveal) {
+      thumbScrollForceRevealRef.current = true;
+    }
+    if (thumbScrollRafRef.current !== null) return;
+    thumbScrollRafRef.current = requestAnimationFrame(() => {
+      thumbScrollRafRef.current = null;
+      const reveal = thumbScrollForceRevealRef.current;
+      thumbScrollForceRevealRef.current = false;
+      scrollActiveThumbIntoView(reveal);
+    });
+  }, [scrollActiveThumbIntoView]);
+
+  const commitActiveIndex = useCallback((nextIndex: number) => {
+    if (nextIndex === activeIndexRef.current) return;
+    const prevIndex = activeIndexRef.current;
+    activeIndexRef.current = nextIndex;
+    const jumpedIndex = Math.abs(nextIndex - prevIndex) > 1;
+    const isLoopWrap = isLoopEnabled && images.length > 1 && (
+      (prevIndex === images.length - 1 && nextIndex === 0)
+      || (prevIndex === 0 && nextIndex === images.length - 1)
+    );
+    if (mouseDragRef.current.isActive && mouseDragRef.current.hasMoved) {
+      startTransition(() => setActiveIndex(nextIndex));
+    } else {
+      setActiveIndex(nextIndex);
+    }
+    scheduleThumbScroll(jumpedIndex || isLoopWrap);
+  }, [images.length, isLoopEnabled, scheduleThumbScroll]);
+
   const updateActiveIndex = () => {
     if (!stripRef.current || images.length === 0) return;
     if (lockedActiveIndexRef.current !== null) return;
-    setActiveIndex(getNearestFlatIndex() % images.length);
+    const scrollLeft = stripRef.current.scrollLeft;
+    const nextIndex = mouseDragRef.current.isActive && mouseDragRef.current.hasMoved
+      ? getDragAdjustedActiveIndex(
+        scrollLeft,
+        mouseDragRef.current.scrollLeft,
+        mouseDragRef.current.startActiveIndex,
+      )
+      : getNearestFlatIndex(scrollLeft) % images.length;
+    if (nextIndex !== activeIndexRef.current) {
+      commitActiveIndex(nextIndex);
+    }
   };
 
   const releaseActiveIndexLock = () => {
@@ -808,17 +912,7 @@ export const LightboxOverlay = ({
     const flatIndex = resolveNearestFlatIndexForSource(sourceIndex, strip.scrollLeft);
     const item = itemRefs.current[flatIndex];
     if (!item) return;
-    if (behavior === 'smooth') {
-      lockedActiveIndexRef.current = sourceIndex;
-    } else {
-      lockedActiveIndexRef.current = null;
-    }
-    setActiveIndex(sourceIndex);
-    scrollStripTo(item.offsetLeft, {
-      behavior,
-      activeIndex: sourceIndex,
-      onComplete: behavior === 'smooth' ? releaseActiveIndexLock : undefined,
-    });
+    scrollStripTo(item.offsetLeft, { behavior, activeIndex: sourceIndex });
   };
 
   const snapAfterDrag = (
@@ -844,9 +938,11 @@ export const LightboxOverlay = ({
       : 0;
     if (scrollAdjustment !== 0) {
       const baseIndex = gestureStartActiveIndex ?? (startFlatIndex % images.length);
-      const targetIndex = isLoopEnabled
-        ? (baseIndex + scrollAdjustment + images.length) % images.length
-        : Math.max(0, Math.min(images.length - 1, baseIndex + scrollAdjustment));
+      const targetIndex = getDragAdjustedActiveIndex(
+        endScrollLeft ?? strip.scrollLeft,
+        startScrollLeft,
+        baseIndex,
+      );
       scrollToIndex(targetIndex, behavior);
       return;
     }
@@ -865,6 +961,7 @@ export const LightboxOverlay = ({
       lockedActiveIndexRef.current = null;
     }
     setActiveIndex(index);
+    scheduleThumbScroll(true);
     scrollStripTo(item.offsetLeft, {
       behavior,
       activeIndex: index,
@@ -1036,6 +1133,10 @@ export const LightboxOverlay = ({
       cancelAnimationFrame(frame);
       cancelScrollAnimation();
       removeWindowDragListeners();
+      if (thumbScrollRafRef.current !== null) {
+        cancelAnimationFrame(thumbScrollRafRef.current);
+        thumbScrollRafRef.current = null;
+      }
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -1152,7 +1253,9 @@ export const LightboxOverlay = ({
           updateOversizedSnapAlign(direction);
         }
       }
-      updateActiveIndex();
+      if (!(mouseDragRef.current.isActive && mouseDragRef.current.hasMoved)) {
+        updateActiveIndex();
+      }
     };
     strip.addEventListener('scroll', onScroll, { passive: true });
     const observer = new ResizeObserver(() => {
@@ -1280,21 +1383,31 @@ export const LightboxOverlay = ({
           const thumbnailMarginBottomControlBottom = `calc(-0.5 * (${thumbnailMarginBottom} + ${thumbnailMarginBottomControlSize}))`;
           return (
             <div
+              className={`${P}-thumbnails-wrap`}
+              style={{ bottom: thumbnailMarginBottom }}
+            >
+            <div
+              ref={thumbnailsRef}
               className={`${P}-thumbnails`}
               data-lightbox-scrollable=""
-              data-thumbnail-active={thumbnailActive}
               onClick={(event) => event.stopPropagation()}
-              style={{
-                gap: thumbnailGap,
-                bottom: thumbnailMarginBottom,
-                '--thumbnail-active-color': thumbnailActiveColor,
-              } as CSSProperties}
             >
+              <div
+                className={`${P}-thumbnails-track`}
+                data-thumbnail-active={thumbnailActive}
+                style={{
+                  gap: thumbnailGap,
+                  '--thumbnail-active-color': thumbnailActiveColor,
+                } as CSSProperties}
+              >
               {images.map((item, index) => {
                 const thumbnailGapControlSize = getGapControlSize(thumbnailGap);
                 const thumbnailGapControlRight = `calc(-0.5 * (${thumbnailGapControlSize} + ${thumbnailGap}))`;
                 return (
-                <div key={`thumb-${item.image.url}-${index}`} style={{ position: 'relative', flex: '0 0 auto' }}>
+                <div
+                 ref={(element) => { thumbRefs.current[index] = element; }}
+                  key={`thumb-${item.image.url}-${index}`} style={{ position: 'relative', flex: '0 0 auto' }}
+                >
                   <button
                     type="button"
                     className={`${P}-thumb`}
@@ -1311,7 +1424,11 @@ export const LightboxOverlay = ({
                       draggable={false}
                       style={
                         {...thumbAspectRatioStyle,
-                        ...(thumbnailObjectFit.display === 'cover' ? { maxWidth: thumbnailSize, maxHeight: thumbnailSize } : { maxWidth: thumbnailSize }),}
+                        maxWidth: thumbnailSize,
+                        maxHeight: thumbnailSize,
+                        width: thumbnailObjectFit.display === 'cover' ? 'auto' : '100%',
+                        height: 'auto',
+                        objectFit: thumbnailObjectFit.display === 'cover' ? 'cover' : 'contain',}
                       }
                     />
                   </button>
@@ -1349,6 +1466,8 @@ export const LightboxOverlay = ({
                   }}
                 />
               )}
+              </div>
+            </div>
             </div>
           );
         })()}
