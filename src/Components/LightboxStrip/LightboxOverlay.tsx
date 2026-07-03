@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, startTransition, type CSSProperties, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { getAspectRatio, isImageRatioCover } from '../utils/imageFitStyles';
@@ -649,38 +649,10 @@ export const LightboxOverlay = ({
     return bestFlat;
   };
 
-  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
-    const viewport = stripRef.current?.clientWidth ?? 0;
-    const viewportCenter = scrollLeft + viewport / 2;
-    let containingIndex = -1;
-    let nearest = { flatIndex: 0, distance: Infinity };
-    itemRefs.current.forEach((item, flatIndex) => {
-      if (!item) return;
-      const left = item.offsetLeft;
-      const right = left + item.offsetWidth;
-      if (containingIndex === -1 && viewportCenter >= left && viewportCenter < right) {
-        containingIndex = flatIndex;
-      }
-      const distance = Math.abs((left + item.offsetWidth / 2) - viewportCenter);
-      if (distance < nearest.distance) {
-        nearest = { flatIndex, distance };
-      }
-    });
-    return containingIndex !== -1 ? containingIndex : nearest.flatIndex;
-  };
-
   const isOversizedItem = (item: HTMLDivElement | null) => {
     const strip = stripRef.current;
     if (!item || !strip) return false;
     return item.offsetWidth > strip.clientWidth + 1;
-  };
-
-  const updateOversizedSnapAlign = (direction: 'forward' | 'backward') => {
-    if (!stripRef.current) return;
-    itemRefs.current.forEach((item) => {
-      if (!item) return;
-      item.style.scrollSnapAlign = isOversizedItem(item) && direction === 'backward' ? 'end' : 'start';
-    });
   };
 
   const isViewportWithinOversizedItem = (item: HTMLDivElement | null) => {
@@ -689,6 +661,32 @@ export const LightboxOverlay = ({
     const left = item.offsetLeft;
     const right = left + item.offsetWidth;
     return strip.scrollLeft >= left - 1 && strip.scrollLeft + strip.clientWidth <= right + 1;
+  };
+
+  const getNearestFlatIndex = (scrollLeft = stripRef.current?.scrollLeft ?? 0) => {
+    for (let flatIndex = 0; flatIndex < itemRefs.current.length; flatIndex += 1) {
+      const item = itemRefs.current[flatIndex];
+      if (item && isViewportWithinOversizedItem(item)) {
+        return flatIndex;
+      }
+    }
+    let nearest = { flatIndex: 0, distance: Infinity };
+    itemRefs.current.forEach((item, flatIndex) => {
+      if (!item) return;
+      const distance = Math.abs(item.offsetLeft - scrollLeft);
+      if (distance < nearest.distance) {
+        nearest = { flatIndex, distance };
+      }
+    });
+    return nearest.flatIndex;
+  };
+
+  const updateOversizedSnapAlign = (direction: 'forward' | 'backward') => {
+    if (!stripRef.current) return;
+    itemRefs.current.forEach((item) => {
+      if (!item) return;
+      item.style.scrollSnapAlign = isOversizedItem(item) && direction === 'backward' ? 'end' : 'start';
+    });
   };
 
   const getDragAdjustedActiveIndex = (
@@ -770,25 +768,16 @@ export const LightboxOverlay = ({
       (prevIndex === images.length - 1 && nextIndex === 0)
       || (prevIndex === 0 && nextIndex === images.length - 1)
     );
-    if (mouseDragRef.current.isActive && mouseDragRef.current.hasMoved) {
-      startTransition(() => setActiveIndex(nextIndex));
-    } else {
-      setActiveIndex(nextIndex);
-    }
+    setActiveIndex(nextIndex);
     scheduleThumbScroll(jumpedIndex || isLoopWrap);
   }, [images.length, isLoopEnabled, scheduleThumbScroll]);
 
   const updateActiveIndex = () => {
     if (!stripRef.current || images.length === 0) return;
     if (lockedActiveIndexRef.current !== null) return;
+    if (mouseDragRef.current.isActive && mouseDragRef.current.hasMoved) return;
     const scrollLeft = stripRef.current.scrollLeft;
-    const nextIndex = mouseDragRef.current.isActive && mouseDragRef.current.hasMoved
-      ? getDragAdjustedActiveIndex(
-        scrollLeft,
-        mouseDragRef.current.scrollLeft,
-        mouseDragRef.current.startActiveIndex,
-      )
-      : getNearestFlatIndex(scrollLeft) % images.length;
+    const nextIndex = getNearestFlatIndex(scrollLeft) % images.length;
     if (nextIndex !== activeIndexRef.current) {
       commitActiveIndex(nextIndex);
     }
@@ -854,26 +843,13 @@ export const LightboxOverlay = ({
     lastScrollLeftRef.current = strip.scrollLeft;
     normalizeInfiniteScroll();
     if (activeIndex !== undefined) {
+      activeIndexRef.current = activeIndex;
       setActiveIndex(activeIndex);
     } else {
       updateActiveIndex();
     }
     setStripSnapEnabled(true);
     onComplete?.();
-  };
-
-  const ensureViewportOnItem = (strip: HTMLDivElement) => {
-    const flatIndex = getNearestFlatIndex();
-    const item = itemRefs.current[flatIndex];
-    if (!item) return;
-    const viewportCenter = strip.scrollLeft + strip.clientWidth / 2;
-    const left = item.offsetLeft;
-    const right = left + item.offsetWidth;
-    if (viewportCenter < left || viewportCenter >= right) {
-      strip.scrollLeft = left;
-      lastScrollLeftRef.current = left;
-      clearStripTrackTransform();
-    }
   };
 
   const scrollStripTo = (targetLeft: number, { behavior = 'smooth', activeIndex,onComplete }: { behavior?: ScrollBehavior; activeIndex?: number; onComplete?: () => void } = {}) => {
@@ -887,7 +863,6 @@ export const LightboxOverlay = ({
       finishStripScroll(strip, targetLeft, activeIndex, onComplete);
       return;
     }
-    ensureViewportOnItem(strip);
     const distance = Math.abs(targetLeft - strip.scrollLeft);
     const duration = getDistanceScaledDuration(
       distance,
@@ -946,7 +921,15 @@ export const LightboxOverlay = ({
       scrollToIndex(targetIndex, behavior);
       return;
     }
-    snapToNearestItem(behavior);
+    const resolvedEndScrollLeft = endScrollLeft ?? strip.scrollLeft;
+    const nearestFlat = getNearestFlatIndex(resolvedEndScrollLeft);
+    const nearestItem = itemRefs.current[nearestFlat];
+    if (nearestItem && Math.abs(nearestItem.offsetLeft - resolvedEndScrollLeft) < 1) {
+      setStripSnapEnabled(true);
+      updateActiveIndex();
+      return;
+    }
+    snapToNearestItem('auto');
   };
 
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'smooth') => {
@@ -960,6 +943,7 @@ export const LightboxOverlay = ({
     } else {
       lockedActiveIndexRef.current = null;
     }
+    activeIndexRef.current = index;
     setActiveIndex(index);
     scheduleThumbScroll(true);
     scrollStripTo(item.offsetLeft, {
