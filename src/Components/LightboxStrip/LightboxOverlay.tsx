@@ -87,6 +87,7 @@ export const LightboxOverlay = ({
   const thumbnailMarginBottom = scaled(thumbnailMarginBottomSetting ?? 0.02);
   const imageGap = scaled(imageGapSetting ?? 0);
   const contentMarginTop = scaled(contentMarginTopSetting ?? 0);
+  const contentMarginTopControlSize = getGapControlSize(contentMarginTop);
   const iconMarginLeft = scaled(iconMarginLeftSetting ?? 0);
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(activeIndex);
@@ -1344,12 +1345,31 @@ export const LightboxOverlay = ({
           style={swipeOverlayContentStyle}
         >
           <div
-            data-controls={isEditMode ? 'contentMarginTop' : undefined}
-            data-controls-axis={isEditMode ? 'y' : undefined}
-            data-controls-handle-left-fraction={isEditMode ? '0.05' : undefined}
-            className={isEditMode ? `${P}-control` : undefined}
-            style={{ height: contentMarginTop, width: '100%', pointerEvents: isEditMode ? 'auto' : 'none' }}
-          />
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: contentMarginTop,
+              flexShrink: 0,
+              pointerEvents: 'none',
+            }}
+          >
+            {isEditMode && (
+              <div
+                data-controls="contentMarginTop"
+                data-controls-axis="y"
+                data-controls-handle-left-fraction="0.05"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: contentMarginTopControlSize,
+                  pointerEvents: 'auto',
+                  zIndex: 3,
+                }}
+              />
+            )}
+          </div>
           <div style={{ display: 'flex', flexDirection: 'row', width: '100%', flex: 1, minHeight: 0, pointerEvents: 'none' }}>
             <div className={`${P}-lightbox-content-area${useTwoRowHeader ? ` ${P}-lightbox-content-area-stacked` : ''}`}>
               {(hasTitles || closeIcon) && (
