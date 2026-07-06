@@ -612,7 +612,7 @@ const schema: ComponentSchemaV1 = {
 export const LightboxJournalComponent = {
   element: LightboxJournal,
   id: 'lightbox-journal',
-  name: 'Lightbox Journal',
+  name: 'Journal',
   category: 'galleries',
   version: 1,
   defaultSize: {

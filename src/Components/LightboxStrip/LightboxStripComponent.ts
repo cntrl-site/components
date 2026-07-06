@@ -640,7 +640,7 @@ const schema: ComponentSchemaV1 = {
 export const LightboxStripComponent = {
   element: LightboxStrip,
   id: 'lightbox-strip',
-  name: 'Lightbox Strip',
+  name: 'Strip',
   category: 'galleries',
   version: 1,
   defaultSize: {

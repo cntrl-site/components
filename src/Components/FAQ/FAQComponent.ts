@@ -202,8 +202,7 @@ const schema: ComponentSchemaV1 = {
       icon: {
         type: ['string', 'null'] as const,
         scope: 'common',
-        title: 'Icon',
-        display: { type: 'icon-switch-control' },
+        display: { type: 'settings-image-input' },
       },
       iconMaxWidth: {
         type: 'number',

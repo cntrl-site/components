@@ -209,11 +209,9 @@ export const MarqueeComponent = {
   defaultSize: {
     d: {
       width: '100%',
-      height: 400,
     },
     m: {
       width: 390,
-      height: 80,
     },
   },
   preview: {
