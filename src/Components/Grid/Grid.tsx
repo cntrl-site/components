@@ -108,10 +108,17 @@ function getCSS(P: string): string {
 }
 .${P}-item-image-link {
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.${P}-item-text-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
 }
 .${P}-item-image {
   width: 100%;
@@ -232,6 +239,36 @@ function getCSS(P: string): string {
 .${P}-type-f .${P}-item-text-block {
   align-items: flex-end;
 }
+.${P}-type-a .${P}-item-text-link,
+.${P}-type-d .${P}-item-text-link {
+  align-items: flex-start;
+}
+.${P}-type-b .${P}-item-text-link,
+.${P}-type-e .${P}-item-text-link {
+  align-items: center;
+}
+.${P}-type-c .${P}-item-text-link,
+.${P}-type-f .${P}-item-text-link {
+  align-items: flex-end;
+}
+.${P}-image-align-top .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
+  align-items: flex-start;
+}
+.${P}-image-align-center .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
+  align-items: center;
+}
+.${P}-image-align-bottom .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
+  align-items: flex-end;
+}
+.${P}-image-align-top .${P}-item-slider .splide__slide {
+  align-items: flex-start;
+}
+.${P}-image-align-center .${P}-item-slider .splide__slide {
+  align-items: center;
+}
+.${P}-image-align-bottom .${P}-item-slider .splide__slide {
+  align-items: flex-end;
+}
 .${P}-align-entries .${P}-item {
   display: contents;
 }
@@ -257,24 +294,76 @@ function getCSS(P: string): string {
   width: 100%;
   min-height: 100%;
 }
+.${P}-type-a.${P}-align-entries .${P}-item-title-row,
+.${P}-type-a.${P}-align-entries .${P}-item-subtitle-row,
 .${P}-type-d.${P}-align-entries .${P}-item-title-row,
 .${P}-type-d.${P}-align-entries .${P}-item-subtitle-row {
   align-items: flex-start;
 }
+.${P}-type-b.${P}-align-entries .${P}-item-title-row,
+.${P}-type-b.${P}-align-entries .${P}-item-subtitle-row,
 .${P}-type-e.${P}-align-entries .${P}-item-title-row,
 .${P}-type-e.${P}-align-entries .${P}-item-subtitle-row {
   align-items: center;
 }
+.${P}-type-c.${P}-align-entries .${P}-item-title-row,
+.${P}-type-c.${P}-align-entries .${P}-item-subtitle-row,
 .${P}-type-f.${P}-align-entries .${P}-item-title-row,
 .${P}-type-f.${P}-align-entries .${P}-item-subtitle-row {
   align-items: flex-end;
 }
 .${P}-align-entries .${P}-item-image-link {
   width: 100%;
-  height: auto;
+  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
+}
+.${P}-align-entries .${P}-item-image-link > .${P}-item-image-wrapper {
+  flex-shrink: 0;
+  height: auto;
+  align-self: auto;
+}
+.${P}-image-align-top.${P}-align-entries .${P}-item-image-link > .${P}-item-image-wrapper {
+  margin-top: 0;
+  margin-bottom: auto;
+}
+.${P}-image-align-center.${P}-align-entries .${P}-item-image-link > .${P}-item-image-wrapper {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+.${P}-image-align-bottom.${P}-align-entries .${P}-item-image-link > .${P}-item-image-wrapper {
+  margin-top: auto;
+  margin-bottom: 0;
+}
+.${P}-image-align-top.${P}-align-entries .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
+  align-items: flex-start;
+}
+.${P}-image-align-center.${P}-align-entries .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
+  align-items: center;
+}
+.${P}-image-align-bottom.${P}-align-entries .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
+  align-items: flex-end;
+}
+.${P}-image-align-top.${P}-align-entries .${P}-item-slider .splide__slide {
+  align-items: flex-start;
+}
+.${P}-image-align-center.${P}-align-entries .${P}-item-slider .splide__slide {
+  align-items: center;
+}
+.${P}-image-align-bottom.${P}-align-entries .${P}-item-slider .splide__slide {
+  align-items: flex-end;
+}
+.${P}-image-align-top.${P}-align-entries .${P}-item-image-link {
+  justify-content: flex-start;
+}
+.${P}-image-align-center.${P}-align-entries .${P}-item-image-link {
+  justify-content: center;
+}
+.${P}-image-align-bottom.${P}-align-entries .${P}-item-image-link {
+  justify-content: flex-end;
 }
 .${P}-lightbox-counter {
   margin: 0;
@@ -1093,6 +1182,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     lightboxCounterTextAppearance,
     showText = 'always',
     alignEntries = 'off',
+    align = 'top',
   } = settings;
 
   const resolvedTitleTextStyle: TextStyles = {
@@ -1207,7 +1297,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
   const isTextBeforeImage = type === 'd' || type === 'e' || type === 'f';
-  const shouldAlignEntries = isTextBeforeImage && alignEntries === 'on';
+  const shouldAlignEntries = alignEntries === 'on';
   const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
   const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
 
@@ -1288,7 +1378,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${wrapperStateClasses}`.trim()}
+          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
           style={{
             gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
             rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
@@ -1340,14 +1430,24 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             ) : null;
 
-            const titleRow = isTextBeforeImage ? (
+            const titleRow = shouldAlignEntries ? (
               <div className={`${P}-item-title-row`}>
+                {!isTextBeforeImage && (
+                  <div
+                    data-controls={isEditMode && hasTitle ? 'titleMarginTop' : undefined}
+                    className={isEditMode && hasTitle ? `${P}-control` : undefined}
+                    style={{
+                      height: hasTitle ? scalingValue(titleMarginTop ?? 0, isEditor) : 0,
+                      width: controlWidthStyle,
+                    }}
+                  />
+                )}
                 {hasTitle && (
                   <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
                     {item.title}
                   </p>
                 )}
-                {hasTitle && (
+                {isTextBeforeImage && hasTitle && (
                   <div
                     data-controls={isEditMode ? 'titleMarginTop' : undefined}
                     className={isEditMode ? `${P}-control` : undefined}
@@ -1360,14 +1460,24 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             ) : null;
 
-            const subtitleRow = isTextBeforeImage ? (
+            const subtitleRow = shouldAlignEntries ? (
               <div className={`${P}-item-subtitle-row`}>
+                {!isTextBeforeImage && (
+                  <div
+                    data-controls={isEditMode && hasSubtitle ? 'subtitleMarginTop' : undefined}
+                    className={isEditMode && hasSubtitle ? `${P}-control` : undefined}
+                    style={{
+                      height: hasSubtitle ? scalingValue(subtitleMarginTop ?? 0, isEditor) : 0,
+                      width: controlWidthStyle,
+                    }}
+                  />
+                )}
                 {hasSubtitle && (
                   <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}>
                     {item.subtitle}
                   </p>
                 )}
-                {hasSubtitle && (
+                {isTextBeforeImage && hasSubtitle && (
                   <div
                     data-controls={isEditMode ? 'subtitleMarginTop' : undefined}
                     className={isEditMode ? `${P}-control` : undefined}
@@ -1421,7 +1531,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     })()
                     :
                     <>
-                    {isFitSlider && (
+                    {isFitSlider && shouldAlignEntries && (
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
                         {displayItems.map(({ displayMedia }) => (
                           isVideoMedia(displayMedia) ? (
@@ -1536,17 +1646,40 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               >
                 {shouldAlignEntries ? (
                   <>
-                    {alignedTextRows}
+                    {isTextBeforeImage ? (
+                      <>
+                        {alignedTextRows}
+                        <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                          {imageContent}
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                          {imageContent}
+                        </a>
+                        {alignedTextRows}
+                      </>
+                    )}
+                  </>
+                ) : itemLink ? (
+                  <>
                     <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                      {typeCTextBlock}
                       {imageContent}
                     </a>
+                    {!isTextBeforeImage && (
+                      <a href={itemLink} target="_blank" className={`${P}-item-text-link`}>
+                        {typeABText}
+                      </a>
+                    )}
                   </>
                 ) : (
-                  <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                  <>
                     {typeCTextBlock}
                     {imageContent}
                     {typeABText}
-                  </a>
+                  </>
                 )}
               </div>
             </div>
@@ -1601,6 +1734,7 @@ type GridSettings = {
   transition: 'fade' | 'slide',
   showText: 'always' | 'on hover';
   alignEntries: 'on' | 'off';
+  align?: 'top' | 'center' | 'bottom';
   titleMarginTop: number;
   subtitleMarginTop: number;
   titleColor: string;

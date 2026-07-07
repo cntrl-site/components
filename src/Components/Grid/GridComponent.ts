@@ -350,6 +350,12 @@ const schema: ComponentSchemaV1 = {
         title: 'Align entries',
         display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
+      align: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Align',
+        display: { type: 'toggle-cycle', enum: ['top', 'center', 'bottom'] },
+      },
       entriesCount: {
         type: 'number',
         scope: 'layout',
@@ -589,6 +595,7 @@ const schema: ComponentSchemaV1 = {
       transition: 'fade',
       showText: 'always',
       alignEntries: 'on',
+      align: 'top',
       titleColor: '#000000',
       subtitleColor: '#000000',
       lightboxCounterColor: '#DEDDDD',
@@ -692,16 +699,8 @@ const schema: ComponentSchemaV1 = {
         then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
       },
       {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.alignEntries.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'b' },
-        then: { name: 'properties.alignEntries.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'c' },
-        then: { name: 'properties.alignEntries.display.visible', value: false },
+        if: { name: 'imageDisplay.display', value: 'cover' },
+        then: { name: 'properties.align.display.enabled', value: false },
       },
     ],
     layout: [
@@ -713,6 +712,7 @@ const schema: ComponentSchemaV1 = {
       'verticalGap',
       'showText',
       'alignEntries',
+      'align',
       'entriesCount',
       'lightbox',
       'imageDisplay',
@@ -748,7 +748,7 @@ const schema: ComponentSchemaV1 = {
           items: ['textBoxWidth', 'verticalGap']
         },
         {type: 'row', title: '', items: ['entriesCount', 'showText']},
-        {type: 'row', title: '', items: ['alignEntries']},
+        {type: 'row', title: '', items: ['alignEntries', 'align']},
       ],
     },
     {
