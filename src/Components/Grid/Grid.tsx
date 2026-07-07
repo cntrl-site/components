@@ -172,21 +172,49 @@ function getCSS(P: string): string {
 .${P}-show-text-hover .${P}-item-inner-hidden:hover .${P}-item-subtitle {
   opacity: 1;
 }
-.${P}-type-b .${P}-item-inner,
-.${P}-type-b .${P}-item-inner-hidden,
-.${P}-type-c .${P}-item-inner,
-.${P}-type-c .${P}-item-inner-hidden {
+.${P}-type-a .${P}-item-inner,
+.${P}-type-a .${P}-item-inner-hidden,
+.${P}-type-d .${P}-item-inner,
+.${P}-type-d .${P}-item-inner-hidden {
   align-items: flex-start;
 }
-.${P}-type-b .${P}-item-image-link,
-.${P}-type-c .${P}-item-image-link {
+.${P}-type-b .${P}-item-inner,
+.${P}-type-b .${P}-item-inner-hidden,
+.${P}-type-e .${P}-item-inner,
+.${P}-type-e .${P}-item-inner-hidden {
   align-items: center;
+}
+.${P}-type-c .${P}-item-inner,
+.${P}-type-c .${P}-item-inner-hidden,
+.${P}-type-f .${P}-item-inner,
+.${P}-type-f .${P}-item-inner-hidden {
+  align-items: flex-end;
+}
+.${P}-type-a .${P}-item-image-link,
+.${P}-type-b .${P}-item-image-link,
+.${P}-type-c .${P}-item-image-link,
+.${P}-type-d .${P}-item-image-link,
+.${P}-type-e .${P}-item-image-link,
+.${P}-type-f .${P}-item-image-link {
+  align-items: center;
+}
+.${P}-type-a .${P}-item-title,
+.${P}-type-a .${P}-item-subtitle,
+.${P}-type-d .${P}-item-title,
+.${P}-type-d .${P}-item-subtitle {
+  text-align: left;
 }
 .${P}-type-b .${P}-item-title,
 .${P}-type-b .${P}-item-subtitle,
+.${P}-type-e .${P}-item-title,
+.${P}-type-e .${P}-item-subtitle {
+  text-align: center;
+}
 .${P}-type-c .${P}-item-title,
-.${P}-type-c .${P}-item-subtitle {
-  text-align: left;
+.${P}-type-c .${P}-item-subtitle,
+.${P}-type-f .${P}-item-title,
+.${P}-type-f .${P}-item-subtitle {
+  text-align: right;
 }
 .${P}-item-text-block {
   display: flex;
@@ -194,6 +222,15 @@ function getCSS(P: string): string {
   align-items: flex-start;
   width: 100%;
   flex-shrink: 0;
+}
+.${P}-type-d .${P}-item-text-block {
+  align-items: flex-start;
+}
+.${P}-type-e .${P}-item-text-block {
+  align-items: center;
+}
+.${P}-type-f .${P}-item-text-block {
+  align-items: flex-end;
 }
 .${P}-align-entries .${P}-item {
   display: contents;
@@ -219,6 +256,18 @@ function getCSS(P: string): string {
   align-items: flex-start;
   width: 100%;
   min-height: 100%;
+}
+.${P}-type-d.${P}-align-entries .${P}-item-title-row,
+.${P}-type-d.${P}-align-entries .${P}-item-subtitle-row {
+  align-items: flex-start;
+}
+.${P}-type-e.${P}-align-entries .${P}-item-title-row,
+.${P}-type-e.${P}-align-entries .${P}-item-subtitle-row {
+  align-items: center;
+}
+.${P}-type-f.${P}-align-entries .${P}-item-title-row,
+.${P}-type-f.${P}-align-entries .${P}-item-subtitle-row {
+  align-items: flex-end;
 }
 .${P}-align-entries .${P}-item-image-link {
   width: 100%;
@@ -269,8 +318,6 @@ type LightboxProps = {
   items: GridMedia[];
   index: number;
   imageDisplay: 'fit' | 'cover';
-  originRect: AnimRect | null;
-  reverseClose: boolean;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -454,7 +501,7 @@ function LightboxVideo({
   );
 }
 
-function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
+function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const isCover = imageDisplay === 'cover';
   const containerRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
@@ -468,8 +515,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
   const navSwipeAnimatingRef = useRef(false);
   const navSwipeCommitTimerRef = useRef<number | null>(null);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
-  const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>(originRect ? 'opening' : 'open');
-  const [transitionsEnabled, setTransitionsEnabled] = useState(true);
+  const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>('opening');
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [navSwipeOffset, setNavSwipeOffset] = useState(0);
   const [navSwipeAnimating, setNavSwipeAnimating] = useState(false);
@@ -565,7 +611,6 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
     if (prevIndexRef.current === index) return;
 
     clearNavSwipeCommitTimer();
-    setTransitionsEnabled(false);
     setSwipeOffset(0);
     setNavSwipeOffset(0);
     setNavSwipeAnimatingState(false);
@@ -607,7 +652,6 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
       isSwipingRef.current = false;
       swipeDeltaXRef.current = 0;
       swipeAxisRef.current = 'none';
-      setTransitionsEnabled(false);
 
       const ghost = ghostRef.current;
       if (ghost) {
@@ -744,14 +788,8 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
 
   const isOpen = phase === 'open';
   const isClosing = phase === 'closing';
-  const reverseAnimateClose = isClosing && reverseClose && !!originRect && !swipeDismiss;
   const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
   const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
-  const animatedRect = phase === 'opening'
-    ? (originRect ?? finalRect)
-    : reverseAnimateClose
-      ? originRect
-      : finalRect;
 
   const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
     e.stopPropagation();
@@ -808,15 +846,15 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
 
   const mediaStyle: React.CSSProperties = {
     position: 'fixed',
-    top: animatedRect?.top,
-    left: animatedRect?.left,
-    width: animatedRect?.width,
-    height: animatedRect?.height,
+    top: finalRect?.top,
+    left: finalRect?.left,
+    width: finalRect?.width,
+    height: finalRect?.height,
     objectFit: imageDisplay === 'cover' ? 'cover' : 'contain',
     transform: mediaTransform,
     opacity: swipeOffset > 0
       ? swipeMediaOpacity
-      : isClosing && !reverseAnimateClose
+      : phase === 'opening' || isClosing
         ? 0
         : 1,
     transition: (isSwiping && !navSwipeAnimating)
@@ -825,11 +863,9 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
         ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
         : swipeDismiss
           ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-          : isClosing && !reverseAnimateClose
+          : phase === 'opening' || isClosing
             ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-            : (reverseAnimateClose || transitionsEnabled)
-              ? `top ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, left ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, width ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, height ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-              : 'none',
+            : 'none',
     pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
     touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
     zIndex: 9998,
@@ -939,7 +975,7 @@ function Lightbox({ items, index, imageDisplay, originRect, reverseClose, onClos
         )}
       </div>
 
-      {animatedRect && currentItem && (
+      {finalRect && currentItem && (
         isCurrentVideo ? (
           <LightboxVideo
             key={`${index}-${currentItem.url}`}
@@ -1170,8 +1206,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   };
 
   const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
-  const isTypeC = type === 'c';
-  const shouldAlignEntries = isTypeC && alignEntries === 'on';
+  const isTextBeforeImage = type === 'd' || type === 'e' || type === 'f';
+  const shouldAlignEntries = isTextBeforeImage && alignEntries === 'on';
   const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
   const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
 
@@ -1219,15 +1255,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxItems, setLightboxItems] = useState<GridMedia[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [lightboxOriginRect, setLightboxOriginRect] = useState<AnimRect | null>(null);
-
   const canOpenLightboxMedia = lightbox === 'on' && (!isEditor || isPreviewMode);
 
-  const openLightbox = (e: React.MouseEvent<HTMLElement>, items: GridMedia[], idx: number) => {
+  const openLightbox = (items: GridMedia[], idx: number) => {
     if (isEditor && !isPreviewMode) return;
     if (lightbox === 'off') return;
-    const r = e.currentTarget.getBoundingClientRect();
-    setLightboxOriginRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     setLightboxItems(items);
     setLightboxIndex(idx);
     setLightboxOpen(true);
@@ -1246,7 +1278,6 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   useEffect(() => {
     if (!isEditor || isPreviewMode) return;
     setLightboxOpen(false);
-    setLightboxOriginRect(null);
   }, [isEditor, isPreviewMode]);
 
   const scopedCss = useMemo(() => getCSS(P), [P]);
@@ -1274,7 +1305,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             const isLastRow = Math.floor(index / gridLayout.columnsCount)
               === Math.ceil(cropContent.length / gridLayout.columnsCount) - 1;
 
-            const typeCTextBlock = isTypeC ? (
+            const typeCTextBlock = isTextBeforeImage ? (
               <div className={`${P}-item-text-block`}>
                 {hasTitle && (
                   <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
@@ -1309,7 +1340,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             ) : null;
 
-            const titleRow = isTypeC ? (
+            const titleRow = isTextBeforeImage ? (
               <div className={`${P}-item-title-row`}>
                 {hasTitle && (
                   <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
@@ -1329,7 +1360,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             ) : null;
 
-            const subtitleRow = isTypeC ? (
+            const subtitleRow = isTextBeforeImage ? (
               <div className={`${P}-item-subtitle-row`}>
                 {hasSubtitle && (
                   <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}>
@@ -1383,7 +1414,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                           className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                           style={imageStyle}
                           onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
-                            ? (e) => openLightbox(e, lightboxItemsForEntry, lightboxIndex)
+                            ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                             : undefined}
                         />
                       );
@@ -1445,7 +1476,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                               className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
                               onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
-                                ? (e) => openLightbox(e, lightboxItemsForEntry, lightboxIndex)
+                                ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                                 : undefined}
                             />
                           </SplideSlide>
@@ -1457,7 +1488,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             );
 
-            const typeABText = !isTypeC ? (
+            const typeABText = !isTextBeforeImage ? (
               <>
                 <div
                   data-controls={isEditMode && hasTitle ? 'titleMarginTop' : undefined}
@@ -1530,8 +1561,6 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               items={lightboxItems}
               index={lightboxIndex}
               imageDisplay={resolveLightboxImageDisplay(lightboxImageDisplay)}
-              originRect={lightboxOriginRect}
-              reverseClose={slider === 'off'}
               onClose={() => setLightboxOpen(false)}
               onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxItems.length) % lightboxItems.length)}
               onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxItems.length)}
@@ -1554,7 +1583,7 @@ type GridLayoutConfig = {
 };
 
 type GridSettings = {
-  type: 'a' | 'b' | 'c';
+  type: 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
   gridLayout: GridLayoutConfig;
   textBoxWidth: number;
   verticalGap: number;

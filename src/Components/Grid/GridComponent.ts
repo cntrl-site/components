@@ -290,7 +290,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['a', 'b', 'c'],
+        enum: ['a', 'b', 'c', 'd', 'e', 'f'],
       },
       gridLayout: {
         type: 'grid-layout',
@@ -699,6 +699,10 @@ const schema: ComponentSchemaV1 = {
         if: { name: 'type', value: 'b' },
         then: { name: 'properties.alignEntries.display.visible', value: false },
       },
+      {
+        if: { name: 'type', value: 'c' },
+        then: { name: 'properties.alignEntries.display.visible', value: false },
+      },
     ],
     layout: [
       '__componentName__',
@@ -741,9 +745,9 @@ const schema: ComponentSchemaV1 = {
         {
           type: 'row',
           title: '',
-          items: ['textBoxWidth', 'entriesCount']
+          items: ['textBoxWidth', 'verticalGap']
         },
-        {type: 'row', title: '', items: ['verticalGap', 'showText']},
+        {type: 'row', title: '', items: ['entriesCount', 'showText']},
         {type: 'row', title: '', items: ['alignEntries']},
       ],
     },
@@ -764,8 +768,8 @@ const schema: ComponentSchemaV1 = {
           type: 'row',
           title: 'Slider',
           items: [
-            { type: 'group', title: '', items: ['slider', 'sliderTiming']},
-            { type: 'group', title: '', items: ['direction', 'transition']},
+            { type: 'group', title: '', items: ['slider', 'direction']},
+            { type: 'group', title: '', items: ['sliderTiming', 'transition']},
           ],
         },
       ],
