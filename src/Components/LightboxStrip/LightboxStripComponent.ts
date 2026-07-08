@@ -670,7 +670,7 @@ export const LightboxStripComponent = {
   fontRelations: {
     ...STRIP_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
       ...acc,
-      [prefix]: `settings.${getStripTextStyleSettingKey(prefix, 'fontFamily')}`,
+      [`${prefix}FontSettings`]: `${getStripTextStyleSettingKey(prefix, 'fontFamily')}`,
     }), {}),
   },
 };

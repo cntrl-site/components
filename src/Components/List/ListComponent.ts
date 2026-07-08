@@ -1077,7 +1077,7 @@ export const ListComponent = {
   fontRelations: {
     ...LIST_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
       ...acc,
-      [prefix]: `settings.${getListColumnTextSettingKey(prefix, 'textFontFamily')}`,
+      [`${prefix}TextFontSettings`]: `${getListColumnTextSettingKey(prefix, 'textFontFamily')}`,
     }), {}),
   },
   schema,

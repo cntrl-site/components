@@ -642,7 +642,7 @@ export const LightboxJournalComponent = {
   fontRelations: {
     ...JOURNAL_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
       ...acc,
-      [prefix]: `settings.${getJournalTextStyleSettingKey(prefix, 'fontFamily')}`,
+      [`${prefix}FontSettings`]: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}`,
     }), {}),
   },
 };

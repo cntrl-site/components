@@ -24,6 +24,7 @@ export type Component = {
     url: string;
   };
   sourceCode?: string;
+  fontRelations?: Record<string, string>;
   assetsPaths?: {
     content: Path[];
     parameters: Path[];
