@@ -636,20 +636,29 @@ export const LightboxOverlay = ({
     );
   };
 
-  const renderTitle1MarginLeftSpacer = () => (
-    <div
-      {...(isEditMode ? {
-        'data-controls': 'title1MarginLeft',
-        'data-controls-axis': 'x',
-      } : {})}
-      style={{
-        width: scaled(title1MarginLeft ?? 0),
-        flexShrink: 0,
-        alignSelf: 'stretch',
-        ...(isEditMode ? { pointerEvents: 'auto' as const } : {}),
-      }}
-    />
-  );
+  const renderTitle1MarginLeftSpacer = (placement: 'single-row' | 'two-row' = 'two-row') => {
+    const title1SlotIndex = activeTitleSlots.findIndex((slot) => slot.prefix === 'title1');
+    const title1MaxFraction = title1SlotIndex >= 0
+      ? resolvedTitleWidths[title1SlotIndex]
+      : titleWidthByKey.title1Width;
+    const hasMarginControlOnSpacer = placement === 'two-row' && isEditMode;
+    return (
+      <div
+        {...(hasMarginControlOnSpacer ? {
+          'data-controls': 'title1MarginLeft',
+          'data-controls-axis': 'x',
+          'data-controls-min': '0',
+          'data-controls-max-fraction': String(title1MaxFraction),
+        } : {})}
+        style={{
+          width: scaled(title1MarginLeft ?? 0),
+          flexShrink: 0,
+          alignSelf: 'stretch',
+          ...(hasMarginControlOnSpacer ? { pointerEvents: 'auto' as const } : {}),
+        }}
+      />
+    );
+  };
   // Needed for baseline alignment
   const renderTitleBaselineStrut = () => (
     <span
@@ -720,7 +729,7 @@ export const LightboxOverlay = ({
       }}
     >
       {(hasCounter || hasTitles) ? renderTitleBaselineStrut() : null}
-      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer() : null}
+      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer('single-row') : null}
       {renderSingleRowTitles(activeEntry)}
       <div style={{ flex: 1, minWidth: 0 }} aria-hidden="true" />
       {renderHeaderTrailingControls()}
@@ -731,10 +740,10 @@ export const LightboxOverlay = ({
   const renderSingleRowHeaderFade = () => (
     <div
       className={`${P}-titles-row ${P}-titles-row-header`}
-      style={{ width: '100%' }}
+      style={{ width: '100%', position: 'relative' }}
     >
       {(hasCounter || hasTitles) ? renderTitleBaselineStrut() : null}
-      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer() : null}
+      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer('single-row') : null}
       <div
         className={`${P}-titles-row-titles`}
         style={isTitlesFading && titlesStackMinHeight ? { minHeight: titlesStackMinHeight } : undefined}
@@ -775,9 +784,9 @@ export const LightboxOverlay = ({
             {renderTitles(activeEntry)}
           </div>
         </div>
-        {renderTitleControls()}
       </div>
       {renderHeaderTrailingControls()}
+      {renderTitleControls()}
     </div>
   );
 
@@ -829,7 +838,7 @@ export const LightboxOverlay = ({
       className={`${P}-titles-row-top`}
     >
       {(hasCounter || hasTitles) ? renderTitleBaselineStrut() : null}
-      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer() : null}
+      {showTitle1MarginLeftSpacer ? renderTitle1MarginLeftSpacer('two-row') : null}
       {titlesMinHeight !== undefined ? (
         <div
           className={`${P}-titles-row-titles`}
@@ -949,35 +958,66 @@ export const LightboxOverlay = ({
     );
   };
 
-  const renderTitleMarginControls = () => activeTitleSlots.flatMap((slot, colIndex) => {
-    if (!slot.marginLeftKey) return [];
-    const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
-    const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
-      activeTitleSlots,
-      resolvedTitleWidths,
-      titleMarginLeftByKey,
-      colIndex,
-    ) + getSingleRowMarginColumnOffset();
-    const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+  const renderTitleMarginControls = () => {
+    const singleRowTitle1Index = !useTwoRowHeader ? activeTitleSlots.findIndex((slot) => slot.prefix === 'title1') : -1;
+    const singleRowTitle1Control = !useTwoRowHeader && (isEditMode || (title1MarginLeft ?? 0) > 0) ? (() => {
+      const marginLeft = title1MarginLeft ?? 0;
+      const title1MaxFraction = singleRowTitle1Index >= 0
+        ? resolvedTitleWidths[singleRowTitle1Index]
+        : titleWidthByKey.title1Width;
+      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
 
-    return (
-      <div
-        key={slot.marginLeftKey}
-        data-controls={slot.marginLeftKey}
-        data-controls-axis="x"
-        data-controls-min="0"
-        data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: scaled(offsetBeforeMargin),
-          width: scaled(marginHandleWidth),
-          height: '100%',
-          pointerEvents: 'auto',
-        }}
-      />
-    );
-  });
+      return (
+        <div
+          key="title1MarginLeft"
+          data-controls="title1MarginLeft"
+          data-controls-axis="x"
+          data-controls-min="0"
+          data-controls-max-fraction={String(title1MaxFraction)}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: scaled(marginHandleWidth),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      );
+    })() : null;
+
+    const slotMarginControls = activeTitleSlots.flatMap((slot, colIndex) => {
+      if (!slot.marginLeftKey) return [];
+      const marginLeft = titleMarginLeftByKey[slot.marginLeftKey] ?? 0;
+      const offsetBeforeMargin = getJournalTitleOffsetBeforeSlot(
+        activeTitleSlots,
+        resolvedTitleWidths,
+        titleMarginLeftByKey,
+        colIndex,
+      ) + getSingleRowMarginColumnOffset();
+      const marginHandleWidth = Math.max(marginLeft, TITLE_PADDING_HANDLE_WIDTH);
+
+      return (
+        <div
+          key={slot.marginLeftKey}
+          data-controls={slot.marginLeftKey}
+          data-controls-axis="x"
+          data-controls-min="0"
+          data-controls-max-fraction={String(resolvedTitleWidths[colIndex])}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: scaled(offsetBeforeMargin),
+            width: scaled(marginHandleWidth),
+            height: '100%',
+            pointerEvents: 'auto',
+          }}
+        />
+      );
+    });
+
+    return singleRowTitle1Control ? [singleRowTitle1Control, ...slotMarginControls] : slotMarginControls;
+  };
 
   const renderTitleWidthControls = () => activeTitleSlots.map((slot, colIndex) => {
     const maxTitleWidth = getJournalTitleMaxWidth(colIndex, resolvedTitleWidths);
