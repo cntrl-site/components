@@ -829,6 +829,15 @@ export const GridComponent = {
     content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
     parameters: [],
   },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'settings.titleFontFamily' }, { path: 'settings.subtitleFontFamily' }, { path: 'settings.lightboxCounterFontFamily' }],
+  },
+  fontRelations: {
+    titleFontSettings: 'titleFontFamily',
+    subtitleFontSettings: 'subtitleFontFamily',
+    lightboxCounterFontSettings: 'lightboxCounterFontFamily',
+  },
   schema,
   sourceCode: formSourceRaw,
 };

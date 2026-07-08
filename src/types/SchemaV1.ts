@@ -109,6 +109,7 @@ export type ComponentSchemaV1 = {
   panels?: SchemaPanel[];
   paletteBookmark?: SchemaPaletteBookmark;
   content?: any;
+  fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
 };

@@ -1070,6 +1070,16 @@ export const ListComponent = {
     content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [],
   },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [...LIST_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `settings.${getListColumnTextSettingKey(prefix, 'textFontFamily')}` }))]
+  },
+  fontRelations: {
+    ...LIST_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
+      ...acc,
+      [prefix]: `settings.${getListColumnTextSettingKey(prefix, 'textFontFamily')}`,
+    }), {}),
+  },
   schema,
   sourceCode: formSourceRaw,
 };
