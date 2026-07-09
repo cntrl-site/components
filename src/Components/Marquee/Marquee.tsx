@@ -469,6 +469,15 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
     return () => ro.disconnect();
   }, [useMarqueeTrack, copies, setContent, isEditor, gap, imageMaxWidth, imageMaxHeight, setWidth, imageFit, swappedSlots]);
 
+  useLayoutEffect(() => {
+    if (!isEditor || !showControls || !useMarqueeTrack) return;
+    if (typeof window === 'undefined') return;
+    const raf = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isEditor, showControls, useMarqueeTrack, direction, setWidth, trackHeight, gap, setContent]);
+
   const onTrackEnter = () => {
     if (!hoverPauseEnabled) return;
     setIsHovering(true);
