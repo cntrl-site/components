@@ -62,7 +62,7 @@ function getCSS(P: string): string {
   display: flex;
   flex-direction: column;
   align-items: center;
-  outline: 1px solid #ccc;
+  outline: 1px solid #FF5C02;
 }
 .${P}-item-inner-hidden {
   display: flex;

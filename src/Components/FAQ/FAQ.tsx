@@ -679,7 +679,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                   <div className={`${P}-panel`} aria-hidden={!isOpen}>
                     <div className={`${P}-panel-inner`}>
                       <div className={`${P}-answer-controls`}>
-                        {showPaddingControls && (
+                        {showPaddingControls && isOpen && (
                           <>
                             <PaddingControl
                               data-controls="answerPaddingTop"
@@ -763,7 +763,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                             style={{ height: scaled(answerPaddingBottom) }}
                           />
                         )}
-                        {showPaddingControls && (
+                        {showPaddingControls && isOpen && (
                           <PaddingControl
                             data-controls="answerPaddingBottom"
                             data-controls-static-handle=""

@@ -12,7 +12,7 @@ function getPaddingControlHitStyle(
     position: 'absolute',
     width: PADDING_CONTROL_HIT_SIZE,
     height: PADDING_CONTROL_HIT_SIZE,
-    pointerEvents: 'auto',
+    pointerEvents: 'none',
   };
 
   if (placement === 'left-y') {
