@@ -661,7 +661,7 @@ export const LightboxStripComponent = {
   sourceCode: lightboxStripSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [], 
+    parameters: [{ path: 'settings.cover', placeholderEnabled: true }], 
   },
   fontSettingsPaths: {
     content: [],

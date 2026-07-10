@@ -633,7 +633,7 @@ export const LightboxJournalComponent = {
   sourceCode: lightboxJournalSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [], 
+    parameters: [{ path: 'settings.cover', placeholderEnabled: true }], 
   },
   fontSettingsPaths: {
     content: [],
