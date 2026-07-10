@@ -686,6 +686,6 @@ export const FormComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'settings.fontFamily' }],
+    parameters: [{ path: 'fontFamily' }],
   },
 };

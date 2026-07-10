@@ -277,13 +277,13 @@ function createTextStyleProperties(prefix: ListTextStylePrefix): Record<string, 
 
   properties[getListColumnTextSettingKey(prefix, 'textFontFamily')] = {
     type: 'string',
-    scope: 'common',
+    scope: 'layout',
     title: '',
     display: { type: 'font-family-select', hideLabel: true },
   };
   properties[getListColumnTextSettingKey(prefix, 'textFontSettings')] = {
     ...textStyleProperties.fontSettings,
-    scope: 'common',
+    scope: 'layout',
     title: '',
     display: { type: 'font-settings-weight', hideLabel: true },
   };
@@ -1072,7 +1072,7 @@ export const ListComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [...LIST_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `settings.${getListColumnTextSettingKey(prefix, 'textFontFamily')}` }))]
+    parameters: [...LIST_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${getListColumnTextSettingKey(prefix, 'textFontFamily')}` }))]
   },
   fontRelations: {
     ...LIST_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({

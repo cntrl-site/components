@@ -487,7 +487,7 @@ export const TestimonialGridComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'settings.textFontFamily' }, { path: 'settings.captionFontFamily' }]
+    parameters: [{ path: 'textFontFamily' }, { path: 'captionFontFamily' }]
   },
   fontRelations: {
     textFontSettings: 'textFontFamily',

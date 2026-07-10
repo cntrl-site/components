@@ -555,11 +555,11 @@ export const OnelinerFormComponent = {
   },
   assetsPaths: {
     content: [],
-    parameters: [{ path: 'settings.buttonIcon.icon' }],
+    parameters: [{ path: 'buttonIcon.icon' }],
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'settings.fontFamily' }],
+    parameters: [{ path: 'fontFamily' }],
   },
   fontRelations: {
     inputFontSettings: 'fontFamily',

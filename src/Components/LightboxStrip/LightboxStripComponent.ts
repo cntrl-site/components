@@ -661,11 +661,11 @@ export const LightboxStripComponent = {
   sourceCode: lightboxStripSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [{ path: 'settings.cover', placeholderEnabled: true }], 
+    parameters: [{ path: 'cover', placeholderEnabled: true }], 
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [...STRIP_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `settings.${getStripTextStyleSettingKey(prefix, 'fontFamily')}` }))]
+    parameters: [...STRIP_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${getStripTextStyleSettingKey(prefix, 'fontFamily')}` }))]
   },
   fontRelations: {
     ...STRIP_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
