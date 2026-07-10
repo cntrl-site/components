@@ -552,7 +552,15 @@ export const FAQComponent = {
   },
   assetsPaths: {
     content: [],
-    parameters: [{ path: 'icon' }],
+    parameters: [{ path: 'settings.icon' }]
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'settings.questionFontFamily' }, { path: 'settings.answerFontFamily' }]
+  },
+  fontRelations: {
+    questionFontSettings: 'questionFontFamily', 
+    answerFontSettings: 'answerFontFamily',
   },
   schema,
   sourceCode: formSourceRaw,

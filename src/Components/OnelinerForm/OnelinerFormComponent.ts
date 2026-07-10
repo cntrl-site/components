@@ -555,7 +555,16 @@ export const OnelinerFormComponent = {
   },
   assetsPaths: {
     content: [],
-    parameters: [{ path: 'buttonIcon.icon' }]
+    parameters: [{ path: 'buttonIcon.icon' }],
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'settings.fontFamily' }],
+  },
+  fontRelations: {
+    inputFontSettings: 'fontFamily',
+    buttonFontSettings: 'fontFamily',
+    statusFontSettings: 'fontFamily',
   },
   schema,
   sourceCode: onelinerFormSourceRaw,

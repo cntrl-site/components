@@ -290,7 +290,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: '',
         display: { type: 'radio-group' },
-        enum: ['a', 'b', 'c'],
+        enum: ['a', 'b', 'c', 'd', 'e', 'f'],
       },
       gridLayout: {
         type: 'grid-layout',
@@ -349,6 +349,12 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         title: 'Align entries',
         display: { type: 'toggle-cycle', enum: ['on', 'off'] },
+      },
+      align: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Align',
+        display: { type: 'toggle-cycle', enum: ['top', 'center', 'bottom'] },
       },
       entriesCount: {
         type: 'number',
@@ -589,6 +595,7 @@ const schema: ComponentSchemaV1 = {
       transition: 'fade',
       showText: 'always',
       alignEntries: 'on',
+      align: 'top',
       titleColor: '#000000',
       subtitleColor: '#000000',
       lightboxCounterColor: '#DEDDDD',
@@ -692,12 +699,8 @@ const schema: ComponentSchemaV1 = {
         then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
       },
       {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.alignEntries.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'b' },
-        then: { name: 'properties.alignEntries.display.visible', value: false },
+        if: { name: 'imageDisplay.display', value: 'cover' },
+        then: { name: 'properties.align.display.enabled', value: false },
       },
     ],
     layout: [
@@ -709,6 +712,7 @@ const schema: ComponentSchemaV1 = {
       'verticalGap',
       'showText',
       'alignEntries',
+      'align',
       'entriesCount',
       'lightbox',
       'imageDisplay',
@@ -741,10 +745,10 @@ const schema: ComponentSchemaV1 = {
         {
           type: 'row',
           title: '',
-          items: ['textBoxWidth', 'entriesCount']
+          items: ['textBoxWidth', 'verticalGap']
         },
-        {type: 'row', title: '', items: ['verticalGap', 'showText']},
-        {type: 'row', title: '', items: ['alignEntries']},
+        {type: 'row', title: '', items: ['entriesCount', 'showText']},
+        {type: 'row', title: '', items: ['alignEntries', 'align']},
       ],
     },
     {
@@ -764,8 +768,8 @@ const schema: ComponentSchemaV1 = {
           type: 'row',
           title: 'Slider',
           items: [
-            { type: 'group', title: '', items: ['slider', 'sliderTiming']},
-            { type: 'group', title: '', items: ['direction', 'transition']},
+            { type: 'group', title: '', items: ['slider', 'direction']},
+            { type: 'group', title: '', items: ['sliderTiming', 'transition']},
           ],
         },
       ],
@@ -824,6 +828,15 @@ export const GridComponent = {
   assetsPaths: {
     content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
     parameters: [],
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'settings.titleFontFamily' }, { path: 'settings.subtitleFontFamily' }, { path: 'settings.lightboxCounterFontFamily' }],
+  },
+  fontRelations: {
+    titleFontSettings: 'titleFontFamily',
+    subtitleFontSettings: 'subtitleFontFamily',
+    lightboxCounterFontSettings: 'lightboxCounterFontFamily',
   },
   schema,
   sourceCode: formSourceRaw,

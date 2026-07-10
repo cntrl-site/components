@@ -674,4 +674,18 @@ export const FormComponent = {
   },
   schema,
   sourceCode: formSourceRaw,
+  fontRelations: {
+    inputFontSettings: 'fontFamily',
+    buttonFontSettings: 'fontFamily',
+    labelFontSettings: 'fontFamily',
+    statusFontSettings: 'fontFamily',
+  },
+  assetsPaths: {
+    content: [],
+    parameters: []
+  },
+  fontSettingsPaths: {
+    content: [],
+    parameters: [{ path: 'settings.fontFamily' }],
+  },
 };
