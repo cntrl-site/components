@@ -555,7 +555,7 @@ export const OnelinerFormComponent = {
   },
   assetsPaths: {
     content: [],
-    parameters: [{ path: 'buttonIcon.icon' }],
+    parameters: [{ path: 'settings.buttonIcon.icon' }],
   },
   fontSettingsPaths: {
     content: [],
