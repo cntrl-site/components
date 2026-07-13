@@ -8,10 +8,18 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'manual',
     properties: {
-      imageSize: {
+      maxWidth: {
         type: 'number',
         scope: 'common',
-        title: 'Image size (%)',
+        title: 'Max width (%)',
+        display: { type: 'percentage-input' },
+        min: 10,
+        max: 100,
+      },
+      maxHeight: {
+        type: 'number',
+        scope: 'common',
+        title: 'Max height (%)',
         display: { type: 'percentage-input' },
         min: 10,
         max: 100,
@@ -30,33 +38,19 @@ const schema: ComponentSchemaV1 = {
         title: 'BG image',
         display: { type: 'toggle-cycle', enum: ['greyscale', 'blur', 'as is'] },
       },
-      effectAmount: {
-        type: 'number',
-        scope: 'common',
-        title: 'Effect amount',
-        display: { type: 'percentage-input' },
-        min: 0,
-        max: 100,
-      },
     },
     defaults: {
-      imageSize: 60,
+      maxWidth: 60,
+      maxHeight: 60,
       transition: 1000,
       bgImage: 'greyscale',
-      effectAmount: 50,
     },
-    displayRules: [
-      {
-        if: { name: 'bgImage', value: 'as is' },
-        then: { name: 'properties.effectAmount.display.visible', value: false },
-      },
-    ],
     layout: [
       '__componentName__',
-      'imageSize',
+      'maxWidth',
+      'maxHeight',
       'transition',
       'bgImage',
-      'effectAmount',
     ],
   },
   panels: [
@@ -67,8 +61,8 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         '__componentName__',
-        { type: 'row', title: '', items: ['imageSize', 'transition'] },
-        { type: 'row', title: '', items: ['bgImage', 'effectAmount'] },
+        { type: 'row', title: '', items: ['maxWidth', 'maxHeight'] },
+        { type: 'row', title: '', items: ['transition', 'bgImage'] },
       ],
     },
   ],
