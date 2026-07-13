@@ -12,6 +12,7 @@ import { ListComponent } from './List/ListComponent';
 import { FAQComponent } from './FAQ/FAQComponent';
 import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
 import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
+import { ZoomComponent } from './Zoom/ZoomComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -27,4 +28,5 @@ export const components: Component[] = [
   FAQComponent,
   LightboxStripComponent,
   LightboxJournalComponent,
+  ZoomComponent,
 ];
