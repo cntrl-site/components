@@ -158,13 +158,14 @@ function getEffectAmount(bgImage: ZoomSettings['bgImage']): number {
   return 0;
 }
 
-function getBackgroundFilter(bgImage: ZoomSettings['bgImage'], progress = 1): string {
+function getBackgroundFilter(bgImage: ZoomSettings['bgImage'], progress = 1, scale = 1): string {
   const amount = getEffectAmount(bgImage) * Math.max(0, Math.min(1, progress));
   if (bgImage === 'greyscale') {
     return `grayscale(${amount}%)`;
   }
   if (bgImage === 'blur') {
-    return `blur(${amount / 4}px)`;
+    const blurPx = amount / 4;
+    return blurPx <= 0 ? 'none' : `blur(${blurPx / Math.max(scale, 1)}px)`;
   }
   return 'none';
 }
@@ -370,14 +371,14 @@ export function Zoom({ settings, content, isEditor, isPreviewMode }: ZoomProps) 
       setIncomingIndex(targetIndex);
       setIncomingScale(0);
       setOutgoingScale(1);
-      setOutgoingFilter(getBackgroundFilter(bgImage, 0));
+      setOutgoingFilter(getBackgroundFilter(bgImage, 0, 1));
     } else {
       setBackgroundIndex(getPreviousBackgroundIndex(targetIndex, items.length));
       setOutgoingIndex(targetIndex);
       setIncomingIndex(activeIndex);
       setIncomingScale(1);
       setOutgoingScale(targetCoverScale);
-      setOutgoingFilter(getBackgroundFilter(bgImage, 1));
+      setOutgoingFilter(getBackgroundFilter(bgImage, 1, targetCoverScale));
     }
 
     requestAnimationFrame(() => {
@@ -386,11 +387,11 @@ export function Zoom({ settings, content, isEditor, isPreviewMode }: ZoomProps) 
         if (direction === 'next') {
           setIncomingScale(1);
           setOutgoingScale(activeCoverScale);
-          setOutgoingFilter(getBackgroundFilter(bgImage, 1));
+          setOutgoingFilter(getBackgroundFilter(bgImage, 1, activeCoverScale));
         } else {
           setIncomingScale(0);
           setOutgoingScale(1);
-          setOutgoingFilter(getBackgroundFilter(bgImage, 0));
+          setOutgoingFilter(getBackgroundFilter(bgImage, 0, 1));
         }
       });
     });
