@@ -12,10 +12,12 @@ import { ListComponent } from './List/ListComponent';
 import { FAQComponent } from './FAQ/FAQComponent';
 import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
 import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
+import { ClickGallerieComponent } from './ClickGallerie/ClickGallerieComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
   ControlImageRevealSliderComponent,
+  ClickGallerieComponent,
   LightboxComponent,
   FormComponent,
   OnelinerFormComponent,
