@@ -20,6 +20,7 @@ type ScaleSettings = {
 
 const GREYSCALE_EFFECT_AMOUNT = 100;
 const BLUR_EFFECT_AMOUNT = 70;
+const TRANSITION_TIMING_FUNCTION = 'cubic-bezier(0.86, 0, 0.07, 1)';
 
 type ImageDimensions = {
   width: number;
@@ -74,34 +75,34 @@ function getCSS(P: string): string {
 }
 .${P}-incoming-next {
   z-index: 4;
-  transition: transform var(--${P}-transition-ms) ease-out;
+  transition: transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-incoming-prev {
   z-index: 4;
-  transition: transform var(--${P}-transition-ms) ease-out;
+  transition: transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-outgoing {
   will-change: transform;
 }
 .${P}-outgoing-next {
   z-index: 3;
-  transition: transform var(--${P}-transition-ms) ease-out;
+  transition: transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-outgoing-prev {
   z-index: 3;
-  transition: transform var(--${P}-transition-ms) ease-out;
+  transition: transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-outgoing-next .${P}-effect-image {
-  transition: filter var(--${P}-transition-ms) ease-out;
+  transition: filter var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-outgoing-prev .${P}-effect-image {
-  transition: filter var(--${P}-transition-ms) ease-out;
+  transition: filter var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-incoming .${P}-effect-image {
-  transition: filter var(--${P}-transition-ms) ease-out;
+  transition: filter var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-background .${P}-effect-image {
-  transition: filter var(--${P}-transition-ms) ease;
+  transition: filter var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-snap .${P}-incoming,
 .${P}-snap .${P}-outgoing,

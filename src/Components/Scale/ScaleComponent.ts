@@ -42,7 +42,7 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       maxWidth: 60,
       maxHeight: 60,
-      transition: 1000,
+      transition: 700,
       bgImage: 'greyscale',
     },
     layout: [
