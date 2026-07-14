@@ -831,7 +831,7 @@ export const GridComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'settings.titleFontFamily' }, { path: 'settings.subtitleFontFamily' }, { path: 'settings.lightboxCounterFontFamily' }],
+    parameters: [{ path: 'titleFontFamily' }, { path: 'subtitleFontFamily' }, { path: 'lightboxCounterFontFamily' }],
   },
   fontRelations: {
     titleFontSettings: 'titleFontFamily',

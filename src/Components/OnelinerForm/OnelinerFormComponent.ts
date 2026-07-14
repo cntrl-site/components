@@ -559,7 +559,7 @@ export const OnelinerFormComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'settings.fontFamily' }],
+    parameters: [{ path: 'fontFamily' }],
   },
   fontRelations: {
     inputFontSettings: 'fontFamily',

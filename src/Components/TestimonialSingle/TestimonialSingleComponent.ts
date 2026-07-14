@@ -462,11 +462,11 @@ export const TestimonialSingleComponent = {
   sourceCode: testimonialSingleSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [{ path: 'settings.controls.icon' }]
+    parameters: [{ path: 'controls.icon' }]
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'settings.textFontFamily' }, { path: 'settings.captionFontFamily' }]
+    parameters: [{ path: 'textFontFamily' }, { path: 'captionFontFamily' }]
   },
   fontRelations: {
     textFontSettings: 'textFontFamily',

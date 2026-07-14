@@ -633,11 +633,11 @@ export const LightboxJournalComponent = {
   sourceCode: lightboxJournalSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [{ path: 'settings.cover', placeholderEnabled: true }], 
+    parameters: [{ path: 'cover', placeholderEnabled: true }], 
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [...JOURNAL_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `settings.${getJournalTextStyleSettingKey(prefix, 'fontFamily')}` }))]
+    parameters: [...JOURNAL_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}` }))]
   },
   fontRelations: {
     ...JOURNAL_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
