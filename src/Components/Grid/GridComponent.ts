@@ -317,7 +317,7 @@ const schema: ComponentSchemaV1 = {
             },
             horizontalGap: {
               type: 'number',
-              title: 'Gap',
+              title: 'Gutter',
               min: 0,
             }
           }

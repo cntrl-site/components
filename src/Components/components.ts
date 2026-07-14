@@ -13,6 +13,7 @@ import { FAQComponent } from './FAQ/FAQComponent';
 import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
 import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
 import { ClickGallerieComponent } from './ClickGallerie/ClickGallerieComponent';
+import { ScaleComponent } from './Scale/ScaleComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -29,4 +30,5 @@ export const components: Component[] = [
   FAQComponent,
   LightboxStripComponent,
   LightboxJournalComponent,
+  ScaleComponent,
 ];
