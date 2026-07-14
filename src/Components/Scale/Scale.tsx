@@ -449,7 +449,6 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
             />
           </div>
         )}
-
         {isAnimating && outgoingItem?.image?.url && (
           <div
             className={cn(
@@ -468,7 +467,6 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
             />
           </div>
         )}
-
         {isAnimating && incomingItem?.image?.url && (
           <div
             className={cn(
@@ -486,7 +484,6 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
             />
           </div>
         )}
-
         {!isAnimating && foregroundItem?.image?.url && (
           <div
             className={cn(`${P}-stage`, `${P}-foreground`)}
@@ -499,7 +496,6 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
             />
           </div>
         )}
-
         {isInteractive && items.length > 1 && !isAnimating && (
           <>
             <button
