@@ -3,14 +3,14 @@ import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { useScopedStyles } from '../utils/useScopedStyles';
 
-type ZoomContentItem = {
+type ScaleContentItem = {
   image?: {
     url?: string;
     name?: string;
   };
 };
 
-type ZoomSettings = {
+type ScaleSettings = {
   imageSize?: number;
   maxWidth?: number;
   maxHeight?: number;
@@ -31,9 +31,9 @@ type SizePercents = {
   heightPercent: number;
 };
 
-type ZoomProps = {
-  settings: ZoomSettings;
-  content?: ZoomContentItem[];
+type ScaleProps = {
+  settings: ScaleSettings;
+  content?: ScaleContentItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
 } & CommonComponentProps;
@@ -74,7 +74,7 @@ function getCSS(P: string): string {
 }
 .${P}-incoming-next {
   z-index: 4;
-  transition: transform var(--${P}-transition-ms) ease-in;
+  transition: transform var(--${P}-transition-ms) ease-out;
 }
 .${P}-incoming-prev {
   z-index: 4;
@@ -85,20 +85,20 @@ function getCSS(P: string): string {
 }
 .${P}-outgoing-next {
   z-index: 3;
-  transition: transform var(--${P}-transition-ms) ease-in;
+  transition: transform var(--${P}-transition-ms) ease-out;
 }
 .${P}-outgoing-prev {
   z-index: 3;
   transition: transform var(--${P}-transition-ms) ease-out;
 }
 .${P}-outgoing-next .${P}-effect-image {
-  transition: filter var(--${P}-transition-ms) ease-in;
+  transition: filter var(--${P}-transition-ms) ease-out;
 }
 .${P}-outgoing-prev .${P}-effect-image {
   transition: filter var(--${P}-transition-ms) ease-out;
 }
 .${P}-incoming .${P}-effect-image {
-  transition: filter var(--${P}-transition-ms) ease;
+  transition: filter var(--${P}-transition-ms) ease-out;
 }
 .${P}-background .${P}-effect-image {
   transition: filter var(--${P}-transition-ms) ease;
@@ -152,13 +152,13 @@ function getCSS(P: string): string {
 `;
 }
 
-function getEffectAmount(bgImage: ZoomSettings['bgImage']): number {
+function getEffectAmount(bgImage: ScaleSettings['bgImage']): number {
   if (bgImage === 'blur') return BLUR_EFFECT_AMOUNT;
   if (bgImage === 'greyscale') return GREYSCALE_EFFECT_AMOUNT;
   return 0;
 }
 
-function getBackgroundFilter(bgImage: ZoomSettings['bgImage'], progress = 1, scale = 1): string {
+function getBackgroundFilter(bgImage: ScaleSettings['bgImage'], progress = 1, scale = 1): string {
   const amount = getEffectAmount(bgImage) * Math.max(0, Math.min(1, progress));
   if (bgImage === 'greyscale') {
     return `grayscale(${amount}%)`;
@@ -259,7 +259,7 @@ function preloadImages(
   });
 }
 
-export function Zoom({ settings, content, isEditor, isPreviewMode }: ZoomProps) {
+export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps) {
   const { prefix: P } = useScopedStyles();
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const {

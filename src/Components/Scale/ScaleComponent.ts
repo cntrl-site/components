@@ -1,6 +1,6 @@
-import { Zoom } from './Zoom';
+import { Scale } from './Scale';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import zoomSourceRaw from './Zoom.tsx?raw';
+import scaleSourceRaw from './Scale.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -70,6 +70,7 @@ const schema: ComponentSchemaV1 = {
     type: 'array',
     settings: {
       addItemFromFileExplorer: true,
+      deleteImageDeletesEntry: true,
     },
     items: {
       type: 'object',
@@ -87,31 +88,37 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
+          url: 'https://cdn.cntrl.site/component-assets/scale_component_1.jpg ',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
+          url: 'https://cdn.cntrl.site/component-assets/scale_component_2.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
+          url: 'https://cdn.cntrl.site/component-assets/scale_component_3.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
+          url: 'https://cdn.cntrl.site/component-assets/scale_component_4.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
+          url: 'https://cdn.cntrl.site/component-assets/scale_component_5.jpg',
+          name: '',
+        },
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/scale_component_6.jpg',
           name: '',
         },
       },
@@ -119,10 +126,10 @@ const schema: ComponentSchemaV1 = {
   },
 };
 
-export const ZoomComponent = {
-  element: Zoom,
-  id: 'zoom',
-  name: 'Zoom',
+export const ScaleComponent = {
+  element: Scale,
+  id: 'scale',
+  name: 'Scale',
   category: 'galleries',
   version: 1,
   defaultSize: {
@@ -137,10 +144,10 @@ export const ZoomComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Zoom.mp4',
+    url: 'https://cdn.cntrl.site/component-assets/Scale.mp4',
   },
   schema,
-  sourceCode: zoomSourceRaw,
+  sourceCode: scaleSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [],
