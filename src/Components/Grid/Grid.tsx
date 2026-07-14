@@ -398,6 +398,7 @@ type GridProps = {
   isPreviewMode?: boolean;
   isEditMode?: boolean;
   activeEvent: string | undefined;
+  portalId?: string;
   onUpdateSettings?: (settings: GridSettings) => void;
 } & CommonComponentProps;
 
@@ -973,10 +974,10 @@ function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counter
       ref={containerRef}
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
+        top: 'var(--cntrl-article-top, 0)',
+        left: 'var(--cntrl-article-left, 0)',
+        width: 'var(--cntrl-article-width, 100vw) !important',
+        height: 'var(--cntrl-viewport-height, 100vh) !important',
         zIndex: 9997,
         touchAction: phase === 'open' ? 'none' : undefined,
       }}
@@ -1139,7 +1140,7 @@ function resolveLightboxImageDisplay(
   return value?.display === 'cover' ? 'cover' : 'fit';
 }
 
-export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId }: GridProps) {
+export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId, portalId }: GridProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'a',
@@ -1687,8 +1688,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
           })}
         </div>
       </div>
-      {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'on' &&
-        createPortal(
+      {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'on' && (() => {
+        const portalTarget = (portalId ? document.getElementById(portalId) : null) ?? document.body;
+        return createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
               items={lightboxItems}
@@ -1701,8 +1703,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               counterStyle={lightboxCounterFieldCss}
             />
           </div>,
-          document.body
-        )}
+          portalTarget,
+        );
+      })()}
     </>
   );
 }
