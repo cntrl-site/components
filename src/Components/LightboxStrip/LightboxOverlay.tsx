@@ -1306,7 +1306,7 @@ export const LightboxOverlay = ({
                 key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
                 ref={(element) => itemRefs.current[flatIndex] = element}
                 className={`${P}-strip-item`}
-                style={{ height: titleHeaderLayout === 'mobile' ? `calc(0.75 * var(--cntrl-viewport-height, 100vh))` : '75%'}}
+                style={{ height: titleHeaderLayout === 'mobile' ? `calc(0.75 * var(--cntrl-viewport-height, 100vh))` : '100%'}}
               >
                 <img
                   src={item.image.url}

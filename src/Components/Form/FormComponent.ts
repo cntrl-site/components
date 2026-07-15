@@ -402,7 +402,7 @@ const schema = {
       type: 'A',
       inputColor: '#FFFFFF',
       inputTextColor: '#0A00F8',
-      inputBorderColor: '#E2E2E2',
+      inputBorderColor: '#A7A7A7',
       placeholderColor: '#808080',
       buttonColor: '#0A00F8',
       buttonTextColor: '#ffffff',
@@ -460,7 +460,7 @@ const schema = {
         textDecoration: 'none',
         fontVariant: 'normal',
       },
-      isButtonFullWidth: false,
+      isButtonFullWidth: true,
       buttonLabel: 'Sign up',
       successMessage: 'Thanks for subscribing!',
       errorMessage: 'Please, fill all required fields.',
@@ -477,12 +477,30 @@ const schema = {
         inputPadding: { top: 0.0373, right: 0.0373, bottom: 0.0373, left: 0.0373 },
         inputFontSize: 0.043,
         inputLineHeight: 0.043,
-        buttonFontSize: 0.0373,
-        buttonLineHeight: 0.0373,
+        buttonFontSize: 0.0426,
+        buttonLineHeight: 0.0426,
         labelFontSize: 0.0373,
         labelLineHeight: 0.0373,
         statusFontSize: 0.0373,
         statusLineHeight: 0.0373,
+      },
+      t: {
+        gap: 0.02604,
+        fieldsGap: 0.0083,
+        buttonStroke: 0,
+        buttonCorners: 0.05,
+        inputStroke: 0.001,
+        inputCorners: 0.039,
+        buttonPadding: { top: 0.0195, right: 0.02604, bottom: 0.0195, left: 0.0195 },
+        inputPadding: { top: 0.0195, right: 0.0195, bottom: 0.0195, left: 0.0195 },
+        inputFontSize: 0.02083,
+        inputLineHeight: 0.02604,
+        buttonFontSize: 0.02083,
+        buttonLineHeight: 0.02604,
+        labelFontSize: 0.01,
+        labelLineHeight: 0.01,
+        statusFontSize: 0.01,
+        statusLineHeight: 0.01,
       },
       d: {
         gap: 0.0083,
@@ -660,16 +678,13 @@ export const FormComponent = {
   },
   defaultSize: {
     d: {
-      width: 300,
-      height: 42
+      width: 300
     },
     t: {
-      width: 346,
-      height: 42
+      width: 300,
     },
     m: {
-      width: 300,
-      height: 42
+      width: 340,
     }
   },
   schema,

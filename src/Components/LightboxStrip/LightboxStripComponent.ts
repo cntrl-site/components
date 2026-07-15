@@ -243,7 +243,7 @@ const schema: ComponentSchemaV1 = {
       },
       backgroundColor: {
         type: 'string',
-        scope: 'layout',
+        scope: 'common',
         title: 'BG Default',
         display: { type: 'settings-color-picker' },
       },
@@ -413,6 +413,7 @@ const schema: ComponentSchemaV1 = {
         reversed: false,
       },
       closeIcon: defaultCloseIconUrl,
+      backgroundColor: '#FFFFFF',
       closeIconColor: '#000000',
       closeIconHoverColor: '#cccccc',
       thumbnailObjectFit: {
@@ -444,16 +445,41 @@ const schema: ComponentSchemaV1 = {
         title3MarginLeft: 0.04,
         titleRowMarginBottom: 0.08,
         closeIconMaxWidth: 0.04,
-        backgroundColor: '#FFFFFF',
         contentMarginTop: 0.08,
         iconMarginLeft: 0.02,
         ...createTextStyleLayoutDefaults({
-          title1FontSize: 0.04,
-          title1LineHeight: 0.04,
-          title2FontSize: 0.04,
-          title2LineHeight: 0.04,
-          title3FontSize: 0.04,
-          title3LineHeight: 0.04,
+          title1FontSize: 0.042,
+          title1LineHeight: 0.042,
+          title2FontSize: 0.042,
+          title2LineHeight: 0.042,
+          title3FontSize: 0.042,
+          title3LineHeight: 0.042,
+        }),
+      },
+      t: {
+        thumbnailSize: 0.03,
+        thumbnailVisibility: 'on',
+        titleHeaderLayout: 'desktop',
+        thumbnailGap: 0.02,
+        thumbnailMarginBottom: 0.007,
+        imageGap: 0.005,
+        title1Width: 0.29,
+        title2Width: 0.13,
+        title3Width: 0.14,
+        title1MarginLeft: 0.015,
+        title2MarginLeft: 0.1,
+        title3MarginLeft: 0.1,
+        titleRowMarginBottom: 0,
+        closeIconMaxWidth: 0.039,
+        contentMarginTop: 0.015,
+        iconMarginLeft: 0.02,
+        ...createTextStyleLayoutDefaults({
+          title1FontSize: 0.0208,
+          title1LineHeight: 0.0208,
+          title2FontSize: 0.0208,
+          title2LineHeight: 0.0208,
+          title3FontSize: 0.0208,
+          title3LineHeight: 0.0208,
         }),
       },
       d: {
@@ -471,7 +497,6 @@ const schema: ComponentSchemaV1 = {
         title3MarginLeft: 0.1,
         titleRowMarginBottom: 0,
         closeIconMaxWidth: 0.02,
-        backgroundColor: '#FFFFFF',
         contentMarginTop: 0.015,
         iconMarginLeft: 0.02,
         ...createTextStyleLayoutDefaults({
@@ -646,11 +671,12 @@ export const LightboxStripComponent = {
   defaultSize: {
     d: {
       width: 350,
-      height: 350,
+    },
+    t: {
+      width: 300,
     },
     m: {
       width: 300,
-      height: 350,
     },
   },
   preview: {

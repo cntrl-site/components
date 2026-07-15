@@ -326,12 +326,7 @@ const MarqueeItemCard = ({
       >
         {imageNode && item.link
           ? (
-            <a
-              href={item.link}
-              target='_blank'
-              rel='noopener noreferrer'
-              className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}
-            >
+            <a href={item.link} target='_self' rel='noopener noreferrer' className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}>
               {imageNode}
             </a>
           )
@@ -460,9 +455,12 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
         typeof prevCandidate === 'number' &&
         Math.abs(prevCandidate - nextRawSetWidth) <= 0.25;
       stableCandidateRef.current = nextRawSetWidth;
+      let effectiveRepeat = contentSequenceRepeat;
+      let trustworthySingleCycleWidth = 0;
       if ((autoplayEnabled || isEditor) && originalItemCount > 0 && nextContainerWidth > 0) {
         const singleCycleWidth = measureSingleCycleWidth(set, originalItemCount);
         if (singleCycleWidth >= MIN_TRUSTWORTHY_CYCLE_WIDTH_PX) {
+          trustworthySingleCycleWidth = singleCycleWidth;
           const targetRepeat = Math.min(
             MAX_CONTENT_SEQUENCE_REPEAT,
             Math.max(
@@ -470,17 +468,23 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
               Math.ceil(nextContainerWidth / singleCycleWidth) + 1,
             ),
           );
+          effectiveRepeat = targetRepeat;
           if (targetRepeat !== contentSequenceRepeat) {
             setContentSequenceRepeat(targetRepeat);
           }
         }
       }
-      const resolvedSetWidth = nextRawSetWidth > 0
-        ? nextRawSetWidth
-        : (() => {
-          const singleCycleWidth = measureSingleCycleWidth(set, originalItemCount);
-          return singleCycleWidth > 0 ? singleCycleWidth * contentSequenceRepeat : 0;
-        })();
+      const repeatIsChanging = effectiveRepeat !== contentSequenceRepeat;
+      const resolvedSetWidth = repeatIsChanging && trustworthySingleCycleWidth > 0
+        ? trustworthySingleCycleWidth * effectiveRepeat
+        : nextRawSetWidth > 0
+          ? nextRawSetWidth
+          : trustworthySingleCycleWidth > 0
+            ? trustworthySingleCycleWidth * effectiveRepeat
+            : (() => {
+              const singleCycleWidth = measureSingleCycleWidth(set, originalItemCount);
+              return singleCycleWidth > 0 ? singleCycleWidth * effectiveRepeat : 0;
+            })();
       if (resolvedSetWidth > 0) {
         setSetWidth((prev) => {
           if (prev <= 0) return resolvedSetWidth;

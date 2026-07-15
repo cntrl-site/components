@@ -400,7 +400,7 @@ const schema = {
         minHeight: 0.1,
         iconMaxWidth: 0.1,
         stroke: 0.001,
-        corners: 0,
+        corners: 0.0053,
         buttonPadding: { top: 0.02, right: 0.04, bottom: 0.02, left: 0.04 },
         inputPadding: { top: 0.01, right: 0.03, bottom: 0.01, left: 0.03 },
         inputFontSize: 0.043,
@@ -410,11 +410,25 @@ const schema = {
         statusFontSize: 0.0373,
         statusLineHeight: 0.0373,
       },
+      t: {
+        minHeight: 0.0651,
+        iconMaxWidth: 0.1,
+        stroke: 0.001,
+        corners: 0.0026,
+        buttonPadding: { top: 0.02604, right: 0.02604, bottom: 0.02604, left: 0.02604 },
+        inputPadding: { top: 0.02604, right: 0.02604, bottom: 0.02604, left: 0.0182 },
+        inputFontSize: 0.0208,
+        inputLineHeight: 0.02604,
+        buttonFontSize: 0.0208,
+        buttonLineHeight: 0.02604,
+        statusFontSize: 0.0208,
+        statusLineHeight: 0.02604,
+      },
       d: {
         minHeight: 0.028,
         iconMaxWidth: 0.028,
         stroke: 0.001,
-        corners: 0,
+        corners: 0.0027,
         buttonPadding: { right: 0.0175, left: 0.0175, top: 0.005, bottom: 0.004,},
         inputPadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         inputFontSize: 0.01,
@@ -541,16 +555,13 @@ export const OnelinerFormComponent = {
   },
   defaultSize: {
     d: {
-      width: 400,
-      height: 60
+      width: 400
     },
     t: {
-      width: 453,
-      height: 60
+      width: 500
     },
     m: {
-      width: 340,
-      height: 60
+      width: 340
     }
   },
   assetsPaths: {

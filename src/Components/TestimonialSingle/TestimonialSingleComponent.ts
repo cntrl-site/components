@@ -267,6 +267,20 @@ const schema: ComponentSchemaV1 = {
         imageHeight: 0.21,
         controlsWidth: 0.06,
       },
+      t: {
+        speed: 1,
+        width: 0.65,
+        imageMarginTop: 0.026,
+        captionMarginTop: 0.01,
+        textMarginTop: 0,
+        textFontSize: 0.035,
+        captionFontSize: 0.023,
+        textLineHeight: 0.040,
+        captionLineHeight: 0.029,
+        imageWidth: 0.05,
+        imageHeight: 0.05,
+        controlsWidth: 0.026,
+      },
       d: {
         speed: 1,
         width: 0.35,
@@ -447,15 +461,12 @@ export const TestimonialSingleComponent = {
   defaultSize: {
     d: {
       width: 700,
-      height: 300
     },
     t: {
-      width: 373,
-      height: 300
+      width: 700,
     },
     m: {
       width: 334,
-      height: 300
     }
   },
   schema,
