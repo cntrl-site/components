@@ -8,6 +8,7 @@ import { MarqueeComponent } from './Marquee/MarqueeComponent';
 import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridComponent';
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
+import { HiveComponent } from './Hive/HiveComponent';
 import { ListComponent } from './List/ListComponent';
 import { FAQComponent } from './FAQ/FAQComponent';
 import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
@@ -26,6 +27,7 @@ export const components: Component[] = [
   TestimonialGridComponent,
   TestimonialSingleComponent,
   GridComponent,
+  HiveComponent,
   ListComponent,
   FAQComponent,
   LightboxStripComponent,

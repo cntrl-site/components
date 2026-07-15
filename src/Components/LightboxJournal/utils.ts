@@ -15,6 +15,8 @@ type JournalEntry = {
   image: JournalImage[];
 };
 
+export type JournalTitleEntry = Pick<JournalEntry, 'title1' | 'title2' | 'title3'>;
+
 type JournalSettings = {
   title1Color: string;
   title2Color: string;
@@ -187,7 +189,7 @@ export const formatSlideCounter = (
   return formatImageCounter(entries, activeEntryIndex);
 };
 
-export const getEntryTitleKey = (entry: JournalEntry | undefined) =>
+export const getEntryTitleKey = (entry: JournalTitleEntry | undefined) =>
   entry ? `${entry.title1 ?? ''}|${entry.title2 ?? ''}|${entry.title3 ?? ''}` : '';
 
 export const shouldShowCounter = (
@@ -218,7 +220,7 @@ export type JournalTitleSlot = {
 
 export const buildJournalTitleSlots = (
   prefix: string,
-  entry: JournalEntry,
+  entry: JournalTitleEntry,
   title1Style: CSSProperties,
   title2Style: CSSProperties,
   title3Style: CSSProperties,
