@@ -202,7 +202,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
-      addItemWithoutImage: true,
+      addItemFromFileExplorer: true,
     },
     display: {
       type: 'array',
