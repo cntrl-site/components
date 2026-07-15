@@ -14,12 +14,10 @@
 .background {
   position: fixed;
   z-index: 9997;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
+  top: var(--cntrl-article-top, 0);
+  left: var(--cntrl-article-left, 0);
+  width: var(--cntrl-article-width, 100vw) !important;
+  height: var(--cntrl-viewport-height, 100vh) !important;
 }
 
 .editor {
@@ -31,10 +29,10 @@
 .contentStyle {
   position: fixed;
   z-index: 9999;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: var(--cntrl-article-top, 0);
+  left: var(--cntrl-article-left, 0);
+  width: var(--cntrl-article-width, 100vw) !important;
+  height: var(--cntrl-viewport-height, 100vh) !important;
   overflow: hidden;
   background: transparent;
   box-sizing: border-box;

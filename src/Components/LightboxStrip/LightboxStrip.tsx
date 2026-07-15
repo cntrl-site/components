@@ -84,10 +84,10 @@ function getCSS(P: string): string {
 .${P}-lightbox-editor {
   inset: auto;
   top: var(--cntrl-article-top, 0);
-  overflow: hidden;
   left: var(--cntrl-article-left, 0);
   width: var(--cntrl-article-width, 100vw) !important;
   height: var(--cntrl-viewport-height, 100vh) !important;
+  overflow: hidden;
 }
 
 .${P}-lightbox-edit-mode {
