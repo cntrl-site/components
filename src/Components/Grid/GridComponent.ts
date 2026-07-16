@@ -319,15 +319,16 @@ const schema: ComponentSchemaV1 = {
               type: 'number',
               title: 'Gutter',
               min: 0,
-            },
-            textWidthPercent: {
-              type: 'number',
-              title: 'Text Width (%)',
-              min: 0,
-              display: { type: 'percentage-input' },
-            },
+            }
           }
         }
+      },
+      textBoxWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Width (%)',
+        display: { type: 'percentage-input' },
+        min: 0,
       },
       verticalGap: {
         type: 'number',
@@ -643,9 +644,9 @@ const schema: ComponentSchemaV1 = {
           horizontalGap: 0.0533,
           wrapperWidth: 1,
           columnsCount: 1,
-          textWidthPercent: 100,
           lockedParam: null,
         },
+        textBoxWidth: 100,
         verticalGap: 0.266,
         entriesCount: 0,
         titleMarginTop: 0.02,
@@ -668,9 +669,9 @@ const schema: ComponentSchemaV1 = {
           horizontalGap: 0,
           wrapperWidth: 1,
           columnsCount: 3,
-          textWidthPercent: 200,
           lockedParam: null,
         },
+        textBoxWidth: 200,
         verticalGap: 0.09722,
         entriesCount: 0,
         titleMarginTop: 0.008,
@@ -707,6 +708,7 @@ const schema: ComponentSchemaV1 = {
       'name',
       'type',
       'gridLayout',
+      'textBoxWidth',
       'verticalGap',
       'showText',
       'alignEntries',
@@ -743,7 +745,7 @@ const schema: ComponentSchemaV1 = {
         {
           type: 'row',
           title: '',
-          items: ['verticalGap']
+          items: ['textBoxWidth', 'verticalGap']
         },
         {type: 'row', title: '', items: ['entriesCount', 'showText']},
         {type: 'row', title: '', items: ['alignEntries', 'align']},

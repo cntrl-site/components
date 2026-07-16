@@ -50,17 +50,11 @@ function getGridTextLeadingVars(
   } as React.CSSProperties;
 }
 
-function getEffectiveGridEntryWidth(entryWidth: number, textWidthPercent?: number): number {
-  const factor = textWidthPercent == null ? 1 : Math.max(1, textWidthPercent / 100);
-  return entryWidth * factor;
-}
-
 function getCSS(P: string): string {
   return `
 .${P}-wrapper {
   display: grid;
   align-items: start;
-  justify-content: center;
   min-height: ${sv(48)};
 }
 .${P}-item {
@@ -1156,6 +1150,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const {
     type = 'a',
     gridLayout,
+    textBoxWidth = 100,
     verticalGap,
     entriesCount,
     lightbox,
@@ -1287,18 +1282,6 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const cropContent = (content ?? []).slice(0, resEntriesCount);
 
   const size = gridLayout.entryWidth ?? 0.2;
-  const columnsCount = gridLayout.columnsCount;
-  const textWidthPercent = gridLayout.textWidthPercent;
-  const textWidthValue = size * (textWidthPercent ?? 100) / 100;
-  const entryColumnWidthValue = getEffectiveGridEntryWidth(size, textWidthPercent);
-  const entryWidthScaled = scalingValue(entryColumnWidthValue, isEditor);
-  const horizontalGapScaled = scalingValue(gridLayout.horizontalGap ?? 0, isEditor);
-  const itemsInLastRow = cropContent.length % columnsCount || columnsCount;
-  const isPartialLastRow = itemsInLastRow < columnsCount && cropContent.length > 0;
-  const lastRowStartIndex = cropContent.length - itemsInLastRow;
-  const lastRowStartColumn = isPartialLastRow
-    ? Math.floor((columnsCount - itemsInLastRow) / 2) + 1
-    : 1;
 
   const isCover = imageDisplay?.display === 'cover';
   const ratioValue = imageDisplay?.ratioValue ?? '1:1';
@@ -1308,7 +1291,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const effH = ratioReversed ? rW : rH;
   const aspectRatio = `${effW} / ${effH}`;
 
-  const imageWrapperWidth = scalingValue(size, isEditor);
+  const imageWrapperWidth = scalingValue(size ?? 0, isEditor);
   const isFitSlider = !isCover && slider !== 'off';
 
   const imageWrapperStyle: React.CSSProperties = {
@@ -1321,8 +1304,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
   const isTextBeforeImage = type === 'd' || type === 'e' || type === 'f';
   const shouldAlignEntries = alignEntries === 'on';
-  const textBoxWidthStyle = scalingValue(textWidthValue, isEditor);
-  const controlWidthStyle = scalingValue(textWidthValue, isEditor);
+  const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
+  const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
 
   const imageStyle: React.CSSProperties = isCover
     ? {
@@ -1403,9 +1386,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
           ref={containerRef}
           className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
           style={{
-            gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
+            gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
             rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
-            columnGap: horizontalGapScaled,
+            columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
             width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor),
             ...(shouldAlignEntries
               ? { [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor) }
@@ -1415,11 +1398,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             const hasTitle = hasText(item.title);
             const hasSubtitle = hasText(item.subtitle);
             const itemLink = (item.link?.length ?? 0) > 0 && lightbox === 'off' ? item.link : undefined;
-            const isLastRow = Math.floor(index / columnsCount)
-              === Math.ceil(cropContent.length / columnsCount) - 1;
-            const gridColumn = isPartialLastRow && index >= lastRowStartIndex
-              ? `${lastRowStartColumn + (index - lastRowStartIndex)}`
-              : undefined;
+            const isLastRow = Math.floor(index / gridLayout.columnsCount)
+              === Math.ceil(cropContent.length / gridLayout.columnsCount) - 1;
 
             const typeCTextBlock = isTextBeforeImage ? (
               <div className={`${P}-item-text-block`}>
@@ -1666,10 +1646,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                 className={`${isEditMode 
                   ? `${P}-item-inner` 
                   : `${P}-item-inner-hidden`}${shouldAlignEntries && isLastRow ? ` ${P}-item-inner-last-row` : ''}`.trim()}
-                style={{
-                  width: entryWidthScaled,
-                  ...(gridColumn ? { gridColumn } : {}),
-                }}
+                style={{ width: (textBoxWidth ?? 0) > 100 
+                  ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` 
+                  : scalingValue(size ?? 0, isEditor) }}
               >
                 {shouldAlignEntries ? (
                   <>
@@ -1741,13 +1720,13 @@ type GridLayoutConfig = {
   horizontalGap: number;
   wrapperWidth: number;
   columnsCount: number;
-  textWidthPercent?: number;
   lockedParam?: 'wrapperWidth' | 'entryWidth' | 'horizontalGap' | null;
 };
 
 type GridSettings = {
   type: 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
   gridLayout: GridLayoutConfig;
+  textBoxWidth: number;
   verticalGap: number;
   entriesCount: number;
   lightbox: 'on' | 'off';

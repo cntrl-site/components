@@ -7,6 +7,7 @@ import {
   type HiveLightboxTextEntry,
   type HiveLightboxTitleSettings,
 } from './HiveLightboxTitles';
+import { getDisplayedImageRect } from '../utils/getImageRect';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -398,12 +399,44 @@ type HiveProps = {
 const EMPTY_MEDIA: HiveMedia = { url: '', name: '', objectFit: 'cover' };
 
 const LIGHTBOX_ANIM_MS = 500;
+const SLIDE_ANIM_MS = 650;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const SWIPE_CLOSE_THRESHOLD = 72;
 const SWIPE_NAV_THRESHOLD = 50;
 
 type AnimRect = { top: number; left: number; width: number; height: number };
 type SwipeAxis = 'none' | 'horizontal' | 'vertical';
+
+function getZoomTransform(from: AnimRect, to: AnimRect): string {
+  const scaleX = from.width / to.width;
+  const scaleY = from.height / to.height;
+  const translateX = from.left - to.left;
+  const translateY = from.top - to.top;
+  return `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+}
+
+function getMediaClickSourceRect(
+  target: HTMLElement,
+  objectFit: 'cover' | 'contain',
+): AnimRect {
+  if (objectFit === 'contain' && target instanceof HTMLImageElement) {
+    const rect = getDisplayedImageRect(target);
+    return { left: rect.x, top: rect.y, width: rect.width, height: rect.height };
+  }
+
+  const cb = target.getBoundingClientRect();
+  return { left: cb.left, top: cb.top, width: cb.width, height: cb.height };
+}
+
+function getGridItemSourceRect(
+  container: HTMLElement,
+  gridIndex: number,
+  objectFit: 'cover' | 'contain',
+): AnimRect | null {
+  const mediaEl = container.querySelector(`[data-hive-grid-index="${gridIndex}"]`);
+  if (!(mediaEl instanceof HTMLElement)) return null;
+  return getMediaClickSourceRect(mediaEl, objectFit);
+}
 
 type DisplayItem = {
   displayMedia: HiveMedia;
@@ -448,7 +481,17 @@ function getAdjacentEntryMedia(
   return entries[adjacentIdx]?.items[0] ?? null;
 }
 
-const SIDE_PEEK_WIDTH_RATIO = 0.05;
+function getFarAdjacentEntryMedia(
+  entries: LightboxEntryData[],
+  entryIdx: number,
+  direction: -1 | 1,
+): HiveMedia | null {
+  if (entries.length <= 2) return null;
+  const adjacentIdx = (entryIdx + direction + entries.length) % entries.length;
+  return getAdjacentEntryMedia(entries, adjacentIdx, direction);
+}
+
+const SIDE_PEEK_WIDTH_RATIO = 0.03;
 
 function getSidePeekWidth(bounds: LightboxBounds): number {
   return bounds.width * SIDE_PEEK_WIDTH_RATIO;
@@ -709,6 +752,19 @@ function getSlideTransform(
   };
 }
 
+function getSideOpenTransform(
+  fittedRect: AnimRect,
+  side: 'left' | 'right',
+  bounds: LightboxBounds,
+): { x: number; y: number } {
+  const peekRect = positionPeekRect(fittedRect, side, bounds);
+  const farRect = getFarPeekRect(fittedRect, side, bounds);
+  return {
+    x: farRect.left - peekRect.left,
+    y: farRect.top - peekRect.top,
+  };
+}
+
 function isMediaPairGallery(gallery: unknown): gallery is HiveMediaPair[] {
   if (!Array.isArray(gallery) || gallery.length === 0) return false;
   const first = gallery[0];
@@ -786,11 +842,13 @@ function MediaItem({
   media,
   className,
   style,
+  gridIndex,
   onMediaClick,
 }: {
   media: HiveMedia;
   className: string;
   style: React.CSSProperties;
+  gridIndex?: number;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isVideoMedia(media)) {
@@ -798,6 +856,7 @@ function MediaItem({
       <video
         src={media.url}
         className={className}
+        data-hive-grid-index={gridIndex}
         style={{
           ...style,
           cursor: onMediaClick ? 'pointer' : 'default',
@@ -817,6 +876,7 @@ function MediaItem({
       src={media.url}
       alt={media.name}
       className={className}
+      data-hive-grid-index={gridIndex}
       style={{
         ...style,
         cursor: onMediaClick ? 'pointer' : 'default',
@@ -931,6 +991,8 @@ function Lightbox({
   lightboxEntries,
   entryIdx,
   layoutId,
+  sourceRect,
+  resolveCloseSourceRect,
   onClose,
   onPrev,
   onNext,
@@ -947,6 +1009,8 @@ function Lightbox({
   lightboxEntries: LightboxEntryData[];
   entryIdx: number;
   layoutId?: string;
+  sourceRect?: AnimRect | null;
+  resolveCloseSourceRect?: () => AnimRect | null;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -975,7 +1039,10 @@ function Lightbox({
   const [slideDirection, setSlideDirection] = useState<-1 | 1 | null>(null);
   const [pendingEntryIdx, setPendingEntryIdx] = useState<number | null>(null);
   const [pendingImageIdx, setPendingImageIdx] = useState<number | null>(null);
-  const [farMediaAnimating, setFarMediaAnimating] = useState(false);
+  const [zoomTransitionActive, setZoomTransitionActive] = useState(false);
+  const [closeSourceRect, setCloseSourceRect] = useState<AnimRect | null>(null);
+  const [sidePeekAnimating, setSidePeekAnimating] = useState(false);
+  const sidePeekOpenDoneRef = useRef(false);
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeDismiss, setSwipeDismiss] = useState(false);
   const prevIndexRef = useRef(index);
@@ -1019,6 +1086,29 @@ function Lightbox({
   const farNextMedia = farNextCandidate && farNextCandidate.url !== nextMedia?.url
     ? farNextCandidate
     : null;
+
+  const idleFarPrevMedia = prevMedia && allowNavigation
+    ? (() => {
+      const candidate = isEntryNavigation
+        ? getFarAdjacentEntryMedia(lightboxEntries, entryIdx, -1)
+        : items.length > 2
+          ? getAdjacentImage((index - 1 + items.length) % items.length, -1)
+          : null;
+      return candidate && candidate.url !== prevMedia.url ? candidate : null;
+    })()
+    : null;
+  const idleFarNextMedia = nextMedia && allowNavigation
+    ? (() => {
+      const candidate = isEntryNavigation
+        ? getFarAdjacentEntryMedia(lightboxEntries, entryIdx, 1)
+        : items.length > 2
+          ? getAdjacentImage((index + 1) % items.length, 1)
+          : null;
+      return candidate && candidate.url !== nextMedia.url ? candidate : null;
+    })()
+    : null;
+  const renderFarPrevMedia = farPrevMedia ?? idleFarPrevMedia;
+  const renderFarNextMedia = farNextMedia ?? idleFarNextMedia;
 
   const rememberMediaDimensions = useCallback((url: string, width: number, height: number) => {
     if (!url || !width || !height) return;
@@ -1082,7 +1172,7 @@ function Lightbox({
     navSwipeCommitTimerRef.current = window.setTimeout(() => {
       clearNavSwipeCommitTimer();
       setNavSwipeAnimatingState(false);
-    }, LIGHTBOX_ANIM_MS + 32);
+    }, SLIDE_ANIM_MS + 32);
   }, [clearNavSwipeCommitTimer, setNavSwipeAnimatingState]);
 
   const updateContainerBounds = useCallback(() => {
@@ -1109,7 +1199,6 @@ function Lightbox({
   const getHorizontalNavTransform = useCallback((
     media: HiveMedia,
     placement: SlidePlacement,
-    options?: { farMediaReady?: boolean },
   ): string | undefined => {
     if (!isHorizontalNavActive) return undefined;
 
@@ -1118,12 +1207,6 @@ function Lightbox({
     }
 
     if (navSwipeAnimating && slideDirection !== null) {
-      if (placement === 'far-left' || placement === 'far-right') {
-        if (!options?.farMediaReady) {
-          return 'translate(0px, 0px)';
-        }
-      }
-
       const fittedRect = getFittedRectForMedia(media);
       if (!fittedRect) return undefined;
 
@@ -1154,7 +1237,6 @@ function Lightbox({
     setSlideDirection(null);
     setPendingEntryIdx(null);
     setPendingImageIdx(null);
-    setFarMediaAnimating(false);
     setNavSwipeOffset(0);
     setIsSwiping(false);
     isSwipingRef.current = false;
@@ -1170,7 +1252,7 @@ function Lightbox({
     navSwipeCommitTimerRef.current = window.setTimeout(() => {
       if (slideCommitDirectionRef.current === null) return;
       commitSlideNavigation();
-    }, LIGHTBOX_ANIM_MS + 32);
+    }, SLIDE_ANIM_MS + 32);
   }, [clearNavSwipeCommitTimer, commitSlideNavigation]);
 
   const startSlideNavigation = useCallback((direction: -1 | 1) => {
@@ -1292,8 +1374,23 @@ function Lightbox({
   }, [items, lightboxEntries, rememberMediaDimensions]);
 
   useEffect(() => {
-    if (phase === 'opening' && finalRect) setPhase('open');
-  }, [phase, finalRect]);
+    if (phase !== 'opening' || !finalRect) return;
+
+    if (!sourceRect) {
+      setPhase('open');
+      return;
+    }
+
+    setZoomTransitionActive(false);
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setZoomTransitionActive(true);
+        setPhase('open');
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [phase, finalRect, sourceRect]);
 
   useEffect(() => {
     if (phase !== 'closing') return;
@@ -1315,7 +1412,6 @@ function Lightbox({
     setSlideDirection(null);
     setPendingEntryIdx(null);
     setPendingImageIdx(null);
-    setFarMediaAnimating(false);
     setSwipeOffset(0);
     setNavSwipeOffset(0);
     setNavSwipeAnimatingState(false);
@@ -1336,18 +1432,28 @@ function Lightbox({
   }, [index, currentItem?.url, setNavSwipeAnimatingState, clearNavSwipeCommitTimer, syncFinalRectForCurrentItem]);
 
   useLayoutEffect(() => {
-    if (!(farPrevMedia || farNextMedia) || !isHorizontalNavActive) {
-      setFarMediaAnimating(false);
+    if (phase === 'opening') {
+      sidePeekOpenDoneRef.current = false;
+      setSidePeekAnimating(false);
       return;
     }
 
-    setFarMediaAnimating(false);
+    if (phase !== 'open' || sidePeekOpenDoneRef.current) return;
+    if (!prevMedia && !nextMedia) {
+      sidePeekOpenDoneRef.current = true;
+      return;
+    }
+
+    setSidePeekAnimating(false);
     const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setFarMediaAnimating(true));
+      requestAnimationFrame(() => {
+        setSidePeekAnimating(true);
+        sidePeekOpenDoneRef.current = true;
+      });
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [farPrevMedia?.url, farNextMedia?.url, isHorizontalNavActive]);
+  }, [phase, prevMedia?.url, nextMedia?.url]);
 
   useEffect(() => {
     if (phase !== 'open') return;
@@ -1381,7 +1487,6 @@ function Lightbox({
       setSlideDirection(null);
       setPendingEntryIdx(null);
       setPendingImageIdx(null);
-      setFarMediaAnimating(false);
       setNavSwipeAnimatingState(true);
       setNavSwipeOffset(0);
       scheduleNavSwipeSnapBackEnd();
@@ -1484,20 +1589,38 @@ function Lightbox({
     };
   }, [phase, allowNavigation, setNavSwipeAnimatingState, scheduleNavSwipeSnapBackEnd, clearNavSwipeCommitTimer, allowSwipeDismiss, scheduleSlideCommit, beginSlideTo]);
 
+  const startClosing = useCallback(() => {
+    const rect = resolveCloseSourceRect?.() ?? sourceRect ?? null;
+    if (rect && finalRect) {
+      setCloseSourceRect(rect);
+      setZoomTransitionActive(true);
+    }
+    setPhase('closing');
+  }, [resolveCloseSourceRect, sourceRect, finalRect]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (isEditor && isPreviewMode) return;
-      if (phase === 'closing') return;
-      setPhase('closing');
+      if (e.key === 'Escape') {
+        if (isEditor && isPreviewMode) return;
+        if (phase === 'closing') return;
+        startClosing();
+        return;
+      }
+
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (phase !== 'open') return;
+      if (!allowNavigation) return;
+
+      e.preventDefault();
+      startSlideNavigation(e.key === 'ArrowLeft' ? -1 : 1);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [phase, isEditor, isPreviewMode]);
+  }, [phase, isEditor, isPreviewMode, startClosing, allowNavigation, startSlideNavigation]);
 
   const handleClose = () => {
     if (phase === 'closing' || isEditMode) return;
-    setPhase('closing');
+    startClosing();
   };
 
   const isOpen = phase === 'open';
@@ -1517,13 +1640,25 @@ function Lightbox({
     setNavSwipeAnimatingState(false);
   }, [clearNavSwipeCommitTimer, setNavSwipeAnimatingState, commitSlideNavigation]);
 
+  const zoomSourceRect = phase === 'closing'
+    ? (closeSourceRect ?? sourceRect)
+    : sourceRect;
+
+  const zoomTransform = zoomSourceRect && finalRect && (phase === 'opening' || isClosing)
+    ? getZoomTransform(zoomSourceRect, finalRect)
+    : undefined;
+
   const mediaTransform = isHorizontalNavActive && currentItem
     ? getHorizontalNavTransform(currentItem, 'center')
     : swipeOffset > 0
       ? `translateY(${swipeOffset}px)`
-      : undefined;
+      : zoomTransform;
 
   const containerMediaRect = finalRect ? toContainerRect(finalRect, containerBounds) : null;
+  const useZoomAnimation = Boolean(zoomSourceRect && finalRect);
+  const shouldAnimateZoom = useZoomAnimation && (
+    phase === 'closing' || (phase === 'open' && zoomTransitionActive)
+  );
 
   const mediaStyle: React.CSSProperties = {
     position: 'absolute',
@@ -1532,21 +1667,26 @@ function Lightbox({
     width: containerMediaRect?.width,
     height: containerMediaRect?.height,
     objectFit: 'contain',
+    transformOrigin: 'top left',
     transform: mediaTransform,
     opacity: swipeOffset > 0
       ? swipeMediaOpacity
-      : phase === 'opening' || isClosing
-        ? 0
-        : 1,
+      : useZoomAnimation
+        ? 1
+        : phase === 'opening' || isClosing
+          ? 0
+          : 1,
     transition: (isSwiping && !navSwipeAnimating)
       ? 'none'
       : navSwipeAnimating
-        ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+        ? `transform ${SLIDE_ANIM_MS}ms ${LIGHTBOX_EASING}`
         : swipeDismiss
           ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-          : phase === 'opening' || isClosing
-            ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-            : 'none',
+          : shouldAnimateZoom
+            ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+            : phase === 'opening' || isClosing
+              ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+              : 'none',
     pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
     touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
     zIndex: 1,
@@ -1580,12 +1720,17 @@ function Lightbox({
           : positionPeekRect(fittedRect, side, containerBounds),
       };
     const containerSideRect = toContainerRect(sideRect, containerBounds);
-    const swipeTransform = getHorizontalNavTransform(media, slidePlacement, {
-      farMediaReady: placement !== 'far' || farMediaAnimating,
-    });
+    const swipeTransform = getHorizontalNavTransform(media, slidePlacement);
+    const openSlideOffset = !isHorizontalNavActive && placement === 'adjacent' && isOpen && !sidePeekAnimating
+      ? getSideOpenTransform(fittedRect, side, containerBounds)
+      : null;
+    const isFarSlideActive = placement === 'far'
+      && isHorizontalNavActive
+      && slideDirection === (side === 'left' ? -1 : 1);
     const useSlideTransition = (isSwiping && !navSwipeAnimating)
       ? false
-      : navSwipeAnimating || (placement === 'far' && farMediaAnimating);
+      : navSwipeAnimating;
+    const useSideOpenTransition = placement === 'adjacent' && isOpen && sidePeekAnimating && !isHorizontalNavActive;
 
     return {
       position: 'absolute',
@@ -1594,15 +1739,23 @@ function Lightbox({
       width: containerSideRect.width,
       height: containerSideRect.height,
       objectFit: 'contain',
-      transform: swipeTransform,
+      transform: swipeTransform ?? (
+        openSlideOffset
+          ? `translate(${openSlideOffset.x}px, ${openSlideOffset.y}px)`
+          : undefined
+      ),
       opacity: placement === 'far'
-        ? (farMediaAnimating && isOpen ? 1 : 0)
+        ? (isOpen && isFarSlideActive ? 1 : 0)
         : (isOpen ? 1 : 0),
       transition: useSlideTransition
-        ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}, opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-        : phase === 'opening' || isClosing
-          ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
-          : 'none',
+        ? placement === 'far'
+          ? `transform ${SLIDE_ANIM_MS}ms ${LIGHTBOX_EASING}`
+          : `transform ${SLIDE_ANIM_MS}ms ${LIGHTBOX_EASING}, opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+        : useSideOpenTransition
+          ? `transform ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+          : phase === 'opening' || isClosing
+            ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
+            : 'none',
       pointerEvents: 'none',
       zIndex: 1,
     };
@@ -1708,11 +1861,11 @@ function Lightbox({
         </div>
       </div>
 
-      {isOpen && farPrevMedia && (
+      {isOpen && renderFarPrevMedia && (
         <LightboxSideMedia
-          key={`far-prev-${farPrevMedia.url}`}
-          media={farPrevMedia}
-          style={getSideMediaStyle(farPrevMedia, 'left', 'far')}
+          key={`far-prev-${renderFarPrevMedia.url}`}
+          media={renderFarPrevMedia}
+          style={getSideMediaStyle(renderFarPrevMedia, 'left', 'far')}
           onMeasure={rememberMediaDimensions}
           onTransitionEnd={handleNavSwipeTransitionEnd}
         />
@@ -1772,11 +1925,11 @@ function Lightbox({
         </>
       )}
 
-      {isOpen && farNextMedia && (
+      {isOpen && renderFarNextMedia && (
         <LightboxSideMedia
-          key={`far-next-${farNextMedia.url}`}
-          media={farNextMedia}
-          style={getSideMediaStyle(farNextMedia, 'right', 'far')}
+          key={`far-next-${renderFarNextMedia.url}`}
+          media={renderFarNextMedia}
+          style={getSideMediaStyle(renderFarNextMedia, 'right', 'far')}
           onMeasure={rememberMediaDimensions}
           onTransitionEnd={handleNavSwipeTransitionEnd}
         />
@@ -1866,6 +2019,7 @@ export function Hive({
   const [lightboxItems, setLightboxItems] = useState<HiveMedia[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxEntryIdx, setLightboxEntryIdx] = useState(0);
+  const [lightboxSourceRect, setLightboxSourceRect] = useState<AnimRect | null>(null);
   const [lightboxEntry, setLightboxEntry] = useState<HiveLightboxTextEntry>({
     title1: '',
     title2: '',
@@ -1895,7 +2049,7 @@ export function Hive({
   const allLightboxEntries = useMemo(() => buildLightboxEntries(items), [items]);
   const allMedia = useMemo(() => collectAllHiveMedia(items), [items]);
 
-  const openLightbox = (gridIndex: number, imageIdx: number) => {
+  const openLightbox = (gridIndex: number, imageIdx: number, sourceRect?: AnimRect) => {
     if (isEditor && !isEditMode && !isPreviewMode) return;
     const entryIdx = allLightboxEntries.findIndex(entry => entry.gridIndex === gridIndex);
     if (entryIdx < 0) return;
@@ -1905,8 +2059,25 @@ export function Hive({
     setLightboxItems(data.items);
     setLightboxIndex(imageIdx);
     setLightboxEntry(data.entry);
+    setLightboxSourceRect(sourceRect ?? null);
     setLightboxOpen(true);
   };
+
+  const closeLightbox = useCallback(() => {
+    setLightboxOpen(false);
+    setLightboxSourceRect(null);
+  }, []);
+
+  const resolveCloseSourceRect = useCallback((): AnimRect | null => {
+    const entry = allLightboxEntries[lightboxEntryIdx];
+    if (!entry || !containerRef.current) return lightboxSourceRect;
+
+    return getGridItemSourceRect(
+      containerRef.current,
+      entry.gridIndex,
+      isCover ? 'cover' : 'contain',
+    ) ?? lightboxSourceRect;
+  }, [allLightboxEntries, lightboxEntryIdx, lightboxSourceRect, isCover]);
 
   const navigateLightbox = useCallback((direction: -1 | 1) => {
     if (allLightboxEntries.length > 1) {
@@ -1981,10 +2152,15 @@ export function Hive({
                     return (
                       <MediaItem
                         media={displayMedia}
+                        gridIndex={index}
                         className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                         style={imageStyle}
                         onMediaClick={canOpenLightbox && entryLightboxIndex >= 0
-                          ? () => openLightbox(index, entryLightboxIndex)
+                          ? (e) => openLightbox(
+                            index,
+                            entryLightboxIndex,
+                            getMediaClickSourceRect(e.currentTarget, isCover ? 'cover' : 'contain'),
+                          )
                           : undefined}
                       />
                     );
@@ -2035,7 +2211,9 @@ export function Hive({
               lightboxEntries={allLightboxEntries}
               entryIdx={lightboxEntryIdx}
               layoutId={layoutId}
-              onClose={() => setLightboxOpen(false)}
+              sourceRect={lightboxSourceRect}
+              resolveCloseSourceRect={resolveCloseSourceRect}
+              onClose={closeLightbox}
               onPrev={() => navigateLightbox(-1)}
               onNext={() => navigateLightbox(1)}
             />
