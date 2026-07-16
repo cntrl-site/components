@@ -594,7 +594,7 @@ const schema: ComponentSchemaV1 = {
       direction: 'horizontal',
       transition: 'fade',
       showText: 'always',
-      alignEntries: 'on',
+      alignEntries: 'off',
       align: 'top',
       titleColor: '#000000',
       subtitleColor: '#000000',
@@ -638,7 +638,7 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
-        type: 'a',
+        type: 'b',
         gridLayout: {
           entryWidth: 0.8,
           horizontalGap: 0.0533,
@@ -662,8 +662,34 @@ const schema: ComponentSchemaV1 = {
         lightboxCounterFontSize: 0.0373,
         lightboxCounterLineHeight: 0.0373,
       },
+      t: {
+        type: 'b',
+        gridLayout: {
+          entryWidth: 0.0833,
+          horizontalGap: 0,
+          wrapperWidth: 1,
+          columnsCount: 3,
+          lockedParam: null,
+        },
+        textBoxWidth: 250,
+        verticalGap: 0.09722,
+        entriesCount: 0,
+        titleMarginTop: 0.01953125,
+        subtitleMarginTop: 0.008,
+        titleStroke: 0.001,
+        titleCorners: 0.05,
+        subtitlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+        titlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
+        titleFontSize: 0.027,
+        titleLineHeight: 0.0222,
+        titleLetterSpacing: -0.00118,
+        subtitleFontSize: 0.015625,
+        subtitleLineHeight: 0.018229166666666668,
+        lightboxCounterFontSize: 0.01,
+        lightboxCounterLineHeight: 0.01,
+      },
       d: {
-        type: 'a',
+        type: 'b',
         gridLayout: {
           entryWidth: 0.0833,
           horizontalGap: 0,

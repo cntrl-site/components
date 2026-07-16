@@ -410,7 +410,7 @@ const schema: ComponentSchemaV1 = {
         imageGap: 0.01,
         maxHeight: 80,
         maxWidth: 80,
-        closeIconMaxWidth: 0.05,
+        closeIconMaxWidth: 0.08,
         contentMarginTop: 0.04,
         titleHeaderLayout: 'mobile',
         title1Width: 0.4,
@@ -431,6 +431,34 @@ const schema: ComponentSchemaV1 = {
           title3LineHeight: 0.04,
           countFontSize: 0.04,
           countLineHeight: 0.04,
+        }),
+      },
+      t: {
+        type: 'A',
+        imageGap: 0.05,
+        maxHeight: 80,
+        maxWidth: 40,
+        closeIconMaxWidth: 0.03,
+        contentMarginTop: 0.01,
+        titleHeaderLayout: 'desktop',
+        title1Width: 0.35,
+        title2Width: 0.16,
+        title3Width: 0.1,
+        title1MarginLeft: 0.01,
+        title2MarginLeft: 0.1,
+        title3MarginLeft: 0.1,
+        titleRowMarginBottom: 0,
+        iconMarginRight: 0.01,
+        countCloseGap: 0.03,
+        ...createTextStyleLayoutDefaults({
+          title1FontSize: 0.0208,
+          title1LineHeight: 0.0208,
+          title2FontSize: 0.0208,
+          title2LineHeight: 0.0208,
+          title3FontSize: 0.0208,
+          title3LineHeight: 0.0208,
+          countFontSize: 0.0208,
+          countLineHeight: 0.0208,
         }),
       },
       d: {
@@ -618,11 +646,12 @@ export const LightboxJournalComponent = {
   defaultSize: {
     d: {
       width: 350,
-      height: 350,
+    },
+    t: {
+      width: 300,
     },
     m: {
       width: 300,
-      height: 350,
     },
   },
   preview: {

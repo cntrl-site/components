@@ -91,7 +91,13 @@ const schema: ComponentSchemaV1 = {
         speed: 0.55,
         gap: 0.04,
         imageMaxWidth: 0.8,
-        imageMaxHeight: 0.21,
+        imageMaxHeight: 0.8,
+      },
+      t: {
+        speed: 1.64,
+        gap: 0.02,
+        imageMaxWidth: 0.5208,
+        imageMaxHeight: 0.5208,
       },
       d: {
         speed: 1.64,
@@ -210,8 +216,11 @@ export const MarqueeComponent = {
     d: {
       width: '100%',
     },
+    t: {
+      width: '100%',
+    },
     m: {
-      width: 390,
+      width: '100%',
     },
   },
   preview: {
