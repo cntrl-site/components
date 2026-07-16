@@ -17,6 +17,7 @@ function getCSS(P: string): string {
 .${P}-wrapper {
   display: grid;
   align-items: start;
+  justify-content: center;
   min-height: ${sv(48)};
 }
 .${P}-item {
@@ -1830,8 +1831,11 @@ export function Hive({
   const aspectRatio = `${effW} / ${effH}`;
 
   const size = gridLayout.entryWidth ?? 0.2;
-  const imageWrapperWidth = scalingValue(size ?? 0, isEditor);
-  const controlWidthStyle = scalingValue(size ?? 0, isEditor);
+  const columnsCount = gridLayout.columnsCount;
+  const entryWidthScaled = scalingValue(size, isEditor);
+  const horizontalGapScaled = scalingValue(gridLayout.horizontalGap ?? 0, isEditor);
+  const imageWrapperWidth = entryWidthScaled;
+  const controlWidthStyle = entryWidthScaled;
 
   const imageWrapperStyle: React.CSSProperties = {
     width: imageWrapperWidth,
@@ -1882,6 +1886,12 @@ export function Hive({
   const canOpenLightbox = !isEditor || isPreviewMode || isEditMode;
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const items = content ?? [];
+  const itemsInLastRow = items.length % columnsCount || columnsCount;
+  const isPartialLastRow = itemsInLastRow < columnsCount && items.length > 0;
+  const lastRowStartIndex = items.length - itemsInLastRow;
+  const lastRowStartColumn = isPartialLastRow
+    ? Math.floor((columnsCount - itemsInLastRow) / 2) + 1
+    : 1;
   const allLightboxEntries = useMemo(() => buildLightboxEntries(items), [items]);
   const allMedia = useMemo(() => collectAllHiveMedia(items), [items]);
 
@@ -1940,9 +1950,9 @@ export function Hive({
         ref={containerRef}
         className={`${P}-wrapper ${P}-align-entries ${P}-image-align-${align}`.trim()}
         style={{
-          gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
           rowGap: 0,
-          columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
+          columnGap: horizontalGapScaled,
           width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor),
           [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor),
         }}
@@ -1953,8 +1963,11 @@ export function Hive({
           const lightboxItemsForEntry = displayItems
             .filter(entry => entry.lightboxMedia)
             .map(entry => entry.lightboxMedia!);
-          const isLastRow = Math.floor(index / gridLayout.columnsCount)
-            === Math.ceil(items.length / gridLayout.columnsCount) - 1;
+          const isLastRow = Math.floor(index / columnsCount)
+            === Math.ceil(items.length / columnsCount) - 1;
+          const gridColumn = isPartialLastRow && index >= lastRowStartIndex
+            ? `${lastRowStartColumn + (index - lastRowStartIndex)}`
+            : undefined;
 
           const imageContent = (
             <div className={`${P}-item-image-wrapper`} style={imageWrapperStyle}>
@@ -1986,7 +1999,10 @@ export function Hive({
                   isEditMode ? `${P}-item-inner` : `${P}-item-inner-hidden`,
                   isLastRow ? `${P}-item-inner-last-row` : '',
                 ].filter(Boolean).join(' ')}
-                style={{ width: scalingValue(size ?? 0, isEditor) }}
+                style={{
+                  width: entryWidthScaled,
+                  ...(gridColumn ? { gridColumn } : {}),
+                }}
               >
                 <div className={`${P}-item-title-row`}>
                   <div style={{ height: 0, width: controlWidthStyle }} />
