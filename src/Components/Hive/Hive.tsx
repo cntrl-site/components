@@ -1807,7 +1807,7 @@ function Lightbox({
         style={{
           position: 'absolute',
           inset: 0,
-          background: '#ffffff',
+          background: settings.backgroundColor ?? '#FFFFFF',
           opacity: isOpen ? swipeBackdropOpacity : 0,
           transition: isSwiping ? 'none' : `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`,
           pointerEvents: 'none',

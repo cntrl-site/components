@@ -38,6 +38,7 @@ export type HiveLightboxTitleSettings = {
   closeIconMaxWidth?: number;
   closeIconColor?: string;
   closeIconHoverColor?: string;
+  backgroundColor?: string;
   title1Color: string;
   title2Color: string;
   title3Color: string;

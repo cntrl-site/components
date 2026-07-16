@@ -666,7 +666,7 @@ const schema: ComponentSchemaV1 = {
         type: 'b',
         gridLayout: {
           entryWidth: 0.0833,
-          horizontalGap: 0,
+          horizontalGap: 0.26041,
           wrapperWidth: 1,
           columnsCount: 3,
           lockedParam: null,
@@ -692,7 +692,7 @@ const schema: ComponentSchemaV1 = {
         type: 'b',
         gridLayout: {
           entryWidth: 0.0833,
-          horizontalGap: 0,
+          horizontalGap: 0.25,
           wrapperWidth: 1,
           columnsCount: 3,
           lockedParam: null,
