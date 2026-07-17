@@ -143,7 +143,7 @@ const textStylePropertiesByPrefix = HIVE_TEXT_STYLE_PREFIXES.reduce<Record<strin
 const textStyleDefaultsByPrefix = HIVE_TEXT_STYLE_PREFIXES.reduce<Record<string, JournalSchemaDefaultValue>>(
   (defaults, prefix) => ({
     ...defaults,
-    [getJournalTextStyleSettingKey(prefix, 'fontFamily')]: 'Goudy Bookletter 1911',
+    [getJournalTextStyleSettingKey(prefix, 'fontFamily')]: 'Arial',
     [getJournalTextStyleSettingKey(prefix, 'fontSettings')]: {
       fontWeight: 400,
       fontStyle: 'normal',
@@ -195,6 +195,33 @@ const textStylePanelTab = {
     ]),
   ),
 };
+
+const HIVE_DEFAULT_TITLES = {
+  title1: 'NASA',
+  title2: 'Ames Research Center',
+  title3: 'Archive Footage',
+};
+
+const HIVE_DEFAULT_CONTENT = (() => {
+  const items = [];
+  for (let i = 1; i <= 24; i += 1) {
+    items.push({
+      ...HIVE_DEFAULT_TITLES,
+      gallery: [{
+        media: [{
+          url: `https://cdn.cntrl.site/component-assets/hive_${i}.jpg`,
+          name: '',
+          objectFit: 'cover' as const,
+        }, {
+          url: '',
+          name: '',
+          objectFit: 'cover' as const,
+        }],
+      }],
+    });
+  }
+  return items;
+})();
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -263,104 +290,7 @@ const schema: ComponentSchemaV1 = {
       },
       required: ['gallery'],
     },
-    default: [
-      {
-        title1: 'Dorothy Manners & Julanne Johnston',
-        title2: 'by Evans Studio',
-        title3: 'Screenland',
-        gallery: [{
-          media: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
-            name: '',
-            objectFit: 'cover',
-          }, {
-            url: '',
-            name: '',
-            objectFit: 'cover',
-          }],
-        }],
-      },
-      {
-        title1: 'Inez Nadeau',
-        title2: 'Melbourne Spurr',
-        title3: 'Screenland',
-        gallery: [{
-          media: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
-            name: '',
-            objectFit: 'cover',
-          }, {
-            url: '',
-            name: '',
-            objectFit: 'cover',
-          }],
-        }],
-      },
-      {
-        title1: 'Colleen Moore',
-        title2: 'Clarence S. Bull',
-        title3: 'Screenland',
-        gallery: [{
-          media: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
-            name: '',
-            objectFit: 'cover',
-          }, {
-            url: '',
-            name: '',
-            objectFit: 'cover',
-          }],
-        }],
-      },
-      {
-        title1: 'Gloria Swanson',
-        title2: 'Donald Biddle Keyes',
-        title3: 'Screenland',
-        gallery: [{
-          media: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
-            name: '',
-            objectFit: 'cover',
-          }, {
-            url: '',
-            name: '',
-            objectFit: 'cover',
-          }],
-        }],
-      },
-      {
-        title1: '',
-        title2: '',
-        title3: '',
-        gallery: [{
-          media: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
-            name: '',
-            objectFit: 'cover',
-          }, {
-            url: '',
-            name: '',
-            objectFit: 'cover',
-          }],
-        }],
-      },
-      {
-        title1: '',
-        title2: '',
-        title3: '',
-        gallery: [{
-          media: [{
-            url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
-            name: '',
-            objectFit: 'cover',
-          }, {
-            url: '',
-            name: '',
-            objectFit: 'cover',
-          }],
-        }],
-      },
-    ],
+    default: HIVE_DEFAULT_CONTENT,
   },
   settings: {
     sizing: 'auto auto',
@@ -553,7 +483,7 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       imageDisplay: {
-        display: 'cover',
+        display: 'fit',
         ratioValue: '2:3',
         reversed: false,
       },
@@ -570,69 +500,69 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       m: {
         gridLayout: {
-          entryWidth: 0.2666,
-          horizontalGap: 0.02666,
+          entryWidth: 0.37837,
+          horizontalGap: 0.0810,
           wrapperWidth: 1,
-          columnsCount: 3,
-          lockedParam: null,
+          columnsCount: 2,
+          lockedParam: 'wrapperWidth',
         },
-        verticalGap: 0.02666,
+        verticalGap: 0.0810,
         titleHeaderLayout: 'mobile',
         title1Width: 0.4,
-        title2Width: 0.55,
+        title2Width: 0.464864,
         title3Width: 0.3,
         title1MarginLeft: 0.04,
         title2MarginLeft: 0.04,
         title3MarginLeft: 0.08,
         titleRowMarginBottom: 0.08,
-        contentMarginTop: 0.04,
-        closeIconMaxWidth: 0.05,
-        iconMarginRight: 0.01,
+        contentMarginTop: 0.0810,
+        closeIconMaxWidth: 0.0810,
+        iconMarginRight: 0.05405,
         ...createTextStyleLayoutDefaults({
-          title1FontSize: 0.04,
-          title1LineHeight: 0.04,
-          title2FontSize: 0.04,
-          title2LineHeight: 0.04,
-          title3FontSize: 0.04,
-          title3LineHeight: 0.04,
+          title1FontSize: 0.04864,
+          title1LineHeight: 0.056756,
+          title2FontSize: 0.04864,
+          title2LineHeight: 0.056756,
+          title3FontSize: 0.04864,
+          title3LineHeight: 0.056756,
         }),
       },
       t: {
         gridLayout: {
-          entryWidth: 0.0833,
-          horizontalGap: 0.0125,
+          entryWidth: 0.10416,
+          horizontalGap: 0.013,
           wrapperWidth: 1,
-          columnsCount: 3,
-          lockedParam: null,
+          columnsCount: 8,
+          lockedParam: 'wrapperWidth',
         },
-        verticalGap: 0.0125,
+        verticalGap: 0.013,
         titleHeaderLayout: 'desktop',
-        title1Width: 0.35,
+        title1Width: 0.3,
         title2Width: 0.248,
         title3Width: 0.1,
         title1MarginLeft: 0.01,
         title2MarginLeft: 0.1,
         title3MarginLeft: 0.1,
         titleRowMarginBottom: 0,
-        contentMarginTop: 0.01,
-        closeIconMaxWidth: 0.0125,
-        iconMarginRight: 0.01,
+        contentMarginTop: 0.026,
+        closeIconMaxWidth: 0.039,
+        iconMarginRight: 0.026,
         ...createTextStyleLayoutDefaults({
-          title1FontSize: 0.0098,
-          title1LineHeight: 0.0098,
-          title2FontSize: 0.0098,
-          title2LineHeight: 0.0098,
-          title3FontSize: 0.0098,
-          title3LineHeight: 0.0098,
+          title1FontSize: 0.02083,
+          title1LineHeight: 0.02734,
+          title2FontSize: 0.02083,
+          title2LineHeight: 0.02734,
+          title3FontSize: 0.02083,
+          title3LineHeight: 0.02734,
         }),
       },
       d: {
         gridLayout: {
-          entryWidth: 0.0833,
-          horizontalGap: 0.00694,
+          entryWidth: 0.06944,
+          horizontalGap: 0.006944,
           wrapperWidth: 1,
-          columnsCount: 3,
-          lockedParam: null,
+          columnsCount: 12,
+          lockedParam: 'wrapperWidth',
         },
         verticalGap: 0.00694,
         titleHeaderLayout: 'desktop',
