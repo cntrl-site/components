@@ -203,6 +203,7 @@ const schema: ComponentSchemaV1 = {
     type: 'array',
     settings: {
       addItemFromFileExplorer: true,
+      allowsVideo: true,
     },
     display: {
       type: 'array',

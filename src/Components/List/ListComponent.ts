@@ -620,6 +620,7 @@ const schema: ComponentSchemaV1 = {
       type: 'array',
       settings: {
         addItemWithoutImage: true,
+        allowsVideo: true,
       },
       display: {
         type: 'array',
