@@ -403,6 +403,9 @@ const SLIDE_ANIM_MS = 650;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const SWIPE_CLOSE_THRESHOLD = 72;
 const SWIPE_NAV_THRESHOLD = 50;
+const ARROW_HOLD_ACCELERATE_MS = 10000;
+const ARROW_HOLD_NORMAL_INTERVAL_MS = 650;
+const ARROW_HOLD_FAST_INTERVAL_MS = 500;
 
 type AnimRect = { top: number; left: number; width: number; height: number };
 type SwipeAxis = 'none' | 'horizontal' | 'vertical';
@@ -1029,6 +1032,12 @@ function Lightbox({
   const navSwipeAnimatingRef = useRef(false);
   const navSwipeCommitTimerRef = useRef<number | null>(null);
   const slideCommitDirectionRef = useRef<-1 | 1 | null>(null);
+  const rapidNavDirectionRef = useRef<-1 | 1 | null>(null);
+  const startSlideNavigationRef = useRef<(direction: -1 | 1) => void>(() => {});
+  const heldArrowDirectionRef = useRef<-1 | 1 | null>(null);
+  const arrowHoldIntervalRef = useRef<number | null>(null);
+  const arrowHoldAccelerateTimerRef = useRef<number | null>(null);
+  const arrowHoldFastRef = useRef(false);
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
   const [containerBounds, setContainerBounds] = useState<LightboxBounds>(DEFAULT_LIGHTBOX_BOUNDS);
   const [layoutVersion, setLayoutVersion] = useState(0);
@@ -1255,8 +1264,32 @@ function Lightbox({
     }, SLIDE_ANIM_MS + 32);
   }, [clearNavSwipeCommitTimer, commitSlideNavigation]);
 
+  const cancelNavSwipeAnimation = useCallback(() => {
+    clearNavSwipeCommitTimer();
+    slideCommitDirectionRef.current = null;
+    setNavSwipeAnimatingState(false);
+    setSlideDirection(null);
+    setPendingEntryIdx(null);
+    setPendingImageIdx(null);
+    setNavSwipeOffset(0);
+    setIsSwiping(false);
+    isSwipingRef.current = false;
+    swipeDeltaXRef.current = 0;
+    swipeAxisRef.current = 'none';
+  }, [clearNavSwipeCommitTimer, setNavSwipeAnimatingState]);
+
   const startSlideNavigation = useCallback((direction: -1 | 1) => {
-    if (!allowNavigation || !finalRect || navSwipeAnimatingRef.current) return;
+    if (!allowNavigation || !finalRect) return;
+
+    if (navSwipeAnimatingRef.current) {
+      if (slideCommitDirectionRef.current === direction) {
+        rapidNavDirectionRef.current = direction;
+        commitSlideNavigation();
+        return;
+      }
+
+      cancelNavSwipeAnimation();
+    }
 
     clearNavSwipeCommitTimer();
     beginSlideTo(direction);
@@ -1267,11 +1300,63 @@ function Lightbox({
   }, [
     allowNavigation,
     finalRect,
+    commitSlideNavigation,
+    cancelNavSwipeAnimation,
     clearNavSwipeCommitTimer,
     beginSlideTo,
     setNavSwipeAnimatingState,
     scheduleSlideCommit,
   ]);
+
+  startSlideNavigationRef.current = startSlideNavigation;
+
+  const clearArrowHoldNavigation = useCallback(() => {
+    heldArrowDirectionRef.current = null;
+    arrowHoldFastRef.current = false;
+
+    if (arrowHoldIntervalRef.current !== null) {
+      window.clearInterval(arrowHoldIntervalRef.current);
+      arrowHoldIntervalRef.current = null;
+    }
+
+    if (arrowHoldAccelerateTimerRef.current !== null) {
+      window.clearTimeout(arrowHoldAccelerateTimerRef.current);
+      arrowHoldAccelerateTimerRef.current = null;
+    }
+  }, []);
+
+  const restartArrowHoldInterval = useCallback((direction: -1 | 1) => {
+    if (arrowHoldIntervalRef.current !== null) {
+      window.clearInterval(arrowHoldIntervalRef.current);
+    }
+
+    const intervalMs = arrowHoldFastRef.current
+      ? ARROW_HOLD_FAST_INTERVAL_MS
+      : ARROW_HOLD_NORMAL_INTERVAL_MS;
+
+    arrowHoldIntervalRef.current = window.setInterval(() => {
+      startSlideNavigationRef.current(direction);
+    }, intervalMs);
+  }, []);
+
+  const startArrowHoldNavigation = useCallback((direction: -1 | 1) => {
+    if (heldArrowDirectionRef.current === direction) return;
+
+    clearArrowHoldNavigation();
+    heldArrowDirectionRef.current = direction;
+    arrowHoldFastRef.current = false;
+
+    startSlideNavigationRef.current(direction);
+    restartArrowHoldInterval(direction);
+
+    arrowHoldAccelerateTimerRef.current = window.setTimeout(() => {
+      arrowHoldAccelerateTimerRef.current = null;
+      if (heldArrowDirectionRef.current !== direction) return;
+
+      arrowHoldFastRef.current = true;
+      restartArrowHoldInterval(direction);
+    }, ARROW_HOLD_ACCELERATE_MS);
+  }, [clearArrowHoldNavigation, restartArrowHoldInterval]);
 
   const computeFinalRect = useCallback(() => {
     const ghost = ghostRef.current;
@@ -1430,6 +1515,16 @@ function Lightbox({
     prevIndexRef.current = index;
     prevItemUrlRef.current = currentItem?.url;
   }, [index, currentItem?.url, setNavSwipeAnimatingState, clearNavSwipeCommitTimer, syncFinalRectForCurrentItem]);
+
+  useLayoutEffect(() => {
+    const rapidDirection = rapidNavDirectionRef.current;
+    if (rapidDirection === null) return;
+
+    rapidNavDirectionRef.current = null;
+    requestAnimationFrame(() => {
+      startSlideNavigationRef.current(rapidDirection);
+    });
+  }, [index, entryIdx, currentItem?.url]);
 
   useLayoutEffect(() => {
     if (phase === 'opening') {
@@ -1603,6 +1698,7 @@ function Lightbox({
       if (e.key === 'Escape') {
         if (isEditor && isPreviewMode) return;
         if (phase === 'closing') return;
+        clearArrowHoldNavigation();
         startClosing();
         return;
       }
@@ -1612,11 +1708,50 @@ function Lightbox({
       if (!allowNavigation) return;
 
       e.preventDefault();
-      startSlideNavigation(e.key === 'ArrowLeft' ? -1 : 1);
+
+      const direction: -1 | 1 = e.key === 'ArrowLeft' ? -1 : 1;
+      if (e.repeat && heldArrowDirectionRef.current === direction) return;
+
+      startArrowHoldNavigation(direction);
     };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+      const direction: -1 | 1 = e.key === 'ArrowLeft' ? -1 : 1;
+      if (heldArrowDirectionRef.current === direction) {
+        clearArrowHoldNavigation();
+      }
+    };
+
+    const onWindowBlur = () => {
+      clearArrowHoldNavigation();
+    };
+
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [phase, isEditor, isPreviewMode, startClosing, allowNavigation, startSlideNavigation]);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onWindowBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onWindowBlur);
+      clearArrowHoldNavigation();
+    };
+  }, [
+    phase,
+    isEditor,
+    isPreviewMode,
+    startClosing,
+    allowNavigation,
+    startArrowHoldNavigation,
+    clearArrowHoldNavigation,
+  ]);
+
+  useEffect(() => {
+    if (phase !== 'open') {
+      clearArrowHoldNavigation();
+    }
+  }, [phase, clearArrowHoldNavigation]);
 
   const handleClose = () => {
     if (phase === 'closing' || isEditMode) return;
@@ -1888,8 +2023,8 @@ function Lightbox({
                 left: containerLeftPeekHitRect.left,
                 width: containerLeftPeekHitRect.width,
                 height: containerLeftPeekHitRect.height,
-                cursor: isHorizontalNavActive || isEditMode ? 'default' : 'pointer',
-                pointerEvents: isHorizontalNavActive || isEditMode ? 'none' : 'auto',
+                cursor: isEditMode || isSwiping ? 'default' : 'pointer',
+                pointerEvents: isEditMode || isSwiping ? 'none' : 'auto',
                 zIndex: 3,
               }}
               onClick={handleSidePeekClick(-1)}
@@ -1915,8 +2050,8 @@ function Lightbox({
                 left: containerRightPeekHitRect.left,
                 width: containerRightPeekHitRect.width,
                 height: containerRightPeekHitRect.height,
-                cursor: isHorizontalNavActive || isEditMode ? 'default' : 'pointer',
-                pointerEvents: isHorizontalNavActive || isEditMode ? 'none' : 'auto',
+                cursor: isEditMode || isSwiping ? 'default' : 'pointer',
+                pointerEvents: isEditMode || isSwiping ? 'none' : 'auto',
                 zIndex: 3,
               }}
               onClick={handleSidePeekClick(1)}
