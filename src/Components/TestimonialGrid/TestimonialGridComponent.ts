@@ -127,13 +127,13 @@ const schema: ComponentSchemaV1 = {
       textColor: {
         type: 'string',
         scope: 'common',
-        title: 'Fill Text',
+        title: 'Text Fill',
         display: { type: 'palette-color-picker' },
       },
       captionColor: {
         type: 'string',
         scope: 'common',
-        title: 'Fill Caption',
+        title: 'Caption Fill',
         display: { type: 'palette-color-picker' },
       },
       captionMarginTop: {
