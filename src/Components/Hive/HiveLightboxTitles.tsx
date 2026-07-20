@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useMemo, type CSSProperties, type ReactNode } from 'react';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import {
@@ -80,10 +80,9 @@ export function HiveLightboxTitles({
     closeIconHoverColor = '#cccccc',
   } = settings;
 
-  const scaled = useCallback((value: number) => scalingValue(value, isEditor ?? false), [isEditor]);
-  const contentMarginTop = scaled(contentMarginTopSetting);
-  const iconMarginRight = scaled(iconMarginRightSetting);
-  const titleRowMarginBottomScaled = scaled(titleRowMarginBottom);
+  const contentMarginTop = scalingValue(contentMarginTopSetting, isEditor);
+  const iconMarginRight = scalingValue(iconMarginRightSetting, isEditor);
+  const titleRowMarginBottomScaled = scalingValue(titleRowMarginBottom, isEditor);
   const useTwoRowHeader = titleHeaderLayout === 'mobile';
 
   const title1Style = journalTextFieldsToCss('title1', resolveJournalTextFields(settings as Parameters<typeof resolveJournalTextFields>[0], 'title1'), isEditor);
@@ -254,8 +253,8 @@ export function HiveLightboxTitles({
         className={`${P}-title-cell`}
         data-title={slot.prefix}
         style={{
-          width: scaled(effectiveWidth),
-          ...(marginLeft > 0 ? { marginLeft: scaled(marginLeft) } : {}),
+          width: scalingValue(effectiveWidth, isEditor),
+          ...(marginLeft > 0 ? { marginLeft: scalingValue(marginLeft, isEditor) } : {}),
         }}
       >
         <p className={slot.className} style={slot.style}>{slot.text}</p>
@@ -268,8 +267,8 @@ export function HiveLightboxTitles({
             style={{
               position: 'absolute',
               top: 0,
-              left: scaled(-marginLeft),
-              width: scaled(marginHandleWidth),
+              left: scalingValue(-marginLeft, isEditor),
+              width: scalingValue(marginHandleWidth, isEditor),
               height: '100%',
               pointerEvents: 'auto',
             }}
@@ -285,8 +284,8 @@ export function HiveLightboxTitles({
             style={{
               position: 'absolute',
               top: 0,
-              right: scaled(-TITLE_RESIZE_HANDLE_WIDTH / 2),
-              width: scaled(TITLE_RESIZE_HANDLE_WIDTH),
+              right: scalingValue(-TITLE_RESIZE_HANDLE_WIDTH / 2, isEditor),
+              width: scalingValue(TITLE_RESIZE_HANDLE_WIDTH, isEditor),
               height: '100%',
               pointerEvents: 'auto',
             }}
@@ -311,7 +310,7 @@ export function HiveLightboxTitles({
           'data-controls-max-fraction': String(title1MaxFraction),
         } : {})}
         style={{
-          width: scaled(title1MarginLeft ?? 0),
+          width: scalingValue(title1MarginLeft ?? 0, isEditor),
           flexShrink: 0,
           alignSelf: 'stretch',
           ...(hasMarginControlOnSpacer ? { pointerEvents: 'auto' as const } : {}),
@@ -498,7 +497,7 @@ export function HiveLightboxTitles({
             position: 'absolute',
             top: 0,
             left: 0,
-            width: scaled(marginHandleWidth),
+            width: scalingValue(marginHandleWidth, isEditor),
             height: '100%',
             pointerEvents: 'auto',
           }}
@@ -527,8 +526,8 @@ export function HiveLightboxTitles({
           style={{
             position: 'absolute',
             top: 0,
-            left: scaled(offsetBeforeMargin),
-            width: scaled(marginHandleWidth),
+            left: scalingValue(offsetBeforeMargin, isEditor),
+            width: scalingValue(marginHandleWidth, isEditor),
             height: '100%',
             pointerEvents: 'auto',
           }}
@@ -555,8 +554,8 @@ export function HiveLightboxTitles({
           style={{
             position: 'absolute',
             top: 0,
-            left: scaled(titleWidthHandleOffset),
-            width: scaled(TITLE_RESIZE_HANDLE_WIDTH),
+            left: scalingValue(titleWidthHandleOffset, isEditor),
+            width: scalingValue(TITLE_RESIZE_HANDLE_WIDTH, isEditor),
             height: '100%',
             pointerEvents: 'auto',
           }}
@@ -582,8 +581,8 @@ export function HiveLightboxTitles({
         style={{
           position: 'absolute',
           top: 0,
-          left: scaled(offsetBeforeMargin),
-          width: scaled(marginHandleWidth),
+          left: scalingValue(offsetBeforeMargin, isEditor),
+          width: scalingValue(marginHandleWidth, isEditor),
           height: '100%',
           pointerEvents: 'auto',
         }}
@@ -607,8 +606,8 @@ export function HiveLightboxTitles({
           style={{
             position: 'absolute',
             top: 0,
-            left: scaled(titleWidthHandleOffset),
-            width: scaled(TITLE_RESIZE_HANDLE_WIDTH),
+            left: scalingValue(titleWidthHandleOffset, isEditor),
+            width: scalingValue(TITLE_RESIZE_HANDLE_WIDTH, isEditor),
             height: '100%',
             pointerEvents: 'auto',
           }}

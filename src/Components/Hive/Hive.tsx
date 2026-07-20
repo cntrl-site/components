@@ -837,10 +837,6 @@ function isVideoMedia(media: HiveMedia): boolean {
   return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.url);
 }
 
-function pauseVideoElement(video: HTMLVideoElement) {
-  video.pause();
-}
-
 function MediaItem({
   media,
   className,
@@ -913,7 +909,7 @@ function LightboxVideo({
     onMediaElement?.(video ?? null);
 
     return () => {
-      if (video) pauseVideoElement(video);
+      video?.pause();
       onMediaElement?.(null);
     };
   }, [src, onMediaElement]);
@@ -2275,31 +2271,28 @@ export function Hive({
             ? `${lastRowStartColumn + (index - lastRowStartIndex)}`
             : undefined;
 
+          const firstDisplayItem = displayItems[0];
+          const entryLightboxIndex = firstDisplayItem?.lightboxMedia
+            ? lightboxItemsForEntry.findIndex(media => media.url === firstDisplayItem.lightboxMedia!.url)
+            : -1;
+
           const imageContent = (
             <div className={`${P}-item-image-wrapper`} style={imageWrapperStyle}>
-              {displayItems.length === 0
-                ? null
-                : (() => {
-                    const { displayMedia, lightboxMedia } = displayItems[0];
-                    const entryLightboxIndex = lightboxMedia
-                      ? lightboxItemsForEntry.findIndex(media => media.url === lightboxMedia.url)
-                      : -1;
-                    return (
-                      <MediaItem
-                        media={displayMedia}
-                        gridIndex={index}
-                        className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
-                        style={imageStyle}
-                        onMediaClick={canOpenLightbox && entryLightboxIndex >= 0
-                          ? (e) => openLightbox(
-                            index,
-                            entryLightboxIndex,
-                            getMediaClickSourceRect(e.currentTarget, isCover ? 'cover' : 'contain'),
-                          )
-                          : undefined}
-                      />
-                    );
-                  })()}
+              {displayItems.length > 0 && (
+                <MediaItem
+                  media={firstDisplayItem.displayMedia}
+                  gridIndex={index}
+                  className={`${P}-item-${isVideoMedia(firstDisplayItem.displayMedia) ? 'video' : 'image'}`.trim()}
+                  style={imageStyle}
+                  onMediaClick={canOpenLightbox && entryLightboxIndex >= 0
+                    ? (e) => openLightbox(
+                      index,
+                      entryLightboxIndex,
+                      getMediaClickSourceRect(e.currentTarget, isCover ? 'cover' : 'contain'),
+                    )
+                    : undefined}
+                />
+              )}
             </div>
           );
 
