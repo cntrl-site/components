@@ -81,8 +81,9 @@ function getCSS(P: string): string {
   vertical-align: baseline;
   position: relative;
   z-index: 1;
-  height: var(--${P}-cap-height);
-  margin-top: calc(var(--${P}-line-height) - var(--${P}-cap-height));
+  height: 1cap;
+  max-height: 1cap;
+  margin-top: calc(var(--${P}-line-height) - 1cap);
   margin-bottom: 0;
   margin-left: var(--${P}-image-inline-gap);
   margin-right: var(--${P}-image-inline-gap);
@@ -91,6 +92,7 @@ function getCSS(P: string): string {
 .${P}-item-image video {
   display: block;
   height: 100%;
+  max-height: 1cap;
 }
 .${P}-item-image-hover-scale-in img,
 .${P}-item-image-hover-scale-in video {
@@ -136,7 +138,6 @@ function getWaterfallTextMetricsVars(
 
   return {
     [`--${varPrefix}-line-height`]: scalingValue(lineHeight, isEditor ?? false),
-    [`--${varPrefix}-cap-height`]: scalingValue(fontSize, isEditor ?? false),
     [`--${varPrefix}-image-inline-gap`]: scalingValue(fontSize * IMAGE_INLINE_GAP_RATIO, isEditor ?? false),
   } as React.CSSProperties;
 }
