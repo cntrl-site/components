@@ -1,7 +1,12 @@
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, getFormFieldValidationError, scalingValue, useScopedStyles } from '../utils/index';
+import {
+  buildColorVars,
+  getFormFieldValidationError,
+  scalingValue,
+  useScopedStyles,
+} from '../utils/index';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
@@ -50,6 +55,7 @@ function getCSS(P: string): string {
 .${P}-wrapper {
   display: grid;
   align-items: start;
+  justify-content: center;
   min-height: ${sv(48)};
 }
 .${P}-item {
@@ -1286,8 +1292,17 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const effH = ratioReversed ? rW : rH;
   const aspectRatio = `${effW} / ${effH}`;
 
-  const imageWrapperWidth = scalingValue(size ?? 0, isEditor);
+  const columnsCount = gridLayout.columnsCount;
+  const entryWidthScaled = scalingValue(size ?? 0, isEditor);
+  const imageWrapperWidth = entryWidthScaled;
   const isFitSlider = !isCover && slider !== 'off';
+
+  const itemsInLastRow = cropContent.length % columnsCount || columnsCount;
+  const isPartialLastRow = itemsInLastRow < columnsCount && cropContent.length > 0;
+  const lastRowStartIndex = cropContent.length - itemsInLastRow;
+  const lastRowStartColumn = isPartialLastRow
+    ? Math.floor((columnsCount - itemsInLastRow) / 2) + 1
+    : 1;
 
   const imageWrapperStyle: React.CSSProperties = {
     width: imageWrapperWidth,
@@ -1381,7 +1396,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
           ref={containerRef}
           className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
           style={{
-            gridTemplateColumns: `repeat(${gridLayout.columnsCount}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
             rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
             columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
             width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor),
@@ -1393,8 +1408,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             const hasTitle = hasText(item.title);
             const hasSubtitle = hasText(item.subtitle);
             const itemLink = (item.link?.length ?? 0) > 0 && lightbox === 'off' ? item.link : undefined;
-            const isLastRow = Math.floor(index / gridLayout.columnsCount)
-              === Math.ceil(cropContent.length / gridLayout.columnsCount) - 1;
+            const isLastRow = Math.floor(index / columnsCount)
+              === Math.ceil(cropContent.length / columnsCount) - 1;
+            const gridColumn = isPartialLastRow && index >= lastRowStartIndex
+              ? `${lastRowStartColumn + (index - lastRowStartIndex)}`
+              : undefined;
 
             const typeCTextBlock = isTextBeforeImage ? (
               <div className={`${P}-item-text-block`}>
@@ -1636,14 +1654,18 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             <div
               key={index}
               className={`${P}-item`.trim()}
+              style={gridColumn && !shouldAlignEntries ? { gridColumn } : undefined}
             >
               <div
                 className={`${isEditMode 
                   ? `${P}-item-inner` 
                   : `${P}-item-inner-hidden`}${shouldAlignEntries && isLastRow ? ` ${P}-item-inner-last-row` : ''}`.trim()}
-                style={{ width: (textBoxWidth ?? 0) > 100 
-                  ? `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))` 
-                  : scalingValue(size ?? 0, isEditor) }}
+                style={{
+                  width: (textBoxWidth ?? 0) > 100
+                    ? `calc(${entryWidthScaled} * (${textBoxWidth} / 100))`
+                    : entryWidthScaled,
+                  ...(gridColumn && shouldAlignEntries ? { gridColumn } : {}),
+                }}
               >
                 {shouldAlignEntries ? (
                   <>
