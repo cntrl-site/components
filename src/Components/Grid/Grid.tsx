@@ -375,23 +375,10 @@ function getCSS(P: string): string {
   margin: 0;
   color: var(--${P}-lightbox-counter-color);
 }
-
 .${P}-control {
   position: relative;
   z-index: 2;
   width: 100%;
-}
-
-.${P}-control::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  min-height: 20px;
-  pointer-events: auto;
-  z-index: 10;
 }
 `;
 }
