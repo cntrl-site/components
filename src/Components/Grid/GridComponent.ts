@@ -118,11 +118,11 @@ const schema: ComponentSchemaV1 = {
       },
       default: [
         {
-          title: `Flying Over the Old Town`,
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: `David R. Scott During EVA`,
+          subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -134,11 +134,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Doors of Matera',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'Salton Sea from Above',
+          subtitle: 'Hasselblad 500 EL / Zeiss Sonnar 250 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -150,11 +150,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Cattedrale di Santa Maria',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'Lunar Module Pilot',
+          subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -166,11 +166,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'City Through the Cracks',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'Lunar Module 3 porch',
+          subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -182,11 +182,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Private Stone Gardens',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'Command Module',
+          subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -196,7 +196,7 @@ const schema: ComponentSchemaV1 = {
             }],
           }, {
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(6).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-10.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -206,7 +206,7 @@ const schema: ComponentSchemaV1 = {
             }],
           }, {
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(7).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -218,11 +218,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Leaving the Old Town',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'CSM and Lunar Module LM',
+          subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(8).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -234,11 +234,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Under the Sun',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'David R. Scott during EVA',
+          subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(9).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -250,11 +250,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Citygates View',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'Fourth day of the mission',
+          subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(10).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-8.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -266,11 +266,11 @@ const schema: ComponentSchemaV1 = {
           link: ''
         },
         {
-          title: 'Around the City',
-          subtitle: 'Leica M6 / SUMMICRON-M 50mm F2/ PORTRA 400',
+          title: 'Landing of the Spider1',
+          subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/grid(11).webp',
+              url: 'https://cdn.cntrl.site/component-assets/Component-default-9.jpg',
               name: '',
               objectFit: 'cover',
             }, {
@@ -585,7 +585,7 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       lightbox: 'on',
       imageDisplay: {
-        display: 'cover',
+        display: 'fit',
         ratioValue: '2:3',
         reversed: false,
       },

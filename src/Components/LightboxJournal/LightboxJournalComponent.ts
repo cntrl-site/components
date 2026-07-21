@@ -386,7 +386,7 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/journal_1.jpg',
+      cover: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
       coverFit: {
         display: 'fit',
         ratioValue: '1:1',
@@ -581,53 +581,58 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       {
-        title1: 'Dorothy Manners & Julanne Johnston',
-        title2: 'by Evans Studio',
-        title3: 'Screenland',
+        title1: 'NASA',
+        title2: 'Apollo 9 Mission, 1969',
+        title3: 'Archival Footage',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/journal_2.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: 'https://cdn.cntrl.site/component-assets/journal_3.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
             name: '',
             objectFit: 'contain',
           },
         ],
       },
       {
-        title1: 'Inez Nadeau',
-        title2: 'Melbourne Spurr',
-        title3: 'Screenland',
+        title1: 'NASA',
+        title2: 'Apollo 9 Mission, 1969',
+        title3: 'Archival Footage',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/journal_4.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
             name: '',
             objectFit: 'contain',
           }
         ],
       },
       {
-        title1: 'Colleen Moore',
-        title2: 'Clarence S. Bull',
-        title3: 'Screenland',
+        title1: 'NASA',
+        title2: 'Apollo 9 Mission, 1969',
+        title3: 'Archival Footage',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/journal_5.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+            name: '',
+            objectFit: 'contain',
+          },
+          {
+            url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
             name: '',
             objectFit: 'contain',
           },
         ],
       },
       {
-        title1: 'Gloria Swanson',
-        title2: 'Donald Biddle Keyes',
-        title3: 'Screenland',
+        title1: 'NASA',
+        title2: 'Apollo 9 Mission, 1969',
+        title3: 'Archival Footage',
         image: [
           {
-            url: 'https://cdn.cntrl.site/component-assets/journal_6.jpg',
+            url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
             name: '',
             objectFit: 'contain',
           },
