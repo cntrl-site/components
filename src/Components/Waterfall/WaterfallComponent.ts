@@ -197,8 +197,8 @@ const lightboxTextStylePanelTab = {
 };
 
 const WATERFALL_DEFAULT_TEXTS = {
-  subtitle: 'Group exhibition',
-  caption: 'Installation view',
+  subtitle: 'NASA',
+  caption: 'Apollo 9 Mission, 1969',
 };
 
 const DEFAULT_CONTENT_ITEMS = [
