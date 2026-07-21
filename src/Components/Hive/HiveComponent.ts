@@ -650,7 +650,7 @@ const schema: ComponentSchemaV1 = {
 export const HiveComponent = {
   element: Hive,
   id: 'hive',
-  name: 'Hive',
+  name: 'Catalogue',
   category: 'grids',
   layoutMode: 'structured' as const,
   preview: {

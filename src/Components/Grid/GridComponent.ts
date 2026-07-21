@@ -118,7 +118,7 @@ const schema: ComponentSchemaV1 = {
       },
       default: [
         {
-          title: `David R. Scott During EVA`,
+          title: `Earth-orbital mission`,
           subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
@@ -659,14 +659,14 @@ const schema: ComponentSchemaV1 = {
         titleFontSize: 0.1066,
         titleLineHeight: 0.0853,
         subtitleFontSize: 0.056,
-        subtitleLineHeight: 0.0506,
+        subtitleLineHeight: 0.064,
         lightboxCounterFontSize: 0.0373,
         lightboxCounterLineHeight: 0.0373,
       },
       t: {
         type: 'b',
         gridLayout: {
-          entryWidth: 0.0833,
+          entryWidth: 0.1041,
           horizontalGap: 0.26041,
           wrapperWidth: 1,
           columnsCount: 3,
@@ -681,11 +681,11 @@ const schema: ComponentSchemaV1 = {
         titleCorners: 0.05,
         subtitlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
         titlePadding: { top: 0.01, right: 0.01, bottom: 0.01, left: 0.01 },
-        titleFontSize: 0.027,
-        titleLineHeight: 0.0222,
+        titleFontSize: 0.03255,
+        titleLineHeight: 0.03255,
         titleLetterSpacing: -0.00118,
-        subtitleFontSize: 0.015625,
-        subtitleLineHeight: 0.018229166666666668,
+        subtitleFontSize: 0.01822,
+        subtitleLineHeight: 0.02083,
         lightboxCounterFontSize: 0.01,
         lightboxCounterLineHeight: 0.01,
       },

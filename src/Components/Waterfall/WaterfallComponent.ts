@@ -203,38 +203,34 @@ const WATERFALL_DEFAULT_TEXTS = {
 
 const DEFAULT_CONTENT_ITEMS = [
   {
-    title: "Nicolas Roggy 'Facings'",
+    title: "Salton Sea from Above",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
-      name: 'grid(1).webp',
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg',
       objectFit: 'cover' as const,
     },
   },
   {
-    title: "Jordan Derrien 'Eight attempts, for eight works and a little more'",
+    title: "Lunar Module Pilot",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
-      name: 'grid(2).webp',
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
       objectFit: 'cover' as const,
     },
   },
   {
-    title: 'Anne Bourse',
+    title: 'CSM and Lunar Module LM',
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
-      name: 'grid(3).webp',
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
       objectFit: 'cover' as const,
     },
   },
   {
-    title: "Jean-Charles de Quillacq 'Le temps est venu'",
+    title: "David R. Scott During EVA",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
-      name: 'grid(4).webp',
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
       objectFit: 'cover' as const,
     },
   },
@@ -516,7 +512,7 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       imageDisplay: {
-        display: 'cover',
+        display: 'fit',
         ratioValue: '2:3',
         reversed: false,
       },
@@ -529,7 +525,7 @@ const schema: ComponentSchemaV1 = {
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#000000',
       closeIconHoverColor: '#999999',
-      titleFontFamily: 'Arial',
+      titleFontFamily: 'Goudy Bookletter 1911',
       titleFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -546,7 +542,7 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       d: {
         wrapperWidth: 1,
-        horizontalGap: 0.02,
+        horizontalGap: 0.006944,
         titleHeaderLayout: 'desktop',
         title1Width: 0.35,
         title2Width: 0.248,
@@ -558,8 +554,9 @@ const schema: ComponentSchemaV1 = {
         contentMarginTop: 0.01,
         closeIconMaxWidth: 0.0125,
         iconMarginRight: 0.01,
-        titleFontSize: 0.07,
-        titleLineHeight: 0.07,
+        titleFontSize: 0.0625,
+        titleLineHeight: 0.05555,
+        titleLetterSpacing: -0.00034722,
         ...createLightboxTextStyleLayoutDefaults({
           title1FontSize: 0.0098,
           title1LineHeight: 0.0098,
@@ -571,7 +568,7 @@ const schema: ComponentSchemaV1 = {
       },
       m: {
         wrapperWidth: 1,
-        horizontalGap: 0.04,
+        horizontalGap: 0.026666,
         titleHeaderLayout: 'mobile',
         title1Width: 0.4,
         title2Width: 0.464864,
@@ -583,8 +580,8 @@ const schema: ComponentSchemaV1 = {
         contentMarginTop: 0.0810,
         closeIconMaxWidth: 0.0810,
         iconMarginRight: 0.05405,
-        titleFontSize: 0.07,
-        titleLineHeight: 0.07,
+        titleFontSize: 0.16,
+        titleLineHeight: 0.13333,
         ...createLightboxTextStyleLayoutDefaults({
           title1FontSize: 0.04864,
           title1LineHeight: 0.056756,
@@ -596,7 +593,7 @@ const schema: ComponentSchemaV1 = {
       },
       t: {
         wrapperWidth: 1,
-        horizontalGap: 0.02,
+        horizontalGap: 0.01302,
         titleHeaderLayout: 'desktop',
         title1Width: 0.3,
         title2Width: 0.248,
@@ -606,7 +603,7 @@ const schema: ComponentSchemaV1 = {
         title3MarginLeft: 0.1,
         titleRowMarginBottom: 0,
         contentMarginTop: 0.026,
-        closeIconMaxWidth: 0.039,
+        closeIconMaxWidth: 0.03906,
         iconMarginRight: 0.026,
         titleFontSize: 0.07,
         titleLineHeight: 0.07,
@@ -692,6 +689,10 @@ export const WaterfallComponent = {
   name: 'Waterfall',
   category: 'lists',
   layoutMode: 'structured' as const,
+  preview: {
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/waterfall.png',
+  },
   version: 1,
   defaultSize: {
     d: {
