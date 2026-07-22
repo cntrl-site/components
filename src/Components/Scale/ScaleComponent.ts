@@ -88,37 +88,43 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/scale_component_1.jpg ',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/scale_component_2.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/scale_component_3.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/scale_component_4.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/scale_component_5.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
           name: '',
         },
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/scale_component_6.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+          name: '',
+        },
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
           name: '',
         },
       },

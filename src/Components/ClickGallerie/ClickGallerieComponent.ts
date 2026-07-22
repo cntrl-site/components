@@ -43,29 +43,50 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
           name: 'Slider-1.png',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
           name: 'Slider-2.png',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
           name: 'Slider-3.png',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQP84JKRDT7WNWDQZR4Y9.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
           name: 'Slider-4.png',
+        },
+        link: '',
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+          name: 'Slider-5.png',
+        },
+        link: '',
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+          name: 'Slider-6.png',
+        },
+        link: '',
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+          name: 'Slider-7.png',
         },
         link: '',
       },

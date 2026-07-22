@@ -1,4 +1,4 @@
-import { Hive } from './Hive';
+import { Waterfall } from './Waterfall';
 import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
 import {
   createJournalTextStyleTabContentItems,
@@ -7,7 +7,7 @@ import {
   JOURNAL_TEXT_STYLE_TAB_LABELS,
   type JournalTextStylePrefix,
 } from '../LightboxJournal/utils';
-import hiveSourceRaw from './Hive.tsx?raw';
+import waterfallSourceRaw from './Waterfall.tsx?raw';
 
 const defaultCloseIconUrl =
   'data:image/svg+xml,' +
@@ -128,11 +128,11 @@ function createJournalTextStyleProperties(prefix: JournalTextStylePrefix): Recor
   return properties;
 }
 
-const HIVE_TEXT_STYLE_PREFIXES = JOURNAL_TEXT_STYLE_PREFIXES.filter(
+const WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES = JOURNAL_TEXT_STYLE_PREFIXES.filter(
   (prefix): prefix is Exclude<JournalTextStylePrefix, 'count'> => prefix !== 'count',
 );
 
-const textStylePropertiesByPrefix = HIVE_TEXT_STYLE_PREFIXES.reduce<Record<string, SchemaProperty>>(
+const lightboxTextStylePropertiesByPrefix = WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES.reduce<Record<string, SchemaProperty>>(
   (properties, prefix) => ({
     ...properties,
     ...createJournalTextStyleProperties(prefix),
@@ -140,7 +140,7 @@ const textStylePropertiesByPrefix = HIVE_TEXT_STYLE_PREFIXES.reduce<Record<strin
   {},
 );
 
-const textStyleDefaultsByPrefix = HIVE_TEXT_STYLE_PREFIXES.reduce<Record<string, JournalSchemaDefaultValue>>(
+const lightboxTextStyleDefaultsByPrefix = WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES.reduce<Record<string, JournalSchemaDefaultValue>>(
   (defaults, prefix) => ({
     ...defaults,
     [getJournalTextStyleSettingKey(prefix, 'fontFamily')]: 'Arial',
@@ -169,10 +169,10 @@ type JournalTextLayoutDefaults = {
   title3LineHeight?: number;
 };
 
-function createTextStyleLayoutDefaults(
+function createLightboxTextStyleLayoutDefaults(
   layoutDefaults: JournalTextLayoutDefaults,
 ): Partial<JournalTextLayoutDefaults> {
-  return HIVE_TEXT_STYLE_PREFIXES.reduce<Record<string, number>>((defaults, prefix) => {
+  return WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES.reduce<Record<string, number>>((defaults, prefix) => {
     const fontSize = layoutDefaults[`${prefix}FontSize` as keyof JournalTextLayoutDefaults];
     const lineHeight = layoutDefaults[`${prefix}LineHeight` as keyof JournalTextLayoutDefaults];
     if (fontSize !== undefined) {
@@ -185,43 +185,56 @@ function createTextStyleLayoutDefaults(
   }, {});
 }
 
-const textStylePanelTab = {
+const lightboxTextStylePanelTab = {
   type: 'tab' as const,
   id: 'journalTextStyle',
   tabs: Object.fromEntries(
-    HIVE_TEXT_STYLE_PREFIXES.map((prefix) => [
+    WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES.map((prefix) => [
       JOURNAL_TEXT_STYLE_TAB_LABELS[prefix],
       createJournalTextStyleTabContentItems(prefix),
     ]),
   ),
 };
 
-const HIVE_DEFAULT_TITLES = {
-  title1: 'NASA',
-  title2: 'Ames Research Center',
-  title3: 'Archive Footage',
+const WATERFALL_DEFAULT_TEXTS = {
+  subtitle: 'NASA',
+  caption: 'Apollo 9 Mission, 1969',
 };
 
-const HIVE_DEFAULT_CONTENT = (() => {
-  const items = [];
-  for (let i = 1; i <= 24; i += 1) {
-    items.push({
-      ...HIVE_DEFAULT_TITLES,
-      gallery: [{
-        media: [{
-          url: `https://cdn.cntrl.site/component-assets/hive_${i}.jpg`,
-          name: '',
-          objectFit: 'cover' as const,
-        }, {
-          url: '',
-          name: '',
-          objectFit: 'cover' as const,
-        }],
-      }],
-    });
-  }
-  return items;
-})();
+const DEFAULT_CONTENT_ITEMS = [
+  {
+    title: "Salton Sea from Above",
+    ...WATERFALL_DEFAULT_TEXTS,
+    image: {
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg',
+      objectFit: 'cover' as const,
+    },
+  },
+  {
+    title: "Lunar Module Pilot",
+    ...WATERFALL_DEFAULT_TEXTS,
+    image: {
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+      objectFit: 'cover' as const,
+    },
+  },
+  {
+    title: 'CSM and Lunar Module LM',
+    ...WATERFALL_DEFAULT_TEXTS,
+    image: {
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+      objectFit: 'cover' as const,
+    },
+  },
+  {
+    title: "David R. Scott During EVA",
+    ...WATERFALL_DEFAULT_TEXTS,
+    image: {
+      url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+      objectFit: 'cover' as const,
+    },
+  },
+];
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -229,7 +242,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
-      addItemFromFileExplorer: true,
+      addItemWithoutImage: true,
       allowsVideo: true,
     },
     display: {
@@ -238,108 +251,58 @@ const schema: ComponentSchemaV1 = {
     items: {
       type: 'object',
       properties: {
-        title1: {
+        title: {
           type: 'string',
           label: 'Title',
           placeholder: 'Add Title...',
           display: { type: 'text-input' },
         },
-        title2: {
+        subtitle: {
           type: 'string',
           label: 'Subtitle',
           placeholder: 'Add Subtitle...',
           display: { type: 'text-input' },
         },
-        title3: {
+        caption: {
           type: 'string',
           label: 'Caption',
           placeholder: 'Add Caption...',
           display: { type: 'text-input' },
         },
-        gallery: {
-          type: 'array',
-          label: 'Gallery',
-          max: 1,
+        image: {
+          type: 'object',
+          label: 'Image',
           display: {
-            type: 'media-pair-list-input',
+            isObjectFitEditable: false,
+            defaultObjectFit: 'cover',
+            type: 'media-input',
           },
-          items: {
-            type: 'object',
-            properties: {
-              media: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    url: { type: 'string' },
-                    name: { type: 'string' },
-                    type: {
-                      type: 'string',
-                      enum: ['image', 'video'],
-                    },
-                    objectFit: {
-                      type: 'string',
-                      enum: ['cover', 'contain'],
-                    },
-                  },
-                },
-              },
+          properties: {
+            url: { type: 'string' },
+            name: { type: 'string' },
+            type: {
+              type: 'string',
+              enum: ['image', 'video'],
             },
+            objectFit: { type: 'string', enum: ['cover', 'contain'] },
           },
+          required: ['url', 'name'],
         },
       },
-      required: ['gallery'],
+      required: ['image'],
     },
-    default: HIVE_DEFAULT_CONTENT,
+    default: DEFAULT_CONTENT_ITEMS,
   },
   settings: {
     sizing: 'auto auto',
     properties: {
-      gridLayout: {
-        type: 'grid-layout',
-        scope: 'layout',
-        display: { type: 'grid-layout' },
-        gridParams: {
-          type: 'object',
-          properties: {
-            columnsCount: {
-              type: 'number',
-              title: 'Columns',
-              min: 1,
-              max: 9999,
-              display: { type: 'numeric-input' },
-            },
-            wrapperWidth: {
-              type: 'number',
-              title: 'Width',
-              min: 0,
-            },
-            entryWidth: {
-              type: 'number',
-              title: 'Entry',
-              min: 0,
-            },
-            horizontalGap: {
-              type: 'number',
-              title: 'Gutter',
-              min: 0,
-            },
-          },
-        },
-      },
-      verticalGap: {
+      wrapperWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Vertical Gap',
+        title: 'Width',
         display: { type: 'numeric-input' },
         min: 0,
-        max: 1000,
-      },
-      align: {
-        type: 'string',
-        scope: 'layout',
-        title: 'Align',
-        display: { type: 'toggle-cycle', enum: ['top', 'center', 'bottom'] },
+        max: 9999,
       },
       imageDisplay: {
         type: 'object',
@@ -359,6 +322,19 @@ const schema: ComponentSchemaV1 = {
             type: 'boolean',
           },
         },
+      },
+      imageHoverEffect: {
+        type: 'string',
+        scope: 'common',
+        title: 'Hover',
+        display: { type: 'toggle-cycle', enum: ['none', 'scale-in', 'saturate'] },
+      },
+      horizontalGap: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Gutter',
+        min: 0,
+        display: { type: 'range-control' },
       },
       title1Width: {
         type: 'number',
@@ -415,22 +391,28 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         display: { type: 'range-control' },
       },
-      title1Color: {
+      titleColor: {
         type: 'string',
         scope: 'common',
         title: 'Title Default',
         display: { type: 'palette-color-picker' },
       },
+      title1Color: {
+        type: 'string',
+        scope: 'common',
+        title: 'Title Lightbox',
+        display: { type: 'palette-color-picker' },
+      },
       title2Color: {
         type: 'string',
         scope: 'common',
-        title: 'Subtitle Default',
+        title: 'Subtitle Lightbox',
         display: { type: 'palette-color-picker' },
       },
       title3Color: {
         type: 'string',
         scope: 'common',
-        title: 'Caption Default',
+        title: 'Caption Lightbox',
         display: { type: 'palette-color-picker' },
       },
       contentMarginTop: {
@@ -479,7 +461,54 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         display: { type: 'range-control' },
       },
-      ...textStylePropertiesByPrefix,
+      titleFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      titleFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+      },
+      titleFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Font Size',
+        display: { type: 'font-size' },
+      },
+      titleLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Line Height',
+        display: { type: 'line-height-input' },
+      },
+      titleLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      titleWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      titleTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Text Appearance',
+        display: { type: 'text-appearance' },
+        properties: {
+          textTransform: { type: 'string', enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
+          textDecoration: { type: 'string', enum: ['none', 'underline'] },
+          fontVariant: { type: 'string', enum: ['normal', 'small-caps'] },
+        },
+      },
+      ...lightboxTextStylePropertiesByPrefix,
     },
     defaults: {
       imageDisplay: {
@@ -487,7 +516,8 @@ const schema: ComponentSchemaV1 = {
         ratioValue: '2:3',
         reversed: false,
       },
-      align: 'top',
+      imageHoverEffect: 'none',
+      titleColor: '#000000',
       title1Color: '#000000',
       title2Color: '#000000',
       title3Color: '#000000',
@@ -495,76 +525,24 @@ const schema: ComponentSchemaV1 = {
       closeIcon: defaultCloseIconUrl,
       closeIconColor: '#000000',
       closeIconHoverColor: '#999999',
-      ...textStyleDefaultsByPrefix,
+      titleFontFamily: 'Goudy Bookletter 1911',
+      titleFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      titleLetterSpacing: 0,
+      titleWordSpacing: 0,
+      titleTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      ...lightboxTextStyleDefaultsByPrefix,
     },
     layoutDefaults: {
-      m: {
-        gridLayout: {
-          entryWidth: 0.37837,
-          horizontalGap: 0.0810,
-          wrapperWidth: 1,
-          columnsCount: 2,
-          lockedParam: 'wrapperWidth',
-        },
-        verticalGap: 0.0810,
-        titleHeaderLayout: 'mobile',
-        title1Width: 0.4,
-        title2Width: 0.464864,
-        title3Width: 0.3,
-        title1MarginLeft: 0.04,
-        title2MarginLeft: 0.04,
-        title3MarginLeft: 0.08,
-        titleRowMarginBottom: 0.08,
-        contentMarginTop: 0.0810,
-        closeIconMaxWidth: 0.0810,
-        iconMarginRight: 0.05405,
-        ...createTextStyleLayoutDefaults({
-          title1FontSize: 0.04864,
-          title1LineHeight: 0.056756,
-          title2FontSize: 0.04864,
-          title2LineHeight: 0.056756,
-          title3FontSize: 0.04864,
-          title3LineHeight: 0.056756,
-        }),
-      },
-      t: {
-        gridLayout: {
-          entryWidth: 0.10416,
-          horizontalGap: 0.013,
-          wrapperWidth: 1,
-          columnsCount: 8,
-          lockedParam: 'wrapperWidth',
-        },
-        verticalGap: 0.013,
-        titleHeaderLayout: 'desktop',
-        title1Width: 0.3,
-        title2Width: 0.248,
-        title3Width: 0.1,
-        title1MarginLeft: 0.01,
-        title2MarginLeft: 0.1,
-        title3MarginLeft: 0.1,
-        titleRowMarginBottom: 0,
-        contentMarginTop: 0.026,
-        closeIconMaxWidth: 0.039,
-        iconMarginRight: 0.026,
-        ...createTextStyleLayoutDefaults({
-          title1FontSize: 0.02083,
-          title1LineHeight: 0.02734,
-          title2FontSize: 0.02083,
-          title2LineHeight: 0.02734,
-          title3FontSize: 0.02083,
-          title3LineHeight: 0.02734,
-        }),
-      },
       d: {
-        gridLayout: {
-          entryWidth: 0.06944,
-          horizontalGap: 0.006944,
-          wrapperWidth: 1,
-          columnsCount: 12,
-          lockedParam: 'wrapperWidth',
-        },
-        verticalGap: 0.00694,
+        wrapperWidth: 1,
+        horizontalGap: 0.006944,
         titleHeaderLayout: 'desktop',
         title1Width: 0.35,
         title2Width: 0.248,
@@ -576,7 +554,10 @@ const schema: ComponentSchemaV1 = {
         contentMarginTop: 0.01,
         closeIconMaxWidth: 0.0125,
         iconMarginRight: 0.01,
-        ...createTextStyleLayoutDefaults({
+        titleFontSize: 0.0625,
+        titleLineHeight: 0.05555,
+        titleLetterSpacing: -0.00034722,
+        ...createLightboxTextStyleLayoutDefaults({
           title1FontSize: 0.0098,
           title1LineHeight: 0.0098,
           title2FontSize: 0.0098,
@@ -585,19 +566,63 @@ const schema: ComponentSchemaV1 = {
           title3LineHeight: 0.0098,
         }),
       },
-    },
-    displayRules: [
-      {
-        if: { name: 'imageDisplay.display', value: 'cover' },
-        then: { name: 'properties.align.display.enabled', value: false },
+      m: {
+        wrapperWidth: 1,
+        horizontalGap: 0.026666,
+        titleHeaderLayout: 'mobile',
+        title1Width: 0.4,
+        title2Width: 0.464864,
+        title3Width: 0.3,
+        title1MarginLeft: 0.04,
+        title2MarginLeft: 0.04,
+        title3MarginLeft: 0.08,
+        titleRowMarginBottom: 0.08,
+        contentMarginTop: 0.0810,
+        closeIconMaxWidth: 0.0810,
+        iconMarginRight: 0.05405,
+        titleFontSize: 0.16,
+        titleLineHeight: 0.13333,
+        ...createLightboxTextStyleLayoutDefaults({
+          title1FontSize: 0.04864,
+          title1LineHeight: 0.056756,
+          title2FontSize: 0.04864,
+          title2LineHeight: 0.056756,
+          title3FontSize: 0.04864,
+          title3LineHeight: 0.056756,
+        }),
       },
-    ],
+      t: {
+        wrapperWidth: 1,
+        horizontalGap: 0.01302,
+        titleHeaderLayout: 'desktop',
+        title1Width: 0.3,
+        title2Width: 0.248,
+        title3Width: 0.1,
+        title1MarginLeft: 0.01,
+        title2MarginLeft: 0.1,
+        title3MarginLeft: 0.1,
+        titleRowMarginBottom: 0,
+        contentMarginTop: 0.026,
+        closeIconMaxWidth: 0.03906,
+        iconMarginRight: 0.026,
+        titleFontSize: 0.07,
+        titleLineHeight: 0.07,
+        ...createLightboxTextStyleLayoutDefaults({
+          title1FontSize: 0.02083,
+          title1LineHeight: 0.02734,
+          title2FontSize: 0.02083,
+          title2LineHeight: 0.02734,
+          title3FontSize: 0.02083,
+          title3LineHeight: 0.02734,
+        }),
+      },
+    },
     layout: [
       '__componentName__',
-      'gridLayout',
-      'verticalGap',
-      'align',
+      'wrapperWidth',
       'imageDisplay',
+      'imageHoverEffect',
+      'horizontalGap',
       'title1Width',
       'title2Width',
       'title3Width',
@@ -609,6 +634,10 @@ const schema: ComponentSchemaV1 = {
       'contentMarginTop',
       'closeIconMaxWidth',
       'iconMarginRight',
+      'titleFontSize',
+      'titleLineHeight',
+      'titleLetterSpacing',
+      'titleWordSpacing',
     ],
   },
   panels: [
@@ -619,15 +648,8 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         '__componentName__',
-        {
-          type: 'row',
-          title: '',
-          items: [
-            { type: 'group', title: '', items: ['gridLayout'] },
-          ],
-        },
-        { type: 'row', title: '', items: ['verticalGap'] },
-        { type: 'row', title: '', items: ['imageDisplay', 'align'] },
+        'wrapperWidth',
+        { type: 'row', title: 'Image', items: ['imageDisplay', 'imageHoverEffect'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
       ],
     },
@@ -637,25 +659,39 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        textStylePanelTab,
+        {
+          type: 'group',
+          title: 'Title',
+          items: [
+            'titleFontFamily',
+            'titleFontSettings',
+            { type: 'row', items: ['titleFontSize', 'titleLineHeight', 'titleLetterSpacing', 'titleWordSpacing'] },
+            'titleTextAppearance',
+          ],
+        },
+        {
+          type: 'group',
+          title: 'Lightbox',
+          items: [lightboxTextStylePanelTab],
+        },
       ],
     },
   ],
   paletteBookmark: {
-    items: ['title1Color', 'title2Color', 'title3Color', 'backgroundColor', 'closeIconColor', 'closeIconHoverColor'],
-    panelIds: ['general', 'typeStyle'],
+    items: ['titleColor', 'title1Color', 'title2Color', 'title3Color', 'backgroundColor', 'closeIconColor', 'closeIconHoverColor'],
+    panelIds: ['general', 'imageSettings', 'typeStyle'],
   },
 };
 
-export const HiveComponent = {
-  element: Hive,
-  id: 'hive',
-  name: 'Catalogue',
-  category: 'grids',
+export const WaterfallComponent = {
+  element: Waterfall,
+  id: 'waterfall',
+  name: 'Waterfall',
+  category: 'lists',
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/hive.png',
+    url: 'https://cdn.cntrl.site/component-assets/waterfall.png',
   },
   version: 1,
   defaultSize: {
@@ -665,19 +701,25 @@ export const HiveComponent = {
     },
   },
   assetsPaths: {
-    content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
+    content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [...HIVE_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}` }))],
+    parameters: [
+      { path: 'titleFontFamily' },
+      ...WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES.map((prefix) => ({
+        path: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}`,
+      })),
+    ],
   },
   fontRelations: {
-    ...HIVE_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
+    titleFontSettings: 'titleFontFamily',
+    ...WATERFALL_LIGHTBOX_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
       ...acc,
       [`${prefix}FontSettings`]: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}`,
     }), {}),
   },
   schema,
-  sourceCode: hiveSourceRaw,
+  sourceCode: waterfallSourceRaw,
 };
