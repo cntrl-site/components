@@ -112,4 +112,5 @@ export type ComponentSchemaV1 = {
   fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
+  statesByLayout?: Partial<Record<string, string[]>>;
 };
