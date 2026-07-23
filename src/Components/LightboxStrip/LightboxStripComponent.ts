@@ -308,7 +308,7 @@ const schema: ComponentSchemaV1 = {
         type: 'boolean',
         scope: 'common',
         title: 'Active',
-        display: { type: 'toggle-cycle', enum: ['outline', 'color', 'scale-up'] },
+        display: { type: 'toggle-cycle', enum: ['outline', 'color', 'scale-up', 'none'] },
       },
       thumbnailActiveColor: {
         type: 'string',
