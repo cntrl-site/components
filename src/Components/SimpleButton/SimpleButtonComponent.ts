@@ -42,6 +42,8 @@ const paletteBookmarkItems = [
   'backgroundColor',
   'textColor',
   'borderColor',
+  'iconColor',
+  'boxShadowColor',
 ] as const;
 
 const schema = {
@@ -57,10 +59,10 @@ const schema = {
         display: { type: 'radio-group' },
         enum: ['a', 'b', 'c'],
       },
-      text: {
+      label: {
         type: 'string',
         scope: 'common',
-        title: 'Text',
+        title: 'Label',
         display: { type: 'label-input' },
       },
       icon: {
@@ -74,6 +76,12 @@ const schema = {
         scope: 'layout',
         title: 'Alignment',
         display: { type: 'toggle-cycle', enum: ['left', 'center', 'right'] },
+      },
+      alignA: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Alignment',
+        display: { type: 'toggle-cycle', enum: ['left', 'center', 'right'], visible: false },
       },
       order: {
         type: 'string',
@@ -100,7 +108,7 @@ const schema = {
       iconSize: {
         type: 'number',
         scope: 'layout',
-        title: 'Icon size',
+        title: 'Icon width',
         display: { type: 'numeric-input', visible: false },
         min: 0,
         max: 9999,
@@ -122,6 +130,25 @@ const schema = {
         scope: 'layout',
         title: 'Corner radius',
         display: { type: 'padding-controls' },
+      },
+      boxShadow: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Shadow',
+        display: {
+          type: 'padding-controls',
+          step: 0.1,
+          decimal: true,
+          allowNegative: true,
+          nonNegativeSides: ['right'],
+          sideLetters: { top: 'Y', left: 'X', right: 'B', bottom: 'S' },
+        },
+      },
+      boxShadowColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Shadow color',
+        display: { type: 'palette-color-picker' },
       },
       stroke: {
         type: 'number',
@@ -149,6 +176,12 @@ const schema = {
         title: 'Border color',
         display: { type: 'palette-color-picker' },
       },
+      iconColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Default icon',
+        display: { type: 'palette-color-picker' },
+      },
       stateOverrides: {
         type: 'object',
         scope: 'common',
@@ -157,7 +190,7 @@ const schema = {
         type: 'string',
         scope: 'layout',
         title: 'Hover effect',
-        display: { type: 'toggle-cycle', enum: ['none', 'scale-up', 'lift'] },
+        display: { type: 'toggle-cycle', enum: ['none', 'scale-up', 'lift', 'blinds', 'reveal', 'swipe', 'content-roll'] },
       },
       fontFamily: {
         type: 'string',
@@ -220,9 +253,10 @@ const schema = {
     },
     defaults: {
       type: 'a',
-      text: 'Button',
-      icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KY5B32DEET6P62S58Q9AD7XR.png',
+      label: 'Button',
+      icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KY78A0YVT403B042HVWWTHBC.svg',
       alignment: 'center',
+      alignA: 'center',
       order: 'text-icon',
       gap: 0,
       iconScale: 100,
@@ -240,10 +274,18 @@ const schema = {
         bottom: 0,
         left: 0,
       },
+      boxShadow: {
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      },
+      boxShadowColor: '#000000',
       stroke: 0,
       backgroundColor: '#000000',
       textColor: '#ffffff',
       borderColor: '#ffffff',
+      iconColor: '#ffffff',
       hoverEffect: 'none',
       fontFamily: 'Arial',
       fontSettings: {
@@ -315,7 +357,7 @@ const schema = {
     layout: [
       '__componentName__',
       'type',
-      'text',
+      'label',
       'icon',
       'alignment',
       'order',
@@ -325,6 +367,8 @@ const schema = {
       'hoverEffect',
       { type: 'row', title: '', items: ['dimensions', 'padding'] },
       'cornerRadius',
+      'boxShadow',
+      'boxShadowColor',
       { type: 'row', title: '', items: ['stroke', 'borderColor'] },
       { type: 'row', title: '', items: ['minWidth', 'minHeight'] },
     ],
@@ -334,12 +378,24 @@ const schema = {
         then: { name: 'properties.icon.display.visible', value: false },
       },
       {
+        if: { name: 'type', value: 'a' },
+        then: { name: 'properties.alignment.display.visible', value: false },
+      },
+      {
+        if: { name: 'type', value: 'a' },
+        then: { name: 'properties.alignA.display.visible', value: true },
+      },
+      {
+        if: { name: 'type', value: 'a' },
+        then: { name: 'properties.iconColor.display.visible', value: false },
+      },
+      {
         if: { name: 'type', value: 'b' },
         then: { name: 'properties.icon.display.visible', value: true },
       },
       {
         if: { name: 'type', value: 'b' },
-        then: { name: 'properties.text.display.visible', value: false },
+        then: { name: 'properties.label.display.visible', value: false },
       },
       {
         if: { name: 'type', value: 'b' },
@@ -405,6 +461,10 @@ const schema = {
         if: { name: 'dimensions', value: true },
         then: { name: 'properties.alignment.display.enabled', value: false },
       },
+      {
+        if: { name: 'dimensions', value: true },
+        then: { name: 'properties.alignA.display.enabled', value: false },
+      },
     ],
   },
   panels: [
@@ -416,12 +476,13 @@ const schema = {
       layout: [
         '__componentName__',
         'type',
-        { type: 'row', title: '', items: ['text', 'icon'] },
-        { type: 'row', title: '', items: ['alignment', 'order', 'iconSize'] },
+        { type: 'row', title: '', items: ['label', 'icon', 'iconSize', 'alignA'] },
+        { type: 'row', title: '', items: ['alignment', 'order'] },
         { type: 'row', title: '', items: ['gap', 'iconScale'] },
         { type: 'row', title: '', items: ['dimensions', 'padding'] },
         { type: 'row', title: '', items: ['minWidth', 'minHeight'] },
         { type: 'row', title: '', items: ['hoverEffect', 'cornerRadius'] },
+        { type: 'row', title: '', items: ['boxShadow'] },
         { type: 'row', title: '', items: ['stroke'] },
       ],
     },
@@ -443,9 +504,9 @@ const schema = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['backgroundColor', 'textColor', 'borderColor'],
-      hover: ['backgroundColor', 'textColor', 'borderColor'],
-      active: ['backgroundColor', 'textColor', 'borderColor'],
+      default: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor'],
+      hover: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor'],
+      active: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor'],
     },
   },
   states: ['default', 'hover', 'active'],
