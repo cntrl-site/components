@@ -52,6 +52,7 @@ const schema = {
   version: 1,
   settings: {
     sizing: 'auto',
+    linkInParamsPanel: true,
     properties: {
       type: {
         type: 'string',

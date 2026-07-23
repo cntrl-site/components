@@ -142,6 +142,7 @@ function getCSS(P: string): string {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+  user-select: none;
   transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms, box-shadow 250ms;
   box-shadow: ${boxShadow};
 }
@@ -590,25 +591,25 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
   }
 
   const handleRevealMouseEnter = revealHoverActive
-    ? (event: MouseEvent<HTMLButtonElement>) => setRevealOpenDirectionFromMouseEnter(event, P)
+    ? (event: MouseEvent<HTMLDivElement>) => setRevealOpenDirectionFromMouseEnter(event, P)
     : undefined;
   const handleRevealMouseLeave = revealHoverActive
-    ? (event: MouseEvent<HTMLButtonElement>) => setRevealCloseDirectionFromMouseLeave(event, P)
+    ? (event: MouseEvent<HTMLDivElement>) => setRevealCloseDirectionFromMouseLeave(event, P)
     : undefined;
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div className={`${P}-wrapper ${stateClass} ${editingClass}`.trim()} style={colorVars}>
-        <button
-          type="button"
+        <div
           className={`${P}-button ${hoverEffectClass}`.trim()}
           style={buttonStyle}
           onMouseEnter={handleRevealMouseEnter}
           onMouseLeave={handleRevealMouseLeave}
+          role="button"
         >
           {buttonContent}
-        </button>
+        </div>
       </div>
     </>
   );
