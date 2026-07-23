@@ -128,6 +128,7 @@ function getCSS(P: string): string {
   height: 100%;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 .${P}-button {
   display: inline-flex;
@@ -143,6 +144,7 @@ function getCSS(P: string): string {
   overflow-wrap: anywhere;
   word-break: break-word;
   user-select: none;
+  pointer-events: auto;
   transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms, box-shadow 250ms;
   box-shadow: ${boxShadow};
 }
