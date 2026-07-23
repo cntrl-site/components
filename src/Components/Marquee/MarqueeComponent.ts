@@ -169,35 +169,49 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(1).webp',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(2).webp',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(3).webp',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(4).webp',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/grid(5).webp',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+          name: '',
+        },
+        link: '',
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+          name: '',
+        },
+        link: '',
+      },
+      {
+        image: {
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
           name: '',
         },
         link: '',
