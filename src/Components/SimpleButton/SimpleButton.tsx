@@ -43,6 +43,8 @@ type SimpleButtonSettings = {
   cornerRadius?: CornerRadius;
   boxShadow?: BoxShadow;
   boxShadowColor?: string;
+  innerBoxShadow?: BoxShadow;
+  innerBoxShadowColor?: string;
   stroke?: number;
   backgroundColor?: string;
   textColor?: string;
@@ -67,7 +69,7 @@ type SimpleButtonSettings = {
   minHeight?: number;
 };
 
-type ColorKeys = 'backgroundColor' | 'textColor' | 'borderColor' | 'iconColor' | 'boxShadowColor';
+type ColorKeys = 'backgroundColor' | 'textColor' | 'borderColor' | 'iconColor' | 'boxShadowColor' | 'innerBoxShadowColor';
 
 type SimpleButtonProps = {
   settings: SimpleButtonSettings;
@@ -82,6 +84,7 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   borderColor: 'border-color',
   iconColor: 'icon-color',
   boxShadowColor: 'box-shadow-color',
+  innerBoxShadowColor: 'inner-box-shadow-color',
 };
 
 const STATE_KEYS = ['hover', 'active'] as const;
@@ -107,6 +110,17 @@ function setRevealCloseDirectionFromMouseLeave(event: MouseEvent<HTMLElement>, p
 }
 
 function getCSS(P: string): string {
+  const outerShadow = `var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-box-shadow-color, transparent)`;
+  const innerShadow = `inset var(--${P}-inner-box-shadow-x, 0) var(--${P}-inner-box-shadow-y, 0) var(--${P}-inner-box-shadow-blur, 0) var(--${P}-inner-box-shadow-spread, 0) var(--${P}-inner-box-shadow-color, transparent)`;
+  const boxShadow = `${outerShadow}, ${innerShadow}`;
+  const hoverOuterShadow = `var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-hover-box-shadow-color, var(--${P}-box-shadow-color, transparent))`;
+  const hoverInnerShadow = `inset var(--${P}-inner-box-shadow-x, 0) var(--${P}-inner-box-shadow-y, 0) var(--${P}-inner-box-shadow-blur, 0) var(--${P}-inner-box-shadow-spread, 0) var(--${P}-hover-inner-box-shadow-color, var(--${P}-inner-box-shadow-color, transparent))`;
+  const hoverBoxShadow = `${hoverOuterShadow}, ${hoverInnerShadow}`;
+  const activeOuterShadow = `var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-active-box-shadow-color, var(--${P}-box-shadow-color, transparent))`;
+  const activeInnerShadow = `inset var(--${P}-inner-box-shadow-x, 0) var(--${P}-inner-box-shadow-y, 0) var(--${P}-inner-box-shadow-blur, 0) var(--${P}-inner-box-shadow-spread, 0) var(--${P}-active-inner-box-shadow-color, var(--${P}-inner-box-shadow-color, transparent))`;
+  const activeBoxShadow = `${activeOuterShadow}, ${activeInnerShadow}`;
+  const liftBoxShadow = `0 4px 12px rgba(0, 0, 0, 0.15), ${innerShadow}`;
+
   return `
 .${P}-wrapper {
   display: flex;
@@ -129,7 +143,7 @@ function getCSS(P: string): string {
   overflow-wrap: anywhere;
   word-break: break-word;
   transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms, box-shadow 250ms;
-  box-shadow: var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-box-shadow-color, transparent);
+  box-shadow: ${boxShadow};
 }
 .${P}-wrapper.${P}-editing .${P}-button {
   transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms;
@@ -141,7 +155,7 @@ function getCSS(P: string): string {
 .${P}-hover-effect-lift:hover,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-lift {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: ${liftBoxShadow};
 }
 .${P}-hover-effect-blinds,
 .${P}-hover-effect-reveal,
@@ -278,25 +292,25 @@ function getCSS(P: string): string {
   background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
   color: var(--${P}-hover-text-color, var(--${P}-text-color));
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
-  box-shadow: var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-hover-box-shadow-color, var(--${P}-box-shadow-color, transparent));
+  box-shadow: ${hoverBoxShadow};
 }
 .${P}-wrapper.${P}-state-hover .${P}-button {
   background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
   color: var(--${P}-hover-text-color, var(--${P}-text-color));
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
-  box-shadow: var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-hover-box-shadow-color, var(--${P}-box-shadow-color, transparent));
+  box-shadow: ${hoverBoxShadow};
 }
 .${P}-button:active {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
-  box-shadow: var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-active-box-shadow-color, var(--${P}-box-shadow-color, transparent));
+  box-shadow: ${activeBoxShadow};
 }
 .${P}-wrapper.${P}-state-active .${P}-button {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
-  box-shadow: var(--${P}-box-shadow-x, 0) var(--${P}-box-shadow-y, 0) var(--${P}-box-shadow-blur, 0) var(--${P}-box-shadow-spread, 0) var(--${P}-active-box-shadow-color, var(--${P}-box-shadow-color, transparent));
+  box-shadow: ${activeBoxShadow};
 }
 .${P}-text {
   display: block;
@@ -432,6 +446,8 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
     cornerRadius = { top: 0, right: 0, bottom: 0, left: 0 },
     boxShadow = { top: 0, left: 0, right: 0, bottom: 0 },
     boxShadowColor = 'rgba(0, 0, 0, 0)',
+    innerBoxShadow = { top: 0, left: 0, right: 0, bottom: 0 },
+    innerBoxShadowColor = 'rgba(0, 0, 0, 0)',
     stroke = 0,
     backgroundColor = '#000000',
     textColor = '#ffffff',
@@ -456,6 +472,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
     borderColor,
     iconColor,
     boxShadowColor,
+    innerBoxShadowColor,
   }, COLOR_VAR_MAP, STATE_KEYS, stateOverrides);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
@@ -498,6 +515,10 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
     [`--${P}-box-shadow-y`]: scalingValue(boxShadow.top, isEditor),
     [`--${P}-box-shadow-blur`]: scalingValue(boxShadow.right, isEditor),
     [`--${P}-box-shadow-spread`]: scalingValue(boxShadow.bottom, isEditor),
+    [`--${P}-inner-box-shadow-x`]: scalingValue(innerBoxShadow.left, isEditor),
+    [`--${P}-inner-box-shadow-y`]: scalingValue(innerBoxShadow.top, isEditor),
+    [`--${P}-inner-box-shadow-blur`]: scalingValue(innerBoxShadow.right, isEditor),
+    [`--${P}-inner-box-shadow-spread`]: scalingValue(innerBoxShadow.bottom, isEditor),
     paddingTop: scalingValue(padding.top, isEditor),
     paddingRight: scalingValue(padding.right, isEditor),
     paddingBottom: scalingValue(padding.bottom, isEditor),

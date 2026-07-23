@@ -44,6 +44,7 @@ const paletteBookmarkItems = [
   'borderColor',
   'iconColor',
   'boxShadowColor',
+  'innerBoxShadowColor',
 ] as const;
 
 const schema = {
@@ -148,6 +149,25 @@ const schema = {
         type: 'string',
         scope: 'common',
         title: 'Shadow color',
+        display: { type: 'palette-color-picker' },
+      },
+      innerBoxShadow: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Inner shadow',
+        display: {
+          type: 'padding-controls',
+          step: 0.1,
+          decimal: true,
+          allowNegative: true,
+          nonNegativeSides: ['right'],
+          sideLetters: { top: 'Y', left: 'X', right: 'B', bottom: 'S' },
+        },
+      },
+      innerBoxShadowColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Inner shadow color',
         display: { type: 'palette-color-picker' },
       },
       stroke: {
@@ -281,6 +301,13 @@ const schema = {
         bottom: 0,
       },
       boxShadowColor: '#000000',
+      innerBoxShadow: {
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      },
+      innerBoxShadowColor: '#000000',
       stroke: 0,
       backgroundColor: '#000000',
       textColor: '#ffffff',
@@ -369,6 +396,8 @@ const schema = {
       'cornerRadius',
       'boxShadow',
       'boxShadowColor',
+      'innerBoxShadow',
+      'innerBoxShadowColor',
       { type: 'row', title: '', items: ['stroke', 'borderColor'] },
       { type: 'row', title: '', items: ['minWidth', 'minHeight'] },
     ],
@@ -483,6 +512,7 @@ const schema = {
         { type: 'row', title: '', items: ['minWidth', 'minHeight'] },
         { type: 'row', title: '', items: ['hoverEffect', 'cornerRadius'] },
         { type: 'row', title: '', items: ['boxShadow'] },
+        { type: 'row', title: '', items: ['innerBoxShadow'] },
         { type: 'row', title: '', items: ['stroke'] },
       ],
     },
@@ -504,9 +534,9 @@ const schema = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor'],
-      hover: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor'],
-      active: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor'],
+      default: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor', 'innerBoxShadowColor'],
+      hover: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor', 'innerBoxShadowColor'],
+      active: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor', 'innerBoxShadowColor'],
     },
   },
   states: ['default', 'hover', 'active'],
