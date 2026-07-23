@@ -81,6 +81,7 @@ export type SchemaDisplayRule = {
 
 export type SchemaSection = {
   sizing?: string;
+  linkInParamsPanel?: boolean;
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;
@@ -112,4 +113,5 @@ export type ComponentSchemaV1 = {
   fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
+  statesByLayout?: Partial<Record<string, string[]>>;
 };

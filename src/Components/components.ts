@@ -15,6 +15,7 @@ import { LightboxStripComponent } from './LightboxStrip/LightboxStripComponent';
 import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalComponent';
 import { ClickGallerieComponent } from './ClickGallerie/ClickGallerieComponent';
 import { ScaleComponent } from './Scale/ScaleComponent';
+import { SimpleButtonComponent } from './SimpleButton/SimpleButtonComponent';
 import { WaterfallComponent } from './Waterfall/WaterfallComponent';
 
 export const components: Component[] = [
@@ -35,4 +36,5 @@ export const components: Component[] = [
   LightboxJournalComponent,
   ScaleComponent,
   WaterfallComponent,
+  SimpleButtonComponent,
 ];
