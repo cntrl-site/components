@@ -323,6 +323,12 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      lightbox: {
+        type: 'boolean',
+        scope: 'common',
+        title: 'Lightbox',
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
+      },
       imageHoverEffect: {
         type: 'string',
         scope: 'common',
@@ -516,6 +522,7 @@ const schema: ComponentSchemaV1 = {
         ratioValue: '2:3',
         reversed: false,
       },
+      lightbox: 'on',
       imageHoverEffect: 'none',
       titleColor: '#000000',
       title1Color: '#000000',
@@ -621,6 +628,7 @@ const schema: ComponentSchemaV1 = {
       '__componentName__',
       'wrapperWidth',
       'imageDisplay',
+      'lightbox',
       'imageHoverEffect',
       'horizontalGap',
       'title1Width',
@@ -648,7 +656,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         '__componentName__',
-        'wrapperWidth',
+        { type: 'row', title: '', items: ['wrapperWidth', 'lightbox'] },
         { type: 'row', title: 'Image', items: ['imageDisplay', 'imageHoverEffect'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
       ],
