@@ -149,7 +149,12 @@ const schema = {
       boxShadowColor: {
         type: 'string',
         scope: 'common',
-        title: 'Shadow color',
+        title: 'Shadow Default',
+        titleByState: {
+          default: 'Shadow Default',
+          hover: 'Shadow Hover',
+          active: 'Shadow Active',
+        },
         display: { type: 'palette-color-picker' },
       },
       innerBoxShadow: {
@@ -168,7 +173,12 @@ const schema = {
       innerBoxShadowColor: {
         type: 'string',
         scope: 'common',
-        title: 'Inner shadow color',
+        title: 'Inner Shadow Default',
+        titleByState: {
+          default: 'Inner Shadow Default',
+          hover: 'Inner Shadow Hover',
+          active: 'Inner Shadow Active',
+        },
         display: { type: 'palette-color-picker' },
       },
       stroke: {
@@ -182,25 +192,45 @@ const schema = {
       backgroundColor: {
         type: 'string',
         scope: 'common',
-        title: 'Default background',
+        title: 'Background Default',
+        titleByState: {
+          default: 'Background Default',
+          hover: 'Background Hover',
+          active: 'Background Active',
+        },
         display: { type: 'palette-color-picker' },
       },
       textColor: {
         type: 'string',
         scope: 'common',
-        title: 'Default text',
+        title: 'Text Default',
+        titleByState: {
+          default: 'Text Default',
+          hover: 'Text Hover',
+          active: 'Text Active',
+        },
         display: { type: 'palette-color-picker' },
       },
       borderColor: {
         type: 'string',
         scope: 'common',
-        title: 'Border color',
+        title: 'Border Default',
+        titleByState: {
+          default: 'Border Default',
+          hover: 'Border Hover',
+          active: 'Border Active',
+        },
         display: { type: 'palette-color-picker' },
       },
       iconColor: {
         type: 'string',
         scope: 'common',
-        title: 'Default icon',
+        title: 'Icon Default',
+        titleByState: {
+          default: 'Icon Default',
+          hover: 'Icon Hover',
+          active: 'Icon Active',
+        },
         display: { type: 'palette-color-picker' },
       },
       stateOverrides: {
@@ -271,6 +301,22 @@ const schema = {
         min: 0,
         max: 9999,
       },
+      width: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Width',
+        display: { type: 'numeric-input', visible: false },
+        min: 0,
+        max: 9999,
+      },
+      height: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Height',
+        display: { type: 'numeric-input', visible: false },
+        min: 0,
+        max: 9999,
+      },
     },
     defaults: {
       type: 'a',
@@ -337,6 +383,8 @@ const schema = {
       },
       minWidth: 100 / 1440,
       minHeight: 100 / 1440,
+      width: 100 / 1440,
+      height: 100 / 1440,
     },
     layoutDefaults: {
       m: {
@@ -349,6 +397,8 @@ const schema = {
         },
         minWidth: 100 / 375,
         minHeight: 100 / 375,
+        width: 100 / 375,
+        height: 100 / 375,
         iconSize: 32 / 375,
         fontSize: 0.0426,
         lineHeight: 0.0426,
@@ -363,6 +413,8 @@ const schema = {
         },
         minWidth: 100 / 768,
         minHeight: 100 / 768,
+        width: 100 / 768,
+        height: 100 / 768,
         iconSize: 36 / 768,
         fontSize: 0.02083,
         lineHeight: 0.02604,
@@ -377,6 +429,8 @@ const schema = {
         },
         minWidth: 100 / 1440,
         minHeight: 100 / 1440,
+        width: 100 / 1440,
+        height: 100 / 1440,
         iconSize: 40 / 1440,
         fontSize: 0.01,
         lineHeight: 0.01,
@@ -400,7 +454,7 @@ const schema = {
       'innerBoxShadow',
       'innerBoxShadowColor',
       { type: 'row', title: '', items: ['stroke', 'borderColor'] },
-      { type: 'row', title: '', items: ['minWidth', 'minHeight'] },
+      { type: 'row', title: '', items: ['minWidth', 'minHeight', 'width', 'height'] },
     ],
     displayRules: [
       {
@@ -489,11 +543,11 @@ const schema = {
       },
       {
         if: { name: 'dimensions', value: true },
-        then: { name: 'properties.alignment.display.enabled', value: false },
+        then: { name: 'properties.width.display.visible', value: true },
       },
       {
         if: { name: 'dimensions', value: true },
-        then: { name: 'properties.alignA.display.enabled', value: false },
+        then: { name: 'properties.height.display.visible', value: true },
       },
     ],
   },
@@ -510,7 +564,7 @@ const schema = {
         { type: 'row', title: '', items: ['alignment', 'order'] },
         { type: 'row', title: '', items: ['gap', 'iconScale'] },
         { type: 'row', title: '', items: ['dimensions', 'padding'] },
-        { type: 'row', title: '', items: ['minWidth', 'minHeight'] },
+        { type: 'row', title: '', items: ['minWidth', 'minHeight', 'width', 'height'] },
         { type: 'row', title: '', items: ['hoverEffect', 'cornerRadius'] },
         { type: 'row', title: '', items: ['boxShadow'] },
         { type: 'row', title: '', items: ['innerBoxShadow'] },
@@ -535,9 +589,9 @@ const schema = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor', 'innerBoxShadowColor'],
-      hover: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor', 'innerBoxShadowColor'],
-      active: ['backgroundColor', 'textColor', 'borderColor', 'iconColor', 'boxShadowColor', 'innerBoxShadowColor'],
+      default: ['textColor', 'backgroundColor', 'boxShadowColor', 'innerBoxShadowColor', 'borderColor', 'iconColor'],
+      hover: ['textColor', 'backgroundColor', 'boxShadowColor', 'innerBoxShadowColor', 'borderColor', 'iconColor'],
+      active: ['textColor', 'backgroundColor', 'boxShadowColor', 'innerBoxShadowColor', 'borderColor', 'iconColor'],
     },
   },
   states: ['default', 'hover', 'active'],
@@ -553,16 +607,6 @@ export const SimpleButtonComponent = {
   name: 'Simple Button',
   category: 'dev',
   version: 1,
-  defaultSize: {
-    d: {
-      width: 200,
-      height: 100,
-    },
-    m: {
-      width: 160,
-      height: 80,
-    },
-  },
   schema,
   sourceCode: simpleButtonSourceRaw,
   assetsPaths: {

@@ -9,6 +9,7 @@ export type SchemaProperty = {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'] | 'grid-layout';
   scope?: PropertyScope;
   title?: string;
+  titleByState?: Record<string, string>;
   message?: string;
   icon?: string;
   tooltip?: string;

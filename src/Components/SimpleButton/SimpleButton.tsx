@@ -67,6 +67,8 @@ type SimpleButtonSettings = {
   stateOverrides?: Record<string, Partial<Record<ColorKeys, string>>>;
   minWidth?: number;
   minHeight?: number;
+  width?: number;
+  height?: number;
 };
 
 type ColorKeys = 'backgroundColor' | 'textColor' | 'borderColor' | 'iconColor' | 'boxShadowColor' | 'innerBoxShadowColor';
@@ -123,11 +125,7 @@ function getCSS(P: string): string {
 
   return `
 .${P}-wrapper {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   pointer-events: none;
 }
 .${P}-button {
@@ -264,6 +262,7 @@ function getCSS(P: string): string {
 .${P}-content-roll-viewport {
   position: absolute;
   inset: 0;
+  pointer-events: none;
 }
 .${P}-content-roll-layer {
   position: absolute;
@@ -273,6 +272,7 @@ function getCSS(P: string): string {
   transform: translateY(-50%);
   transition: transform 250ms ease, opacity 250ms ease, top 250ms ease;
   opacity: 1;
+  pointer-events: none;
 }
 .${P}-content-roll-layer-hover {
   top: 0;
@@ -467,6 +467,8 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
     stateOverrides,
     minWidth = 0,
     minHeight = 0,
+    width = 0,
+    height = 0,
   } = settings;
 
   const colorVars = buildColorVars(P, {
@@ -487,9 +489,9 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
   const useContentRoll = hoverEffect === 'content-roll';
   const revealHoverActive = hoverEffect === 'reveal' && (!isEditor || isPreviewMode);
 
-  const isAutoDimensions = dimensions === true;
+  const isFixedDimensions = dimensions === true;
   const resolvedAlignment = type === 'a' ? (alignA ?? alignment) : alignment;
-  const effectiveAlignment = isAutoDimensions ? 'center' : resolvedAlignment;
+  const effectiveAlignment = resolvedAlignment;
 
   const isIconTextType = type === 'c';
   const hasText = type !== 'b';
@@ -536,8 +538,11 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
       textAlign: effectiveAlignment,
     } : {}),
     ...(isIconTextType && !useContentRoll ? { gap: scalingValue(gap, isEditor) } : {}),
-    ...(isAutoDimensions
-      ? { width: 'auto', height: 'auto' }
+    ...(isFixedDimensions
+      ? {
+          width: scalingValue(width, isEditor),
+          height: scalingValue(height, isEditor),
+        }
       : {
           minWidth: scalingValue(minWidth, isEditor),
           minHeight: scalingValue(minHeight, isEditor),
