@@ -335,7 +335,7 @@ export const LightboxOverlay = ({
       }
       const previouslyFocused = previouslyFocusedRef.current;
       if (previouslyFocused && document.contains(previouslyFocused)) {
-        previouslyFocused.focus();
+        previouslyFocused.focus({ preventScroll: true });
       }
     };
   }, []);
