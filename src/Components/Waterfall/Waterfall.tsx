@@ -40,7 +40,12 @@ export type WaterfallSettings = {
   titleWordSpacing?: number;
   titleTextAppearance?: TextStyles['textAppearance'];
   horizontalGap?: number;
-  imageHoverEffect?: 'none' | 'scale-in' | 'saturate';
+  imageHoverEffect?: {
+    sizeType: 'none' | 'scale' | 'saturate';
+    value: number;
+    min?: number;
+    max?: number;
+  };
   lightbox?: 'on' | 'off';
 } & WaterfallLightboxSettings;
 
@@ -97,22 +102,25 @@ function getCSS(P: string): string {
   max-height: none;
   object-position: bottom;
 }
-.${P}-item-image-hover-scale-in img,
-.${P}-item-image-hover-scale-in video {
-  transform-origin: center bottom;
+.${P}-item-hover-scale .${P}-item-image img,
+.${P}-item-hover-scale .${P}-item-image video {
+  transform-origin: center center;
   transition: transform 0.3s ease;
 }
-.${P}-item-image-hover-scale-in:hover img,
-.${P}-item-image-hover-scale-in:hover video {
-  transform: scale(1.15);
+.${P}-item-hover-scale:hover .${P}-item-image {
+  z-index: 10;
 }
-.${P}-item-image-hover-saturate img,
-.${P}-item-image-hover-saturate video {
+.${P}-item-hover-scale:hover .${P}-item-image img,
+.${P}-item-hover-scale:hover .${P}-item-image video {
+  transform: scale(var(--${P}-image-hover-scale, 1.2));
+}
+.${P}-item-hover-saturate .${P}-item-image img,
+.${P}-item-hover-saturate .${P}-item-image video {
   filter: grayscale(100%);
   transition: filter 0.3s ease;
 }
-.${P}-item-image-hover-saturate:hover img,
-.${P}-item-image-hover-saturate:hover video {
+.${P}-item-hover-saturate:hover .${P}-item-image img,
+.${P}-item-hover-saturate:hover .${P}-item-image video {
   filter: grayscale(0%);
 }
 .${P}-item-gap-host {
@@ -234,11 +242,6 @@ export function Waterfall({
   const gapControlWidth = `max(${horizontalGapScaled}, ${GAP_CONTROL_MIN_PX}px)`;
   const { objectFitMode, imageStyle } = resolveImageDisplay(settings);
   const inlineTitleStyle = resolveInlineTitleStyle(settings, isEditor);
-  const wrapperStyle = {
-    width: scalingValue(wrapperWidth, isEditor ?? false),
-    ...inlineTitleStyle,
-    ...getWaterfallTextMetricsVars(settings, P, isEditor),
-  } as React.CSSProperties;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -249,10 +252,19 @@ export function Waterfall({
   const [lightboxEntry, setLightboxEntry] = useState({ title1: '', title2: '', title3: '' });
 
   const showImageHoverEffects = (!isEditor || isPreviewMode) && !lightboxOpen;
-  const imageHoverEffect = settings?.imageHoverEffect ?? 'none';
-  const imageHoverClass = showImageHoverEffects && imageHoverEffect !== 'none'
-    ? `${P}-item-image-hover-${imageHoverEffect}`
+  const imageHoverEffect = settings?.imageHoverEffect ?? { sizeType: 'none' as const, value: 120 };
+  const imageHoverType = imageHoverEffect.sizeType ?? 'none';
+  const imageHoverClass = showImageHoverEffects && imageHoverType !== 'none'
+    ? `${P}-item-hover-${imageHoverType}`
     : undefined;
+  const imageHoverScale = (imageHoverEffect.value ?? 120) / 100;
+
+  const wrapperStyle = {
+    width: scalingValue(wrapperWidth, isEditor ?? false),
+    ...inlineTitleStyle,
+    ...getWaterfallTextMetricsVars(settings, P, isEditor),
+    [`--${P}-image-hover-scale`]: String(imageHoverScale),
+  } as React.CSSProperties;
 
   const lightboxPortalStyle = (() => {
     const style: Record<string, string> = {};
@@ -349,7 +361,10 @@ export function Waterfall({
           );
 
           return (
-            <div key={index} className={`${P}-item`}>
+            <div
+              key={index}
+              className={[`${P}-item`, imageHoverClass].filter(Boolean).join(' ')}
+            >
               {item.title ? (
                 <span
                   className={`${P}-item-title`}
@@ -360,12 +375,7 @@ export function Waterfall({
                 </span>
               ) : null}
               {item.image?.url ? (
-                <span
-                  className={[
-                    `${P}-item-image`,
-                    imageHoverClass,
-                  ].filter(Boolean).join(' ')}
-                >
+                <span className={`${P}-item-image`}>
                   {item.image.type === 'video' ? (
                     <video
                       src={item.image.url}

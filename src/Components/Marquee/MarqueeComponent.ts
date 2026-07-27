@@ -145,6 +145,7 @@ const schema: ComponentSchemaV1 = {
     type: 'array',
     settings: {
       addItemFromFileExplorer: true,
+      allowsVideo: true,
     },
     items: {
       type: 'object',
@@ -155,6 +156,14 @@ const schema: ComponentSchemaV1 = {
           display: {
             isObjectFitEditable: false,
             type: 'media-input',
+          },
+          properties: {
+            url: { type: 'string' },
+            name: { type: 'string' },
+            type: {
+              type: 'string',
+              enum: ['image', 'video'],
+            },
           },
         },
         link: {

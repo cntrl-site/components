@@ -35,8 +35,8 @@ type SimpleButtonSettings = {
   alignA?: 'left' | 'center' | 'right';
   order?: 'text-icon' | 'icon-text';
   gap?: number;
-  iconScale?: number;
   iconSize?: number;
+  iconWidthC?: number;
   iconColor?: string;
   dimensions?: boolean;
   padding?: Padding;
@@ -124,8 +124,12 @@ function getCSS(P: string): string {
   const liftBoxShadow = `0 4px 12px rgba(0, 0, 0, 0.15), ${innerShadow}`;
 
   return `
+.${P}-root {
+  line-height: 0;
+}
 .${P}-wrapper {
-  display: inline-block;
+  display: inline-flex;
+  vertical-align: top;
   pointer-events: none;
 }
 .${P}-button {
@@ -442,8 +446,8 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
     alignA,
     order = 'text-icon',
     gap = 0,
-    iconScale = 100,
     iconSize = 0,
+    iconWidthC = 0,
     dimensions = false,
     padding = { top: 0, right: 0, bottom: 0, left: 0 },
     cornerRadius = { top: 0, right: 0, bottom: 0, left: 0 },
@@ -579,7 +583,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
           {label}
         </span>
       );
-      const iconNode = renderIcon(P, icon, 'inline', iconScale);
+      const iconNode = renderIcon(P, icon, iconWidthC > 0 ? 'fixed' : 'fill', 100, iconWidthC, isEditor);
       return order === 'icon-text'
         ? <>{iconNode}{textNode}</>
         : <>{textNode}{iconNode}</>;
@@ -607,15 +611,17 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
-      <div className={`${P}-wrapper ${stateClass} ${editingClass}`.trim()} style={colorVars}>
-        <div
-          className={`${P}-button ${hoverEffectClass}`.trim()}
-          style={buttonStyle}
-          onMouseEnter={handleRevealMouseEnter}
-          onMouseLeave={handleRevealMouseLeave}
-          role="button"
-        >
-          {buttonContent}
+      <div className={`${P}-root`} style={colorVars}>
+        <div className={`${P}-wrapper ${stateClass} ${editingClass}`.trim()}>
+          <div
+            className={`${P}-button ${hoverEffectClass}`.trim()}
+            style={buttonStyle}
+            onMouseEnter={handleRevealMouseEnter}
+            onMouseLeave={handleRevealMouseLeave}
+            role="button"
+          >
+            {buttonContent}
+          </div>
         </div>
       </div>
     </>
