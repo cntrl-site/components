@@ -52,7 +52,7 @@ const schema = {
   version: 1,
   settings: {
     sizing: 'auto',
-    linkInParamsPanel: true,
+    hasLinkParameter: true,
     properties: {
       type: {
         type: 'string',
@@ -614,7 +614,7 @@ export const SimpleButtonComponent = {
   sourceCode: simpleButtonSourceRaw,
   assetsPaths: {
     content: [],
-    parameters: [{ path: 'settings.icon', placeholderEnabled: true }],
+    parameters: [{ path: 'icon' }],
   },
   fontSettingsPaths: {
     content: [],

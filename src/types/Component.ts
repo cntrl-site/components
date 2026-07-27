@@ -48,3 +48,16 @@ type Path = {
 export function isSchemaV1(schema: any): schema is ComponentSchemaV1 {
   return schema.type === 'object' && schema.version === 1;
 }
+
+export function resolveStates(schema: unknown, layoutId?: string): string[] {
+  if (!isSchemaV1(schema) || !schema.states) {
+    return [];
+  }
+  if (layoutId) {
+    const layoutStates = schema.statesByLayout?.[layoutId];
+    if (layoutStates) {
+      return layoutStates;
+    }
+  }
+  return schema.states;
+}

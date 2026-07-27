@@ -82,7 +82,7 @@ export type SchemaDisplayRule = {
 
 export type SchemaSection = {
   sizing?: string;
-  linkInParamsPanel?: boolean;
+  hasLinkParameter?: boolean;
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;
