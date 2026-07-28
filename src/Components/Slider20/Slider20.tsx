@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import cn from 'classnames';
@@ -28,6 +28,7 @@ type Slider20Trigger = {
 type Slider20Direction = 'horizontal' | 'vertical';
 type Slider20Transition = 'slide' | 'fade in' | 'reveal';
 type Slider20Nav = 'classic' | 'no';
+type Slider20NavSize = 's' | 'm' | 'l';
 type Slider20ControlsShow = 'always' | 'on hover' | 'never';
 
 type Slider20Settings = {
@@ -35,6 +36,8 @@ type Slider20Settings = {
   direction?: Slider20Direction;
   transition?: Slider20Transition;
   nav?: Slider20Nav;
+  navSize?: Slider20NavSize;
+  navUnit?: number;
   controls?: string | null;
   controlsMaxWidth?: number;
   show?: Slider20ControlsShow;
@@ -45,9 +48,7 @@ type Slider20Settings = {
   navColor?: string;
   navPaginationColor?: string;
   navBackgroundColor?: string;
-  navPaginationHoverColor?: string;
   linkColor?: string;
-  linkHoverColor?: string;
   titleColor?: string;
   titleFontFamily?: string;
   titleFontSettings?: {
@@ -73,11 +74,6 @@ type Slider20Props = {
 
 type Offset = { x: number; y: number };
 
-type Alignment =
-  | 'top-left' | 'top-center' | 'top-right'
-  | 'middle-left' | 'middle-center' | 'middle-right'
-  | 'bottom-left' | 'bottom-center' | 'bottom-right';
-
 type Dimensions = { width: number; height: number };
 
 const TRANSITION_DURATION = '500ms';
@@ -95,15 +91,50 @@ const PAGINATION = {
     inactive: '#cccccc',
     background: '#000000',
   },
-  hover: '#cccccc',
+};
+
+const NAV_SIZES: Record<Slider20NavSize, {
+  paddingY: number;
+  paddingActive: number;
+  borderRadius: number;
+  dot: number;
+  activeDot: number;
+  gapInactive: number;
+  inset: number;
+}> = {
+  s: {
+    paddingY: 5,
+    paddingActive: 5,
+    borderRadius: 9,
+    dot: 4,
+    activeDot: 8,
+    gapInactive: 9,
+    inset: 5,
+  },
+  m: {
+    paddingY: 7,
+    paddingActive: 7,
+    borderRadius: 17,
+    dot: 8,
+    activeDot: 20,
+    gapInactive: 22,
+    inset: 7,
+  },
+  l: {
+    paddingY: 10,
+    paddingActive: 10,
+    borderRadius: 29,
+    dot: 20,
+    activeDot: 38,
+    gapInactive: 26,
+    inset: 10,
+  },
 };
 
 const IMAGE_CAPTION = {
   offset: { x: 0, y: 0 } as Offset,
   isActive: true,
-  alignment: 'middle-center' as Alignment,
   linkColor: '#cccccc',
-  linkHoverColor: '#cccccc',
 };
 
 const DEFAULT_TRIGGER: Slider20Trigger = {
@@ -134,12 +165,11 @@ function resolveTitleStyle(settings: Slider20Settings | undefined, isEditor?: bo
   return textStylesToCss(textStyles, isEditor);
 }
 
-function sizeCss(property: string, value: number): string {
-  const vw = (value / 1440) * 100;
-  return `${property}: calc(var(--is-editor, 0) * (${vw}vw / var(--cntrl-reverse-layout-deviation, 1)) + (1 - var(--is-editor, 0)) * ${vw}vw);`;
+function sizeCss(property: string, value: number, isEditor?: boolean): string {
+  return `${property}: ${scalingValue(value / 1440, isEditor)};`;
 }
 
-function getCSS(P: string): string {
+function getCSS(P: string, isEditor?: boolean): string {
   return `
 .${P}-wrapper {
   position: relative;
@@ -176,29 +206,29 @@ function getCSS(P: string): string {
   top: 50%;
   z-index: 1;
   padding: 0;
-  ${sizeCss('width', 30)}
-  ${sizeCss('height', 30)}
+  ${sizeCss('width', 30, isEditor)}
+  ${sizeCss('height', 30, isEditor)}
   transition: opacity 0.15s ease-in-out;
 }
 .${P}-arrow-prev {
-  ${sizeCss('left', -20)}
+  ${sizeCss('left', -20, isEditor)}
   transform: translate3d(-50%, -50%, 0);
 }
 .${P}-arrow-next {
   left: unset;
-  ${sizeCss('right', -20)}
+  ${sizeCss('right', -20, isEditor)}
   transform: translate3d(50%, -50%, 0);
 }
 .${P}-arrow-prev-vertical {
   left: 50%;
-  ${sizeCss('top', -20)}
+  ${sizeCss('top', -20, isEditor)}
   transform: translate3d(-50%, -50%, 0);
 }
 .${P}-arrow-next-vertical {
   left: 50%;
   right: unset;
   top: unset;
-  ${sizeCss('bottom', -20)}
+  ${sizeCss('bottom', -20, isEditor)}
   transform: translate3d(-50%, 50%, 0);
 }
 .${P}-arrow-hidden {
@@ -245,12 +275,8 @@ function getCSS(P: string): string {
 }
 .${P}-pagination-inner {
   display: flex;
-  ${sizeCss('gap', 8)}
-  ${sizeCss('padding-top', 5)}
-  ${sizeCss('padding-bottom', 5)}
-  ${sizeCss('padding-left', 9)}
-  ${sizeCss('padding-right', 9)}
-  ${sizeCss('border-radius', 17)}
+  align-items: center;
+  box-sizing: border-box;
 }
 .${P}-pagination-vertical {
   flex-direction: column;
@@ -262,32 +288,26 @@ function getCSS(P: string): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  ${sizeCss('width', 8)}
-  ${sizeCss('height', 8)}
   cursor: pointer;
-}
-.${P}-pagination-item:hover .${P}-dot {
-  background-color: var(--pagination-hover-color) !important;
+  aspect-ratio: 1;
+  height: auto;
 }
 .${P}-dot {
   border-radius: 50%;
-  transition: background-color 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
-  ${sizeCss('width', 4)}
-  ${sizeCss('height', 4)}
+  aspect-ratio: 1;
+  height: auto;
+  transition: background-color 0.3s ease-in-out;
 }
-.${P}-active-dot {
-  ${sizeCss('width', 8)}
-  ${sizeCss('height', 8)}
+.${P}-animate-dots .${P}-dot {
+  transition: background-color 0.3s ease-in-out, width 0.3s ease-in-out;
 }
 .${P}-pagination-inside-bottom {
   left: 50%;
   transform: translate3d(-50%, 0, 0);
-  ${sizeCss('bottom', 9)}
 }
 .${P}-pagination-inside-left {
   top: 50%;
   transform: translate3d(0, -50%, 0);
-  ${sizeCss('left', -6)}
 }
 .${P}-img-wrapper {
   width: 100%;
@@ -296,16 +316,14 @@ function getCSS(P: string): string {
 .${P}-caption-block {
   pointer-events: none;
   position: absolute;
-  top: 0;
-  z-index: 1;
+  top: calc(100% + 10px);
   left: 0;
   right: 0;
-  bottom: 0;
+  z-index: 1;
 }
 .${P}-caption-text-wrapper {
   position: relative;
   width: 100%;
-  height: 100%;
 }
 .${P}-caption-text {
   pointer-events: none;
@@ -313,6 +331,8 @@ function getCSS(P: string): string {
   transition-property: opacity;
   transition-timing-function: ease-in-out;
   position: absolute;
+  top: 0;
+  left: 0;
   display: inline-block;
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -323,47 +343,6 @@ function getCSS(P: string): string {
 }
 .${P}-with-pointer-events {
   pointer-events: auto;
-}
-.${P}-top-left-alignment {
-  top: 0;
-  left: 0;
-}
-.${P}-top-center-alignment {
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.${P}-top-right-alignment {
-  top: 0;
-  right: 0;
-}
-.${P}-middle-left-alignment {
-  top: 50%;
-  transform: translateY(-50%);
-  left: 0;
-}
-.${P}-middle-center-alignment {
-  top: 50%;
-  transform: translate(-50%, -50%);
-  left: 50%;
-}
-.${P}-middle-right-alignment {
-  top: 50%;
-  transform: translateY(-50%);
-  right: 0;
-}
-.${P}-bottom-left-alignment {
-  bottom: 0;
-  left: 0;
-}
-.${P}-bottom-center-alignment {
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.${P}-bottom-right-alignment {
-  bottom: 0;
-  right: 0;
 }
 .${P}-click-overlay {
   position: absolute;
@@ -396,28 +375,14 @@ function getCSS(P: string): string {
 `;
 }
 
-function getAlignmentClassName(P: string): Record<Alignment, string> {
-  return {
-    'top-left': `${P}-top-left-alignment`,
-    'top-center': `${P}-top-center-alignment`,
-    'top-right': `${P}-top-right-alignment`,
-    'middle-left': `${P}-middle-left-alignment`,
-    'middle-center': `${P}-middle-center-alignment`,
-    'middle-right': `${P}-middle-right-alignment`,
-    'bottom-left': `${P}-bottom-left-alignment`,
-    'bottom-center': `${P}-bottom-center-alignment`,
-    'bottom-right': `${P}-bottom-right-alignment`,
-  };
-}
-
 export function Slider20({ settings, content, isEditor }: Slider20Props) {
   const { prefix: P } = useScopedStyles();
-  const alignmentClassName = useMemo(() => getAlignmentClassName(P), [P]);
   const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
   const titleStyle = resolveTitleStyle(settings, isEditor);
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
   const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [animateDots, setAnimateDots] = useState(false);
   const [key, setKey] = useState(0);
   const items = content ?? [];
   const trigger: Slider20Trigger = settings?.trigger ?? DEFAULT_TRIGGER;
@@ -426,6 +391,10 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
   const direction: Slider20Direction = settings?.direction ?? 'horizontal';
   const transition: Slider20Transition = settings?.transition ?? 'slide';
   const nav: Slider20Nav = settings?.nav ?? 'classic';
+  const navSize: Slider20NavSize = settings?.navSize ?? 'm';
+  const navSizeValues = NAV_SIZES[navSize];
+  const navUnit = typeof settings?.navUnit === 'number' ? settings.navUnit : 1 / 1440;
+  const scaleNav = (px: number) => scalingValue(px * navUnit, isEditor);
   const controlsShow: Slider20ControlsShow = settings?.show ?? 'always';
   const controlsImgUrl = settings?.controls ?? null;
   const controlsMaxWidth = typeof settings?.controlsMaxWidth === 'number' ? settings.controlsMaxWidth : 65 / 1440;
@@ -436,9 +405,7 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
   const navColor = settings?.navColor ?? PAGINATION.colors.inactive;
   const navPaginationColor = settings?.navPaginationColor ?? PAGINATION.colors.pagination;
   const navBackgroundColor = settings?.navBackgroundColor ?? PAGINATION.colors.background;
-  const navPaginationHoverColor = settings?.navPaginationHoverColor ?? PAGINATION.hover;
   const linkColor = settings?.linkColor ?? IMAGE_CAPTION.linkColor;
-  const linkHoverColor = settings?.linkHoverColor ?? IMAGE_CAPTION.linkHoverColor;
   const isHorizontal = direction === 'horizontal';
   const isClickTrigger = triggerType === 'click';
   const isDragTrigger = triggerType === 'drag';
@@ -463,6 +430,12 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
       sliderRef.go(dir);
     }
   };
+  useEffect(() => {
+    if (!animateDots) return;
+    const timeoutId = window.setTimeout(() => setAnimateDots(false), 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [animateDots, currentSlideIndex]);
+
   useEffect(() => {
     if (!wrapperRef) return;
     const observer = new ResizeObserver((entries) => {
@@ -509,7 +482,7 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+      <style dangerouslySetInnerHTML={{ __html: getCSS(P, isEditor) }} />
       <div
         className={cn(`${P}-wrapper`, {
           [`${P}-transition-reveal`]: transition === 'reveal',
@@ -525,41 +498,9 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
             backgroundColor: TRANSITION_BACKGROUND_COLOR && transition === 'fade in' ? TRANSITION_BACKGROUND_COLOR : 'transparent'
           }}
         >
-        {IMAGE_CAPTION.isActive && (
-          <div className={`${P}-caption-block`}>
-            <div className={`${P}-caption-text-wrapper`}>
-              {items.map((item, index) => (
-                <div
-                  key={index}
-                  className={cn(`${P}-caption-text`, alignmentClassName[IMAGE_CAPTION.alignment], {
-                    [`${P}-with-pointer-events`]: index === currentSlideIndex && isEditor,
-                    [`${P}-active`]: index === currentSlideIndex,
-                  })}
-                  style={{
-                    ...titleStyle,
-                    width: TITLE_WIDTH_SETTINGS.sizing === 'auto' ? 'max-content' : scalingValue(TITLE_WIDTH_SETTINGS.width, isEditor),
-                    transitionDuration: `${Math.round(parseInt(TRANSITION_DURATION) / 2)}ms`,
-                  }}
-                >
-                  <div
-                    className={`${P}-caption-text-inner`}
-                    style={{
-                      '--link-hover-color': linkHoverColor,
-                      '--link-color': linkColor,
-                      position: 'relative',
-                      top: scalingValue(IMAGE_CAPTION.offset.y, isEditor),
-                      left: scalingValue(IMAGE_CAPTION.offset.x, isEditor)
-                    } as React.CSSProperties}
-                  >
-                    <RichTextRenderer content={item.imageCaption} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         <Splide
           onMove={(e) => {
+            setAnimateDots(true);
             setCurrentSlideIndex(e.index);
           }}
           key={key}
@@ -691,41 +632,102 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
             className={cn(`${P}-pagination`, {
               [`${P}-pagination-inside-bottom`]: isHorizontal,
               [`${P}-pagination-inside-left`]: !isHorizontal,
-              [`${P}-pagination-vertical`]: !isHorizontal,
             })}
+            style={isHorizontal
+              ? { bottom: scaleNav(navSizeValues.inset) }
+              : { left: scaleNav(navSizeValues.inset) }}
           >
             <div
-              className={`${P}-pagination-inner`}
+              key={`${navSize}-${direction}`}
+              className={cn(`${P}-pagination-inner`, {
+                [`${P}-pagination-vertical`]: !isHorizontal,
+                [`${P}-animate-dots`]: animateDots,
+              })}
               style={{
                 backgroundColor: navBackgroundColor,
-                transform: `translate(${scalingValue(PAGINATION.offset.x, isEditor)}, ${scalingValue(PAGINATION.offset.y, isEditor)}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
+                gap: scaleNav(navSizeValues.gapInactive - navSizeValues.activeDot + navSizeValues.dot),
+                ...(isHorizontal
+                  ? {
+                      height: scaleNav(navSizeValues.activeDot + navSizeValues.paddingY * 2),
+                      paddingTop: scaleNav(navSizeValues.paddingY),
+                      paddingBottom: scaleNav(navSizeValues.paddingY),
+                      paddingLeft: scaleNav(navSizeValues.paddingActive),
+                      paddingRight: scaleNav(navSizeValues.paddingActive),
+                    }
+                  : {
+                      width: scaleNav(navSizeValues.activeDot + navSizeValues.paddingY * 2),
+                      paddingLeft: scaleNav(navSizeValues.paddingY),
+                      paddingRight: scaleNav(navSizeValues.paddingY),
+                      paddingTop: scaleNav(navSizeValues.paddingActive),
+                      paddingBottom: scaleNav(navSizeValues.paddingActive),
+                    }),
+                borderRadius: scaleNav(navSizeValues.borderRadius),
+                transform: `translate(${scalingValue(PAGINATION.offset.x, isEditor)}, ${scalingValue(PAGINATION.offset.y, isEditor)})`,
               }}
             >
-              {items.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    if (sliderRef) {
-                      sliderRef.go(index);
-                    }
-                  }}
-                  className={`${P}-pagination-item`}
-                >
-                  <div
-                    className={cn(`${P}-dot`, {
-                      [`${P}-active-dot`]: index === currentSlideIndex
-                    })}
-                    style={{
-                      backgroundColor: index === currentSlideIndex ? navPaginationColor : navColor,
-                      ['--pagination-hover-color' as string]: navPaginationHoverColor
+              {items.map((_, index) => {
+                const isActive = index === currentSlideIndex;
+                const dotSize = isActive ? navSizeValues.activeDot : navSizeValues.dot;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      if (sliderRef) {
+                        sliderRef.go(index);
+                      }
                     }}
-                  />
-                </button>
-              ))}
+                    className={`${P}-pagination-item`}
+                    style={{
+                      width: scaleNav(navSizeValues.activeDot),
+                    }}
+                  >
+                    <div
+                      className={`${P}-dot`}
+                      style={{
+                        backgroundColor: isActive ? navPaginationColor : navColor,
+                        width: scaleNav(dotSize),
+                      }}
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
         </div>
+        {IMAGE_CAPTION.isActive && (
+          <div className={`${P}-caption-block`}>
+            <div className={`${P}-caption-text-wrapper`}>
+              {items.map((item, index) => (
+                <div
+                  key={index}
+                  className={cn(`${P}-caption-text`, {
+                    [`${P}-with-pointer-events`]: index === currentSlideIndex && isEditor,
+                    [`${P}-active`]: index === currentSlideIndex,
+                  })}
+                  style={{
+                    ...titleStyle,
+                    width: TITLE_WIDTH_SETTINGS.sizing === 'auto' ? 'max-content' : scalingValue(TITLE_WIDTH_SETTINGS.width, isEditor),
+                    transitionDuration: `${Math.round(parseInt(TRANSITION_DURATION) / 2)}ms`,
+                  }}
+                >
+                  <div
+                    className={`${P}-caption-text-inner`}
+                    style={{
+                      '--link-color': linkColor,
+                      '--link-hover-color': linkColor,
+                      position: 'relative',
+                      top: scalingValue(IMAGE_CAPTION.offset.y, isEditor),
+                      left: scalingValue(IMAGE_CAPTION.offset.x, isEditor)
+                    } as React.CSSProperties}
+                  >
+                    <RichTextRenderer content={item.imageCaption} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
