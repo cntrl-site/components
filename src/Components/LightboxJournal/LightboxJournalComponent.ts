@@ -421,7 +421,7 @@ const schema: ComponentSchemaV1 = {
         title3MarginLeft: 0.08,
         titleRowMarginBottom: 0.08,
         iconMarginRight: 0.01,
-        countCloseGap: 0.005,
+        countCloseGap: 0.04,
         ...createTextStyleLayoutDefaults({
           title1FontSize: 0.04,
           title1LineHeight: 0.04,

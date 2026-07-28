@@ -9,6 +9,7 @@ export type SchemaProperty = {
   type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'fields' | readonly ['string', 'null'] | 'grid-layout';
   scope?: PropertyScope;
   title?: string;
+  titleByState?: Record<string, string>;
   message?: string;
   icon?: string;
   tooltip?: string;
@@ -81,6 +82,7 @@ export type SchemaDisplayRule = {
 
 export type SchemaSection = {
   sizing?: string;
+  hasLinkParameter?: boolean;
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;

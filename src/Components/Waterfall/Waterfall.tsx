@@ -40,7 +40,13 @@ export type WaterfallSettings = {
   titleWordSpacing?: number;
   titleTextAppearance?: TextStyles['textAppearance'];
   horizontalGap?: number;
-  imageHoverEffect?: 'none' | 'scale-in' | 'saturate';
+  imageHoverEffect?: {
+    sizeType: 'none' | 'scale' | 'saturate';
+    value: number;
+    min?: number;
+    max?: number;
+  };
+  lightbox?: 'on' | 'off';
 } & WaterfallLightboxSettings;
 
 type WaterfallProps = {
@@ -81,39 +87,45 @@ function getCSS(P: string): string {
   vertical-align: baseline;
   position: relative;
   z-index: 1;
-  height: 1cap;
-  max-height: 1cap;
-  margin-top: calc(var(--${P}-line-height) - 1cap);
-  margin-bottom: 0;
-  margin-left: var(--${P}-image-inline-gap);
-  margin-right: var(--${P}-image-inline-gap);
+  height: 0;
+  width: calc(1cap * var(--${P}-image-aspect));
+  margin: 0 var(--${P}-image-inline-gap);
 }
 .${P}-item-image img,
 .${P}-item-image video {
+  position: absolute;
+  left: 0;
+  bottom: 0;
   display: block;
-  height: 100%;
-  max-height: 1cap;
+  height: 1cap;
+  width: 100%;
+  max-height: none;
+  object-position: bottom;
 }
-.${P}-item-image-hover-scale-in img,
-.${P}-item-image-hover-scale-in video {
+.${P}-item-hover-scale .${P}-item-image img,
+.${P}-item-hover-scale .${P}-item-image video {
+  transform-origin: center center;
   transition: transform 0.3s ease;
 }
-.${P}-item-image-hover-scale-in:hover img,
-.${P}-item-image-hover-scale-in:hover video {
-  transform: scale(1.15);
+.${P}-item-hover-scale:hover .${P}-item-image {
+  z-index: 10;
 }
-.${P}-item-image-hover-saturate img,
-.${P}-item-image-hover-saturate video {
+.${P}-item-hover-scale:hover .${P}-item-image img,
+.${P}-item-hover-scale:hover .${P}-item-image video {
+  transform: scale(var(--${P}-image-hover-scale, 1.2));
+}
+.${P}-item-hover-saturate .${P}-item-image img,
+.${P}-item-hover-saturate .${P}-item-image video {
   filter: grayscale(100%);
   transition: filter 0.3s ease;
 }
-.${P}-item-image-hover-saturate:hover img,
-.${P}-item-image-hover-saturate:hover video {
+.${P}-item-hover-saturate:hover .${P}-item-image img,
+.${P}-item-hover-saturate:hover .${P}-item-image video {
   filter: grayscale(0%);
 }
 .${P}-item-gap-host {
   display: inline-block;
-  vertical-align: baseline;
+  vertical-align: top;
   height: var(--${P}-line-height);
   position: relative;
   flex-shrink: 0;
@@ -128,6 +140,16 @@ ${getLightboxCSS(P)}
 `;
 }
 
+function getImageAspectRatio(settings: WaterfallSettings | undefined): number {
+  const { imageDisplay } = settings ?? {};
+  const ratioValue = imageDisplay?.ratioValue ?? '1:1';
+  const ratioReversed = imageDisplay?.reversed ?? false;
+  const [rW, rH] = ratioValue.split(':').map(Number);
+  const effW = ratioReversed ? rH : rW;
+  const effH = ratioReversed ? rW : rH;
+  return effH > 0 ? effW / effH : 1;
+}
+
 function getWaterfallTextMetricsVars(
   settings: WaterfallSettings | undefined,
   varPrefix: string,
@@ -139,6 +161,7 @@ function getWaterfallTextMetricsVars(
   return {
     [`--${varPrefix}-line-height`]: scalingValue(lineHeight, isEditor ?? false),
     [`--${varPrefix}-image-inline-gap`]: scalingValue(fontSize * IMAGE_INLINE_GAP_RATIO, isEditor ?? false),
+    [`--${varPrefix}-image-aspect`]: getImageAspectRatio(settings),
   } as React.CSSProperties;
 }
 
@@ -160,42 +183,17 @@ function resolveInlineTitleStyle(settings: WaterfallSettings | undefined, isEdit
 }
 
 function resolveImageDisplay(settings: WaterfallSettings | undefined) {
-  const { imageDisplay } = settings ?? {};
-  const isCover = imageDisplay?.display === 'cover';
-  const ratioValue = imageDisplay?.ratioValue ?? '1:1';
-  const ratioReversed = imageDisplay?.reversed ?? false;
-  const [rW, rH] = ratioValue.split(':').map(Number);
-  const effW = ratioReversed ? rH : rW;
-  const effH = ratioReversed ? rW : rH;
-  const aspectRatio = `${effW} / ${effH}`;
+  const isCover = settings?.imageDisplay?.display === 'cover';
+  const lightboxEnabled = (settings?.lightbox ?? 'on') === 'on';
 
-  const imageWrapperStyle: React.CSSProperties | undefined = isCover
-    ? { aspectRatio, overflow: 'hidden' }
-    : undefined;
-
-  const imageStyle: React.CSSProperties = isCover
-    ? {
-        objectFit: 'cover',
-        pointerEvents: 'auto',
-        width: '100%',
-        height: '100%',
-        maxWidth: '100%',
-        cursor: 'pointer',
-      }
-    : {
-        objectFit: 'contain',
-        pointerEvents: 'auto',
-        width: 'auto',
-        height: '100%',
-        maxWidth: '100%',
-        cursor: 'pointer',
-      };
+  const imageStyle: React.CSSProperties = {
+    objectFit: isCover ? 'cover' : 'contain',
+    pointerEvents: 'auto',
+    ...(lightboxEnabled ? { cursor: 'pointer' } : null),
+  };
 
   return {
-    isCover,
-    aspectRatio,
     objectFitMode: isCover ? 'cover' as const : 'contain' as const,
-    imageWrapperStyle,
     imageStyle,
   };
 }
@@ -242,13 +240,8 @@ export function Waterfall({
   const horizontalGap = typeof settings?.horizontalGap === 'number' ? settings.horizontalGap : 0;
   const horizontalGapScaled = scalingValue(horizontalGap, isEditor ?? false);
   const gapControlWidth = `max(${horizontalGapScaled}, ${GAP_CONTROL_MIN_PX}px)`;
-  const { objectFitMode, isCover, imageWrapperStyle, imageStyle } = resolveImageDisplay(settings);
+  const { objectFitMode, imageStyle } = resolveImageDisplay(settings);
   const inlineTitleStyle = resolveInlineTitleStyle(settings, isEditor);
-  const wrapperStyle = {
-    width: scalingValue(wrapperWidth, isEditor ?? false),
-    ...inlineTitleStyle,
-    ...getWaterfallTextMetricsVars(settings, P, isEditor),
-  } as React.CSSProperties;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -259,10 +252,19 @@ export function Waterfall({
   const [lightboxEntry, setLightboxEntry] = useState({ title1: '', title2: '', title3: '' });
 
   const showImageHoverEffects = (!isEditor || isPreviewMode) && !lightboxOpen;
-  const imageHoverEffect = settings?.imageHoverEffect ?? 'none';
-  const imageHoverClass = showImageHoverEffects && imageHoverEffect !== 'none'
-    ? `${P}-item-image-hover-${imageHoverEffect}`
+  const imageHoverEffect = settings?.imageHoverEffect ?? { sizeType: 'none' as const, value: 120 };
+  const imageHoverType = imageHoverEffect.sizeType ?? 'none';
+  const imageHoverClass = showImageHoverEffects && imageHoverType !== 'none'
+    ? `${P}-item-hover-${imageHoverType}`
     : undefined;
+  const imageHoverScale = (imageHoverEffect.value ?? 120) / 100;
+
+  const wrapperStyle = {
+    width: scalingValue(wrapperWidth, isEditor ?? false),
+    ...inlineTitleStyle,
+    ...getWaterfallTextMetricsVars(settings, P, isEditor),
+    [`--${P}-image-hover-scale`]: String(imageHoverScale),
+  } as React.CSSProperties;
 
   const lightboxPortalStyle = (() => {
     const style: Record<string, string> = {};
@@ -275,11 +277,12 @@ export function Waterfall({
     return style as React.CSSProperties;
   })();
 
-  const canOpenLightbox = !isEditor || isPreviewMode || isEditMode;
+  const canOpenLightbox = (settings?.lightbox ?? 'on') === 'on' && (!isEditor || isPreviewMode || isEditMode);
   const allLightboxEntries = useMemo(() => buildLightboxEntries(items), [items]);
   const allMedia = useMemo(() => collectAllWaterfallMedia(items), [items]);
 
   const openLightbox = (gridIndex: number, sourceRect?: AnimRect) => {
+    if ((settings?.lightbox ?? 'on') === 'off') return;
     if (isEditor && !isEditMode && !isPreviewMode) return;
     const entryIdx = allLightboxEntries.findIndex((entry) => entry.gridIndex === gridIndex);
     if (entryIdx < 0) return;
@@ -335,6 +338,12 @@ export function Waterfall({
     setLightboxOpen(false);
   }, [isEditor, isEditMode, isPreviewMode]);
 
+  useEffect(() => {
+    if ((settings?.lightbox ?? 'on') === 'off') {
+      setLightboxOpen(false);
+    }
+  }, [settings?.lightbox]);
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
@@ -352,7 +361,10 @@ export function Waterfall({
           );
 
           return (
-            <div key={index} className={`${P}-item`}>
+            <div
+              key={index}
+              className={[`${P}-item`, imageHoverClass].filter(Boolean).join(' ')}
+            >
               {item.title ? (
                 <span
                   className={`${P}-item-title`}
@@ -363,13 +375,7 @@ export function Waterfall({
                 </span>
               ) : null}
               {item.image?.url ? (
-                <span
-                  className={[
-                    `${P}-item-image`,
-                    imageHoverClass,
-                  ].filter(Boolean).join(' ')}
-                  style={isCover ? imageWrapperStyle : undefined}
-                >
+                <span className={`${P}-item-image`}>
                   {item.image.type === 'video' ? (
                     <video
                       src={item.image.url}
@@ -417,7 +423,7 @@ export function Waterfall({
           );
         })}
       </div>
-      {lightboxOpen && typeof document !== 'undefined' && settings && (() => {
+      {lightboxOpen && (settings?.lightbox ?? 'on') === 'on' && typeof document !== 'undefined' && settings && (() => {
         const portalTarget = (portalId ? document.getElementById(portalId) : null) ?? document.body;
         return createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
