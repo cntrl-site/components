@@ -154,10 +154,12 @@ function getCSS(P: string): string {
   transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms;
 }
 .${P}-hover-effect-scale-up:hover,
+.${P}-hover-effect-scale-up:focus-visible,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-scale-up {
   transform: scale(1.05);
 }
 .${P}-hover-effect-lift:hover,
+.${P}-hover-effect-lift:focus-visible,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-lift {
   transform: translateY(-2px);
   box-shadow: ${liftBoxShadow};
@@ -188,6 +190,7 @@ function getCSS(P: string): string {
   transition: transform 120ms;
 }
 .${P}-hover-effect-reveal:hover::before,
+.${P}-hover-effect-reveal:focus-visible::before,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal::before {
   transform: scaleY(1);
   transform-origin: top center;
@@ -196,6 +199,7 @@ function getCSS(P: string): string {
   transform-origin: top center;
 }
 .${P}-hover-effect-reveal.${P}-reveal-from-bottom:hover::before,
+.${P}-hover-effect-reveal.${P}-reveal-from-bottom:focus-visible::before,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal.${P}-reveal-from-bottom::before {
   transform-origin: bottom center;
 }
@@ -210,12 +214,15 @@ function getCSS(P: string): string {
   transition: transform 250ms;
 }
 .${P}-hover-effect-swipe:hover::before,
+.${P}-hover-effect-swipe:focus-visible::before,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-swipe::before {
   transform: translateX(0);
 }
 .${P}-hover-effect-reveal:hover,
+.${P}-hover-effect-reveal:focus-visible,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal,
 .${P}-hover-effect-swipe:hover,
+.${P}-hover-effect-swipe:focus-visible,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-swipe {
   background-color: var(--${P}-background-color);
 }
@@ -263,18 +270,21 @@ function getCSS(P: string): string {
   opacity: 0;
 }
 .${P}-hover-effect-content-roll:hover .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover),
+.${P}-hover-effect-content-roll:focus-visible .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover),
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-content-roll .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover) {
   top: 100%;
   transform: translateY(0);
   opacity: 0;
 }
 .${P}-hover-effect-content-roll:hover .${P}-content-roll-layer-hover,
+.${P}-hover-effect-content-roll:focus-visible .${P}-content-roll-layer-hover,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-content-roll .${P}-content-roll-layer-hover {
   top: 50%;
   transform: translateY(-50%);
   opacity: 1;
 }
-.${P}-button:hover {
+.${P}-button:hover,
+.${P}-button:focus-visible {
   background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
   color: var(--${P}-hover-text-color, var(--${P}-text-color));
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
@@ -287,13 +297,14 @@ function getCSS(P: string): string {
   box-shadow: ${hoverBoxShadow};
 }
 .${P}-button:focus,
-.${P}-button:focus-visible,
+.${P}-button:focus-visible {
+  outline: none;
+}
 .${P}-button:active {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
   box-shadow: ${activeBoxShadow};
-  outline: none;
 }
 .${P}-wrapper.${P}-state-active .${P}-button {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
@@ -315,12 +326,11 @@ function getCSS(P: string): string {
   transition: background-color 250ms;
 }
 .${P}-button:hover .${P}-icon-image,
+.${P}-button:focus-visible .${P}-icon-image,
 .${P}-wrapper.${P}-state-hover .${P}-icon-image {
   --fill: var(--${P}-hover-icon-color, var(--${P}-icon-color)) !important;
   --hover-fill: var(--${P}-hover-icon-color, var(--${P}-icon-color)) !important;
 }
-.${P}-button:focus .${P}-icon-image,
-.${P}-button:focus-visible .${P}-icon-image,
 .${P}-button:active .${P}-icon-image,
 .${P}-wrapper.${P}-state-active .${P}-icon-image {
   --fill: var(--${P}-active-icon-color, var(--${P}-icon-color)) !important;

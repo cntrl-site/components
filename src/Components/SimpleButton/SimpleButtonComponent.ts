@@ -334,10 +334,10 @@ const schema = {
       },
       stateOverrides: {
         hover: {
-          backgroundColor: '#333333',
+          backgroundColor: '#3642EF',
         },
         active: {
-          backgroundColor: '#555555',
+          backgroundColor: '#475FFF',
         },
       },
     },
