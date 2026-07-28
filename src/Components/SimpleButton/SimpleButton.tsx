@@ -78,6 +78,8 @@ type SimpleButtonProps = {
   isEditor?: boolean;
   isPreviewMode?: boolean;
   activeEvent?: string;
+  /** When true, focus is on the parent <a> from LinkWrapper — do not add a second tab stop. */
+  hasLink?: boolean;
 } & CommonComponentProps;
 
 const COLOR_VAR_MAP: Record<ColorKeys, string> = {
@@ -122,6 +124,11 @@ function getCSS(P: string): string {
   const activeInnerShadow = `inset var(--${P}-inner-box-shadow-x, 0) var(--${P}-inner-box-shadow-y, 0) var(--${P}-inner-box-shadow-blur, 0) var(--${P}-inner-box-shadow-spread, 0) var(--${P}-active-inner-box-shadow-color, var(--${P}-inner-box-shadow-color, transparent))`;
   const activeBoxShadow = `${activeOuterShadow}, ${activeInnerShadow}`;
   const liftBoxShadow = `0 4px 12px rgba(0, 0, 0, 0.15), ${innerShadow}`;
+  // Public site wraps the component in <a>; focus lands on the anchor, not the button div.
+  const buttonFocus = `.${P}-button:focus-visible, a:focus-visible .${P}-button`;
+  const buttonHoverOrFocus = `.${P}-button:hover, ${buttonFocus}`;
+  const effectFocus = (effect: string) =>
+    `.${P}-hover-effect-${effect}:hover, .${P}-hover-effect-${effect}:focus-visible, a:focus-visible .${P}-hover-effect-${effect}`;
 
   return `
 .${P}-root {
@@ -153,13 +160,11 @@ function getCSS(P: string): string {
 .${P}-wrapper.${P}-editing .${P}-button {
   transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms;
 }
-.${P}-hover-effect-scale-up:hover,
-.${P}-hover-effect-scale-up:focus-visible,
+${effectFocus('scale-up')},
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-scale-up {
   transform: scale(1.05);
 }
-.${P}-hover-effect-lift:hover,
-.${P}-hover-effect-lift:focus-visible,
+${effectFocus('lift')},
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-lift {
   transform: translateY(-2px);
   box-shadow: ${liftBoxShadow};
@@ -191,6 +196,7 @@ function getCSS(P: string): string {
 }
 .${P}-hover-effect-reveal:hover::before,
 .${P}-hover-effect-reveal:focus-visible::before,
+a:focus-visible .${P}-hover-effect-reveal::before,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal::before {
   transform: scaleY(1);
   transform-origin: top center;
@@ -200,6 +206,7 @@ function getCSS(P: string): string {
 }
 .${P}-hover-effect-reveal.${P}-reveal-from-bottom:hover::before,
 .${P}-hover-effect-reveal.${P}-reveal-from-bottom:focus-visible::before,
+a:focus-visible .${P}-hover-effect-reveal.${P}-reveal-from-bottom::before,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal.${P}-reveal-from-bottom::before {
   transform-origin: bottom center;
 }
@@ -215,14 +222,13 @@ function getCSS(P: string): string {
 }
 .${P}-hover-effect-swipe:hover::before,
 .${P}-hover-effect-swipe:focus-visible::before,
+a:focus-visible .${P}-hover-effect-swipe::before,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-swipe::before {
   transform: translateX(0);
 }
-.${P}-hover-effect-reveal:hover,
-.${P}-hover-effect-reveal:focus-visible,
+${effectFocus('reveal')},
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal,
-.${P}-hover-effect-swipe:hover,
-.${P}-hover-effect-swipe:focus-visible,
+${effectFocus('swipe')},
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-swipe {
   background-color: var(--${P}-background-color);
 }
@@ -271,6 +277,7 @@ function getCSS(P: string): string {
 }
 .${P}-hover-effect-content-roll:hover .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover),
 .${P}-hover-effect-content-roll:focus-visible .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover),
+a:focus-visible .${P}-hover-effect-content-roll .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover),
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-content-roll .${P}-content-roll-layer:not(.${P}-content-roll-layer-hover) {
   top: 100%;
   transform: translateY(0);
@@ -278,13 +285,13 @@ function getCSS(P: string): string {
 }
 .${P}-hover-effect-content-roll:hover .${P}-content-roll-layer-hover,
 .${P}-hover-effect-content-roll:focus-visible .${P}-content-roll-layer-hover,
+a:focus-visible .${P}-hover-effect-content-roll .${P}-content-roll-layer-hover,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-content-roll .${P}-content-roll-layer-hover {
   top: 50%;
   transform: translateY(-50%);
   opacity: 1;
 }
-.${P}-button:hover,
-.${P}-button:focus-visible {
+${buttonHoverOrFocus} {
   background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
   color: var(--${P}-hover-text-color, var(--${P}-text-color));
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
@@ -297,10 +304,13 @@ function getCSS(P: string): string {
   box-shadow: ${hoverBoxShadow};
 }
 .${P}-button:focus,
-.${P}-button:focus-visible {
+.${P}-button:focus-visible,
+a:focus:has(.${P}-button),
+a:focus-visible:has(.${P}-button) {
   outline: none;
 }
-.${P}-button:active {
+.${P}-button:active,
+a:active .${P}-button {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
@@ -327,11 +337,13 @@ function getCSS(P: string): string {
 }
 .${P}-button:hover .${P}-icon-image,
 .${P}-button:focus-visible .${P}-icon-image,
+a:focus-visible .${P}-button .${P}-icon-image,
 .${P}-wrapper.${P}-state-hover .${P}-icon-image {
   --fill: var(--${P}-hover-icon-color, var(--${P}-icon-color)) !important;
   --hover-fill: var(--${P}-hover-icon-color, var(--${P}-icon-color)) !important;
 }
 .${P}-button:active .${P}-icon-image,
+a:active .${P}-button .${P}-icon-image,
 .${P}-wrapper.${P}-state-active .${P}-icon-image {
   --fill: var(--${P}-active-icon-color, var(--${P}-icon-color)) !important;
   --hover-fill: var(--${P}-active-icon-color, var(--${P}-icon-color)) !important;
@@ -428,7 +440,7 @@ function renderIcon(
   );
 }
 
-export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }: SimpleButtonProps) {
+export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, hasLink }: SimpleButtonProps) {
   const { prefix: P } = useScopedStyles();
   const scopedCss = useMemo(() => getCSS(P), [P]);
 
@@ -613,6 +625,8 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
             onMouseEnter={handleRevealMouseEnter}
             onMouseLeave={handleRevealMouseLeave}
             role="button"
+            // Divs are not focusable by default; skip when a parent <a> already provides the tab stop.
+            tabIndex={hasLink || (isEditor && !isPreviewMode) ? undefined : 0}
           >
             {buttonContent}
           </div>
