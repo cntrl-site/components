@@ -16,6 +16,7 @@ import { LightboxJournalComponent } from './LightboxJournal/LightboxJournalCompo
 import { ClickGallerieComponent } from './ClickGallerie/ClickGallerieComponent';
 import { ScaleComponent } from './Scale/ScaleComponent';
 import { WaterfallComponent } from './Waterfall/WaterfallComponent';
+import { Slider20Component } from './Slider20/Slider20Component';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -35,4 +36,5 @@ export const components: Component[] = [
   LightboxJournalComponent,
   ScaleComponent,
   WaterfallComponent,
+  Slider20Component,
 ];
