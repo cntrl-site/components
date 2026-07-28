@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
@@ -122,16 +122,20 @@ function getCSS(P: string, setWidthPx: number): string {
   pointer-events: auto;
   height: 100%;
 }
-.${P}-image-hover-brightness img {
+.${P}-image-hover-brightness img,
+.${P}-image-hover-brightness video {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-brightness:hover img {
+.${P}-image-hover-brightness:hover img,
+.${P}-image-hover-brightness:hover video {
   filter: brightness(1.25);
 }
-.${P}-image-hover-grayscale img {
+.${P}-image-hover-grayscale img,
+.${P}-image-hover-grayscale video {
   transition: filter 0.3s ease;
 }
-.${P}-image-hover-grayscale:hover img {
+.${P}-image-hover-grayscale:hover img,
+.${P}-image-hover-grayscale:hover video {
   filter: grayscale(100%);
 }
 `;
@@ -222,6 +226,20 @@ const isAnyCopyOfSlotInView = (wrapper: Element, itemIndex: number): boolean => 
   return Array.from(cards).some((card) => isCardInMarqueeView(card, wrapper));
 };
 
+const isVideoMedia = (media: Pick<NonNullable<MarqueeItem['image']>, 'url' | 'type' | 'name'>): boolean => {
+  if (media.type === 'video') return true;
+  if (media.type === 'image') return false;
+  const name = media.name ?? '';
+  if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(name)) return true;
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url ?? '');
+};
+
+const isMediaReady = (el: HTMLImageElement | HTMLVideoElement | null): boolean => {
+  if (!el) return false;
+  if (el instanceof HTMLVideoElement) return el.readyState >= 2;
+  return el.complete;
+};
+
 type MarqueeItemCardProps = {
   item: MarqueeItem;
   prefix: string;
@@ -246,12 +264,12 @@ const MarqueeItemCard = ({
   scaled,
   onFirstSetImageDone,
 }: MarqueeItemCardProps) => {
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const mediaRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
+  const isVideo = Boolean(item.image?.url && isVideoMedia(item.image));
 
   useLayoutEffect(() => {
     if (!isFirstSet) return;
-    const el = imageRef.current;
-    if (el?.complete) onFirstSetImageDone?.();
+    if (isMediaReady(mediaRef.current)) onFirstSetImageDone?.();
   }, [isFirstSet, item.image?.url, onFirstSetImageDone]);
 
   const isCover = imageFit.display === 'cover';
@@ -267,35 +285,48 @@ const MarqueeItemCard = ({
   const coverWidthScaled = scaled(coverWidth);
   const coverHeightScaled = scaled(coverHeight);
 
+  const mediaStyle: CSSProperties = isCover
+    ? {
+        pointerEvents: 'auto',
+        display: 'block',
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+      }
+    : {
+        pointerEvents: 'auto',
+        display: 'block',
+        height: '100%',
+        width: 'auto',
+        maxWidth: scaled(imageMaxWidth),
+        objectFit: 'contain',
+      };
+
   const imageNode =
     item.image?.url &&
-    (
+    (isVideo ? (
+      <video
+        ref={(el) => { mediaRef.current = el; }}
+        src={item.image.url}
+        style={mediaStyle}
+        muted
+        loop
+        autoPlay
+        playsInline
+        preload="auto"
+        onLoadedData={isFirstSet ? onFirstSetImageDone : undefined}
+        onError={isFirstSet ? onFirstSetImageDone : undefined}
+      />
+    ) : (
       <img
-        ref={imageRef}
+        ref={(el) => { mediaRef.current = el; }}
         src={item.image.url}
         alt={item.image?.name ?? ''}
-        style={
-          isCover
-            ? {
-                pointerEvents: 'auto',
-                display: 'block',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }
-            : {
-                pointerEvents: 'auto',
-                display: 'block',
-                height: '100%',
-                width: 'auto',
-                maxWidth: scaled(imageMaxWidth),
-                objectFit: 'contain',
-              }
-        }
+        style={mediaStyle}
         onLoad={isFirstSet ? onFirstSetImageDone : undefined}
         onError={isFirstSet ? onFirstSetImageDone : undefined}
       />
-    );
+    ));
   return (
     <div
       style={{
@@ -698,6 +729,7 @@ export type MarqueeItem = {
   image?: {
     url?: string;
     name?: string;
+    type?: 'image' | 'video';
   };
   link?: string;
 };

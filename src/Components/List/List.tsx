@@ -2571,6 +2571,10 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                       && showControls
                       && rowIdx === 0;
 
+                    if (isVerticalLayout && !hasColumnText) {
+                      return null;
+                    }
+
                     return (
                       <div
                         key={col.key}
@@ -2930,7 +2934,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             );
           })()}
           {showHoverImage && hoverImage && (() => {
-            const hoverSize = sv(hoverImage.widthPx);
+            const hoverSize = `${hoverImage.widthPx}px`;
             const hoverMediaStyle: React.CSSProperties = {
               width: hoverSize,
               height: 'auto',
