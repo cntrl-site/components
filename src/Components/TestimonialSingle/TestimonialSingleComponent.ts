@@ -114,13 +114,13 @@ const schema: ComponentSchemaV1 = {
       controlsColor: {
         type: 'string',
         scope: 'common',
-        title: 'Fill Controls',
+        title: 'Controls Default',
         display: { type: 'settings-color-picker' },
       },
       controlsHoverColor: {
         type: 'string',
         scope: 'common',
-        title: 'Hover Controls',
+        title: 'Controls Hover',
         display: { type: 'settings-color-picker' },
       },
       captionMarginTop: {
@@ -177,7 +177,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Fill Caption',
+        title: 'Caption Default',
       },
       textFontFamily: {
         type: 'string',
@@ -225,7 +225,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Fill Text',
+        title: 'Text Default',
       },
     },
     defaults: {

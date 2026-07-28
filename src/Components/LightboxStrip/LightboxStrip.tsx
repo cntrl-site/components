@@ -4,7 +4,6 @@ import { CommonComponentProps } from '../props';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { getAspectRatio, isImageRatioCover, type ImageRatioFit } from '../utils/imageFitStyles';
 import type { TextStyles } from '../utils/textStylesToCss';
-import { scalingValue } from '../utils/scalingValue';
 import { LightboxOverlay } from './LightboxOverlay';
 import { LIGHTBOX_ANIM_MS } from './utils';
 export {
@@ -215,7 +214,12 @@ function getCSS(P: string): string {
   cursor: pointer;
 }
 
-.${P}-thumbnails-track[data-thumbnail-active="outline"] .${P}-thumb[data-active="true"] {
+.${P}-thumbnails-track[data-thumbnail-active="outline"] .${P}-thumb .${P}-thumb-image {
+  box-sizing: border-box;
+  border: 2px solid transparent;
+}
+
+.${P}-thumbnails-track[data-thumbnail-active="outline"] .${P}-thumb[data-active="true"] .${P}-thumb-image {
   border-color: var(--thumbnail-active-color, #ffffff);
 }
 
@@ -439,7 +443,7 @@ export type LightboxStripSettings = {
   thumbnailSize: number;
   thumbnailObjectFit: ImageRatioFit;
   thumbnailTrigger: 'click' | 'hover';
-  thumbnailActive: 'outline' | 'color' | 'scale-up';
+  thumbnailActive: 'outline' | 'color' | 'scale-up' | 'none';
   thumbnailActiveColor: string;
   thumbnailGap: number;
   thumbnailMarginBottom?: number;

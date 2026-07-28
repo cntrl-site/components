@@ -264,8 +264,8 @@ export const ClickGallerieComponent = {
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [
-      { path: 'settings.defaultCursor' },
-      { path: 'settings.hoverCursor' },
+      { path: 'defaultCursor' },
+      { path: 'hoverCursor' },
     ],
   },
   fontSettingsPaths: {

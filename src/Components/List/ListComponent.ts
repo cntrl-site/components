@@ -277,13 +277,13 @@ function createTextStyleProperties(prefix: ListTextStylePrefix): Record<string, 
 
   properties[getListColumnTextSettingKey(prefix, 'textFontFamily')] = {
     type: 'string',
-    scope: 'layout',
+    scope: 'common',
     title: '',
     display: { type: 'font-family-select', hideLabel: true },
   };
   properties[getListColumnTextSettingKey(prefix, 'textFontSettings')] = {
     ...textStyleProperties.fontSettings,
-    scope: 'layout',
+    scope: 'common',
     title: '',
     display: { type: 'font-settings-weight', hideLabel: true },
   };
