@@ -9,10 +9,28 @@ const schema: ComponentSchemaV1 = {
     sizing: 'manual',
     properties: {
       trigger: {
-        type: 'string',
+        type: 'object',
         scope: 'common',
         title: 'Trigger',
-        display: { type: 'toggle-cycle', enum: ['click', 'drag', 'auto'] },
+        display: {
+          type: 'toggle-cycle-numeric-input',
+          enum: ['click', 'drag', 'auto'],
+          inputs: {
+            click: 'none',
+            drag: 'none',
+            auto: 'single',
+          },
+          defaultValue: 3,
+          showDash: false,
+        },
+        min: 1,
+        max: 5,
+        properties: {
+          sizeType: { type: 'string' },
+          value: { type: 'number' },
+          min: { type: 'number' },
+          max: { type: 'number' },
+        },
       },
       direction: {
         type: 'string',
@@ -30,7 +48,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Nav',
-        display: { type: 'toggle-cycle', enum: ['type', 'classic', 'no'] },
+        display: { type: 'toggle-cycle', enum: ['classic', 'no'] },
       },
       controls: {
         type: ['string', 'null'] as const,
@@ -50,33 +68,185 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Show',
-        display: { type: 'toggle-cycle', enum: ['always', 'on click', 'never'] },
+        display: { type: 'toggle-cycle', enum: ['always', 'on hover', 'never'] },
       },
-      position: {
+      paddingX: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Padding X',
+        display: { type: 'numeric-input' },
+        min: -9999,
+        max: 9999,
+      },
+      paddingY: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Padding Y',
+        display: { type: 'numeric-input' },
+        min: -9999,
+        max: 9999,
+      },
+      controlsColor: {
         type: 'string',
         scope: 'common',
-        title: 'Position',
-        display: { type: 'toggle-cycle', enum: ['inside', 'outside'] },
+        title: 'Controls',
+        display: { type: 'palette-color-picker' },
+      },
+      controlsHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Controls Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      navColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Nav',
+        display: { type: 'palette-color-picker' },
+      },
+      navPaginationColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Nav Pagination',
+        display: { type: 'palette-color-picker' },
+      },
+      navBackgroundColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Nav Background',
+        display: { type: 'palette-color-picker' },
+      },
+      navPaginationHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Nav Pagination Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      linkColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Link',
+        display: { type: 'palette-color-picker' },
+      },
+      linkHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Link Hover',
+        display: { type: 'palette-color-picker' },
+      },
+      titleColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Title',
+        display: { type: 'palette-color-picker' },
+      },
+      titleFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      titleFontSettings: {
+        type: 'object',
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+        properties: {
+          fontWeight: { type: 'number' },
+          fontStyle: { type: 'string' },
+        },
+      },
+      titleFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Font Size',
+        display: { type: 'font-size' },
+      },
+      titleLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Line Height',
+        display: { type: 'line-height-input' },
+      },
+      titleLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      titleWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      titleTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Text Appearance',
+        display: { type: 'text-appearance' },
+        properties: {
+          textTransform: { type: 'string', enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
+          textDecoration: { type: 'string', enum: ['none', 'underline'] },
+          fontVariant: { type: 'string', enum: ['normal', 'small-caps'] },
+        },
       },
     },
     defaults: {
-      trigger: 'drag',
+      trigger: {
+        sizeType: 'drag',
+        value: 3,
+        min: 1,
+        max: 5,
+      },
       direction: 'horizontal',
       transition: 'slide',
       nav: 'classic',
       controls: null,
       show: 'always',
-      position: 'outside',
+      controlsColor: '#000000',
+      controlsHoverColor: '#cccccc',
+      navColor: '#cccccc',
+      navPaginationColor: '#cccccc',
+      navBackgroundColor: '#000000',
+      navPaginationHoverColor: '#cccccc',
+      linkColor: '#cccccc',
+      linkHoverColor: '#cccccc',
+      titleColor: '#000000',
+      titleFontFamily: 'Arial',
+      titleFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      titleLetterSpacing: 0,
+      titleWordSpacing: 0,
+      titleTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
     },
     layoutDefaults: {
       d: {
-        controlsMaxWidth: 65 / 1440,
+        controlsMaxWidth: 30 / 1440,
+        paddingX: 0,
+        paddingY: 0,
+        titleFontSize: 0.02,
+        titleLineHeight: 0.02,
       },
       t: {
-        controlsMaxWidth: 65 / 768,
+        controlsMaxWidth: 30 / 768,
+        paddingX: 0,
+        paddingY: 0,
+        titleFontSize: 0.02,
+        titleLineHeight: 0.02,
       },
       m: {
-        controlsMaxWidth: 65 / 375,
+        controlsMaxWidth: 30 / 375,
+        paddingX: 0,
+        paddingY: 0,
+        titleFontSize: 0.02,
+        titleLineHeight: 0.02,
       },
     },
     layout: [
@@ -88,7 +258,12 @@ const schema: ComponentSchemaV1 = {
       'controls',
       'controlsMaxWidth',
       'show',
-      'position',
+      'paddingX',
+      'paddingY',
+      'titleFontSize',
+      'titleLineHeight',
+      'titleLetterSpacing',
+      'titleWordSpacing',
     ],
   },
   panels: [
@@ -105,13 +280,47 @@ const schema: ComponentSchemaV1 = {
           type: 'group',
           title: 'Controls',
           items: [
-            { type: 'row', title: 'Icon', items: ['controls', 'controlsMaxWidth'] },
-            { type: 'row', title: '', items: ['show', 'position'] },
+            { type: 'row', title: '', items: ['controls', 'controlsMaxWidth'] },
+            { type: 'row', title: '', items: ['paddingX', 'paddingY'] },
+            { type: 'row', title: '', items: ['show'] },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'typeStyle',
+      icon: 'text-icon',
+      title: 'Type Style',
+      tooltip: 'Typography',
+      layout: [
+        '__componentName__',
+        {
+          type: 'group',
+          title: 'Title',
+          items: [
+            'titleFontFamily',
+            'titleFontSettings',
+            { type: 'row', items: ['titleFontSize', 'titleLineHeight', 'titleLetterSpacing', 'titleWordSpacing'] },
+            'titleTextAppearance',
           ],
         },
       ],
     },
   ],
+  paletteBookmark: {
+    items: [
+      'controlsColor',
+      'controlsHoverColor',
+      'navColor',
+      'navPaginationColor',
+      'navBackgroundColor',
+      'navPaginationHoverColor',
+      'linkColor',
+      'linkHoverColor',
+      'titleColor',
+    ],
+    panelIds: ['general', 'typeStyle'],
+  },
   content: {
     type: 'array',
     settings: {
@@ -145,8 +354,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
-          name: 'Slider-1.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: '' }] },
@@ -155,8 +363,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-2.png',
-          name: 'Slider-2.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: '' }] },
@@ -165,8 +372,25 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-3.png',
-          name: 'Slider-3.png',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+        },
+        imageCaption: [
+          { type: 'paragraph', children: [{ text: '' }] },
+        ],
+      },
+      {
+        image: {
+          objectFit: 'cover',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
+        },
+        imageCaption: [
+          { type: 'paragraph', children: [{ text: '' }] },
+        ],
+      },
+      {
+        image: {
+          objectFit: 'cover',
+          url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: '' }] },
@@ -208,6 +432,9 @@ export const Slider20Component = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [],
+    parameters: [{ path: 'titleFontFamily' }],
+  },
+  fontRelations: {
+    titleFontSettings: 'titleFontFamily',
   },
 };

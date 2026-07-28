@@ -655,7 +655,7 @@ export const SimpleButtonComponent = {
   element: SimpleButton,
   id: 'simple-button',
   name: 'Simple Button',
-  category: 'dev',
+  category: 'ui-elements',
   version: 1,
   preview: {
     type: 'image' as const,

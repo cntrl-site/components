@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import styles from './Slider20.module.scss';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import cn from 'classnames';
@@ -7,8 +6,8 @@ import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { CommonComponentProps } from '../props';
-import { normalizeFontFamilyCssValue } from '../utils/textStylesToCss';
-import { TextElementStyles } from '../../types/TextElementStyles';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { useScopedStyles } from '../utils/useScopedStyles';
 
 type Slider20Item = {
   image: {
@@ -19,12 +18,17 @@ type Slider20Item = {
   imageCaption: any[];
 };
 
-type Slider20Trigger = 'click' | 'drag' | 'auto';
+type Slider20TriggerType = 'click' | 'drag' | 'auto';
+type Slider20Trigger = {
+  sizeType: Slider20TriggerType;
+  value: number;
+  min: number;
+  max: number;
+};
 type Slider20Direction = 'horizontal' | 'vertical';
 type Slider20Transition = 'slide' | 'fade in' | 'reveal';
-type Slider20Nav = 'type' | 'classic' | 'no';
-type Slider20ControlsShow = 'always' | 'on click' | 'never';
-type Slider20ControlsPosition = 'inside' | 'outside';
+type Slider20Nav = 'classic' | 'no';
+type Slider20ControlsShow = 'always' | 'on hover' | 'never';
 
 type Slider20Settings = {
   trigger?: Slider20Trigger;
@@ -34,7 +38,31 @@ type Slider20Settings = {
   controls?: string | null;
   controlsMaxWidth?: number;
   show?: Slider20ControlsShow;
-  position?: Slider20ControlsPosition;
+  paddingX?: number;
+  paddingY?: number;
+  controlsColor?: string;
+  controlsHoverColor?: string;
+  navColor?: string;
+  navPaginationColor?: string;
+  navBackgroundColor?: string;
+  navPaginationHoverColor?: string;
+  linkColor?: string;
+  linkHoverColor?: string;
+  titleColor?: string;
+  titleFontFamily?: string;
+  titleFontSettings?: {
+    fontWeight?: number;
+    fontStyle?: string;
+  };
+  titleFontSize?: number;
+  titleLineHeight?: number;
+  titleLetterSpacing?: number;
+  titleWordSpacing?: number;
+  titleTextAppearance?: {
+    textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    textDecoration?: 'none' | 'underline';
+    fontVariant?: 'normal' | 'small-caps';
+  };
 };
 
 type Slider20Props = {
@@ -56,17 +84,17 @@ const TRANSITION_DURATION = '500ms';
 const TRANSITION_BACKGROUND_COLOR: string | null = null;
 
 const CONTROLS = {
-  offset: { x: 0, y: 0 } as Offset,
-  scale: 100,
   color: '#000000',
   hover: '#cccccc',
 };
 
 const PAGINATION = {
-  scale: 50,
-  position: 'inside-1' as 'outside-1' | 'outside-2' | 'inside-1' | 'inside-2',
   offset: { x: 0, y: 0 } as Offset,
-  colors: ['#cccccc', '#cccccc', '#000000'],
+  colors: {
+    pagination: '#cccccc',
+    inactive: '#cccccc',
+    background: '#000000',
+  },
   hover: '#cccccc',
 };
 
@@ -78,63 +106,352 @@ const IMAGE_CAPTION = {
   linkHoverColor: '#cccccc',
 };
 
-const AUTO_PLAY_INTERVAL_S = 3;
-
-const IMAGE_CAPTION_STYLE: TextElementStyles = {
-  widthSettings: { width: 0.13, sizing: 'auto' },
-  fontSettings: { fontFamily: 'Arial', fontWeight: 400, fontStyle: 'normal' },
-  fontSizeLineHeight: { fontSize: 0.02, lineHeight: 0.02 },
-  letterSpacing: 0,
-  wordSpacing: 0,
-  textAlign: 'left',
-  textAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
-  color: '#000000',
+const DEFAULT_TRIGGER: Slider20Trigger = {
+  sizeType: 'drag',
+  value: 3,
+  min: 1,
+  max: 5,
 };
 
-const alignmentClassName: Record<Alignment, string> = {
-  'top-left': styles.topLeftAlignment,
-  'top-center': styles.topCenterAlignment,
-  'top-right': styles.topRightAlignment,
-  'middle-left': styles.middleLeftAlignment,
-  'middle-center': styles.middleCenterAlignment,
-  'middle-right': styles.middleRightAlignment,
-  'bottom-left': styles.bottomLeftAlignment,
-  'bottom-center': styles.bottomCenterAlignment,
-  'bottom-right': styles.bottomRightAlignment,
-};
+const TITLE_WIDTH_SETTINGS = { width: 0.13, sizing: 'auto' as const };
+const TITLE_TEXT_ALIGN = 'left' as const;
+
+function resolveTitleStyle(settings: Slider20Settings | undefined, isEditor?: boolean): React.CSSProperties {
+  const textStyles: TextStyles = {
+    fontSettings: {
+      fontFamily: settings?.titleFontFamily ?? 'Arial',
+      fontWeight: settings?.titleFontSettings?.fontWeight ?? 400,
+      fontStyle: settings?.titleFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: settings?.titleFontSize ?? 0.02,
+    lineHeight: settings?.titleLineHeight ?? 0.02,
+    letterSpacing: settings?.titleLetterSpacing ?? 0,
+    wordSpacing: settings?.titleWordSpacing ?? 0,
+    textAppearance: settings?.titleTextAppearance,
+    textAlign: TITLE_TEXT_ALIGN,
+    color: settings?.titleColor ?? '#000000',
+  };
+  return textStylesToCss(textStyles, isEditor);
+}
+
+function sizeCss(property: string, value: number): string {
+  const vw = (value / 1440) * 100;
+  return `${property}: calc(var(--is-editor, 0) * (${vw}vw / var(--cntrl-reverse-layout-deviation, 1)) + (1 - var(--is-editor, 0)) * ${vw}vw);`;
+}
+
+function getCSS(P: string): string {
+  return `
+.${P}-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.${P}-wrapper:hover .${P}-hover-arrow {
+  opacity: 1 !important;
+}
+.${P}-slider-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.${P}-slider-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  position: relative;
+}
+.${P}-slider-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.${P}-arrow {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  top: 50%;
+  z-index: 1;
+  padding: 0;
+  ${sizeCss('width', 30)}
+  ${sizeCss('height', 30)}
+  transition: opacity 0.15s ease-in-out;
+}
+.${P}-arrow-prev {
+  ${sizeCss('left', -20)}
+  transform: translate3d(-50%, -50%, 0);
+}
+.${P}-arrow-next {
+  left: unset;
+  ${sizeCss('right', -20)}
+  transform: translate3d(50%, -50%, 0);
+}
+.${P}-arrow-prev-vertical {
+  left: 50%;
+  ${sizeCss('top', -20)}
+  transform: translate3d(-50%, -50%, 0);
+}
+.${P}-arrow-next-vertical {
+  left: 50%;
+  right: unset;
+  top: unset;
+  ${sizeCss('bottom', -20)}
+  transform: translate3d(-50%, 50%, 0);
+}
+.${P}-arrow-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.${P}-hover-arrow {
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+.${P}-hover-arrow:hover {
+  opacity: 1;
+}
+.${P}-arrow-inner {
+  all: unset;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.${P}-arrow-inner:hover .${P}-arrow-icon path {
+  fill: var(--arrow-hover-color) !important;
+}
+.${P}-arrow-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.${P}-arrow-icon {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.${P}-arrow-icon path {
+  transition: fill 0.15s ease-in-out;
+}
+.${P}-mirror {
+  transform: translate(-50%, -50%) scaleX(-1) !important;
+}
+.${P}-pagination {
+  position: absolute;
+  z-index: 1;
+  border-radius: 50%;
+}
+.${P}-pagination-inner {
+  display: flex;
+  ${sizeCss('gap', 8)}
+  ${sizeCss('padding-top', 5)}
+  ${sizeCss('padding-bottom', 5)}
+  ${sizeCss('padding-left', 9)}
+  ${sizeCss('padding-right', 9)}
+  ${sizeCss('border-radius', 17)}
+}
+.${P}-pagination-vertical {
+  flex-direction: column;
+}
+.${P}-pagination-item {
+  all: unset;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  ${sizeCss('width', 8)}
+  ${sizeCss('height', 8)}
+  cursor: pointer;
+}
+.${P}-pagination-item:hover .${P}-dot {
+  background-color: var(--pagination-hover-color) !important;
+}
+.${P}-dot {
+  border-radius: 50%;
+  transition: background-color 0.3s ease-in-out, width 0.3s ease-in-out, height 0.3s ease-in-out;
+  ${sizeCss('width', 4)}
+  ${sizeCss('height', 4)}
+}
+.${P}-active-dot {
+  ${sizeCss('width', 8)}
+  ${sizeCss('height', 8)}
+}
+.${P}-pagination-inside-bottom {
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  ${sizeCss('bottom', 9)}
+}
+.${P}-pagination-inside-left {
+  top: 50%;
+  transform: translate3d(0, -50%, 0);
+  ${sizeCss('left', -6)}
+}
+.${P}-img-wrapper {
+  width: 100%;
+  height: 100%;
+}
+.${P}-caption-block {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.${P}-caption-text-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.${P}-caption-text {
+  pointer-events: none;
+  max-width: 100%;
+  transition-property: opacity;
+  transition-timing-function: ease-in-out;
+  position: absolute;
+  display: inline-block;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  opacity: 0;
+}
+.${P}-caption-text.${P}-active {
+  opacity: 1;
+}
+.${P}-with-pointer-events {
+  pointer-events: auto;
+}
+.${P}-top-left-alignment {
+  top: 0;
+  left: 0;
+}
+.${P}-top-center-alignment {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.${P}-top-right-alignment {
+  top: 0;
+  right: 0;
+}
+.${P}-middle-left-alignment {
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+}
+.${P}-middle-center-alignment {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  left: 50%;
+}
+.${P}-middle-right-alignment {
+  top: 50%;
+  transform: translateY(-50%);
+  right: 0;
+}
+.${P}-bottom-left-alignment {
+  bottom: 0;
+  left: 0;
+}
+.${P}-bottom-center-alignment {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.${P}-bottom-right-alignment {
+  bottom: 0;
+  right: 0;
+}
+.${P}-click-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.${P}-contain {
+  object-fit: contain;
+}
+.${P}-cover {
+  object-fit: cover;
+}
+.${P}-transition-reveal .splide__slide.is-active .${P}-slider-image {
+  animation: ${P}-reveal-horizontal 500ms ease;
+}
+.${P}-transition-reveal-vertical .splide__slide.is-active .${P}-slider-image {
+  animation: ${P}-reveal-vertical 500ms ease;
+}
+@keyframes ${P}-reveal-horizontal {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes ${P}-reveal-vertical {
+  from { clip-path: inset(100% 0 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+`;
+}
+
+function getAlignmentClassName(P: string): Record<Alignment, string> {
+  return {
+    'top-left': `${P}-top-left-alignment`,
+    'top-center': `${P}-top-center-alignment`,
+    'top-right': `${P}-top-right-alignment`,
+    'middle-left': `${P}-middle-left-alignment`,
+    'middle-center': `${P}-middle-center-alignment`,
+    'middle-right': `${P}-middle-right-alignment`,
+    'bottom-left': `${P}-bottom-left-alignment`,
+    'bottom-center': `${P}-bottom-center-alignment`,
+    'bottom-right': `${P}-bottom-right-alignment`,
+  };
+}
 
 export function Slider20({ settings, content, isEditor }: Slider20Props) {
+  const { prefix: P } = useScopedStyles();
+  const alignmentClassName = useMemo(() => getAlignmentClassName(P), [P]);
   const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
-  const { widthSettings, fontSettings, letterSpacing, textAlign, wordSpacing, fontSizeLineHeight, textAppearance, color } = IMAGE_CAPTION_STYLE;
+  const titleStyle = resolveTitleStyle(settings, isEditor);
   const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
   const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [key, setKey] = useState(0);
-  const [controlsRevealed, setControlsRevealed] = useState(false);
   const items = content ?? [];
-  const trigger: Slider20Trigger = settings?.trigger ?? 'drag';
+  const trigger: Slider20Trigger = settings?.trigger ?? DEFAULT_TRIGGER;
+  const triggerType: Slider20TriggerType = trigger.sizeType ?? 'drag';
+  const autoPlayIntervalS = trigger.value ?? DEFAULT_TRIGGER.value;
   const direction: Slider20Direction = settings?.direction ?? 'horizontal';
   const transition: Slider20Transition = settings?.transition ?? 'slide';
   const nav: Slider20Nav = settings?.nav ?? 'classic';
   const controlsShow: Slider20ControlsShow = settings?.show ?? 'always';
-  const controlsPosition: Slider20ControlsPosition = settings?.position ?? 'outside';
   const controlsImgUrl = settings?.controls ?? null;
   const controlsMaxWidth = typeof settings?.controlsMaxWidth === 'number' ? settings.controlsMaxWidth : 65 / 1440;
+  const controlsOffsetX = typeof settings?.paddingX === 'number' ? settings.paddingX : 0;
+  const controlsOffsetY = typeof settings?.paddingY === 'number' ? settings.paddingY : 0;
+  const controlsColor = settings?.controlsColor ?? CONTROLS.color;
+  const controlsHoverColor = settings?.controlsHoverColor ?? CONTROLS.hover;
+  const navColor = settings?.navColor ?? PAGINATION.colors.inactive;
+  const navPaginationColor = settings?.navPaginationColor ?? PAGINATION.colors.pagination;
+  const navBackgroundColor = settings?.navBackgroundColor ?? PAGINATION.colors.background;
+  const navPaginationHoverColor = settings?.navPaginationHoverColor ?? PAGINATION.hover;
+  const linkColor = settings?.linkColor ?? IMAGE_CAPTION.linkColor;
+  const linkHoverColor = settings?.linkHoverColor ?? IMAGE_CAPTION.linkHoverColor;
   const isHorizontal = direction === 'horizontal';
-  const isClickTrigger = trigger === 'click';
-  const isDragTrigger = trigger === 'drag';
-  const isAutoTrigger = trigger === 'auto';
+  const isClickTrigger = triggerType === 'click';
+  const isDragTrigger = triggerType === 'drag';
+  const isAutoTrigger = triggerType === 'auto';
   const isFadeTransition = transition === 'fade in' || transition === 'reveal';
   const showClassicNav = nav === 'classic';
-  const showTypeNav = nav === 'type';
   const showControls = controlsShow !== 'never';
-  const controlsVisible = controlsShow === 'always' || (controlsShow === 'on click' && controlsRevealed);
-  const isControlsInside = controlsPosition === 'inside';
+  const isControlsOnHover = controlsShow === 'on hover';
   const prevTransitionRef = useRef<Slider20Transition>(transition);
-  const prevTriggerRef = useRef<Slider20Trigger>(trigger);
+  const prevTriggerTypeRef = useRef<Slider20TriggerType>(triggerType);
+  const prevAutoPlayIntervalRef = useRef(autoPlayIntervalS);
   const prevDirectionRef = useRef<Slider20Direction>(direction);
   const prevNavRef = useRef<Slider20Nav>(nav);
-  const { x: controlsOffsetX, y: controlsOffsetY } = CONTROLS.offset;
   const controlsMaxWidthScaled = scalingValue(controlsMaxWidth, isEditor);
   const controlsSizeStyle = {
     width: controlsMaxWidthScaled,
@@ -167,10 +484,16 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
   }, [transition]);
 
   useEffect(() => {
-    if (prevTriggerRef.current === trigger) return;
+    if (prevTriggerTypeRef.current === triggerType) return;
     setKey(prev => prev + 1);
-    prevTriggerRef.current = trigger;
-  }, [trigger]);
+    prevTriggerTypeRef.current = triggerType;
+  }, [triggerType]);
+
+  useEffect(() => {
+    if (prevAutoPlayIntervalRef.current === autoPlayIntervalS) return;
+    setKey(prev => prev + 1);
+    prevAutoPlayIntervalRef.current = autoPlayIntervalS;
+  }, [autoPlayIntervalS]);
 
   useEffect(() => {
     if (prevDirectionRef.current === direction) return;
@@ -184,275 +507,227 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
     prevNavRef.current = nav;
   }, [nav]);
 
-  useEffect(() => {
-    setControlsRevealed(false);
-  }, [controlsShow]);
-
   return (
-    <div
-      className={cn(styles.wrapper, {
-        [styles.editor]: isEditor,
-        [styles.transitionReveal]: transition === 'reveal',
-        [styles.transitionRevealVertical]: transition === 'reveal' && !isHorizontal,
-      })}
-      ref={setWrapperRef}
-      onClick={controlsShow === 'on click' ? () => setControlsRevealed(true) : undefined}
-    >
+    <>
+      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
       <div
-       className={styles.sliderInner}
-       style={{
-          width: sliderDimensions ? sliderDimensions.width : '100%',
-          height: sliderDimensions ? sliderDimensions.height : '100%',
-          backgroundColor: TRANSITION_BACKGROUND_COLOR && transition === 'fade in' ? TRANSITION_BACKGROUND_COLOR : 'transparent'
-        }}
+        className={cn(`${P}-wrapper`, {
+          [`${P}-transition-reveal`]: transition === 'reveal',
+          [`${P}-transition-reveal-vertical`]: transition === 'reveal' && !isHorizontal,
+        })}
+        ref={setWrapperRef}
       >
-      {IMAGE_CAPTION.isActive && (
         <div
-          className={cn(styles.captionBlock)}
+          className={`${P}-slider-inner`}
+          style={{
+            width: sliderDimensions ? sliderDimensions.width : '100%',
+            height: sliderDimensions ? sliderDimensions.height : '100%',
+            backgroundColor: TRANSITION_BACKGROUND_COLOR && transition === 'fade in' ? TRANSITION_BACKGROUND_COLOR : 'transparent'
+          }}
         >
-          <div
-            className={styles.captionTextWrapper}
-          >
-            {items.map((item, index) => (
-              <div
-                key={index}
-                className={cn(styles.captionText, alignmentClassName[IMAGE_CAPTION.alignment], {
-                  [styles.withPointerEvents]: index === currentSlideIndex && isEditor,
-                  [styles.active]: index === currentSlideIndex,
-                })}
-                style={{
-                  fontFamily: normalizeFontFamilyCssValue(fontSettings.fontFamily),
-                  fontWeight: fontSettings.fontWeight,
-                  fontStyle: fontSettings.fontStyle,
-                  width: widthSettings.sizing === 'auto' ? 'max-content' : scalingValue(widthSettings.width, isEditor),
-                  letterSpacing: scalingValue(letterSpacing, isEditor),
-                  wordSpacing: scalingValue(wordSpacing, isEditor),
-                  textAlign,
-                  fontSize: scalingValue(fontSizeLineHeight.fontSize, isEditor),
-                  lineHeight: scalingValue(fontSizeLineHeight.lineHeight, isEditor),
-                  textTransform: textAppearance.textTransform ?? 'none',
-                  textDecoration: textAppearance.textDecoration ?? 'none',
-                  fontVariant: textAppearance.fontVariant ?? 'normal',
-                  color,
-                  transitionDuration: `${Math.round(parseInt(TRANSITION_DURATION) / 2)}ms`,
-                }}
-              >
+        {IMAGE_CAPTION.isActive && (
+          <div className={`${P}-caption-block`}>
+            <div className={`${P}-caption-text-wrapper`}>
+              {items.map((item, index) => (
                 <div
-                  data-styles="imageCaption"
-                  className={styles.captionTextInner}
+                  key={index}
+                  className={cn(`${P}-caption-text`, alignmentClassName[IMAGE_CAPTION.alignment], {
+                    [`${P}-with-pointer-events`]: index === currentSlideIndex && isEditor,
+                    [`${P}-active`]: index === currentSlideIndex,
+                  })}
                   style={{
-                    '--link-hover-color': IMAGE_CAPTION.linkHoverColor,
-                    '--link-color': IMAGE_CAPTION.linkColor,
-                    position: 'relative',
-                    top: scalingValue(IMAGE_CAPTION.offset.y, isEditor),
-                    left: scalingValue(IMAGE_CAPTION.offset.x, isEditor)
-                  } as React.CSSProperties}
+                    ...titleStyle,
+                    width: TITLE_WIDTH_SETTINGS.sizing === 'auto' ? 'max-content' : scalingValue(TITLE_WIDTH_SETTINGS.width, isEditor),
+                    transitionDuration: `${Math.round(parseInt(TRANSITION_DURATION) / 2)}ms`,
+                  }}
                 >
-                  <RichTextRenderer content={item.imageCaption} />
+                  <div
+                    className={`${P}-caption-text-inner`}
+                    style={{
+                      '--link-hover-color': linkHoverColor,
+                      '--link-color': linkColor,
+                      position: 'relative',
+                      top: scalingValue(IMAGE_CAPTION.offset.y, isEditor),
+                      left: scalingValue(IMAGE_CAPTION.offset.x, isEditor)
+                    } as React.CSSProperties}
+                  >
+                    <RichTextRenderer content={item.imageCaption} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <Splide
+          onMove={(e) => {
+            setCurrentSlideIndex(e.index);
+          }}
+          key={key}
+          ref={setSliderRef}
+          options={{
+            arrows: false,
+            speed: parseInt(TRANSITION_DURATION),
+            autoplay: isAutoTrigger,
+            ...(isAutoTrigger && {
+              interval: autoPlayIntervalS * 1000,
+            }),
+            direction: isHorizontal || isFadeTransition ? 'ltr' : 'ttb',
+            pagination: false,
+            drag: isDragTrigger,
+            perPage: 1,
+            width: sliderDimensions ? sliderDimensions.width : '100%',
+            height: sliderDimensions ? sliderDimensions.height : '100%',
+            type: isFadeTransition ? 'fade' : 'loop',
+            rewind: true
+          }}
+        >
+          {items.map((item, index) => (
+            <SplideSlide key={index}>
+              <div className={`${P}-slider-item`}>
+                <div className={`${P}-img-wrapper`}>
+                  <img
+                    className={cn(`${P}-slider-image`, {
+                      [`${P}-contain`]: item.image.objectFit === 'contain',
+                      [`${P}-cover`]: item.image.objectFit === 'cover'
+                    })}
+                    src={item.image.url} alt={item.image.name ?? ''}
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-      <Splide
-        onMove={(e) => {
-          setCurrentSlideIndex(e.index);
-        }}
-        key={key}
-        ref={setSliderRef}
-        options={{
-          arrows: false,
-          speed: parseInt(TRANSITION_DURATION),
-          autoplay: isAutoTrigger,
-          ...(isAutoTrigger && {
-            interval: AUTO_PLAY_INTERVAL_S * 1000,
-          }),
-          direction: isHorizontal || isFadeTransition ? 'ltr' : 'ttb',
-          pagination: false,
-          drag: isDragTrigger,
-          perPage: 1,
-          width: sliderDimensions ? sliderDimensions.width : '100%',
-          height: sliderDimensions ? sliderDimensions.height : '100%',
-          type: isFadeTransition ? 'fade' : 'loop',
-          rewind: true
-        }}
-      >
-        {items.map((item, index) => (
-          <SplideSlide key={index}>
+            </SplideSlide>
+          ))}
+        </Splide>
+        {showControls && (
+          <>
             <div
-              className={styles.sliderItem}
-            >
-              <div
-                className={styles.imgWrapper}
-              >
-                <img
-                  className={cn(styles.sliderImage, {
-                    [styles.contain]: item.image.objectFit === 'contain',
-                    [styles.cover]: item.image.objectFit === 'cover'
-                  })}
-                  src={item.image.url} alt={item.image.name ?? ''}
-                />
-              </div>
-            </div>
-          </SplideSlide>
-        ))}
-      </Splide>
-      {showControls && (
-        <>
-          <div
-            className={cn(styles.arrow, {
-              [styles.arrowOutsidePrev]: !isControlsInside && isHorizontal,
-              [styles.arrowOutsidePrevVertical]: !isControlsInside && !isHorizontal,
-              [styles.arrowInsidePrev]: isControlsInside && isHorizontal,
-              [styles.arrowInsidePrevVertical]: isControlsInside && !isHorizontal,
-              [styles.arrowHidden]: !controlsVisible,
-            })}
-            style={{
-              color: CONTROLS.color,
-              ['--arrow-hover-color' as string]: CONTROLS.hover,
-              ...controlsSizeStyle,
-            }}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleArrowClick('-1');
-              }}
-              className={styles.arrowInner}
+              className={cn(`${P}-arrow`, {
+                [`${P}-arrow-prev`]: isHorizontal,
+                [`${P}-arrow-prev-vertical`]: !isHorizontal,
+                [`${P}-hover-arrow`]: isControlsOnHover,
+              })}
               style={{
-                transform: `translate(${scalingValue(controlsOffsetX, isEditor)}, ${scalingValue(controlsOffsetY * (isHorizontal ? 1 : -1), isEditor)}) scale(${CONTROLS.scale / 100}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
+                color: controlsColor,
+                ['--arrow-hover-color' as string]: controlsHoverColor,
+                ...controlsSizeStyle,
               }}
             >
-              {controlsImgUrl && (
-                <SvgImage
-                  url={controlsImgUrl}
-                  fill={CONTROLS.color}
-                  hoverFill={CONTROLS.hover}
-                  className={cn(styles.arrowImg, isHorizontal ? styles.mirror : styles.mirrorVertical)}
-                  style={controlsSizeStyle}
-                />
-              )}
-              {!controlsImgUrl && (
-                <ArrowIcon
-                  color={CONTROLS.color}
-                  className={cn(styles.arrowIcon, styles.arrowImg, isHorizontal ? styles.mirror : styles.mirrorVertical)}
-                />
-              )}
-            </button>
-          </div>
-          <div
-            className={cn(styles.arrow, {
-              [styles.arrowOutsideNext]: !isControlsInside && isHorizontal,
-              [styles.arrowOutsideNextVertical]: !isControlsInside && !isHorizontal,
-              [styles.arrowInsideNext]: isControlsInside && isHorizontal,
-              [styles.arrowInsideNextVertical]: isControlsInside && !isHorizontal,
-              [styles.arrowHidden]: !controlsVisible,
-            })}
-            style={{
-              color: CONTROLS.color,
-              ['--arrow-hover-color' as string]: CONTROLS.hover,
-              ...controlsSizeStyle,
-            }}
-          >
-            <button
-              className={styles.arrowInner}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleArrowClick('+1');
-              }}
-              style={{
-                transform: `translate(${scalingValue(controlsOffsetX * (isHorizontal ? -1 : 1), isEditor)}, ${scalingValue(controlsOffsetY, isEditor)}) scale(${CONTROLS.scale / 100}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
-              }}
-            >
-              {controlsImgUrl && (
-                <SvgImage
-                  url={controlsImgUrl}
-                  fill={CONTROLS.color}
-                  hoverFill={CONTROLS.hover}
-                  className={styles.arrowImg}
-                  style={controlsSizeStyle}
-                />
-              )}
-              {!controlsImgUrl && (
-                <ArrowIcon color={CONTROLS.color} className={cn(styles.arrowIcon, styles.arrowImg)} />
-              )}
-            </button>
-          </div>
-        </>
-      )}
-      {isClickTrigger && (
-        <div
-          className={styles.clickOverlay}
-          onClick={() => {
-            if (sliderRef) {
-              sliderRef.go('+1');
-            }
-          }}
-        />
-      )}
-      {showClassicNav && (
-        <div
-          className={cn(styles.pagination, {
-            [styles.paginationInsideBottom]: PAGINATION.position === 'inside-1' && isHorizontal,
-            [styles.paginationInsideTop]: PAGINATION.position === 'inside-2' && isHorizontal,
-            [styles.paginationOutsideBottom]: PAGINATION.position === 'outside-1' && isHorizontal,
-            [styles.paginationOutsideTop]: PAGINATION.position === 'outside-2' && isHorizontal,
-            [styles.paginationInsideLeft]: PAGINATION.position === 'inside-1' && !isHorizontal,
-            [styles.paginationInsideRight]: PAGINATION.position === 'inside-2' && !isHorizontal,
-            [styles.paginationOutsideLeft]: PAGINATION.position === 'outside-1' && !isHorizontal,
-            [styles.paginationOutsideRight]: PAGINATION.position === 'outside-2' && !isHorizontal,
-            [styles.paginationVertical]: !isHorizontal,
-          })}
-        >
-          <div
-            className={styles.paginationInner}
-            style={{
-              backgroundColor: PAGINATION.colors[2],
-              transform: `scale(${PAGINATION.scale / 100}) translate(${scalingValue(PAGINATION.offset.x, isEditor)}, ${scalingValue(PAGINATION.offset.y, isEditor)}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
-            }}
-          >
-            {items.map((_, index) => (
               <button
-                key={index}
-                onClick={() => {
-                  if (sliderRef) {
-                    sliderRef.go(index);
-                  }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleArrowClick('-1');
                 }}
-                className={cn(styles.paginationItem)}
+                className={`${P}-arrow-inner`}
+                style={{
+                  transform: `translate(${scalingValue(controlsOffsetX, isEditor)}, ${scalingValue(controlsOffsetY * (isHorizontal ? 1 : -1), isEditor)}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
+                }}
               >
-                <div
-                  className={cn(styles.dot, {
-                    [styles.activeDot]: index === currentSlideIndex
-                  })}
-                  style={{
-                    backgroundColor: index === currentSlideIndex ? PAGINATION.colors[0] : PAGINATION.colors[1],
-                    ['--pagination-hover-color' as string]: PAGINATION.hover
-                  }}
-                />
+                {controlsImgUrl && (
+                  <SvgImage
+                    url={controlsImgUrl}
+                    fill={controlsColor}
+                    hoverFill={controlsHoverColor}
+                    className={cn(`${P}-arrow-img`, `${P}-mirror`)}
+                    style={controlsSizeStyle}
+                  />
+                )}
+                {!controlsImgUrl && (
+                  <ArrowIcon
+                    color={controlsColor}
+                    className={cn(`${P}-arrow-icon`, `${P}-arrow-img`, `${P}-mirror`)}
+                  />
+                )}
               </button>
-            ))}
+            </div>
+            <div
+              className={cn(`${P}-arrow`, {
+                [`${P}-arrow-next`]: isHorizontal,
+                [`${P}-arrow-next-vertical`]: !isHorizontal,
+                [`${P}-hover-arrow`]: isControlsOnHover,
+              })}
+              style={{
+                color: controlsColor,
+                ['--arrow-hover-color' as string]: controlsHoverColor,
+                ...controlsSizeStyle,
+              }}
+            >
+              <button
+                className={`${P}-arrow-inner`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleArrowClick('+1');
+                }}
+                style={{
+                  transform: `translate(${scalingValue(controlsOffsetX * (isHorizontal ? -1 : 1), isEditor)}, ${scalingValue(controlsOffsetY, isEditor)}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
+                }}
+              >
+                {controlsImgUrl && (
+                  <SvgImage
+                    url={controlsImgUrl}
+                    fill={controlsColor}
+                    hoverFill={controlsHoverColor}
+                    className={`${P}-arrow-img`}
+                    style={controlsSizeStyle}
+                  />
+                )}
+                {!controlsImgUrl && (
+                  <ArrowIcon color={controlsColor} className={cn(`${P}-arrow-icon`, `${P}-arrow-img`)} />
+                )}
+              </button>
+            </div>
+          </>
+        )}
+        {isClickTrigger && (
+          <div
+            className={`${P}-click-overlay`}
+            onClick={() => {
+              if (sliderRef) {
+                sliderRef.go('+1');
+              }
+            }}
+          />
+        )}
+        {showClassicNav && (
+          <div
+            className={cn(`${P}-pagination`, {
+              [`${P}-pagination-inside-bottom`]: isHorizontal,
+              [`${P}-pagination-inside-left`]: !isHorizontal,
+              [`${P}-pagination-vertical`]: !isHorizontal,
+            })}
+          >
+            <div
+              className={`${P}-pagination-inner`}
+              style={{
+                backgroundColor: navBackgroundColor,
+                transform: `translate(${scalingValue(PAGINATION.offset.x, isEditor)}, ${scalingValue(PAGINATION.offset.y, isEditor)}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
+              }}
+            >
+              {items.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (sliderRef) {
+                      sliderRef.go(index);
+                    }
+                  }}
+                  className={`${P}-pagination-item`}
+                >
+                  <div
+                    className={cn(`${P}-dot`, {
+                      [`${P}-active-dot`]: index === currentSlideIndex
+                    })}
+                    style={{
+                      backgroundColor: index === currentSlideIndex ? navPaginationColor : navColor,
+                      ['--pagination-hover-color' as string]: navPaginationHoverColor
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
+        )}
         </div>
-      )}
-      {showTypeNav && items.length > 0 && (
-        <div
-          className={cn(styles.typeNav, {
-            [styles.typeNavVertical]: !isHorizontal,
-          })}
-        >
-          <span className={styles.typeNavCurrent}>
-            {String(currentSlideIndex + 1).padStart(2, '0')}
-          </span>
-          <span className={styles.typeNavSeparator}>/</span>
-          <span className={styles.typeNavTotal}>
-            {String(items.length).padStart(2, '0')}
-          </span>
-        </div>
-      )}
       </div>
-    </div>
+    </>
   );
 }
 
