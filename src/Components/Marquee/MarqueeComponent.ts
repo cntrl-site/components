@@ -75,6 +75,12 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      cornerRadius: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Corner radius',
+        display: { type: 'padding-controls' },
+      },
     },
     defaults: {
       direction: 'left',
@@ -92,18 +98,36 @@ const schema: ComponentSchemaV1 = {
         gap: 0.04,
         imageMaxWidth: 0.8,
         imageMaxHeight: 0.8,
+        cornerRadius: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        },
       },
       t: {
         speed: 1.64,
         gap: 0.02,
         imageMaxWidth: 0.5208,
         imageMaxHeight: 0.5208,
+        cornerRadius: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        },
       },
       d: {
         speed: 1.64,
         gap: 0.02,
         imageMaxWidth: 0.208,
         imageMaxHeight: 0.278,
+        cornerRadius: {
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        },
       },
     },
     displayRules: [
@@ -122,6 +146,7 @@ const schema: ComponentSchemaV1 = {
       'imageMaxWidth',
       'imageMaxHeight',
       'imageFit',
+      'cornerRadius',
     ],
   },
   panels: [
@@ -135,6 +160,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['direction' ] },
         { type: 'row', items: [ 'speed', 'imageFit'] },
         { type: 'row', items: [ 'imageMaxWidth', 'imageMaxHeight'] },
+        { type: 'row', items: ['cornerRadius'] },
         { type: 'row', title: 'Hover Settings', items: [
           {type: 'row', title: '', items: ['hoverEffect', 'pauseOnHover']}
         ]},

@@ -102,25 +102,25 @@ function getCSS(P: string): string {
   max-height: none;
   object-position: bottom;
 }
-.${P}-item-hover-scale .${P}-item-image img,
-.${P}-item-hover-scale .${P}-item-image video {
+.${P}-item-image-hover-scale img,
+.${P}-item-image-hover-scale video {
   transform-origin: center center;
   transition: transform 0.3s ease;
 }
-.${P}-item-hover-scale:hover .${P}-item-image {
+.${P}-item-image-hover-scale:hover {
   z-index: 10;
 }
-.${P}-item-hover-scale:hover .${P}-item-image img,
-.${P}-item-hover-scale:hover .${P}-item-image video {
+.${P}-item-image-hover-scale:hover img,
+.${P}-item-image-hover-scale:hover video {
   transform: scale(var(--${P}-image-hover-scale, 1.2));
 }
-.${P}-item-hover-saturate .${P}-item-image img,
-.${P}-item-hover-saturate .${P}-item-image video {
+.${P}-item-image-hover-saturate img,
+.${P}-item-image-hover-saturate video {
   filter: grayscale(100%);
   transition: filter 0.3s ease;
 }
-.${P}-item-hover-saturate:hover .${P}-item-image img,
-.${P}-item-hover-saturate:hover .${P}-item-image video {
+.${P}-item-image-hover-saturate:hover img,
+.${P}-item-image-hover-saturate:hover video {
   filter: grayscale(0%);
 }
 .${P}-item-gap-host {
@@ -255,7 +255,7 @@ export function Waterfall({
   const imageHoverEffect = settings?.imageHoverEffect ?? { sizeType: 'none' as const, value: 120 };
   const imageHoverType = imageHoverEffect.sizeType ?? 'none';
   const imageHoverClass = showImageHoverEffects && imageHoverType !== 'none'
-    ? `${P}-item-hover-${imageHoverType}`
+    ? `${P}-item-image-hover-${imageHoverType}`
     : undefined;
   const imageHoverScale = (imageHoverEffect.value ?? 120) / 100;
 
@@ -363,7 +363,7 @@ export function Waterfall({
           return (
             <div
               key={index}
-              className={[`${P}-item`, imageHoverClass].filter(Boolean).join(' ')}
+              className={`${P}-item`}
             >
               {item.title ? (
                 <span
@@ -375,7 +375,7 @@ export function Waterfall({
                 </span>
               ) : null}
               {item.image?.url ? (
-                <span className={`${P}-item-image`}>
+                <span className={[`${P}-item-image`, imageHoverClass].filter(Boolean).join(' ')}>
                   {item.image.type === 'video' ? (
                     <video
                       src={item.image.url}

@@ -240,12 +240,20 @@ const isMediaReady = (el: HTMLImageElement | HTMLVideoElement | null): boolean =
   return el.complete;
 };
 
+type CornerRadius = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
 type MarqueeItemCardProps = {
   item: MarqueeItem;
   prefix: string;
   imageFit: MarqueeImageFit;
   imageMaxWidth: number;
   imageMaxHeight: number;
+  cornerRadius: CornerRadius;
   imageHoverClass?: string;
   isEditor?: boolean;
   isFirstSet?: boolean;
@@ -259,6 +267,7 @@ const MarqueeItemCard = ({
   imageFit,
   imageMaxWidth,
   imageMaxHeight,
+  cornerRadius,
   imageHoverClass,
   isFirstSet,
   scaled,
@@ -285,6 +294,13 @@ const MarqueeItemCard = ({
   const coverWidthScaled = scaled(coverWidth);
   const coverHeightScaled = scaled(coverHeight);
 
+  const radiusStyle: CSSProperties = {
+    borderTopLeftRadius: scaled(cornerRadius.top),
+    borderTopRightRadius: scaled(cornerRadius.right),
+    borderBottomRightRadius: scaled(cornerRadius.bottom),
+    borderBottomLeftRadius: scaled(cornerRadius.left),
+  };
+
   const mediaStyle: CSSProperties = isCover
     ? {
         pointerEvents: 'auto',
@@ -292,14 +308,17 @@ const MarqueeItemCard = ({
         width: '100%',
         height: '100%',
         objectFit: 'cover',
+        ...radiusStyle,
       }
     : {
         pointerEvents: 'auto',
         display: 'block',
-        height: '100%',
         width: 'auto',
+        height: 'auto',
         maxWidth: scaled(imageMaxWidth),
+        maxHeight: scaled(imageMaxHeight),
         objectFit: 'contain',
+        ...radiusStyle,
       };
 
   const imageNode =
@@ -347,7 +366,12 @@ const MarqueeItemCard = ({
           alignItems: 'center',
           flexShrink: 0,
           ...(isCover
-            ? { width: coverWidthScaled, height: coverHeightScaled, overflow: 'hidden'}
+            ? {
+                width: coverWidthScaled,
+                height: coverHeightScaled,
+                overflow: 'hidden',
+                ...radiusStyle,
+              }
             : {
                 width: 'max-content',
                 maxWidth: scaled(imageMaxWidth),
@@ -373,7 +397,16 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
   const [setWidth, setSetWidth] = useState(0);
   const animationDistance = setWidth > 0 ? Math.round(setWidth) : 0;
   const scopedCss = useMemo(() => getCSS(P, animationDistance), [P, animationDistance]);
-  const { speed, direction, pauseOnHover, gap, imageMaxWidth, imageMaxHeight, hoverEffect } = settings;
+  const {
+    speed,
+    direction,
+    pauseOnHover,
+    gap,
+    imageMaxWidth,
+    imageMaxHeight,
+    hoverEffect,
+    cornerRadius = { top: 0, right: 0, bottom: 0, left: 0 },
+  } = settings;
   const imageFit = useMemo(() => normalizeImageFit(settings.imageFit), [settings.imageFit]);
   const originalItemCount = content?.length ?? 0;
   const showControls = Boolean(isEditMode);
@@ -628,6 +661,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
           imageFit={imageFit}
           imageMaxWidth={imageMaxWidth}
           imageMaxHeight={imageMaxHeight}
+          cornerRadius={cornerRadius}
           imageHoverClass={imageHoverClass}
           isEditor={isEditor}
           isFirstSet={isFirstSet}
@@ -747,6 +781,7 @@ export type MarqueeSettings = {
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed: boolean;
   };
+  cornerRadius?: CornerRadius;
 };
 
 type MarqueeProps = {

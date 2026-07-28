@@ -17,6 +17,7 @@ import { ClickGallerieComponent } from './ClickGallerie/ClickGallerieComponent';
 import { ScaleComponent } from './Scale/ScaleComponent';
 import { SimpleButtonComponent } from './SimpleButton/SimpleButtonComponent';
 import { WaterfallComponent } from './Waterfall/WaterfallComponent';
+import { Slider20Component } from './Slider20/Slider20Component';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -37,4 +38,5 @@ export const components: Component[] = [
   ScaleComponent,
   WaterfallComponent,
   SimpleButtonComponent,
+  Slider20Component,
 ];
