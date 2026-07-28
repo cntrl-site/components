@@ -25,7 +25,7 @@ type BoxShadow = {
   bottom: number;
 };
 
-type HoverEffect = 'none' | 'scale-up' | 'lift' | 'blinds' | 'reveal' | 'swipe' | 'content-roll';
+type HoverEffect = 'none' | 'scale-up' | 'lift' | 'reveal' | 'swipe' | 'content-roll';
 
 type SimpleButtonSettings = {
   type?: 'a' | 'b' | 'c';
@@ -162,15 +162,11 @@ function getCSS(P: string): string {
   transform: translateY(-2px);
   box-shadow: ${liftBoxShadow};
 }
-.${P}-hover-effect-blinds,
 .${P}-hover-effect-reveal,
 .${P}-hover-effect-swipe {
   position: relative;
   overflow: hidden;
 }
-.${P}-hover-effect-blinds .${P}-button-inner,
-.${P}-hover-effect-blinds .${P}-text,
-.${P}-hover-effect-blinds .${P}-icon,
 .${P}-hover-effect-reveal .${P}-button-inner,
 .${P}-hover-effect-reveal .${P}-text,
 .${P}-hover-effect-reveal .${P}-icon,
@@ -180,7 +176,6 @@ function getCSS(P: string): string {
   position: relative;
   z-index: 1;
 }
-.${P}-hover-effect-blinds::before,
 .${P}-hover-effect-reveal::before {
   content: '';
   position: absolute;
@@ -188,20 +183,6 @@ function getCSS(P: string): string {
   background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
   pointer-events: none;
   z-index: 0;
-}
-.${P}-hover-effect-blinds::before {
-  transform: scaleY(0);
-  transform-origin: center center;
-  opacity: 0;
-  transition: opacity 150ms, transform 0s 250ms;
-}
-.${P}-hover-effect-blinds:hover::before,
-.${P}-wrapper.${P}-state-hover .${P}-hover-effect-blinds::before {
-  transform: scaleY(1);
-  opacity: 1;
-  transition: transform 250ms, opacity 250ms;
-}
-.${P}-hover-effect-reveal::before {
   transform: scaleY(0);
   transform-origin: bottom center;
   transition: transform 120ms;
@@ -232,8 +213,6 @@ function getCSS(P: string): string {
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-swipe::before {
   transform: translateX(0);
 }
-.${P}-hover-effect-blinds:hover,
-.${P}-wrapper.${P}-state-hover .${P}-hover-effect-blinds,
 .${P}-hover-effect-reveal:hover,
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal,
 .${P}-hover-effect-swipe:hover,
@@ -307,11 +286,14 @@ function getCSS(P: string): string {
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
   box-shadow: ${hoverBoxShadow};
 }
+.${P}-button:focus,
+.${P}-button:focus-visible,
 .${P}-button:active {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
   box-shadow: ${activeBoxShadow};
+  outline: none;
 }
 .${P}-wrapper.${P}-state-active .${P}-button {
   background-color: var(--${P}-active-background-color, var(--${P}-background-color));
@@ -337,6 +319,8 @@ function getCSS(P: string): string {
   --fill: var(--${P}-hover-icon-color, var(--${P}-icon-color)) !important;
   --hover-fill: var(--${P}-hover-icon-color, var(--${P}-icon-color)) !important;
 }
+.${P}-button:focus .${P}-icon-image,
+.${P}-button:focus-visible .${P}-icon-image,
 .${P}-button:active .${P}-icon-image,
 .${P}-wrapper.${P}-state-active .${P}-icon-image {
   --fill: var(--${P}-active-icon-color, var(--${P}-icon-color)) !important;
@@ -489,7 +473,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent }:
   const hoverEffectClass = hoverEffect !== 'none' && (!isEditor || isPreviewMode || activeEvent === 'hover')
     ? `${P}-hover-effect-${hoverEffect}`
     : '';
-  const useHoverOverlay = hoverEffect === 'blinds' || hoverEffect === 'reveal' || hoverEffect === 'swipe';
+  const useHoverOverlay = hoverEffect === 'reveal' || hoverEffect === 'swipe';
   const useContentRoll = hoverEffect === 'content-roll';
   const revealHoverActive = hoverEffect === 'reveal' && (!isEditor || isPreviewMode);
 
