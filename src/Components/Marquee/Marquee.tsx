@@ -240,20 +240,13 @@ const isMediaReady = (el: HTMLImageElement | HTMLVideoElement | null): boolean =
   return el.complete;
 };
 
-type CornerRadius = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};
-
 type MarqueeItemCardProps = {
   item: MarqueeItem;
   prefix: string;
   imageFit: MarqueeImageFit;
   imageMaxWidth: number;
   imageMaxHeight: number;
-  cornerRadius: CornerRadius;
+  cornerRadius: number;
   imageHoverClass?: string;
   isEditor?: boolean;
   isFirstSet?: boolean;
@@ -295,10 +288,7 @@ const MarqueeItemCard = ({
   const coverHeightScaled = scaled(coverHeight);
 
   const radiusStyle: CSSProperties = {
-    borderTopLeftRadius: scaled(cornerRadius.top),
-    borderTopRightRadius: scaled(cornerRadius.right),
-    borderBottomRightRadius: scaled(cornerRadius.bottom),
-    borderBottomLeftRadius: scaled(cornerRadius.left),
+    borderRadius: scaled(cornerRadius),
   };
 
   const mediaStyle: CSSProperties = isCover
@@ -405,7 +395,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
     imageMaxWidth,
     imageMaxHeight,
     hoverEffect,
-    cornerRadius = { top: 0, right: 0, bottom: 0, left: 0 },
+    cornerRadius = 0,
   } = settings;
   const imageFit = useMemo(() => normalizeImageFit(settings.imageFit), [settings.imageFit]);
   const originalItemCount = content?.length ?? 0;
@@ -781,7 +771,7 @@ export type MarqueeSettings = {
     ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed: boolean;
   };
-  cornerRadius?: CornerRadius;
+  cornerRadius?: number;
 };
 
 type MarqueeProps = {
