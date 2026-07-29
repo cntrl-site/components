@@ -128,10 +128,11 @@ const schema = {
         display: { type: 'padding-controls' },
       },
       cornerRadius: {
-        type: 'object',
+        type: 'number',
         scope: 'layout',
         title: 'Corner radius',
-        display: { type: 'padding-controls' },
+        min: 0,
+        display: { type: 'numeric-input' },
       },
       boxShadow: {
         type: 'object',
@@ -358,12 +359,7 @@ const schema = {
         minHeight: 0 / 375,
         width: 100 / 375,
         height: 100 / 375,
-        cornerRadius: {
-          top: 20 / 375,
-          right: 20 / 375,
-          bottom: 20 / 375,
-          left: 20 / 375,
-        },
+        cornerRadius: 20 / 375,
         boxShadow: {
           top: 0,
           left: 0,
@@ -407,12 +403,7 @@ const schema = {
         minHeight: 0 / 768,
         width: 100 / 768,
         height: 100 / 768,
-        cornerRadius: {
-          top: 20 / 768,
-          right: 20 / 768,
-          bottom: 20 / 768,
-          left: 20 / 768,
-        },
+        cornerRadius: 20 / 768,
         boxShadow: {
           top: 0,
           left: 0,
@@ -456,12 +447,7 @@ const schema = {
         minHeight: 0 / 1440,
         width: 100 / 1440,
         height: 100 / 1440,
-        cornerRadius: {
-          top: 20 / 1440,
-          right: 20 / 1440,
-          bottom: 20 / 1440,
-          left: 20 / 1440,
-        },
+        cornerRadius: 20 / 1440,
         boxShadow: {
           top: 0,
           left: 0,

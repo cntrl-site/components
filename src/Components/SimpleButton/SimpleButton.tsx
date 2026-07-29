@@ -11,13 +11,6 @@ type Padding = {
   left: number;
 };
 
-type CornerRadius = {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-};
-
 type BoxShadow = {
   top: number;
   left: number;
@@ -40,7 +33,7 @@ type SimpleButtonSettings = {
   iconColor?: string;
   dimensions?: boolean;
   padding?: Padding;
-  cornerRadius?: CornerRadius;
+  cornerRadius?: number;
   boxShadow?: BoxShadow;
   boxShadowColor?: string;
   innerBoxShadow?: BoxShadow;
@@ -456,7 +449,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
     iconWidthC = 0,
     dimensions = false,
     padding = { top: 0, right: 0, bottom: 0, left: 0 },
-    cornerRadius = { top: 0, right: 0, bottom: 0, left: 0 },
+    cornerRadius = 0,
     boxShadow = { top: 0, left: 0, right: 0, bottom: 0 },
     boxShadowColor = 'rgba(0, 0, 0, 0)',
     innerBoxShadow = { top: 0, left: 0, right: 0, bottom: 0 },
@@ -538,10 +531,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
     paddingRight: scalingValue(padding.right, isEditor),
     paddingBottom: scalingValue(padding.bottom, isEditor),
     paddingLeft: scalingValue(padding.left, isEditor),
-    borderTopLeftRadius: scalingValue(cornerRadius.top, isEditor),
-    borderTopRightRadius: scalingValue(cornerRadius.right, isEditor),
-    borderBottomRightRadius: scalingValue(cornerRadius.bottom, isEditor),
-    borderBottomLeftRadius: scalingValue(cornerRadius.left, isEditor),
+    borderRadius: scalingValue(cornerRadius, isEditor),
     borderWidth: scalingValue(stroke, isEditor),
     ...(!isIconTextType ? {
       justifyContent: ALIGNMENT_MAP[effectiveAlignment],
