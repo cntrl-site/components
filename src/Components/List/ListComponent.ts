@@ -1058,7 +1058,7 @@ export const ListComponent = {
     applyListColumnCountChange(nextSettings as ListSettings, prevSettings as ListSettings),
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Programme_List.png',
+    url: 'https://cdn.cntrl.site/component-assets/Programme-list-default.png',
   },
   version: 1,
   defaultSize: {

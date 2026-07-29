@@ -375,6 +375,20 @@ function getCSS(P: string): string {
   margin: 0;
   color: var(--${P}-lightbox-counter-color);
 }
+.${P}-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+.${P}-lightbox-editor {
+  inset: auto;
+  top: var(--cntrl-article-top, 0);
+  left: var(--cntrl-article-left, 0);
+  width: var(--cntrl-article-width, 100vw) !important;
+  height: var(--cntrl-viewport-height, 100vh) !important;
+}
 .${P}-control {
   position: relative;
   z-index: 2;
@@ -398,9 +412,11 @@ type GridProps = {
 type AnimRect = { top: number; left: number; width: number; height: number };
 
 type LightboxProps = {
+  prefix: string;
   items: GridMedia[];
   index: number;
   imageDisplay: 'fit' | 'cover';
+  isEditor?: boolean;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -584,7 +600,7 @@ function LightboxVideo({
   );
 }
 
-function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
+function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
   const isCover = imageDisplay === 'cover';
   const containerRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
@@ -717,11 +733,20 @@ function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counter
   useEffect(() => {
     if (phase !== 'open') return;
 
+    let blockClick: ((clickEvent: Event) => void) | null = null;
+
+    const clearBlockSwipeClick = () => {
+      if (!blockClick) return;
+      document.removeEventListener('click', blockClick, true);
+      blockClick = null;
+    };
+
     const blockSwipeClick = () => {
-      const blockClick = (clickEvent: Event) => {
+      clearBlockSwipeClick();
+      blockClick = (clickEvent: Event) => {
         clickEvent.stopPropagation();
         clickEvent.preventDefault();
-        document.removeEventListener('click', blockClick, true);
+        clearBlockSwipeClick();
       };
       document.addEventListener('click', blockClick, true);
     };
@@ -824,9 +849,8 @@ function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counter
         } else {
           swipeOffsetRef.current = 0;
           setSwipeOffset(0);
+          blockSwipeClick();
         }
-
-        blockSwipeClick();
       } else if (axis === 'horizontal' && Math.abs(swipeDeltaXRef.current) > 0) {
         startNavSwipeRelease(swipeDeltaXRef.current);
         blockSwipeClick();
@@ -849,6 +873,7 @@ function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counter
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('touchcancel', handleTouchEnd);
+      clearBlockSwipeClick();
     };
   }, [phase, items.length, onNext, onPrev, setNavSwipeAnimatingState, scheduleNavSwipeSnapBackEnd]);
 
@@ -965,13 +990,11 @@ function Lightbox({ items, index, imageDisplay, onClose, onPrev, onNext, counter
   return (
     <div
       ref={containerRef}
+      className={[
+        `${P}-lightbox`,
+        isEditor ? `${P}-lightbox-editor` : '',
+      ].filter(Boolean).join(' ')}
       style={{
-        position: 'fixed',
-        top: 'var(--cntrl-article-top, 0)',
-        left: 'var(--cntrl-article-left, 0)',
-        width: 'var(--cntrl-article-width, 100vw) !important',
-        height: 'var(--cntrl-viewport-height, 100vh) !important',
-        zIndex: 9997,
         touchAction: phase === 'open' ? 'none' : undefined,
       }}
       onClick={handleClose}
@@ -1702,9 +1725,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         return createPortal(
           <div style={lightboxPortalStyle} data-selection="none">
             <Lightbox
+              prefix={P}
               items={lightboxItems}
               index={lightboxIndex}
               imageDisplay={resolveLightboxImageDisplay(lightboxImageDisplay)}
+              isEditor={isEditor}
               onClose={() => setLightboxOpen(false)}
               onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxItems.length) % lightboxItems.length)}
               onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxItems.length)}

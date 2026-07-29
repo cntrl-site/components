@@ -76,10 +76,11 @@ const schema: ComponentSchemaV1 = {
         },
       },
       cornerRadius: {
-        type: 'object',
+        type: 'number',
         scope: 'layout',
         title: 'Corner radius',
-        display: { type: 'padding-controls' },
+        min: 0,
+        display: { type: 'numeric-input' },
       },
     },
     defaults: {
@@ -98,36 +99,21 @@ const schema: ComponentSchemaV1 = {
         gap: 0.04,
         imageMaxWidth: 0.8,
         imageMaxHeight: 0.8,
-        cornerRadius: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
+        cornerRadius: 0,
       },
       t: {
         speed: 1.64,
         gap: 0.02,
         imageMaxWidth: 0.5208,
         imageMaxHeight: 0.5208,
-        cornerRadius: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
+        cornerRadius: 0,
       },
       d: {
         speed: 1.64,
         gap: 0.02,
         imageMaxWidth: 0.208,
         imageMaxHeight: 0.278,
-        cornerRadius: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
+        cornerRadius: 0,
       },
     },
     displayRules: [
