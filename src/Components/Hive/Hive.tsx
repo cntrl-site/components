@@ -275,17 +275,6 @@ function getCSS(P: string): string {
 .${P}-title-resize-handle {
   background: transparent;
 }
-.${P}-title-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 100%;
-  background: #FF5C02;
-  pointer-events: none;
-}
 .${P}-lightbox {
   position: fixed;
   inset: 0;
