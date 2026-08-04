@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
+import { getContainedMediaTransformOrigin } from '../utils/getImageRect';
 import { scalingValue, useScopedStyles } from '../utils/index';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import {
@@ -91,6 +92,9 @@ function getCSS(P: string): string {
   width: calc(1cap * var(--${P}-image-aspect));
   margin: 0 var(--${P}-image-inline-gap);
 }
+.${P}-item-image-fit {
+  width: calc(1cap * var(--${P}-item-media-aspect, var(--${P}-image-aspect)));
+}
 .${P}-item-image img,
 .${P}-item-image video {
   position: absolute;
@@ -104,7 +108,6 @@ function getCSS(P: string): string {
 }
 .${P}-item-image-hover-scale img,
 .${P}-item-image-hover-scale video {
-  transform-origin: center center;
   transition: transform 0.3s ease;
 }
 .${P}-item-image-hover-scale:hover {
@@ -148,6 +151,13 @@ function getImageAspectRatio(settings: WaterfallSettings | undefined): number {
   const effW = ratioReversed ? rH : rW;
   const effH = ratioReversed ? rW : rH;
   return effH > 0 ? effW / effH : 1;
+}
+
+function getMediaAspectRatio(media: HTMLImageElement | HTMLVideoElement): number | null {
+  const mediaW = media instanceof HTMLVideoElement ? media.videoWidth : media.naturalWidth;
+  const mediaH = media instanceof HTMLVideoElement ? media.videoHeight : media.naturalHeight;
+  if (!mediaW || !mediaH) return null;
+  return mediaW / mediaH;
 }
 
 function getWaterfallTextMetricsVars(
@@ -258,6 +268,31 @@ export function Waterfall({
     ? `${P}-item-image-hover-${imageHoverType}`
     : undefined;
   const imageHoverScale = (imageHoverEffect.value ?? 120) / 100;
+
+  const applyScaleTransformOrigin = useCallback((
+    media: HTMLImageElement | HTMLVideoElement | null,
+  ) => {
+    if (!media || imageHoverType !== 'scale') return;
+    media.style.transformOrigin = getContainedMediaTransformOrigin(media);
+  }, [imageHoverType]);
+
+  const syncFitMediaLayout = useCallback((
+    media: HTMLImageElement | HTMLVideoElement | null,
+  ) => {
+    if (!media) return;
+
+    if (objectFitMode === 'contain') {
+      const aspect = getMediaAspectRatio(media);
+      if (aspect) {
+        const wrapper = media.closest(`.${P}-item-image`);
+        if (wrapper instanceof HTMLElement) {
+          wrapper.style.setProperty(`--${P}-item-media-aspect`, String(aspect));
+        }
+      }
+    }
+
+    applyScaleTransformOrigin(media);
+  }, [P, applyScaleTransformOrigin, objectFitMode]);
 
   const wrapperStyle = {
     width: scalingValue(wrapperWidth, isEditor ?? false),
@@ -375,9 +410,16 @@ export function Waterfall({
                 </span>
               ) : null}
               {item.image?.url ? (
-                <span className={[`${P}-item-image`, imageHoverClass].filter(Boolean).join(' ')}>
+                <span
+                  className={[
+                    `${P}-item-image`,
+                    objectFitMode === 'contain' ? `${P}-item-image-fit` : undefined,
+                    imageHoverClass,
+                  ].filter(Boolean).join(' ')}
+                >
                   {item.image.type === 'video' ? (
                     <video
+                      ref={syncFitMediaLayout}
                       src={item.image.url}
                       data-waterfall-index={index}
                       style={imageStyle}
@@ -386,14 +428,17 @@ export function Waterfall({
                       loop
                       autoPlay
                       onClick={handleOpen}
+                      onLoadedData={(e) => syncFitMediaLayout(e.currentTarget)}
                     />
                   ) : (
                     <img
+                      ref={syncFitMediaLayout}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
                       data-waterfall-index={index}
                       style={imageStyle}
                       onClick={handleOpen}
+                      onLoad={(e) => syncFitMediaLayout(e.currentTarget)}
                     />
                   )}
                 </span>
