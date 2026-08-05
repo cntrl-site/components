@@ -34,7 +34,7 @@ export const useLightboxScrollLock = () => {
       document.body.style.top = originalBodyTop;
       document.body.style.width = originalBodyWidth;
       document.documentElement.style.overflow = originalHtmlOverflow;
-      window.scrollTo(0, scrollY);
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
     };
   }, []);
 };
