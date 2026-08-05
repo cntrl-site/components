@@ -296,6 +296,13 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto auto',
     properties: {
+      type: {
+        type: 'string',
+        scope: 'layout',
+        title: '',
+        display: { type: 'radio-group' },
+        enum: ['a', 'b', 'c'],
+      },
       wrapperWidth: {
         type: 'number',
         scope: 'layout',
@@ -535,6 +542,7 @@ const schema: ComponentSchemaV1 = {
       ...lightboxTextStylePropertiesByPrefix,
     },
     defaults: {
+      type: 'a',
       imageDisplay: {
         display: 'fit',
         ratioValue: '2:3',
@@ -649,6 +657,7 @@ const schema: ComponentSchemaV1 = {
     },
     layout: [
       '__componentName__',
+      'type',
       'wrapperWidth',
       'imageDisplay',
       'lightbox',
@@ -679,6 +688,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         '__componentName__',
+        'type',
         { type: 'row', title: '', items: ['wrapperWidth', 'lightbox'] },
         { type: 'row', title: 'Image', items: ['imageDisplay', 'imageHoverEffect'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },

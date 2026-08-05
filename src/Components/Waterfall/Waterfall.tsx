@@ -26,6 +26,7 @@ export type WaterfallContentItem = {
 };
 
 export type WaterfallSettings = {
+  type?: 'a' | 'b' | 'c';
   wrapperWidth?: number;
   imageDisplay?: {
     display: 'fit' | 'cover';
@@ -82,6 +83,18 @@ function getCSS(P: string): string {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+.${P}-type-a.${P}-wrapper,
+.${P}-type-a .${P}-item-title {
+  text-align: left;
+}
+.${P}-type-b.${P}-wrapper,
+.${P}-type-b .${P}-item-title {
+  text-align: center;
+}
+.${P}-type-c.${P}-wrapper,
+.${P}-type-c .${P}-item-title {
+  text-align: right;
 }
 .${P}-item-image {
   display: inline-block;
@@ -246,6 +259,7 @@ export function Waterfall({
   const { prefix: P } = useScopedStyles();
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const items = content ?? [];
+  const type = settings?.type ?? 'a';
   const wrapperWidth = typeof settings?.wrapperWidth === 'number' ? settings.wrapperWidth : 1;
   const horizontalGap = typeof settings?.horizontalGap === 'number' ? settings.horizontalGap : 0;
   const horizontalGapScaled = scalingValue(horizontalGap, isEditor ?? false);
@@ -383,7 +397,7 @@ export function Waterfall({
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <PreloadedMediaPool mediaList={allMedia} />
-      <div ref={containerRef} className={`${P}-wrapper`} style={wrapperStyle}>
+      <div ref={containerRef} className={`${P}-wrapper ${P}-type-${type}`} style={wrapperStyle}>
         {items.map((item, index) => {
           const hasLightbox = Boolean(item.image?.url);
           const handleOpen = createWaterfallItemOpenHandler(
