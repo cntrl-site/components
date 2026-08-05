@@ -34,7 +34,6 @@ export const useLightboxScrollLock = () => {
       document.body.style.top = originalBodyTop;
       document.body.style.width = originalBodyWidth;
       document.documentElement.style.overflow = originalHtmlOverflow;
-      // scroll-behavior, which animates the restore when that is `smooth`.
       window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
     };
   }, []);
