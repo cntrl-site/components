@@ -1818,8 +1818,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
   const cutEnabled = (cut ?? 0) > 0;
   const isVerticalLayout = type === 'b';
   const containerRef = useRef<HTMLDivElement>(null);
-  const firstEntryRef = useRef<HTMLElement | null>(null);
-  const [firstEntryHandleTopPx, setFirstEntryHandleTopPx] = useState<number | null>(null);
+  const firstRowRef = useRef<HTMLElement | null>(null);
+  const [firstRowHandleCenterOffsetPx, setFirstRowHandleCenterOffsetPx] = useState<number | null>(null);
   const [designWidth, setDesignWidth] = useState(ARTICLE_DESIGN_WIDTH);
   const minColumnWidth = getListMinColumnWidth(designWidth);
 
@@ -2177,27 +2177,27 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   useLayoutEffect(() => {
     if (!showControls || isVerticalLayout) {
-      setFirstEntryHandleTopPx(null);
+      setFirstRowHandleCenterOffsetPx(null);
       return;
     }
 
-    const el = firstEntryRef.current;
+    const el = firstRowRef.current;
     const container = el?.parentElement;
     if (!el || !container) {
-      setFirstEntryHandleTopPx(null);
+      setFirstRowHandleCenterOffsetPx(null);
       return;
     }
 
     const update = () => {
       const rowContent = el.querySelector('[data-list-row]');
       if (!rowContent) {
-        setFirstEntryHandleTopPx(null);
+        setFirstRowHandleCenterOffsetPx(null);
         return;
       }
 
       const containerRect = container.getBoundingClientRect();
       const rowRect = rowContent.getBoundingClientRect();
-      setFirstEntryHandleTopPx(rowRect.top - containerRect.top + rowRect.height / 2);
+      setFirstRowHandleCenterOffsetPx(rowRect.top - containerRect.top + rowRect.height / 2);
     };
 
     update();
@@ -2436,7 +2436,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               return (
               <RowElement
                 key={row.id}
-                ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstEntryRef.current = el; } : undefined}
+                ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstRowRef.current = el; } : undefined}
                 className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}${showCutLabel && rowIdx === visibleRows.length - 1 ? ` ${P}-list-item-before-cut` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
@@ -2670,7 +2670,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 )}
                 data-controls-center-only-drag=""
                 data-controls-hit-placement="center-x"
-                data-controls-hit-top={firstEntryHandleTopPx ?? undefined}
+                data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
                 className={`${P}-control-anchor`}
                 style={{
                   top: 0,
@@ -2691,7 +2691,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 )}
                 data-controls-center-only-drag=""
                 data-controls-hit-placement="center-x"
-                data-controls-hit-top={firstEntryHandleTopPx ?? undefined}
+                data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
                 className={`${P}-control-anchor`}
                 style={{
                   top: 0,
@@ -2729,7 +2729,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   )}
                   data-controls-center-only-drag=""
                   data-controls-hit-placement="center-x"
-                  data-controls-hit-top={firstEntryHandleTopPx ?? undefined}
+                  data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
                   className={`${P}-control-anchor`}
                   style={{
                     top: 0,
@@ -2748,7 +2748,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   )}
                   data-controls-center-only-drag=""
                   data-controls-hit-placement="center-x"
-                  data-controls-hit-top={firstEntryHandleTopPx ?? undefined}
+                  data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
                   className={`${P}-control-anchor`}
                   style={{
                     top: 0,
