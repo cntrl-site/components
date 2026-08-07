@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
-import { PaddingControl } from '../helpers/PaddingControl/PaddingControl';
 import type { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
@@ -443,56 +442,14 @@ a.${P}-list-item {
 }
 
 .${P}-col-resize-handle,
-.${P}-padding-control-handle,
-.${P}-text-padding-lr-handle {
+.${P}-control-anchor {
   background: transparent;
 }
 
-.${P}-padding-control-handle[data-controls-axis="x"][data-controls-variant="column-padding"]::after,
-.${P}-text-padding-lr-handle::after {
-  content: '';
+.${P}-control-anchor {
   position: absolute;
-  top: var(--${P}-first-entry-handle-top, 50%);
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 12px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
   pointer-events: none;
-}
-
-.${P}-text-padding-lr-handle::after {
-  top: 50%;
-}
-
-.${P}-padding-control-handle[data-controls-axis="y"]::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 4px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
-.${P}-padding-control-handle[data-controls-variant="row-padding"][data-controls-axis="y"]::after,
-.${P}-padding-control-handle[data-controls-variant="column-padding"][data-controls-axis="y"]::after {
-  left: 20px;
-  transform: translateY(-50%);
-}
-
-.${P}-wrapper.${P}-type-b .${P}-padding-control-handle[data-controls-variant="row-padding"][data-controls-axis="y"]::after,
-.${P}-wrapper.${P}-type-b .${P}-padding-control-handle[data-controls-variant="column-padding"][data-controls-axis="y"]::after {
-  left: 50%;
-  transform: translate(-50%, -50%);
+  z-index: 2;
 }
 
 .${P}-row-padding-handle {
@@ -507,26 +464,6 @@ a.${P}-list-item {
 
 .${P}-list-cols-row-controls {
   position: relative;
-}
-
-.${P}-col-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 100%;
-  background: #FF5C02;
-  pointer-events: none;
-}
-
-.${P}-wrapper.${P}-type-b .${P}-col-resize-handle::after {
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  width: 100%;
-  height: 2px;
 }
 
 .${P}-wrapper.${P}-entry-hover-default .${P}-list-item-has-link,
@@ -556,19 +493,19 @@ a.${P}-list-item {
 
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item-has-link:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default:has(.${P}-cut-item:hover) .${P}-list-item-before-cut,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default .${P}-cut-item:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-default.${P}-state-hover .${P}-cut-item,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item-has-link:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds:has(.${P}-cut-item:hover) .${P}-list-item-before-cut,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds .${P}-cut-item:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-blinds.${P}-state-hover .${P}-cut-item,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item-has-link:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item:has(+ .${P}-list-item-has-link:hover),
-.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-list-item:has(+ .${P}-cut-item:hover),
+.${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal:has(.${P}-cut-item:hover) .${P}-list-item-before-cut,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-list-item-has-link,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal .${P}-cut-item:hover,
 .${P}-wrapper.${P}-divider-bottom.${P}-entry-hover-reveal.${P}-state-hover .${P}-cut-item {
@@ -1881,8 +1818,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
   const cutEnabled = (cut ?? 0) > 0;
   const isVerticalLayout = type === 'b';
   const containerRef = useRef<HTMLDivElement>(null);
-  const firstEntryRef = useRef<HTMLElement | null>(null);
-  const [firstEntryHandleTopPx, setFirstEntryHandleTopPx] = useState<number | null>(null);
+  const firstRowRef = useRef<HTMLElement | null>(null);
+  const [firstRowHandleCenterOffsetPx, setFirstRowHandleCenterOffsetPx] = useState<number | null>(null);
   const [designWidth, setDesignWidth] = useState(ARTICLE_DESIGN_WIDTH);
   const minColumnWidth = getListMinColumnWidth(designWidth);
 
@@ -2146,7 +2083,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     : (rowPaddingTop ?? 0);
   const resolvedRowPaddingBottom = rowPaddingBottom ?? 0;
   const resolvedCellMinHeight = cellMinHeight ?? 0;
-  const firstEntryContentCenter = resolvedRowPaddingTop + resolvedCellMinHeight / 2;
   const rowPaddingBottomControlHeight = Math.max(resolvedRowPaddingBottom, ROW_PADDING_HANDLE_HEIGHT);
   const firstEntryBorderTopWidth = getEntryDividerWidths(
     0,
@@ -2157,9 +2093,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     dividerWidth ?? 0,
     isEditor ?? false,
   ).borderTopWidth;
-  const firstEntryHandleTop = firstEntryHandleTopPx != null
-    ? `${firstEntryHandleTopPx}px`
-    : `calc(${firstEntryBorderTopWidth} + ${scaled(firstEntryContentCenter)})`;
   const rowPaddingTopControlKey = isVerticalLayout ? 'rowPaddingTopB' : 'rowPaddingTop';
   const firstColumn = listColumns[0];
   const lastColumn = listColumns[listColumns.length - 1];
@@ -2244,27 +2177,27 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   useLayoutEffect(() => {
     if (!showControls || isVerticalLayout) {
-      setFirstEntryHandleTopPx(null);
+      setFirstRowHandleCenterOffsetPx(null);
       return;
     }
 
-    const el = firstEntryRef.current;
+    const el = firstRowRef.current;
     const container = el?.parentElement;
     if (!el || !container) {
-      setFirstEntryHandleTopPx(null);
+      setFirstRowHandleCenterOffsetPx(null);
       return;
     }
 
     const update = () => {
       const rowContent = el.querySelector('[data-list-row]');
       if (!rowContent) {
-        setFirstEntryHandleTopPx(null);
+        setFirstRowHandleCenterOffsetPx(null);
         return;
       }
 
       const containerRect = container.getBoundingClientRect();
       const rowRect = rowContent.getBoundingClientRect();
-      setFirstEntryHandleTopPx(rowRect.top - containerRect.top + rowRect.height / 2);
+      setFirstRowHandleCenterOffsetPx(rowRect.top - containerRect.top + rowRect.height / 2);
     };
 
     update();
@@ -2482,9 +2415,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           className={`${P}-wrapper ${wrapperStateClasses}${dividerClassNames ? ` ${dividerClassNames}` : ''}${isVerticalLayout ? ` ${P}-type-b` : ''}`.trim()}
           style={{
             width: scalingValue(wrapperWidth ?? 0, isEditor),
-            ...(!isVerticalLayout && showControls
-              ? { [`--${P}-first-entry-handle-top`]: firstEntryHandleTop }
-              : {}),
           }}
           onMouseMove={showHoverImage ? handleWrapperMouseMove : undefined}
           onMouseLeave={showHoverImage ? handleWrapperMouseLeave : undefined}
@@ -2506,8 +2436,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               return (
               <RowElement
                 key={row.id}
-                ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstEntryRef.current = el; } : undefined}
-                className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}`}
+                ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstRowRef.current = el; } : undefined}
+                className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}${showCutLabel && rowIdx === visibleRows.length - 1 ? ` ${P}-list-item-before-cut` : ''}`}
                 {...(hasLink ? { href: row.link, target: '_blank' } : {})}
                 style={rowStyle}
                 onMouseEnter={(event) => {
@@ -2624,17 +2554,15 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                           />
                         )}
                         {columnPaddingBottomOverlay && (
-                          <PaddingControl
-                            centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+                          <div
                             data-controls={col.paddingBottomKey}
-                            data-controls-static-handle=""
                             data-controls-axis="y"
                             data-controls-variant="column-padding"
                             data-controls-min="0"
-                            className={`${P}-padding-control-handle`}
-                            hitPlacement="center"
-                            areaStyle={{
-                              position: 'absolute',
+                            data-controls-center-only-drag=""
+                            data-controls-hit-placement="center"
+                            className={`${P}-control-anchor`}
+                            style={{
                               bottom: 0,
                               left: 0,
                               width: '100%',
@@ -2647,39 +2575,35 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   })}
                   {showControls && rowIdx === 0 && isVerticalLayout && (
                     <>
-                      <PaddingControl
-                        centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+                      <div
                         data-controls="textPaddingLR"
-                        data-controls-static-handle=""
                         data-controls-paired=""
                         data-controls-axis="x"
                         data-controls-variant="column-padding"
                         data-controls-min="0"
                         data-controls-max-fraction={String(textPaddingLRMaxFraction)}
-                        className={`${P}-text-padding-lr-handle`}
-                        hitPlacement="center"
-                        areaStyle={{
-                          position: 'absolute',
+                        data-controls-center-only-drag=""
+                        data-controls-hit-placement="center"
+                        className={`${P}-control-anchor`}
+                        style={{
                           top: 0,
                           left: 0,
                           width: scaled(textPaddingLRHandleWidth),
                           height: '100%',
                         }}
                       />
-                      <PaddingControl
-                        centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+                      <div
                         data-controls="textPaddingLR"
-                        data-controls-static-handle=""
                         data-controls-paired=""
                         data-controls-axis="x"
                         data-controls-variant="column-padding"
                         data-controls-reverse=""
                         data-controls-min="0"
                         data-controls-max-fraction={String(textPaddingLRMaxFraction)}
-                        className={`${P}-text-padding-lr-handle`}
-                        hitPlacement="center"
-                        areaStyle={{
-                          position: 'absolute',
+                        data-controls-center-only-drag=""
+                        data-controls-hit-placement="center"
+                        className={`${P}-control-anchor`}
+                        style={{
                           top: 0,
                           left: scaled(Math.max(textPaddingLRHandleWidth, resolvedContentWidth - textPaddingLRHandleWidth)),
                           width: scaled(textPaddingLRHandleWidth),
@@ -2696,18 +2620,15 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   />
                 )}
                 {showControls && rowIdx === 0 && !isVerticalLayout && (
-                  <PaddingControl
-                    centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+                  <div
                     data-controls="rowPaddingBottom"
-                    data-controls-static-handle=""
-                    data-controls-handle-left="20"
                     data-controls-axis="y"
                     data-controls-variant="row-padding"
                     data-controls-min="0"
-                    className={`${P}-padding-control-handle`}
-                    hitPlacement="left-y"
-                    areaStyle={{
-                      position: 'absolute',
+                    data-controls-center-only-drag=""
+                    data-controls-hit-placement="left-y"
+                    className={`${P}-control-anchor`}
+                    style={{
                       bottom: 0,
                       left: 0,
                       width: '100%',
@@ -2720,18 +2641,15 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             })}
           {showControls && (
             <div key="row-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-              <PaddingControl
-                centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+              <div
                 data-controls={rowPaddingTopControlKey}
-                data-controls-static-handle=""
-                {...(!isVerticalLayout ? { 'data-controls-handle-left': '20' } : {})}
                 data-controls-axis="y"
                 data-controls-variant="row-padding"
                 data-controls-min="0"
-                className={`${P}-padding-control-handle`}
-                hitPlacement={isVerticalLayout ? 'center' : 'left-y'}
-                areaStyle={{
-                  position: 'absolute',
+                data-controls-center-only-drag=""
+                data-controls-hit-placement={isVerticalLayout ? 'center' : 'left-y'}
+                className={`${P}-control-anchor`}
+                style={{
                   top: firstEntryBorderTopWidth,
                   left: 0,
                   width: '100%',
@@ -2742,30 +2660,27 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
           )}
           {showControls && !isVerticalLayout && firstColumn && lastColumn && (
             <div key="column-edge-padding-handles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-              <PaddingControl
-                centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+              <div
                 data-controls={firstColumn.paddingLeftKey}
-                data-controls-static-handle=""
                 data-controls-axis="x"
                 data-controls-variant="column-padding"
                 data-controls-min="0"
                 data-controls-max-fraction={String(
                   effectiveColumnWidths[0] - (firstColumnEffectivePadding?.paddingRight ?? 0),
                 )}
-                className={`${P}-padding-control-handle`}
-                hitPlacement="center-x"
-                areaStyle={{
-                  position: 'absolute',
+                data-controls-center-only-drag=""
+                data-controls-hit-placement="center-x"
+                data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
+                className={`${P}-control-anchor`}
+                style={{
                   top: 0,
                   left: 0,
                   width: scaled(firstColumnPaddingLeftWidth),
                   height: '100%',
                 }}
               />
-              <PaddingControl
-                centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+              <div
                 data-controls={lastColumn.paddingRightKey}
-                data-controls-static-handle=""
                 data-controls-axis="x"
                 data-controls-variant="column-padding"
                 data-controls-reverse=""
@@ -2774,10 +2689,11 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   effectiveColumnWidths[listColumns.length - 1]
                     - (lastColumnEffectivePadding?.paddingLeft ?? 0),
                 )}
-                className={`${P}-padding-control-handle`}
-                hitPlacement="center-x"
-                areaStyle={{
-                  position: 'absolute',
+                data-controls-center-only-drag=""
+                data-controls-hit-placement="center-x"
+                data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
+                className={`${P}-control-anchor`}
+                style={{
                   top: 0,
                   left: scaled(columnsRightEdge - lastColumnPaddingRightWidth),
                   width: scaled(lastColumnPaddingRightWidth),
@@ -2802,10 +2718,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
             return (
               <div key={`${col.paddingRightKey}-padding`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-                <PaddingControl
-                  centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+                <div
                   data-controls={col.paddingRightKey}
-                  data-controls-static-handle=""
                   data-controls-axis="x"
                   data-controls-variant="column-padding"
                   data-controls-reverse=""
@@ -2813,30 +2727,30 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                   data-controls-max-fraction={String(
                     effectiveColumnWidths[colIndex] - colEffectivePadding.paddingLeft,
                   )}
-                  className={`${P}-padding-control-handle`}
-                  hitPlacement="center-x"
-                  areaStyle={{
-                    position: 'absolute',
+                  data-controls-center-only-drag=""
+                  data-controls-hit-placement="center-x"
+                  data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
+                  className={`${P}-control-anchor`}
+                  style={{
                     top: 0,
                     left: scaled(boundaryOffset - paddingRightWidth),
                     width: scaled(paddingRightWidth),
                     height: '100%',
                   }}
                 />
-                <PaddingControl
-                  centerXHitTop={`var(--${P}-first-entry-handle-top, 50%)`}
+                <div
                   data-controls={nextCol.paddingLeftKey}
-                  data-controls-static-handle=""
                   data-controls-axis="x"
                   data-controls-variant="column-padding"
                   data-controls-min="0"
                   data-controls-max-fraction={String(
                     effectiveColumnWidths[colIndex + 1] - nextColEffectivePadding.paddingRight,
                   )}
-                  className={`${P}-padding-control-handle`}
-                  hitPlacement="center-x"
-                  areaStyle={{
-                    position: 'absolute',
+                  data-controls-center-only-drag=""
+                  data-controls-hit-placement="center-x"
+                  data-controls-hit-top={firstRowHandleCenterOffsetPx ?? undefined}
+                  className={`${P}-control-anchor`}
+                  style={{
                     top: 0,
                     left: scaled(boundaryOffset),
                     width: scaled(paddingLeftWidth),
@@ -2860,7 +2774,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               <div key={`${col.widthKey}-junction`} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
                 <div
                   data-controls={col.widthKey}
-                  data-controls-static-handle=""
                   data-controls-axis="x"
                   data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
                   data-controls-max-fraction={String(maxColumnWidth)}

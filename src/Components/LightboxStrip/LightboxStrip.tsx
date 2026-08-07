@@ -360,18 +360,6 @@ function getCSS(P: string): string {
   background: transparent;
 }
 
-.${P}-title-resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 100%;
-  background: #FF5C02;
-  pointer-events: none;
-}
-
 .${P}-lightbox-content-inner {
   position: absolute;
   inset: 0;
