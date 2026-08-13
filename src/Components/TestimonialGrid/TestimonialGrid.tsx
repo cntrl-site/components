@@ -7,7 +7,8 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { readTestimonialTextMeasure } from '../utils/readTestimonialTextMeasure';
 
-function getCSS(P: string): string {
+function getCSS(P: string, distancePx: number): string {
+  const distance = distancePx > 0 ? `${distancePx}px` : '0px';
   return `
 .${P}-marquee-wrapper {
   overflow: hidden;
@@ -16,13 +17,13 @@ function getCSS(P: string): string {
 }
 
 @keyframes ${P}-marquee-left {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(calc(-1 * var(--marquee-distance)), 0, 0); }
+  from { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+  to { -webkit-transform: translate3d(-${distance}, 0, 0); transform: translate3d(-${distance}, 0, 0); }
 }
 
 @keyframes ${P}-marquee-right {
-  from { transform: translate3d(calc(-1 * var(--marquee-distance)), 0, 0); }
-  to { transform: translate3d(0, 0, 0); }
+  from { -webkit-transform: translate3d(-${distance}, 0, 0); transform: translate3d(-${distance}, 0, 0); }
+  to { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
 }
 
 .${P}-marquee-track {
@@ -35,17 +36,19 @@ function getCSS(P: string): string {
   -webkit-backface-visibility: hidden;
   -webkit-transform: translateZ(0);
   perspective: 1000px;
-  animation-duration: var(--marquee-duration);
+  -webkit-animation-timing-function: linear;
   animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
   animation-iteration-count: infinite;
-  animation-play-state: var(--marquee-play-state, running);
 }
 
 .${P}-marquee-track[data-direction="left"] {
+  -webkit-animation-name: ${P}-marquee-left;
   animation-name: ${P}-marquee-left;
 }
 
 .${P}-marquee-track[data-direction="right"] {
+  -webkit-animation-name: ${P}-marquee-right;
   animation-name: ${P}-marquee-right;
 }
 
@@ -109,6 +112,14 @@ type TestimonialsProps = {
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
 const MIN_TRACK_COPIES = 2;
 
+const restartTrackAnimation = (track: HTMLElement) => {
+  track.style.setProperty('animation-name', 'none');
+  track.style.setProperty('-webkit-animation-name', 'none');
+  void track.offsetHeight;
+  track.style.removeProperty('animation-name');
+  track.style.removeProperty('-webkit-animation-name');
+};
+
 type RenderCardOpts = {
   textMinHeightPx?: number;
   captionMinHeightPx?: number;
@@ -136,6 +147,8 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
   const setRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [setWidth, setSetWidth] = useState(0);
+  const animationDistance = setWidth > 0 ? setWidth : 0;
+  const scopedCss = useMemo(() => getCSS(P, animationDistance), [P, animationDistance]);
   const [trackHeight, setTrackHeight] = useState(0);
   const hoverPauseEnabled = autoplayEnabled && (pauseOnHover === 'on');
   const [isHovering, setIsHovering] = useState(false);
@@ -218,15 +231,15 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
     };
   }, [autoplayEnabled, useMarqueeTrack, setWidth]);
 
+  const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
+  const durationS = `${Math.max(0, durationMs) / 1000}s`;
+
   useLayoutEffect(() => {
+    if (!useMarqueeTrack || animationDistance <= 0) return;
     const track = trackRef.current;
-    if (!useMarqueeTrack || !track) return;
-    const safeSetWidth = setWidth > 0 ? setWidth : 0;
-    const durationMs = safeSetWidth > 0 && pxPerSec > 0 ? (safeSetWidth / pxPerSec) * 1000 : 0;
-    const durationS = `${Math.max(0, durationMs) / 1000}s`;
-    track.style.setProperty('--marquee-distance', `${safeSetWidth}px`);
-    track.style.setProperty('--marquee-duration', durationS);
-  }, [autoplayEnabled, useMarqueeTrack, pxPerSec, setWidth]);
+    if (!track) return;
+    restartTrackAnimation(track);
+  }, [useMarqueeTrack, animationDistance, direction]);
 
   useLayoutEffect(() => {
     if (!useMarqueeTrack) {
@@ -511,7 +524,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
           ...(trackHeight > 0 ? { height: trackHeight } : {}),
         }}
       >
-        <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+        <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
         {measureLayerEl}
         <div
           ref={trackRef}
@@ -530,7 +543,10 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
             perspective: '1000px',
-            ...( { '--marquee-play-state': marqueePlayState } as React.CSSProperties),
+            animationDuration: durationS,
+            WebkitAnimationDuration: durationS,
+            animationPlayState: marqueePlayState,
+            WebkitAnimationPlayState: marqueePlayState,
           }}
         >
           {Array.from({ length: copies }, (_, copyIndex) => (
@@ -559,7 +575,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
 
   return (
     <div className={`${P}-wrapper`}>
-      <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
+      <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       {measureLayerEl}
       <div
         style={{

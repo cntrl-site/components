@@ -5,7 +5,6 @@ import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
-import { PaddingControl } from '../helpers/PaddingControl/PaddingControl';
 
 type FAQContentItem = {
   question?: string;
@@ -284,40 +283,10 @@ function getCSS(P: string): string {
 .${P}-answer-controls {
   position: relative;
 }
-.${P}-padding-control-handle {
-  background: transparent;
-}
-.${P}-padding-control-handle[data-controls-axis="x"][data-controls-variant="column-padding"]::after {
-  content: '';
+.${P}-control-anchor {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 4px;
-  height: 12px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
   pointer-events: none;
-}
-.${P}-padding-control-handle[data-controls-axis="y"]::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 4px;
-  background: #FF5C02;
-  border: 1px solid #FFFFFF;
-  border-radius: 5px;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-.${P}-padding-control-handle[data-controls-variant="row-padding"][data-controls-axis="y"]::after {
-  left: 20px;
-  transform: translateY(-50%);
+  z-index: 2;
 }
 `;
 }
@@ -553,59 +522,52 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                 <div className={`${P}-question-controls`}>
                   {showPaddingControls && (
                     <>
-                      <PaddingControl
+                      <div
                         data-controls="questionPaddingTop"
-                        data-controls-static-handle=""
-                        data-controls-handle-left="20"
                         data-controls-axis="y"
                         data-controls-variant="row-padding"
                         data-controls-min="0"
-                        className={`${P}-padding-control-handle`}
-                        hitPlacement="left-y"
-                        areaStyle={{
-                          position: 'absolute',
+                        data-controls-center-only-drag=""
+                        data-controls-hit-placement="left-y"
+                        className={`${P}-control-anchor`}
+                        style={{
                           top: 0,
                           left: 0,
                           width: '100%',
                           height: scaled(questionPaddingTopHeight),
-                          zIndex: 2,
                         }}
                       />
-                      <PaddingControl
+                      <div
                         data-controls="questionPaddingLeft"
-                        data-controls-static-handle=""
                         data-controls-axis="x"
                         data-controls-variant="column-padding"
                         data-controls-min="0"
                         data-controls-max-fraction={String(questionPaddingLeftMaxFraction)}
-                        className={`${P}-padding-control-handle`}
-                        hitPlacement="center-x"
-                        areaStyle={{
-                          position: 'absolute',
+                        data-controls-center-only-drag=""
+                        data-controls-hit-placement="center-x"
+                        className={`${P}-control-anchor`}
+                        style={{
                           top: 0,
                           left: 0,
                           width: scaled(questionPaddingLeftWidth),
                           height: '100%',
-                          zIndex: 2,
                         }}
                       />
-                      <PaddingControl
+                      <div
                         data-controls="iconPaddingRight"
-                        data-controls-static-handle=""
                         data-controls-axis="x"
                         data-controls-variant="column-padding"
                         data-controls-reverse=""
                         data-controls-min="0"
                         data-controls-max-fraction={String(iconPaddingRightMaxFraction)}
-                        className={`${P}-padding-control-handle`}
-                        hitPlacement="center-x"
-                        areaStyle={{
-                          position: 'absolute',
+                        data-controls-center-only-drag=""
+                        data-controls-hit-placement="center-x"
+                        className={`${P}-control-anchor`}
+                        style={{
                           top: 0,
                           right: 0,
                           width: scaled(iconPaddingRightWidth),
                           height: '100%',
-                          zIndex: 2,
                         }}
                       />
                     </>
@@ -655,22 +617,19 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                     )}
                   </button>
                   {showPaddingControls && (
-                    <PaddingControl
+                    <div
                       data-controls="questionPaddingBottom"
-                      data-controls-static-handle=""
-                      data-controls-handle-left="20"
                       data-controls-axis="y"
                       data-controls-variant="row-padding"
                       data-controls-min="0"
-                      className={`${P}-padding-control-handle`}
-                      hitPlacement="left-y"
-                      areaStyle={{
-                        position: 'absolute',
+                      data-controls-center-only-drag=""
+                      data-controls-hit-placement="left-y"
+                      className={`${P}-control-anchor`}
+                      style={{
                         bottom: 0,
                         left: 0,
                         width: '100%',
                         height: scaled(questionPaddingBottomHeight),
-                        zIndex: 2,
                       }}
                     />
                   )}
@@ -681,59 +640,52 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                       <div className={`${P}-answer-controls`}>
                         {showPaddingControls && isOpen && (
                           <>
-                            <PaddingControl
+                            <div
                               data-controls="answerPaddingTop"
-                              data-controls-static-handle=""
-                              data-controls-handle-left="20"
                               data-controls-axis="y"
                               data-controls-variant="row-padding"
                               data-controls-min="0"
-                              className={`${P}-padding-control-handle`}
-                              hitPlacement="left-y"
-                              areaStyle={{
-                                position: 'absolute',
+                              data-controls-center-only-drag=""
+                              data-controls-hit-placement="left-y"
+                              className={`${P}-control-anchor`}
+                              style={{
                                 top: 0,
                                 left: 0,
                                 width: '100%',
                                 height: scaled(answerPaddingTopHeight),
-                                zIndex: 2,
                               }}
                             />
-                            <PaddingControl
+                            <div
                               data-controls="answerPaddingLeft"
-                              data-controls-static-handle=""
                               data-controls-axis="x"
                               data-controls-variant="column-padding"
                               data-controls-min="0"
                               data-controls-max-fraction={String(answerPaddingLeftMaxFraction)}
-                              className={`${P}-padding-control-handle`}
-                              hitPlacement="center-x"
-                              areaStyle={{
-                                position: 'absolute',
+                              data-controls-center-only-drag=""
+                              data-controls-hit-placement="center-x"
+                              className={`${P}-control-anchor`}
+                              style={{
                                 top: 0,
                                 left: 0,
                                 width: scaled(answerPaddingLeftWidth),
                                 height: '100%',
-                                zIndex: 2,
                               }}
                             />
-                            <PaddingControl
+                            <div
                               data-controls="answerPaddingRight"
-                              data-controls-static-handle=""
                               data-controls-axis="x"
                               data-controls-variant="column-padding"
                               data-controls-reverse=""
                               data-controls-min="0"
                               data-controls-max-fraction={String(answerPaddingRightMaxFraction)}
-                              className={`${P}-padding-control-handle`}
-                              hitPlacement="center-x"
-                              areaStyle={{
-                                position: 'absolute',
+                              data-controls-center-only-drag=""
+                              data-controls-hit-placement="center-x"
+                              className={`${P}-control-anchor`}
+                              style={{
                                 top: 0,
                                 right: 0,
                                 width: scaled(answerPaddingRightWidth),
                                 height: '100%',
-                                zIndex: 2,
                               }}
                             />
                           </>
@@ -764,22 +716,19 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                           />
                         )}
                         {showPaddingControls && isOpen && (
-                          <PaddingControl
+                          <div
                             data-controls="answerPaddingBottom"
-                            data-controls-static-handle=""
-                            data-controls-handle-left="20"
                             data-controls-axis="y"
                             data-controls-variant="row-padding"
                             data-controls-min="0"
-                            className={`${P}-padding-control-handle`}
-                            hitPlacement="left-y"
-                            areaStyle={{
-                              position: 'absolute',
+                            data-controls-center-only-drag=""
+                            data-controls-hit-placement="left-y"
+                            className={`${P}-control-anchor`}
+                            style={{
                               bottom: 0,
                               left: 0,
                               width: '100%',
                               height: scaled(answerPaddingBottomHeight),
-                              zIndex: 2,
                             }}
                           />
                         )}
