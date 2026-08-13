@@ -247,7 +247,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Transition',
-        display: { type: 'toggle-cycle', enum: ['default', 'fade', 'retype', 'scroll'] },
+        display: { type: 'toggle-cycle', enum: ['fade', 'retype', 'scroll'] },
       },
       titleColor: {
         type: 'string',
@@ -373,7 +373,7 @@ const schema: ComponentSchemaV1 = {
       type: 'a',
       imgCaption: 'on',
       position: 'center',
-      transition: 'default',
+      transition: 'scroll',
       titleColor: '#000000',
       titleFontFamily: 'Arial',
       titleFontSettings: {

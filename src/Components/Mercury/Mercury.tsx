@@ -250,7 +250,7 @@ export type MercurySettings = {
   imgCaption?: 'on' | 'off';
   position?: 'left' | 'center' | 'right' | 'top';
   titleTopPadding?: number;
-  transition?: 'default' | 'fade' | 'retype' | 'scroll';
+  transition?: 'fade' | 'retype' | 'scroll';
   titleColor?: string;
   titleFontFamily?: string;
   titleFontSettings?: { fontWeight: number; fontStyle: string };
@@ -1187,12 +1187,25 @@ function GalleryWithEdgePadding({
 
 type TitlePosition = 'left' | 'center' | 'right' | 'top';
 
+type MercuryTransition = 'fade' | 'retype' | 'scroll';
+
+function resolveTransition(value?: string): MercuryTransition {
+  switch (value) {
+    case 'fade':
+    case 'retype':
+    case 'scroll':
+      return value;
+    case 'default':
+      return 'scroll';
+    default:
+      return 'scroll';
+  }
+}
+
 function StickyTitle({
   P,
   title,
   position,
-  transition,
-  opacity,
   titleRef,
   titleClassName,
   titleContainerStyle,
@@ -1201,8 +1214,6 @@ function StickyTitle({
   P: string;
   title?: string;
   position: TitlePosition;
-  transition: 'default' | 'fade' | 'retype' | 'scroll';
-  opacity: number;
   titleRef: (element: HTMLDivElement | null) => void;
   titleClassName: string;
   titleContainerStyle: React.CSSProperties;
@@ -1224,10 +1235,6 @@ function StickyTitle({
     return () => observer.disconnect();
   }, [displayedTitle]);
 
-  const resolvedOpacity = transition === 'fade'
-    ? opacity
-    : 1;
-
   return (
     <div
       ref={(element) => {
@@ -1240,7 +1247,6 @@ function StickyTitle({
       ].join(' ')}
       style={{
         [`--${P}-title-height`]: `${height}px`,
-        opacity: resolvedOpacity,
         ...titleContainerStyle,
       } as React.CSSProperties}
     >
@@ -1398,14 +1404,14 @@ export function Mercury({
   const cornerRadius = settings?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
   const position = settings?.position ?? 'center';
   const titleTopPadding = settings?.titleTopPadding ?? 0;
-  const transition = settings?.transition ?? 'default';
+  const transition = resolveTransition(settings?.transition);
   const lightbox = settings?.lightbox ?? 'on';
   const isOverlayLayout = layoutType === 'c';
-  const animateTransitions = transition !== 'default';
-  const { setTitleRef, opacities, dominantIndex } = useTitleTransitionState(items.length, animateTransitions, position);
+  const animateTransitions = transition === 'fade' || transition === 'retype';
+  const { setTitleRef, dominantIndex } = useTitleTransitionState(items.length, animateTransitions, position);
   const activeTitle = items[dominantIndex]?.title ?? '';
   const retypedTitle = useRetypedTitle(activeTitle, transition === 'retype');
-  const usesSingleTitle = transition === 'retype' || transition === 'scroll';
+  const usesSingleTitle = transition === 'fade' || transition === 'retype';
   const singleTitle = transition === 'retype' ? retypedTitle : activeTitle;
   const galleryWidthStyle = !isOverlayLayout
     ? { width: scalingValue(imgWidth, isEditor ?? false) }
@@ -1591,8 +1597,6 @@ export function Mercury({
                 P={P}
                 title={singleTitle}
                 position={position}
-                transition={transition}
-                opacity={1}
                 titleRef={() => {}}
                 titleClassName={`${titleClassName} ${P}-single-title`}
                 titleContainerStyle={{
@@ -1612,8 +1616,6 @@ export function Mercury({
             const titleProps = {
               P,
               position,
-              transition,
-              opacity: opacities[index] ?? 0,
               titleRef: setTitleRef(index),
               titleClassName,
               titleContainerStyle,
