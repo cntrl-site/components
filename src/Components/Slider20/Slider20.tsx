@@ -64,12 +64,14 @@ type Slider20Settings = {
     textDecoration?: 'none' | 'underline';
     fontVariant?: 'normal' | 'small-caps';
   };
+  captionMarginTop?: number;
 };
 
 type Slider20Props = {
   settings?: Slider20Settings;
   content: Slider20Item[];
   isEditor?: boolean;
+  isEditMode?: boolean;
 } & CommonComponentProps;
 
 type Offset = { x: number; y: number };
@@ -313,10 +315,15 @@ function getCSS(P: string, isEditor?: boolean): string {
   width: 100%;
   height: 100%;
 }
+.${P}-control {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
 .${P}-caption-block {
   pointer-events: none;
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   left: 0;
   right: 0;
   z-index: 1;
@@ -375,7 +382,7 @@ function getCSS(P: string, isEditor?: boolean): string {
 `;
 }
 
-export function Slider20({ settings, content, isEditor }: Slider20Props) {
+export function Slider20({ settings, content, isEditor, isEditMode }: Slider20Props) {
   const { prefix: P } = useScopedStyles();
   const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
   const titleStyle = resolveTitleStyle(settings, isEditor);
@@ -406,6 +413,7 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
   const navPaginationColor = settings?.navPaginationColor ?? PAGINATION.colors.pagination;
   const navBackgroundColor = settings?.navBackgroundColor ?? PAGINATION.colors.background;
   const linkColor = settings?.linkColor ?? IMAGE_CAPTION.linkColor;
+  const captionMarginTop = typeof settings?.captionMarginTop === 'number' ? settings.captionMarginTop : 0;
   const isHorizontal = direction === 'horizontal';
   const isClickTrigger = triggerType === 'click';
   const isDragTrigger = triggerType === 'drag';
@@ -697,6 +705,13 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
         </div>
         {IMAGE_CAPTION.isActive && (
           <div className={`${P}-caption-block`}>
+            <div
+              data-controls={isEditMode ? 'captionMarginTop' : undefined}
+              className={isEditMode ? `${P}-control` : undefined}
+              style={{
+                height: scalingValue(captionMarginTop, isEditor),
+              }}
+            />
             <div className={`${P}-caption-text-wrapper`}>
               {items.map((item, index) => (
                 <div
