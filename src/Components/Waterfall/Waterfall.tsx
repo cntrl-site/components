@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
+import { getContainedMediaTransformOrigin } from '../utils/getImageRect';
 import { scalingValue, useScopedStyles } from '../utils/index';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import {
@@ -25,6 +26,7 @@ export type WaterfallContentItem = {
 };
 
 export type WaterfallSettings = {
+  type?: 'a' | 'b' | 'c';
   wrapperWidth?: number;
   imageDisplay?: {
     display: 'fit' | 'cover';
@@ -82,6 +84,18 @@ function getCSS(P: string): string {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+.${P}-type-a.${P}-wrapper,
+.${P}-type-a .${P}-item-title {
+  text-align: left;
+}
+.${P}-type-b.${P}-wrapper,
+.${P}-type-b .${P}-item-title {
+  text-align: center;
+}
+.${P}-type-c.${P}-wrapper,
+.${P}-type-c .${P}-item-title {
+  text-align: right;
+}
 .${P}-item-image {
   display: inline-block;
   vertical-align: baseline;
@@ -90,6 +104,9 @@ function getCSS(P: string): string {
   height: 0;
   width: calc(1cap * var(--${P}-image-aspect));
   margin: 0 var(--${P}-image-inline-gap);
+}
+.${P}-item-image-fit {
+  width: calc(1cap * var(--${P}-item-media-aspect, var(--${P}-image-aspect)));
 }
 .${P}-item-image img,
 .${P}-item-image video {
@@ -104,7 +121,6 @@ function getCSS(P: string): string {
 }
 .${P}-item-image-hover-scale img,
 .${P}-item-image-hover-scale video {
-  transform-origin: center center;
   transition: transform 0.3s ease;
 }
 .${P}-item-image-hover-scale:hover {
@@ -148,6 +164,13 @@ function getImageAspectRatio(settings: WaterfallSettings | undefined): number {
   const effW = ratioReversed ? rH : rW;
   const effH = ratioReversed ? rW : rH;
   return effH > 0 ? effW / effH : 1;
+}
+
+function getMediaAspectRatio(media: HTMLImageElement | HTMLVideoElement): number | null {
+  const mediaW = media instanceof HTMLVideoElement ? media.videoWidth : media.naturalWidth;
+  const mediaH = media instanceof HTMLVideoElement ? media.videoHeight : media.naturalHeight;
+  if (!mediaW || !mediaH) return null;
+  return mediaW / mediaH;
 }
 
 function getWaterfallTextMetricsVars(
@@ -236,6 +259,7 @@ export function Waterfall({
   const { prefix: P } = useScopedStyles();
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const items = content ?? [];
+  const type = settings?.type ?? 'a';
   const wrapperWidth = typeof settings?.wrapperWidth === 'number' ? settings.wrapperWidth : 1;
   const horizontalGap = typeof settings?.horizontalGap === 'number' ? settings.horizontalGap : 0;
   const horizontalGapScaled = scalingValue(horizontalGap, isEditor ?? false);
@@ -258,6 +282,31 @@ export function Waterfall({
     ? `${P}-item-image-hover-${imageHoverType}`
     : undefined;
   const imageHoverScale = (imageHoverEffect.value ?? 120) / 100;
+
+  const applyScaleTransformOrigin = useCallback((
+    media: HTMLImageElement | HTMLVideoElement | null,
+  ) => {
+    if (!media || imageHoverType !== 'scale') return;
+    media.style.transformOrigin = getContainedMediaTransformOrigin(media);
+  }, [imageHoverType]);
+
+  const syncFitMediaLayout = useCallback((
+    media: HTMLImageElement | HTMLVideoElement | null,
+  ) => {
+    if (!media) return;
+
+    if (objectFitMode === 'contain') {
+      const aspect = getMediaAspectRatio(media);
+      if (aspect) {
+        const wrapper = media.closest(`.${P}-item-image`);
+        if (wrapper instanceof HTMLElement) {
+          wrapper.style.setProperty(`--${P}-item-media-aspect`, String(aspect));
+        }
+      }
+    }
+
+    applyScaleTransformOrigin(media);
+  }, [P, applyScaleTransformOrigin, objectFitMode]);
 
   const wrapperStyle = {
     width: scalingValue(wrapperWidth, isEditor ?? false),
@@ -348,7 +397,7 @@ export function Waterfall({
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <PreloadedMediaPool mediaList={allMedia} />
-      <div ref={containerRef} className={`${P}-wrapper`} style={wrapperStyle}>
+      <div ref={containerRef} className={`${P}-wrapper ${P}-type-${type}`} style={wrapperStyle}>
         {items.map((item, index) => {
           const hasLightbox = Boolean(item.image?.url);
           const handleOpen = createWaterfallItemOpenHandler(
@@ -375,9 +424,16 @@ export function Waterfall({
                 </span>
               ) : null}
               {item.image?.url ? (
-                <span className={[`${P}-item-image`, imageHoverClass].filter(Boolean).join(' ')}>
+                <span
+                  className={[
+                    `${P}-item-image`,
+                    objectFitMode === 'contain' ? `${P}-item-image-fit` : undefined,
+                    imageHoverClass,
+                  ].filter(Boolean).join(' ')}
+                >
                   {item.image.type === 'video' ? (
                     <video
+                      ref={syncFitMediaLayout}
                       src={item.image.url}
                       data-waterfall-index={index}
                       style={imageStyle}
@@ -386,14 +442,17 @@ export function Waterfall({
                       loop
                       autoPlay
                       onClick={handleOpen}
+                      onLoadedData={(e) => syncFitMediaLayout(e.currentTarget)}
                     />
                   ) : (
                     <img
+                      ref={syncFitMediaLayout}
                       src={item.image.url}
                       alt={item.image.name ?? ''}
                       data-waterfall-index={index}
                       style={imageStyle}
                       onClick={handleOpen}
+                      onLoad={(e) => syncFitMediaLayout(e.currentTarget)}
                     />
                   )}
                 </span>
