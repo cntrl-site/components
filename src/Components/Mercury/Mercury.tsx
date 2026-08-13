@@ -94,11 +94,24 @@ function getCSS(P: string): string {
 }
 .${P}-title-text {
   display: block;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+.${P}-title-text-inner {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0;
+  outline: 1px solid #FF5C02;
+}
+.${P}-title-text-inner-hidden {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0;
 }
 .${P}-title-position-left,
 .${P}-title-position-center,
@@ -243,6 +256,12 @@ export type MercurySettings = {
   wrapperWidth?: number;
   type?: 'a' | 'b' | 'c';
   imgWidth?: number;
+  titleWidth?: number;
+  imageDisplay?: {
+    display: 'fit' | 'cover';
+    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed: boolean;
+  };
   galleryPaddingRight?: number;
   galleryPaddingLeft?: number;
   galleryPaddingBetween?: number;
@@ -384,6 +403,36 @@ function getLightboxMediaDimensions(media: HTMLImageElement | HTMLVideoElement) 
     return { width: media.videoWidth, height: media.videoHeight };
   }
   return { width: media.naturalWidth, height: media.naturalHeight };
+}
+
+const DEFAULT_TITLE_WIDTH = 1140 / 1440;
+
+function normalizeImageDisplay(
+  raw: MercurySettings['imageDisplay'] | string | undefined,
+): NonNullable<MercurySettings['imageDisplay']> {
+  if (typeof raw === 'string') {
+    return {
+      display: raw.toLowerCase() === 'cover' ? 'cover' : 'fit',
+      ratioValue: '2:3',
+      reversed: false,
+    };
+  }
+
+  const display = typeof raw?.display === 'string' ? raw.display.toLowerCase() : '';
+  return {
+    display: display === 'cover' ? 'cover' : 'fit',
+    ratioValue: raw?.ratioValue ?? '2:3',
+    reversed: raw?.reversed ?? false,
+  };
+}
+
+function getImageAspectRatio(imageDisplay: NonNullable<MercurySettings['imageDisplay']>): string {
+  const ratioValue = imageDisplay.ratioValue ?? '1:1';
+  const ratioReversed = imageDisplay.reversed ?? false;
+  const [ratioWidth, ratioHeight] = ratioValue.split(':').map(Number);
+  const effectiveWidth = ratioReversed ? ratioHeight : ratioWidth;
+  const effectiveHeight = ratioReversed ? ratioWidth : ratioHeight;
+  return `${effectiveWidth} / ${effectiveHeight}`;
 }
 
 function resolveLightboxImageDisplay(
@@ -1003,6 +1052,7 @@ function GalleryMediaItem({
   imgWidth,
   cornerRadius,
   fillGalleryWidth,
+  imageDisplay,
   isEditor,
   galleryPaddingBetween = 0,
   showPaddingAfter = false,
@@ -1014,6 +1064,7 @@ function GalleryMediaItem({
   imgWidth?: number;
   cornerRadius?: number;
   fillGalleryWidth?: boolean;
+  imageDisplay: NonNullable<MercurySettings['imageDisplay']>;
   isEditor?: boolean;
   galleryPaddingBetween?: number;
   showPaddingAfter?: boolean;
@@ -1021,14 +1072,36 @@ function GalleryMediaItem({
   onMediaClick?: () => void;
 }) {
   const mediaClassName = `${P}-gallery-${isVideoMedia(media) ? 'video' : 'image'}`;
+  const isCover = imageDisplay.display === 'cover';
+  const aspectRatio = getImageAspectRatio(imageDisplay);
+  const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const resolvedImgWidth = imgWidth ?? DEFAULT_IMG_WIDTH;
+  const widthStyle = fillGalleryWidth
+    ? { width: '100%', maxWidth: '100%' }
+    : { width: scaled(resolvedImgWidth), maxWidth: '100%' };
+  const radiusStyle = cornerRadius ? { borderRadius: scaled(cornerRadius) } : {};
+  const wrapperStyle: React.CSSProperties = {
+    ...widthStyle,
+    ...(isCover ? { aspectRatio, height: 'auto', overflow: 'hidden' } : {}),
+    ...radiusStyle,
+  };
   const mediaStyle: React.CSSProperties = {
-    ...(fillGalleryWidth
-      ? { width: '100%', maxWidth: '100%' }
-      : imgWidth
-        ? { width: scalingValue(imgWidth, isEditor ?? false), maxWidth: '100%' }
-        : {}),
-    ...(cornerRadius ? { borderRadius: scalingValue(cornerRadius, isEditor ?? false) } : {}),
+    ...(isCover
+      ? {
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          maxWidth: '100%',
+        }
+      : {
+          display: 'block',
+          maxWidth: '100%',
+          height: 'auto',
+          width: fillGalleryWidth ? '100%' : scaled(resolvedImgWidth),
+        }),
     ...(onMediaClick ? { cursor: 'pointer', pointerEvents: 'auto' } : {}),
+    ...(isCover ? {} : radiusStyle),
   };
 
   const handleClick = onMediaClick
@@ -1044,7 +1117,6 @@ function GalleryMediaItem({
     onClick: handleClick,
   };
   const galleryPaddingBetweenHeight = Math.max(galleryPaddingBetween, PADDING_HANDLE_SIZE);
-  const scaled = (value: number) => scalingValue(value, isEditor ?? false);
 
   const mediaNode = isVideoMedia(media) ? (
     <video
@@ -1065,7 +1137,13 @@ function GalleryMediaItem({
 
   return (
     <div className={`${P}-gallery-item`}>
-      {mediaNode}
+      {isCover ? (
+        <div style={wrapperStyle}>
+          {mediaNode}
+        </div>
+      ) : (
+        mediaNode
+      )}
       {showPaddingAfter && galleryPaddingBetween > 0 && (
         <div
           className={`${P}-padding-handle`}
@@ -1209,7 +1287,9 @@ function StickyTitle({
   titleRef,
   titleClassName,
   titleContainerStyle,
+  titleTextBoxStyle,
   titleStyle,
+  showTextBoxOutline = false,
 }: {
   P: string;
   title?: string;
@@ -1217,7 +1297,9 @@ function StickyTitle({
   titleRef: (element: HTMLDivElement | null) => void;
   titleClassName: string;
   titleContainerStyle: React.CSSProperties;
+  titleTextBoxStyle: React.CSSProperties;
   titleStyle: React.CSSProperties;
+  showTextBoxOutline?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [height, setHeight] = useState(0);
@@ -1250,9 +1332,14 @@ function StickyTitle({
         ...titleContainerStyle,
       } as React.CSSProperties}
     >
-      <span className={`${P}-title-text`} style={titleStyle}>
-        {displayedTitle}
-      </span>
+      <div
+        className={showTextBoxOutline ? `${P}-title-text-inner` : `${P}-title-text-inner-hidden`}
+        style={titleTextBoxStyle}
+      >
+        <span className={`${P}-title-text`} style={titleStyle}>
+          {displayedTitle}
+        </span>
+      </div>
     </div>
   );
 }
@@ -1401,6 +1488,8 @@ export function Mercury({
   const wrapperWidth = settings?.wrapperWidth ?? 1;
   const layoutType = settings?.type ?? 'a';
   const imgWidth = settings?.imgWidth ?? DEFAULT_IMG_WIDTH;
+  const titleWidth = settings?.titleWidth ?? DEFAULT_TITLE_WIDTH;
+  const imageDisplay = normalizeImageDisplay(settings?.imageDisplay);
   const cornerRadius = settings?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
   const position = settings?.position ?? 'center';
   const titleTopPadding = settings?.titleTopPadding ?? 0;
@@ -1422,13 +1511,18 @@ export function Mercury({
   const galleryPaddingLeft = settings?.galleryPaddingLeft ?? 0;
   const galleryPaddingBetween = settings?.galleryPaddingBetween ?? 0;
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
-  const retypeTitleWidth = `calc(100% - ${scaled(imgWidth)})`;
-  const retypeTitleLayoutStyle: React.CSSProperties = isOverlayLayout
-    ? { width: '100%' }
-    : {
-        width: retypeTitleWidth,
-        marginLeft: layoutType === 'b' ? scaled(imgWidth) : undefined,
-      };
+  const titleWidthStyle = scaled(titleWidth);
+  const titleTextWidthStyle: React.CSSProperties = {
+    width: titleWidthStyle,
+    maxWidth: '100%',
+  };
+  const singleTitleGalleryEdgePadding = layoutType === 'a' ? galleryPaddingRight : galleryPaddingLeft;
+  const singleTitleLayoutStyle: React.CSSProperties = !isOverlayLayout
+    ? {
+        width: `calc(100% - ${scaled(imgWidth)} - ${scaled(singleTitleGalleryEdgePadding)})`,
+        ...(layoutType === 'b' ? { marginLeft: 'auto' } : {}),
+      }
+    : {};
   const galleryPaddingRightWidth = Math.max(galleryPaddingRight, PADDING_HANDLE_SIZE);
   const galleryPaddingLeftWidth = Math.max(galleryPaddingLeft, PADDING_HANDLE_SIZE);
   const galleryPaddingBetweenHeight = Math.max(galleryPaddingBetween, PADDING_HANDLE_SIZE);
@@ -1476,6 +1570,7 @@ export function Mercury({
   };
   const titleTypographyCss = omitTextColors(textStylesToCss(resolvedTitleTextStyle, isEditor));
   const titleStyle = titleTypographyCss;
+  const titleTextBoxStyle = titleTextWidthStyle;
   const titleContainerStyle = getTextLeadingVars(titleFontSize, titleLineHeight, P, isEditor);
   const titleClassName = getTextClassName(
     titleFontSize,
@@ -1601,9 +1696,11 @@ export function Mercury({
                 titleClassName={`${titleClassName} ${P}-single-title`}
                 titleContainerStyle={{
                   ...titleContainerStyle,
-                  ...retypeTitleLayoutStyle,
+                  ...singleTitleLayoutStyle,
                 }}
+                titleTextBoxStyle={titleTextBoxStyle}
                 titleStyle={titleStyle}
+                showTextBoxOutline={showControls}
               />
             </div>
           )}
@@ -1619,7 +1716,9 @@ export function Mercury({
               titleRef: setTitleRef(index),
               titleClassName,
               titleContainerStyle,
+              titleTextBoxStyle: usesSingleTitle ? { maxWidth: '100%' } : titleTextBoxStyle,
               titleStyle,
+              showTextBoxOutline: showControls && !usesSingleTitle,
             };
 
             return (
@@ -1661,6 +1760,7 @@ export function Mercury({
                             media={displayMedia}
                             imgWidth={imgWidth || undefined}
                             cornerRadius={cornerRadius || undefined}
+                            imageDisplay={imageDisplay}
                             isEditor={isEditor}
                             galleryPaddingBetween={galleryPaddingBetween}
                             showPaddingAfter={mediaIndex < displayItems.length - 1}
@@ -1709,6 +1809,7 @@ export function Mercury({
                               media={displayMedia}
                               cornerRadius={cornerRadius || undefined}
                               fillGalleryWidth
+                              imageDisplay={imageDisplay}
                               isEditor={isEditor}
                               galleryPaddingBetween={galleryPaddingBetween}
                               showPaddingAfter={mediaIndex < displayItems.length - 1}
