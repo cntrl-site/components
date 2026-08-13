@@ -200,17 +200,17 @@ function advanceTrackPosition(
   step: 1 | -1,
   count: number,
   hasClones: boolean,
-): { position: number; skipTransition: boolean } {
+): { position: number; hitBoundary: boolean } {
   if (!hasClones) {
-    return { position: wrapIndex(prev + step, count), skipTransition: false };
+    return { position: wrapIndex(prev + step, count), hitBoundary: false };
   }
   const next = prev + step;
   if (next >= 0 && next <= count + 1) {
-    return { position: next, skipTransition: false };
+    return { position: next, hitBoundary: false };
   }
   return {
-    position: wrapIndex(prev - 1 + step, count) + 1,
-    skipTransition: true,
+    position: step > 0 ? count + 1 : 0,
+    hitBoundary: true,
   };
 }
 
@@ -582,6 +582,8 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
   const isMovingRef = useRef(false);
   const trackPositionRef = useRef(trackPosition);
   trackPositionRef.current = trackPosition;
+  const pendingAnimatedPositionRef = useRef<number | null>(null);
+  const pendingStepsRef = useRef(0);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -598,20 +600,53 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
     const total = Math.abs(steps);
     setAnimateDots(true);
     setMoving(true);
-    setActiveIndex((prev) => wrapIndex(prev + steps, count));
-    if (!isSlideTransition) return;
+    if (!isSlideTransition) {
+      setActiveIndex((prev) => wrapIndex(prev + steps, count));
+      return;
+    }
 
     let position = trackPositionRef.current;
-    let shouldSkipTransition = false;
-    for (let i = 0; i < total; i++) {
+    const isOnClone = hasClones && (position === 0 || position === count + 1);
+    const cloneSnapPosition = isOnClone ? activeIndex + 1 : null;
+
+    if (isOnClone) {
+      position = activeIndex + 1;
+    }
+
+    let remaining = total;
+    while (remaining > 0) {
       const result = advanceTrackPosition(position, direction, count, hasClones);
       position = result.position;
-      shouldSkipTransition ||= result.skipTransition;
+      remaining -= 1;
+      if (result.hitBoundary) {
+        pendingStepsRef.current = remaining * direction;
+        break;
+      }
     }
+
+    const appliedSteps = total - remaining;
+    if (appliedSteps > 0) {
+      setActiveIndex((prev) => wrapIndex(prev + appliedSteps * direction, count));
+    }
+
     trackPositionRef.current = position;
-    if (shouldSkipTransition) setSkipTransition(true);
+
+    if (cloneSnapPosition !== null) {
+      trackPositionRef.current = cloneSnapPosition;
+      if (position === cloneSnapPosition) {
+        setSkipTransition(true);
+        setTrackPosition(position);
+        return;
+      }
+      pendingAnimatedPositionRef.current = position;
+      setSkipTransition(true);
+      setTrackPosition(cloneSnapPosition);
+      return;
+    }
+
+    setSkipTransition(false);
     setTrackPosition(position);
-  }, [count, hasClones, isSlideTransition, setMoving]);
+  }, [activeIndex, count, hasClones, isSlideTransition, setMoving]);
 
   const goBy = useCallback((step: 1 | -1) => {
     goBySteps(step);
@@ -626,7 +661,10 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
     setActiveIndex(target);
     if (isSlideTransition) {
       const position = target + (hasClones ? 1 : 0);
+      pendingAnimatedPositionRef.current = null;
+      pendingStepsRef.current = 0;
       trackPositionRef.current = position;
+      setSkipTransition(false);
       setTrackPosition(position);
     }
   }, [activeIndex, count, hasClones, isSlideTransition, setMoving]);
@@ -635,6 +673,7 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
     if (!isMoving) return;
     const timeoutId = window.setTimeout(() => {
       if (hasClones && (trackPosition === 0 || trackPosition === count + 1)) {
+        pendingAnimatedPositionRef.current = null;
         setSkipTransition(true);
         setTrackPosition(activeIndex + 1);
         return;
@@ -649,7 +688,20 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
     let innerId = 0;
     const outerId = requestAnimationFrame(() => {
       innerId = requestAnimationFrame(() => {
+        const pendingPosition = pendingAnimatedPositionRef.current;
+        pendingAnimatedPositionRef.current = null;
+        const pendingSteps = pendingStepsRef.current;
+        pendingStepsRef.current = 0;
         setSkipTransition(false);
+        if (pendingPosition !== null) {
+          trackPositionRef.current = pendingPosition;
+          setTrackPosition(pendingPosition);
+          return;
+        }
+        if (pendingSteps !== 0) {
+          goBySteps(pendingSteps);
+          return;
+        }
         setMoving(false);
       });
     });
@@ -657,7 +709,7 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
       cancelAnimationFrame(outerId);
       cancelAnimationFrame(innerId);
     };
-  }, [setMoving, skipTransition]);
+  }, [goBySteps, setMoving, skipTransition]);
 
   const structureKey = `${hasClones}:${count}`;
   const prevStructureKeyRef = useRef(structureKey);
@@ -709,21 +761,25 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
       return;
     }
 
-    setIsDragging(false);
-    setDragOffset(0);
-
     const isIdle = event.timeStamp - state.lastTime > DRAG_FLICK_MAX_IDLE_MS;
     const hasFlicked = !isIdle && Math.abs(state.velocity) > DRAG_FLICK_VELOCITY;
     const hasPassedDistance = state.size > 0
       && Math.abs(state.offset - state.baseOffset) > state.size * DRAG_DISTANCE_RATIO;
 
-    if (!hasFlicked && !hasPassedDistance) return;
+    setIsDragging(false);
+
+    if (!hasFlicked && !hasPassedDistance) {
+      setDragOffset(0);
+      return;
+    }
 
     const reference = hasPassedDistance ? state.offset - state.baseOffset : state.velocity;
     let steps = 1;
     if (hasPassedDistance && state.size > 0) {
       steps = Math.max(1, Math.round(Math.abs(reference) / state.size));
     }
+
+    setDragOffset(0);
     goBySteps(reference < 0 ? steps : -steps);
   }, [goBySteps, isSlideTransition]);
 
@@ -746,6 +802,9 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
     if (!isDragTrigger || count < 2 || !track) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
+    pendingAnimatedPositionRef.current = null;
+    pendingStepsRef.current = 0;
+
     if (isMovingRef.current) {
       setMoving(false);
     }
@@ -756,7 +815,18 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
       const size = isHorizontal ? list.offsetWidth : list.offsetHeight;
       if (size > 0) {
         const currentPx = readTrackTranslatePx(list, isHorizontal);
-        baseOffset = currentPx + trackPositionRef.current * size;
+        let syncedPosition = trackPositionRef.current;
+        const isOnClone = hasClones && (syncedPosition === 0 || syncedPosition === count + 1);
+
+        if (isOnClone) {
+          syncedPosition = activeIndex + 1;
+          trackPositionRef.current = syncedPosition;
+          setSkipTransition(true);
+          setTrackPosition(syncedPosition);
+          baseOffset = 0;
+        } else {
+          baseOffset = currentPx + syncedPosition * size;
+        }
         setDragOffset(baseOffset);
       }
     }
