@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Splide, SplideSlide } from '@splidejs/react-splide';
-import '@splidejs/react-splide/css/core';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import cn from 'classnames';
 import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
 import { scalingValue } from '../utils/scalingValue';
@@ -64,20 +62,43 @@ type Slider20Settings = {
     textDecoration?: 'none' | 'underline';
     fontVariant?: 'normal' | 'small-caps';
   };
+  captionMarginTop?: number;
 };
 
 type Slider20Props = {
   settings?: Slider20Settings;
   content: Slider20Item[];
   isEditor?: boolean;
+  isPreviewMode?: boolean;
+  isEditMode?: boolean;
 } & CommonComponentProps;
 
 type Offset = { x: number; y: number };
+type Point = { x: number; y: number };
+type LocalAxes = { ex: Point; ey: Point; det: number };
 
-type Dimensions = { width: number; height: number };
+type DragState = {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  axes: LocalAxes | null;
+  size: number;
+  isActive: boolean;
+  baseOffset: number;
+  offset: number;
+  lastTime: number;
+  velocity: number;
+};
 
-const TRANSITION_DURATION = '500ms';
+const TRANSITION_DURATION_MS = 500;
+const TRANSITION_EASING = 'cubic-bezier(0.25, 1, 0.5, 1)';
 const TRANSITION_BACKGROUND_COLOR: string | null = null;
+const DOT_ANIMATION_MS = 300;
+const DRAG_START_THRESHOLD_PX = 5;
+const DRAG_DISTANCE_RATIO = 0.15;
+const DRAG_FLICK_VELOCITY = 0.4;
+const DRAG_FLICK_MAX_IDLE_MS = 100;
+const AXIS_PROBE_LENGTH_PX = 100;
 
 const CONTROLS = {
   color: '#000000',
@@ -169,6 +190,69 @@ function sizeCss(property: string, value: number, isEditor?: boolean): string {
   return `${property}: ${scalingValue(value / 1440, isEditor)};`;
 }
 
+function wrapIndex(index: number, count: number): number {
+  if (count <= 0) return 0;
+  return ((index % count) + count) % count;
+}
+
+function advanceTrackPosition(
+  prev: number,
+  step: 1 | -1,
+  count: number,
+  hasClones: boolean,
+): { position: number; skipTransition: boolean } {
+  if (!hasClones) {
+    return { position: wrapIndex(prev + step, count), skipTransition: false };
+  }
+  const next = prev + step;
+  if (next >= 0 && next <= count + 1) {
+    return { position: next, skipTransition: false };
+  }
+  return {
+    position: wrapIndex(prev - 1 + step, count) + 1,
+    skipTransition: true,
+  };
+}
+
+function readTrackTranslatePx(element: HTMLElement, isHorizontal: boolean): number {
+  const matrix = new DOMMatrixReadOnly(window.getComputedStyle(element).transform);
+  return isHorizontal ? matrix.m41 : matrix.m42;
+}
+
+function measureLocalAxes(element: HTMLElement, probeClassName: string): LocalAxes | null {
+  const probe = document.createElement('div');
+  probe.className = probeClassName;
+  probe.setAttribute('aria-hidden', 'true');
+  element.appendChild(probe);
+  const readPoint = (x: number, y: number): Point => {
+    probe.style.transform = `translate(${x}px, ${y}px)`;
+    const rect = probe.getBoundingClientRect();
+    return { x: rect.left, y: rect.top };
+  };
+  const origin = readPoint(0, 0);
+  const alongX = readPoint(AXIS_PROBE_LENGTH_PX, 0);
+  const alongY = readPoint(0, AXIS_PROBE_LENGTH_PX);
+  element.removeChild(probe);
+  const ex = {
+    x: (alongX.x - origin.x) / AXIS_PROBE_LENGTH_PX,
+    y: (alongX.y - origin.y) / AXIS_PROBE_LENGTH_PX,
+  };
+  const ey = {
+    x: (alongY.x - origin.x) / AXIS_PROBE_LENGTH_PX,
+    y: (alongY.y - origin.y) / AXIS_PROBE_LENGTH_PX,
+  };
+  const det = ex.x * ey.y - ey.x * ex.y;
+  return { ex, ey, det };
+}
+
+function toLocalDelta(axes: LocalAxes, dx: number, dy: number): Point {
+  const { ex, ey, det } = axes;
+  return {
+    x: (dx * ey.y - dy * ey.x) / det,
+    y: (ex.x * dy - ex.y * dx) / det,
+  };
+}
+
 function getCSS(P: string, isEditor?: boolean): string {
   return `
 .${P}-wrapper {
@@ -184,6 +268,69 @@ function getCSS(P: string, isEditor?: boolean): string {
   position: relative;
   width: 100%;
   height: 100%;
+}
+.${P}-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.${P}-axis-probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.${P}-track-draggable {
+  touch-action: pan-y;
+}
+.${P}-track-draggable-vertical {
+  touch-action: pan-x;
+}
+.${P}-track-draggable .${P}-list {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.${P}-track-draggable .${P}-slider-image {
+  -webkit-user-drag: none;
+}
+.${P}-list {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.${P}-list-slide {
+  display: flex;
+  flex-direction: row;
+  will-change: transform;
+}
+.${P}-list-slide-vertical {
+  flex-direction: column;
+}
+.${P}-list-fade {
+  display: block;
+}
+.${P}-slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+.${P}-list-fade .${P}-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity ${TRANSITION_DURATION_MS}ms ${TRANSITION_EASING};
+}
+.${P}-list-fade .${P}-slide.${P}-is-active {
+  opacity: 1;
+  z-index: 1;
 }
 .${P}-slider-item {
   width: 100%;
@@ -313,10 +460,15 @@ function getCSS(P: string, isEditor?: boolean): string {
   width: 100%;
   height: 100%;
 }
+.${P}-control {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
 .${P}-caption-block {
   pointer-events: none;
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   left: 0;
   right: 0;
   z-index: 1;
@@ -358,11 +510,11 @@ function getCSS(P: string, isEditor?: boolean): string {
 .${P}-cover {
   object-fit: cover;
 }
-.${P}-transition-reveal .splide__slide.is-active .${P}-slider-image {
-  animation: ${P}-reveal-horizontal 500ms ease;
+.${P}-transition-reveal .${P}-slide.${P}-is-active .${P}-slider-image {
+  animation: ${P}-reveal-horizontal ${TRANSITION_DURATION_MS}ms ease;
 }
-.${P}-transition-reveal-vertical .splide__slide.is-active .${P}-slider-image {
-  animation: ${P}-reveal-vertical 500ms ease;
+.${P}-transition-reveal-vertical .${P}-slide.${P}-is-active .${P}-slider-image {
+  animation: ${P}-reveal-vertical ${TRANSITION_DURATION_MS}ms ease;
 }
 @keyframes ${P}-reveal-horizontal {
   from { clip-path: inset(0 100% 0 0); }
@@ -375,16 +527,11 @@ function getCSS(P: string, isEditor?: boolean): string {
 `;
 }
 
-export function Slider20({ settings, content, isEditor }: Slider20Props) {
+export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMode }: Slider20Props) {
   const { prefix: P } = useScopedStyles();
-  const [sliderRef, setSliderRef] = useState<InstanceType<typeof Splide> | null>(null);
   const titleStyle = resolveTitleStyle(settings, isEditor);
-  const [sliderDimensions, setSliderDimensions] = useState<Dimensions | undefined>(undefined);
-  const [wrapperRef, setWrapperRef] = useState<HTMLDivElement | null>(null);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [animateDots, setAnimateDots] = useState(false);
-  const [key, setKey] = useState(0);
   const items = content ?? [];
+  const count = items.length;
   const trigger: Slider20Trigger = settings?.trigger ?? DEFAULT_TRIGGER;
   const triggerType: Slider20TriggerType = trigger.sizeType ?? 'drag';
   const autoPlayIntervalS = trigger.value ?? DEFAULT_TRIGGER.value;
@@ -406,79 +553,279 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
   const navPaginationColor = settings?.navPaginationColor ?? PAGINATION.colors.pagination;
   const navBackgroundColor = settings?.navBackgroundColor ?? PAGINATION.colors.background;
   const linkColor = settings?.linkColor ?? IMAGE_CAPTION.linkColor;
+  const captionMarginTop = typeof settings?.captionMarginTop === 'number' ? settings.captionMarginTop : 0;
   const isHorizontal = direction === 'horizontal';
   const isClickTrigger = triggerType === 'click';
   const isDragTrigger = triggerType === 'drag';
-  const isAutoTrigger = triggerType === 'auto';
-  const isFadeTransition = transition === 'fade in' || transition === 'reveal';
+  const isAutoPlaying = triggerType === 'auto' && (!isEditor || Boolean(isPreviewMode));
+  const pauseAutoOnHover = !isEditor;
+  const isSlideTransition = transition === 'slide';
   const showClassicNav = nav === 'classic';
   const showControls = controlsShow !== 'never';
   const isControlsOnHover = controlsShow === 'on hover';
-  const prevTransitionRef = useRef<Slider20Transition>(transition);
-  const prevTriggerTypeRef = useRef<Slider20TriggerType>(triggerType);
-  const prevAutoPlayIntervalRef = useRef(autoPlayIntervalS);
-  const prevDirectionRef = useRef<Slider20Direction>(direction);
-  const prevNavRef = useRef<Slider20Nav>(nav);
   const controlsMaxWidthScaled = scalingValue(controlsMaxWidth, isEditor);
   const controlsSizeStyle = {
     width: controlsMaxWidthScaled,
     height: controlsMaxWidthScaled,
     maxWidth: controlsMaxWidthScaled,
   } as React.CSSProperties;
-  const handleArrowClick = (dir: '+1' | '-1') => {
-    if (sliderRef) {
-      sliderRef.go(dir);
+
+  const hasClones = isSlideTransition && count > 1;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [trackPosition, setTrackPosition] = useState(hasClones ? 1 : 0);
+  const [isMoving, setIsMoving] = useState(false);
+  const [skipTransition, setSkipTransition] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [animateDots, setAnimateDots] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const isMovingRef = useRef(false);
+  const trackPositionRef = useRef(trackPosition);
+  trackPositionRef.current = trackPosition;
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
+
+  const setMoving = useCallback((value: boolean) => {
+    isMovingRef.current = value;
+    setIsMoving(value);
+  }, []);
+
+  const goBySteps = useCallback((steps: number) => {
+    if (count < 2 || steps === 0) return;
+    const direction = steps > 0 ? 1 : -1;
+    const total = Math.abs(steps);
+    setAnimateDots(true);
+    setMoving(true);
+    setActiveIndex((prev) => wrapIndex(prev + steps, count));
+    if (!isSlideTransition) return;
+
+    let position = trackPositionRef.current;
+    let shouldSkipTransition = false;
+    for (let i = 0; i < total; i++) {
+      const result = advanceTrackPosition(position, direction, count, hasClones);
+      position = result.position;
+      shouldSkipTransition ||= result.skipTransition;
     }
-  };
-  useEffect(() => {
-    if (!animateDots) return;
-    const timeoutId = window.setTimeout(() => setAnimateDots(false), 300);
-    return () => window.clearTimeout(timeoutId);
-  }, [animateDots, currentSlideIndex]);
+    trackPositionRef.current = position;
+    if (shouldSkipTransition) setSkipTransition(true);
+    setTrackPosition(position);
+  }, [count, hasClones, isSlideTransition, setMoving]);
+
+  const goBy = useCallback((step: 1 | -1) => {
+    goBySteps(step);
+  }, [goBySteps]);
+
+  const goTo = useCallback((index: number) => {
+    if (count < 2) return;
+    const target = wrapIndex(index, count);
+    if (target === activeIndex && !isMovingRef.current) return;
+    setAnimateDots(true);
+    setMoving(true);
+    setActiveIndex(target);
+    if (isSlideTransition) {
+      const position = target + (hasClones ? 1 : 0);
+      trackPositionRef.current = position;
+      setTrackPosition(position);
+    }
+  }, [activeIndex, count, hasClones, isSlideTransition, setMoving]);
 
   useEffect(() => {
-    if (!wrapperRef) return;
-    const observer = new ResizeObserver((entries) => {
-      if (!sliderRef) return;
-      const [wrapper] = entries;
-      setSliderDimensions({
-        width: Math.round(wrapper.contentRect.width),
-        height: Math.round(wrapper.contentRect.height)
+    if (!isMoving) return;
+    const timeoutId = window.setTimeout(() => {
+      if (hasClones && (trackPosition === 0 || trackPosition === count + 1)) {
+        setSkipTransition(true);
+        setTrackPosition(activeIndex + 1);
+        return;
+      }
+      setMoving(false);
+    }, TRANSITION_DURATION_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeIndex, count, hasClones, isMoving, setMoving, trackPosition]);
+
+  useEffect(() => {
+    if (!skipTransition) return;
+    let innerId = 0;
+    const outerId = requestAnimationFrame(() => {
+      innerId = requestAnimationFrame(() => {
+        setSkipTransition(false);
+        setMoving(false);
       });
     });
-    observer.observe(wrapperRef);
-    return () => observer.unobserve(wrapperRef);
-  }, [wrapperRef]);
+    return () => {
+      cancelAnimationFrame(outerId);
+      cancelAnimationFrame(innerId);
+    };
+  }, [setMoving, skipTransition]);
+
+  const structureKey = `${hasClones}:${count}`;
+  const prevStructureKeyRef = useRef(structureKey);
+  useEffect(() => {
+    if (prevStructureKeyRef.current === structureKey) return;
+    prevStructureKeyRef.current = structureKey;
+    const nextIndex = count > 0 ? Math.min(activeIndex, count - 1) : 0;
+    dragRef.current = null;
+    activePointerIdRef.current = null;
+    setIsDragging(false);
+    setDragOffset(0);
+    setActiveIndex(nextIndex);
+    setSkipTransition(true);
+    setTrackPosition(nextIndex + (hasClones ? 1 : 0));
+  }, [activeIndex, count, hasClones, structureKey]);
 
   useEffect(() => {
-    if (prevTransitionRef.current === transition) return;
-    setKey(prev => prev + 1);
-    prevTransitionRef.current = transition;
-  }, [transition]);
+    if (!animateDots) return;
+    const timeoutId = window.setTimeout(() => setAnimateDots(false), DOT_ANIMATION_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [animateDots, activeIndex]);
 
   useEffect(() => {
-    if (prevTriggerTypeRef.current === triggerType) return;
-    setKey(prev => prev + 1);
-    prevTriggerTypeRef.current = triggerType;
-  }, [triggerType]);
+    if (!isAutoPlaying || count < 2) return;
+
+    const intervalMs = Math.max(autoPlayIntervalS, 0.1) * 1000;
+    const intervalId = window.setInterval(() => {
+      if (pauseAutoOnHover && isHovered) return;
+      goBy(1);
+    }, intervalMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [autoPlayIntervalS, count, goBy, isAutoPlaying, isHovered, pauseAutoOnHover]);
+
+  const finishDrag = useCallback((event: { pointerId: number; timeStamp: number }) => {
+    const state = dragRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+
+    dragRef.current = null;
+    activePointerIdRef.current = null;
+
+    const track = trackRef.current;
+    if (track?.hasPointerCapture(event.pointerId)) {
+      track.releasePointerCapture(event.pointerId);
+    }
+
+    if (!state.isActive) {
+      if (isSlideTransition) setDragOffset(0);
+      return;
+    }
+
+    setIsDragging(false);
+    setDragOffset(0);
+
+    const isIdle = event.timeStamp - state.lastTime > DRAG_FLICK_MAX_IDLE_MS;
+    const hasFlicked = !isIdle && Math.abs(state.velocity) > DRAG_FLICK_VELOCITY;
+    const hasPassedDistance = state.size > 0
+      && Math.abs(state.offset - state.baseOffset) > state.size * DRAG_DISTANCE_RATIO;
+
+    if (!hasFlicked && !hasPassedDistance) return;
+
+    const reference = hasPassedDistance ? state.offset - state.baseOffset : state.velocity;
+    let steps = 1;
+    if (hasPassedDistance && state.size > 0) {
+      steps = Math.max(1, Math.round(Math.abs(reference) / state.size));
+    }
+    goBySteps(reference < 0 ? steps : -steps);
+  }, [goBySteps, isSlideTransition]);
 
   useEffect(() => {
-    if (prevAutoPlayIntervalRef.current === autoPlayIntervalS) return;
-    setKey(prev => prev + 1);
-    prevAutoPlayIntervalRef.current = autoPlayIntervalS;
-  }, [autoPlayIntervalS]);
+    const handleWindowPointerEnd = (event: PointerEvent) => {
+      if (activePointerIdRef.current === null || event.pointerId !== activePointerIdRef.current) return;
+      finishDrag(event);
+    };
 
-  useEffect(() => {
-    if (prevDirectionRef.current === direction) return;
-    setKey(prev => prev + 1);
-    prevDirectionRef.current = direction;
-  }, [direction]);
+    window.addEventListener('pointerup', handleWindowPointerEnd);
+    window.addEventListener('pointercancel', handleWindowPointerEnd);
+    return () => {
+      window.removeEventListener('pointerup', handleWindowPointerEnd);
+      window.removeEventListener('pointercancel', handleWindowPointerEnd);
+    };
+  }, [finishDrag]);
 
-  useEffect(() => {
-    if (prevNavRef.current === nav) return;
-    setKey(prev => prev + 1);
-    prevNavRef.current = nav;
-  }, [nav]);
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const track = trackRef.current;
+    if (!isDragTrigger || count < 2 || !track) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    if (isMovingRef.current) {
+      setMoving(false);
+    }
+
+    let baseOffset = 0;
+    const list = listRef.current;
+    if (isSlideTransition && list) {
+      const size = isHorizontal ? list.offsetWidth : list.offsetHeight;
+      if (size > 0) {
+        const currentPx = readTrackTranslatePx(list, isHorizontal);
+        baseOffset = currentPx + trackPositionRef.current * size;
+        setDragOffset(baseOffset);
+      }
+    }
+
+    track.setPointerCapture(event.pointerId);
+    activePointerIdRef.current = event.pointerId;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      axes: measureLocalAxes(track, `${P}-axis-probe`),
+      size: isHorizontal ? track.offsetWidth : track.offsetHeight,
+      isActive: false,
+      baseOffset,
+      offset: baseOffset,
+      lastTime: event.timeStamp,
+      velocity: 0,
+    };
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = dragRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+    if (event.pointerType === 'mouse' && event.buttons === 0) {
+      finishDrag(event);
+      return;
+    }
+    const screenDeltaX = event.clientX - state.startClientX;
+    const screenDeltaY = event.clientY - state.startClientY;
+    const local = state.axes
+      ? toLocalDelta(state.axes, screenDeltaX, screenDeltaY)
+      : { x: screenDeltaX, y: screenDeltaY };
+    const delta = isHorizontal ? local.x : local.y;
+    const crossOffset = isHorizontal ? local.y : local.x;
+    const offset = state.baseOffset + delta;
+    if (!state.isActive) {
+      if (Math.max(Math.abs(delta), Math.abs(crossOffset)) < DRAG_START_THRESHOLD_PX) return;
+      if (Math.abs(crossOffset) > Math.abs(delta)) {
+        const track = trackRef.current;
+        if (track?.hasPointerCapture(state.pointerId)) {
+          track.releasePointerCapture(state.pointerId);
+        }
+        dragRef.current = null;
+        activePointerIdRef.current = null;
+        if (isSlideTransition) setDragOffset(0);
+        return;
+      }
+      state.isActive = true;
+      setIsDragging(true);
+    }
+    const elapsed = event.timeStamp - state.lastTime;
+    if (elapsed > 0) {
+      state.velocity = (offset - state.offset) / elapsed;
+      state.lastTime = event.timeStamp;
+    }
+    state.offset = offset;
+    if (isSlideTransition) {
+      setDragOffset(offset);
+    }
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    finishDrag(event);
+  };
+
+  const trackTranslate = isHorizontal
+    ? `translate3d(calc(${-trackPosition * 100}% + ${dragOffset}px), 0, 0)`
+    : `translate3d(0, calc(${-trackPosition * 100}% + ${dragOffset}px), 0)`;
+  const slides = hasClones ? [items[count - 1], ...items, items[0]] : items;
 
   return (
     <>
@@ -488,56 +835,77 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
           [`${P}-transition-reveal`]: transition === 'reveal',
           [`${P}-transition-reveal-vertical`]: transition === 'reveal' && !isHorizontal,
         })}
-        ref={setWrapperRef}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <div
           className={`${P}-slider-inner`}
           style={{
-            width: sliderDimensions ? sliderDimensions.width : '100%',
-            height: sliderDimensions ? sliderDimensions.height : '100%',
             backgroundColor: TRANSITION_BACKGROUND_COLOR && transition === 'fade in' ? TRANSITION_BACKGROUND_COLOR : 'transparent'
           }}
         >
-        <Splide
-          onMove={(e) => {
-            setAnimateDots(true);
-            setCurrentSlideIndex(e.index);
-          }}
-          key={key}
-          ref={setSliderRef}
-          options={{
-            arrows: false,
-            speed: parseInt(TRANSITION_DURATION),
-            autoplay: isAutoTrigger,
-            ...(isAutoTrigger && {
-              interval: autoPlayIntervalS * 1000,
-            }),
-            direction: isHorizontal || isFadeTransition ? 'ltr' : 'ttb',
-            pagination: false,
-            drag: isDragTrigger,
-            perPage: 1,
-            width: sliderDimensions ? sliderDimensions.width : '100%',
-            height: sliderDimensions ? sliderDimensions.height : '100%',
-            type: isFadeTransition ? 'fade' : 'loop',
-            rewind: true
+        <div
+          ref={trackRef}
+          className={cn(`${P}-track`, {
+            [`${P}-track-draggable`]: isDragTrigger,
+            [`${P}-track-draggable-vertical`]: isDragTrigger && !isHorizontal,
+          })}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onLostPointerCapture={(event) => {
+            if (activePointerIdRef.current === event.pointerId) {
+              finishDrag(event);
+            }
           }}
         >
-          {items.map((item, index) => (
-            <SplideSlide key={index}>
-              <div className={`${P}-slider-item`}>
-                <div className={`${P}-img-wrapper`}>
-                  <img
-                    className={cn(`${P}-slider-image`, {
-                      [`${P}-contain`]: item.image.objectFit === 'contain',
-                      [`${P}-cover`]: item.image.objectFit === 'cover'
-                    })}
-                    src={item.image.url} alt={item.image.name ?? ''}
-                  />
+          <div
+            ref={listRef}
+            className={cn(`${P}-list`, {
+              [`${P}-list-slide`]: isSlideTransition,
+              [`${P}-list-slide-vertical`]: isSlideTransition && !isHorizontal,
+              [`${P}-list-fade`]: !isSlideTransition,
+            })}
+            style={isSlideTransition
+              ? {
+                  transform: trackTranslate,
+                  transition: isDragging || skipTransition
+                    ? 'none'
+                    : `transform ${TRANSITION_DURATION_MS}ms ${TRANSITION_EASING}`,
+                }
+              : undefined}
+          >
+            {slides.map((item, slideIndex) => {
+              const itemIndex = hasClones ? wrapIndex(slideIndex - 1, count) : slideIndex;
+              const isClone = hasClones && (slideIndex === 0 || slideIndex === count + 1);
+              const key = isClone
+                ? `clone-${slideIndex === 0 ? 'start' : 'end'}`
+                : `slide-${itemIndex}`;
+              return (
+                <div
+                  key={key}
+                  className={cn(`${P}-slide`, {
+                    [`${P}-is-active`]: !isSlideTransition && itemIndex === activeIndex,
+                  })}
+                >
+                  <div className={`${P}-slider-item`}>
+                    <div className={`${P}-img-wrapper`}>
+                      <img
+                        className={cn(`${P}-slider-image`, {
+                          [`${P}-contain`]: item.image.objectFit === 'contain',
+                          [`${P}-cover`]: item.image.objectFit === 'cover'
+                        })}
+                        src={item.image.url} alt={item.image.name ?? ''}
+                        draggable={false}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </SplideSlide>
-          ))}
-        </Splide>
+              );
+            })}
+          </div>
+        </div>
         {showControls && (
           <>
             <div
@@ -555,7 +923,7 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleArrowClick('-1');
+                  goBy(-1);
                 }}
                 className={`${P}-arrow-inner`}
                 style={{
@@ -595,7 +963,7 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
                 className={`${P}-arrow-inner`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleArrowClick('+1');
+                  goBy(1);
                 }}
                 style={{
                   transform: `translate(${scalingValue(controlsOffsetX * (isHorizontal ? -1 : 1), isEditor)}, ${scalingValue(controlsOffsetY, isEditor)}) rotate(${isHorizontal ? '0deg' : '90deg'})`,
@@ -620,11 +988,7 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
         {isClickTrigger && (
           <div
             className={`${P}-click-overlay`}
-            onClick={() => {
-              if (sliderRef) {
-                sliderRef.go('+1');
-              }
-            }}
+            onClick={() => goBy(1)}
           />
         )}
         {showClassicNav && (
@@ -666,16 +1030,12 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
               }}
             >
               {items.map((_, index) => {
-                const isActive = index === currentSlideIndex;
+                const isActive = index === activeIndex;
                 const dotSize = isActive ? navSizeValues.activeDot : navSizeValues.dot;
                 return (
                   <button
                     key={index}
-                    onClick={() => {
-                      if (sliderRef) {
-                        sliderRef.go(index);
-                      }
-                    }}
+                    onClick={() => goTo(index)}
                     className={`${P}-pagination-item`}
                     style={{
                       width: scaleNav(navSizeValues.activeDot),
@@ -697,18 +1057,25 @@ export function Slider20({ settings, content, isEditor }: Slider20Props) {
         </div>
         {IMAGE_CAPTION.isActive && (
           <div className={`${P}-caption-block`}>
+            <div
+              data-controls={isEditMode ? 'captionMarginTop' : undefined}
+              className={isEditMode ? `${P}-control` : undefined}
+              style={{
+                height: scalingValue(captionMarginTop, isEditor),
+              }}
+            />
             <div className={`${P}-caption-text-wrapper`}>
               {items.map((item, index) => (
                 <div
                   key={index}
                   className={cn(`${P}-caption-text`, {
-                    [`${P}-with-pointer-events`]: index === currentSlideIndex && isEditor,
-                    [`${P}-active`]: index === currentSlideIndex,
+                    [`${P}-with-pointer-events`]: index === activeIndex && isEditor,
+                    [`${P}-active`]: index === activeIndex,
                   })}
                   style={{
                     ...titleStyle,
                     width: TITLE_WIDTH_SETTINGS.sizing === 'auto' ? 'max-content' : scalingValue(TITLE_WIDTH_SETTINGS.width, isEditor),
-                    transitionDuration: `${Math.round(parseInt(TRANSITION_DURATION) / 2)}ms`,
+                    transitionDuration: `${Math.round(TRANSITION_DURATION_MS / 2)}ms`,
                   }}
                 >
                   <div
