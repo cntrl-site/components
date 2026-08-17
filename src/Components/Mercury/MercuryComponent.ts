@@ -257,12 +257,6 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 9999,
       },
-      imgCaption: {
-        type: 'boolean',
-        scope: 'common',
-        title: 'Img caption',
-        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
-      },
       position: {
         type: 'string',
         scope: 'layout',
@@ -398,7 +392,6 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       type: 'a',
-      imgCaption: 'on',
       position: 'center',
       transition: 'scroll',
       titleColor: '#000000',
@@ -495,7 +488,6 @@ const schema: ComponentSchemaV1 = {
       'titleWidth',
       'imageDisplay',
       'cornerRadius',
-      'imgCaption',
       'position',
       'transition',
       'lightbox',
@@ -512,8 +504,7 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         'type',
         { type: 'row', items: ['wrapperWidth', 'imgWidth'] },
-        { type: 'row', items: ['cornerRadius', 'imgCaption'] },
-        { type: 'row', items: ['imageDisplay'] },
+        { type: 'row', items: ['cornerRadius', 'imageDisplay'] },
         { type: 'row', title: 'Title', items: ['position', 'transition'] },
         'titleWidth',
         { type: 'row', title: 'Lightbox', items: ['lightbox', 'lightboxImageDisplay'] },

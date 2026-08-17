@@ -254,6 +254,10 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
     hoverCursor = null,
   } = settings;
 
+  const validContent = content.filter(
+    (item): item is ClickGallerieItem => Boolean(item?.image?.url),
+  );
+
   const scopedCss = useMemo(() => getCSS(P), [P]);
 
   const updateCursorFromMousePosition = useCallback((
@@ -275,7 +279,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
 
   useEffect(() => {
     const urls = [
-      ...content.map((item) => item.image.url),
+      ...validContent.map((item) => item.image.url),
       defaultCursor,
       hoverCursor,
     ].filter((url): url is string => Boolean(url));
@@ -335,11 +339,13 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
   }, [isInside]);
 
   const createNewImage = (
-    imgData: ClickGallerieItem,
+    imgData: ClickGallerieItem | undefined,
     containerWidth: number,
     containerHeight: number,
     clickPosition: { x?: number; y?: number } = {},
-  ): PlacedImage => {
+  ): PlacedImage | null => {
+    if (!imgData?.image?.url) return null;
+
     const aspectRatio = imageMetaByUrlRef.current.get(imgData.image.url)?.aspectRatio ?? 1;
     const widthPx = resolveImageWidthPx(imgData.image.url, imageSize, imageMetaByUrlRef.current);
     const { heightPx } = getImageDimensions(widthPx, aspectRatio);
@@ -405,16 +411,17 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
   };
 
   useEffect(() => {
-    if (!divRef || content.length === 0 || !imagesReady) return;
+    if (!divRef || validContent.length === 0 || !imagesReady) return;
 
     const rect = divRef.getBoundingClientRect();
     const containerWidth = rect.width;
     const containerHeight = rect.height;
 
-    const newImg = createNewImage(content[0], containerWidth, containerHeight);
+    const newImg = createNewImage(validContent[0], containerWidth, containerHeight);
+    if (!newImg) return;
 
     setPlacedImages([newImg]);
-    setCounter(1);
+    setCounter(validContent.length > 1 ? 1 : 0);
   }, [imageSize, position, divRef, content, imagesReady]);
 
   useEffect(() => {
@@ -439,7 +446,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
   }, [visible]);
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!divRef || content.length === 0 || !imagesReady) return;
+    if (!divRef || validContent.length === 0 || !imagesReady) return;
 
     const rect = divRef.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -460,12 +467,14 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
       y = Math.random() * rect.height;
     }
 
-    const imgData = content[counter];
+    const imgData = validContent[counter % validContent.length];
     const newImage = createNewImage(imgData, rect.width, rect.height, { x, y });
+    if (!newImage) return;
+
     const nextPlacedImages = visible === 'all' ? [...placedImages, newImage] : [newImage];
 
     setPlacedImages(nextPlacedImages);
-    setCounter((prev) => (prev >= content.length - 1 ? 0 : prev + 1));
+    setCounter((prev) => (prev + 1) % validContent.length);
     updateCursorFromMousePosition(e.clientX, e.clientY, nextPlacedImages);
   };
 

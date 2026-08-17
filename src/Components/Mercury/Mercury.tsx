@@ -77,10 +77,10 @@ function getCSS(P: string): string {
   flex-direction: row;
 }
 .${P}-item-b {
-  flex-direction: row-reverse;
+  flex-direction: column;
 }
 .${P}-item-c {
-  flex-direction: column;
+  flex-direction: row-reverse;
 }
 .${P}-title {
   align-self: flex-start;
@@ -133,11 +133,11 @@ function getCSS(P: string): string {
   justify-content: flex-end;
 }
 .${P}-item-a .${P}-title,
-.${P}-item-b .${P}-title {
+.${P}-item-c .${P}-title {
   flex: 1;
   width: auto;
 }
-.${P}-item-c .${P}-title {
+.${P}-item-b .${P}-title {
   width: 100%;
   pointer-events: none;
 }
@@ -148,11 +148,11 @@ function getCSS(P: string): string {
   flex-shrink: 0;
   box-sizing: border-box;
 }
-.${P}-item-c .${P}-gallery {
+.${P}-item-b .${P}-gallery {
   display: grid;
   width: 100%;
 }
-.${P}-item-c .${P}-gallery-media {
+.${P}-item-b .${P}-gallery-media {
   grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
@@ -160,7 +160,7 @@ function getCSS(P: string): string {
   width: 100%;
   min-width: 0;
 }
-.${P}-item-c .${P}-title-layer {
+.${P}-item-b .${P}-title-layer {
   grid-area: 1 / 1;
   align-self: stretch;
   width: 100%;
@@ -180,11 +180,6 @@ function getCSS(P: string): string {
   display: block;
   max-width: 100%;
   height: auto;
-}
-.${P}-gallery-caption {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
 }
 .${P}-gallery-controls {
   position: relative;
@@ -266,7 +261,6 @@ export type MercurySettings = {
   galleryPaddingLeft?: number;
   galleryPaddingBetween?: number;
   cornerRadius?: number;
-  imgCaption?: 'on' | 'off';
   position?: 'left' | 'center' | 'right' | 'top';
   titleTopPadding?: number;
   transition?: 'fade' | 'retype' | 'scroll';
@@ -1197,26 +1191,26 @@ function GalleryWithEdgePadding({
 }) {
   const edgePadding = layoutType === 'a'
     ? galleryPaddingRight
-    : layoutType === 'b'
+    : layoutType === 'c'
       ? galleryPaddingLeft
       : 0;
   const edgePaddingWidth = layoutType === 'a'
     ? galleryPaddingRightWidth
-    : layoutType === 'b'
+    : layoutType === 'c'
       ? galleryPaddingLeftWidth
       : 0;
   const showEdgeSpacer = edgePadding > 0 || showControls;
 
   return (
     <div className={`${P}-gallery-controls`}>
-      {layoutType === 'b' && showEdgeSpacer && (
+      {layoutType === 'c' && showEdgeSpacer && (
         <div
           className={`${P}-gallery-edge-spacer`}
           style={{ width: scaled(edgePadding) }}
           aria-hidden="true"
         />
       )}
-      {showControls && layoutType === 'b' && (
+      {showControls && layoutType === 'c' && (
         <div
           data-controls="galleryPaddingLeft"
           data-controls-axis="x"
@@ -1495,7 +1489,7 @@ export function Mercury({
   const titleTopPadding = settings?.titleTopPadding ?? 0;
   const transition = resolveTransition(settings?.transition);
   const lightbox = settings?.lightbox ?? 'on';
-  const isOverlayLayout = layoutType === 'c';
+  const isOverlayLayout = layoutType === 'b';
   const animateTransitions = transition === 'fade' || transition === 'retype';
   const { setTitleRef, dominantIndex } = useTitleTransitionState(items.length, animateTransitions, position);
   const activeTitle = items[dominantIndex]?.title ?? '';
@@ -1520,7 +1514,7 @@ export function Mercury({
   const singleTitleLayoutStyle: React.CSSProperties = !isOverlayLayout
     ? {
         width: `calc(100% - ${scaled(imgWidth)} - ${scaled(singleTitleGalleryEdgePadding)})`,
-        ...(layoutType === 'b' ? { marginLeft: 'auto' } : {}),
+        ...(layoutType === 'c' ? { marginLeft: 'auto' } : {}),
       }
     : {};
   const galleryPaddingRightWidth = Math.max(galleryPaddingRight, PADDING_HANDLE_SIZE);

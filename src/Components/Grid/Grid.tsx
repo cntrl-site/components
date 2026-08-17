@@ -495,6 +495,60 @@ function isVideoMedia(media: GridMedia): boolean {
   return false;
 }
 
+function collectGridLightboxMedia(content: any[]): GridMedia[] {
+  const seen = new Set<string>();
+  const result: GridMedia[] = [];
+
+  for (const item of content) {
+    const displayItems = getGridDisplayItems(item.gallery);
+    for (const entry of displayItems) {
+      const media = entry.lightboxMedia;
+      if (media?.url && !seen.has(media.url)) {
+        seen.add(media.url);
+        result.push(media);
+      }
+    }
+  }
+
+  return result;
+}
+
+function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
+  if (mediaList.length === 0) return null;
+
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        width: 0,
+        height: 0,
+        overflow: 'hidden',
+        opacity: 0,
+        pointerEvents: 'none',
+      }}
+    >
+      {mediaList.map((media) => (
+        isVideoMedia(media) ? (
+          <video
+            key={media.url}
+            src={media.url}
+            preload='auto'
+            muted
+            playsInline
+          />
+        ) : (
+          <img
+            key={media.url}
+            src={media.url}
+            alt=''
+          />
+        )
+      ))}
+    </div>
+  );
+}
+
 function unloadVideoElement(video: HTMLVideoElement) {
   video.pause();
   video.removeAttribute('src');
@@ -618,6 +672,9 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
   const slideDirRef = useRef<1 | -1 | null>(null);
   const slideAnimatingRef = useRef(false);
   const slideCommitTimerRef = useRef<number | null>(null);
+  const slideCommitDirectionRef = useRef<1 | -1 | null>(null);
+  const rapidNavDirectionRef = useRef<1 | -1 | null>(null);
+  const startProgrammaticSlideRef = useRef<(dir: 1 | -1) => void>(() => {});
   const [finalRect, setFinalRect] = useState<AnimRect | null>(null);
   const [viewportRect, setViewportRect] = useState<AnimRect | null>(null);
   const [phase, setPhase] = useState<'opening' | 'open' | 'closing'>('opening');
@@ -629,8 +686,10 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
   const [swipeDismiss, setSwipeDismiss] = useState(false);
   const [mediaNaturalSize, setMediaNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const prevIndexRef = useRef(index);
+  const prevItemUrlRef = useRef<string | undefined>(undefined);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
+  const isHorizontalNavActive = slideOffset !== 0 || slideAnimating;
   const isSliding = slideDir !== null;
 
   const handleMediaLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement>) => {
@@ -663,21 +722,43 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     }
   }, []);
 
-  const resetSlideState = useCallback(() => {
+  const commitSlideNavigation = useCallback(() => {
+    const dir = slideCommitDirectionRef.current;
+    slideCommitDirectionRef.current = null;
     clearSlideCommitTimer();
-    slideOffsetRef.current = 0;
     slideDirRef.current = null;
     slideAnimatingRef.current = false;
-    setSlideOffset(0);
     setSlideDir(null);
     setSlideAnimating(false);
+    setSlideOffset(0);
+    slideOffsetRef.current = 0;
+    setIsSwiping(false);
+    isSwipingRef.current = false;
+    swipeDeltaXRef.current = 0;
+    swipeAxisRef.current = 'none';
+
+    if (dir === 1) onNext();
+    else if (dir === -1) onPrev();
+  }, [clearSlideCommitTimer, onNext, onPrev]);
+
+  const cancelSlideAnimation = useCallback(() => {
+    clearSlideCommitTimer();
+    slideCommitDirectionRef.current = null;
+    slideDirRef.current = null;
+    slideAnimatingRef.current = false;
+    setSlideDir(null);
+    setSlideAnimating(false);
+    setSlideOffset(0);
+    slideOffsetRef.current = 0;
   }, [clearSlideCommitTimer]);
 
-  const commitSlide = useCallback((dir: 1 | -1) => {
-    resetSlideState();
-    if (dir === 1) onNext();
-    else onPrev();
-  }, [onNext, onPrev, resetSlideState]);
+  const scheduleSlideCommit = useCallback(() => {
+    clearSlideCommitTimer();
+    slideCommitTimerRef.current = window.setTimeout(() => {
+      if (slideCommitDirectionRef.current === null) return;
+      commitSlideNavigation();
+    }, LIGHTBOX_ANIM_MS + 32);
+  }, [clearSlideCommitTimer, commitSlideNavigation]);
 
   const finishSlide = useCallback((dir: 1 | -1, commit: boolean) => {
     const width = viewportRectRef.current?.width ?? 0;
@@ -686,18 +767,38 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     setSlideDir(dir);
     slideAnimatingRef.current = true;
     setSlideAnimating(true);
-    const target = commit ? -dir * width : 0;
-    slideOffsetRef.current = target;
-    setSlideOffset(target);
+
+    if (commit) {
+      slideCommitDirectionRef.current = dir;
+      const target = -dir * width;
+      slideOffsetRef.current = target;
+      setSlideOffset(target);
+      scheduleSlideCommit();
+      return;
+    }
+
+    slideOffsetRef.current = 0;
+    setSlideOffset(0);
     slideCommitTimerRef.current = window.setTimeout(() => {
       slideCommitTimerRef.current = null;
-      if (commit) commitSlide(dir);
-      else resetSlideState();
+      cancelSlideAnimation();
     }, LIGHTBOX_ANIM_MS + 32);
-  }, [clearSlideCommitTimer, commitSlide, resetSlideState]);
+  }, [clearSlideCommitTimer, cancelSlideAnimation, scheduleSlideCommit]);
 
   const startProgrammaticSlide = useCallback((dir: 1 | -1) => {
-    if (slideAnimatingRef.current || items.length <= 1) return;
+    if (items.length <= 1) return;
+
+    if (slideAnimatingRef.current) {
+      if (slideCommitDirectionRef.current === dir) {
+        rapidNavDirectionRef.current = dir;
+        commitSlideNavigation();
+        return;
+      }
+
+      cancelSlideAnimation();
+    }
+
+    clearSlideCommitTimer();
     slideDirRef.current = dir;
     setSlideDir(dir);
     slideAnimatingRef.current = false;
@@ -709,7 +810,15 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
         finishSlide(dir, true);
       });
     });
-  }, [items.length, finishSlide]);
+  }, [items.length, finishSlide, commitSlideNavigation, cancelSlideAnimation, clearSlideCommitTimer]);
+
+  startProgrammaticSlideRef.current = startProgrammaticSlide;
+
+  const handleSlideTransitionEnd = useCallback((e: React.TransitionEvent<HTMLElement>) => {
+    if (e.propertyName !== 'transform' || !slideAnimatingRef.current) return;
+    if (slideCommitDirectionRef.current === null) return;
+    commitSlideNavigation();
+  }, [commitSlideNavigation]);
 
   const computeFinalRect = useCallback(() => {
     const ghost = ghostRef.current;
@@ -745,10 +854,14 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
   }, [clearSlideCommitTimer]);
 
   useLayoutEffect(() => {
-    if (prevIndexRef.current === index) return;
+    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.url) return;
 
-    resetSlideState();
+    clearSlideCommitTimer();
+    slideCommitDirectionRef.current = null;
+    setSlideDir(null);
     setSwipeOffset(0);
+    setSlideOffset(0);
+    setSlideAnimating(false);
     setSwipeDismiss(false);
     setIsSwiping(false);
     setMediaNaturalSize(null);
@@ -756,11 +869,25 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     swipeDeltaXRef.current = 0;
     swipeAxisRef.current = 'none';
     isSwipingRef.current = false;
+    slideAnimatingRef.current = false;
+    slideOffsetRef.current = 0;
+    slideDirRef.current = null;
     touchStartRef.current = null;
     touchInteractionRef.current = false;
 
     prevIndexRef.current = index;
-  }, [index, resetSlideState]);
+    prevItemUrlRef.current = currentItem?.url;
+  }, [index, currentItem?.url, clearSlideCommitTimer]);
+
+  useLayoutEffect(() => {
+    const rapidDirection = rapidNavDirectionRef.current;
+    if (rapidDirection === null) return;
+
+    rapidNavDirectionRef.current = null;
+    requestAnimationFrame(() => {
+      startProgrammaticSlideRef.current(rapidDirection);
+    });
+  }, [index, currentItem?.url]);
 
   useEffect(() => {
     if (phase !== 'open') return;
@@ -1004,7 +1131,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     width: contentRect?.width,
     height: contentRect?.height,
     objectFit: objectFitStyle,
-    pointerEvents: isCurrentVideo && isOpen && !isSliding ? 'auto' : 'none',
+    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
     touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
   };
 
@@ -1131,7 +1258,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
       </div>
 
       {finalRect && viewportRect && neighborItem && (
-        <div style={neighborBackingStyle}>
+        <div style={neighborBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
           {isVideoMedia(neighborItem) ? (
             <video
               key={`neighbor-${neighborIndex}-${neighborItem.url}`}
@@ -1153,7 +1280,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
       )}
 
       {finalRect && viewportRect && currentItem && (
-        <div style={currentBackingStyle}>
+        <div style={currentBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
           {isCurrentVideo ? (
             <LightboxVideo
               key={`${index}-${currentItem.url}`}
@@ -1185,7 +1312,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
               ...navOverlayBaseStyle,
               left: contentRect!.left,
               cursor: 'w-resize',
-              pointerEvents: isSliding ? 'none' : 'auto',
+              pointerEvents: isSwiping ? 'none' : 'auto',
             }}
             onClick={(e) => {
               if (touchInteractionRef.current) {
@@ -1201,7 +1328,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
               ...navOverlayBaseStyle,
               left: contentRect!.left + contentRect!.width / 2,
               cursor: 'e-resize',
-              pointerEvents: isSliding ? 'none' : 'auto',
+              pointerEvents: isSwiping ? 'none' : 'auto',
             }}
             onClick={(e) => {
               if (touchInteractionRef.current) {
@@ -1363,6 +1490,10 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const resEntriesCount = entriesCount === 0 ? Infinity : entriesCount;
 
   const cropContent = (content ?? []).slice(0, resEntriesCount);
+  const lightboxMediaToPreload = useMemo(
+    () => (lightbox === 'on' ? collectGridLightboxMedia(cropContent) : []),
+    [cropContent, lightbox],
+  );
 
   const size = gridLayout.entryWidth ?? 0.2;
 
@@ -1478,6 +1609,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
+      {lightbox === 'on' && <LightboxMediaPreloadPool mediaList={lightboxMediaToPreload} />}
       <div style={colorVars}>
         <div
           ref={containerRef}
