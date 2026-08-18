@@ -18,6 +18,7 @@ import { ScaleComponent } from './Scale/ScaleComponent';
 import { SimpleButtonComponent } from './SimpleButton/SimpleButtonComponent';
 import { WaterfallComponent } from './Waterfall/WaterfallComponent';
 import { Slider20Component } from './Slider20/Slider20Component';
+import { MercuryComponent } from './Mercury/MercuryComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -39,4 +40,5 @@ export const components: Component[] = [
   WaterfallComponent,
   SimpleButtonComponent,
   Slider20Component,
+  MercuryComponent,
 ];
