@@ -18,6 +18,7 @@ export type Component = {
   version?: number;
   layoutMode?: 'freeform' | 'structured';
   defaultSize?: ComponentDefaultSize;
+  defaultPaddingTop?: number;
   schema: any;
   preview?: {
     type: 'image' | 'video';

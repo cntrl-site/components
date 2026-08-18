@@ -640,6 +640,7 @@ export const MercuryComponent = {
       height: 540,
     },
   },
+  defaultPaddingTop: 30,
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/Mercury.mp4',
