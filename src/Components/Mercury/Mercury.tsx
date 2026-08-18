@@ -63,6 +63,9 @@ function getCSS(P: string): string {
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 .${P}-single-title {
   pointer-events: none;
@@ -89,13 +92,13 @@ function getCSS(P: string): string {
   min-width: 0;
   box-sizing: border-box;
   position: sticky;
-  z-index: 1;
+  z-index: 2;
+  overflow: visible;
   color: var(--${P}-title-color);
 }
 .${P}-title-text {
   display: block;
   width: 100%;
-  max-width: 100%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -103,28 +106,54 @@ function getCSS(P: string): string {
 .${P}-title-text-inner {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   box-sizing: border-box;
-  min-width: 0;
   outline: 1px solid #FF5C02;
 }
 .${P}-title-text-inner-hidden {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   box-sizing: border-box;
+}
+.${P}-title-text-stack {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
   min-width: 0;
+  position: relative;
+  box-sizing: border-box;
+}
+.${P}-item-a .${P}-title-position-top .${P}-title-text-stack,
+.${P}-item-b .${P}-title-position-top .${P}-title-text-stack,
+.${P}-item-c .${P}-title-position-top .${P}-title-text-stack,
+.${P}-single-title-layer .${P}-title-position-top .${P}-title-text-stack {
+  padding-top: var(--${P}-title-top-padding, 0);
 }
 .${P}-title-position-left,
 .${P}-title-position-center,
 .${P}-title-position-right {
-  top: calc(50vh - (var(--${P}-title-height, 0px) / 2));
+  top: calc(var(--cntrl-article-top, 0px) + var(--cntrl-viewport-height, 100vh) / 2 - (var(--${P}-title-height, 0px) / 2));
+  align-items: center;
 }
 .${P}-title-position-top {
-  top: var(--${P}-title-top-padding, 0);
+  top: var(--cntrl-article-top, 0px);
   bottom: auto;
   justify-content: flex-start;
+  align-self: flex-start;
 }
 .${P}-title-position-left {
   justify-content: flex-start;
+}
+.${P}-item-a .${P}-title-position-top,
+.${P}-item-a .${P}-title-position-left,
+.${P}-item-b .${P}-title-position-top,
+.${P}-item-b .${P}-title-position-left,
+.${P}-item-c .${P}-title-position-top,
+.${P}-item-c .${P}-title-position-left,
+.${P}-single-title-layer .${P}-title-position-top,
+.${P}-single-title-layer .${P}-title-position-left {
+  padding-left: var(--${P}-title-left-padding, 0);
 }
 .${P}-title-position-center {
   justify-content: center;
@@ -132,12 +161,21 @@ function getCSS(P: string): string {
 .${P}-title-position-right {
   justify-content: flex-end;
 }
+.${P}-item-a .${P}-title-position-right,
+.${P}-item-b .${P}-title-position-right,
+.${P}-item-c .${P}-title-position-right,
+.${P}-single-title-layer .${P}-title-position-right {
+  padding-right: var(--${P}-title-right-padding, 0);
+}
 .${P}-item-a .${P}-title,
 .${P}-item-c .${P}-title {
   flex: 1;
   width: auto;
+  min-width: 0;
+  overflow: visible;
 }
-.${P}-item-b .${P}-title {
+.${P}-item-b .${P}-title,
+.${P}-single-title-layer .${P}-title {
   width: 100%;
   pointer-events: none;
 }
@@ -165,8 +203,12 @@ function getCSS(P: string): string {
   align-self: stretch;
   width: 100%;
   min-width: 0;
-  z-index: 1;
+  z-index: 2;
+  overflow: visible;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 .${P}-gallery-item {
   position: relative;
@@ -186,6 +228,7 @@ function getCSS(P: string): string {
   display: flex;
   flex-shrink: 0;
   box-sizing: border-box;
+  z-index: 1;
 }
 .${P}-gallery-edge-spacer {
   flex-shrink: 0;
@@ -263,6 +306,8 @@ export type MercurySettings = {
   cornerRadius?: number;
   position?: 'left' | 'center' | 'right' | 'top';
   titleTopPadding?: number;
+  titleLeftPadding?: number;
+  titleRightPadding?: number;
   transition?: 'fade' | 'retype' | 'scroll';
   titleColor?: string;
   titleFontFamily?: string;
@@ -1274,6 +1319,75 @@ function resolveTransition(value?: string): MercuryTransition {
   }
 }
 
+function renderTitleTopPaddingControl({
+  P,
+  scaled,
+  height,
+  paired,
+}: {
+  P: string;
+  scaled: (value: number) => string;
+  height: number;
+  paired: boolean;
+}) {
+  return (
+    <div
+      data-controls="titleTopPadding"
+      {...(paired ? { 'data-controls-paired': '' } : {})}
+      data-controls-axis="y"
+      data-controls-variant="row-padding"
+      data-controls-min="0"
+      className={`${P}-control-anchor`}
+      style={{
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: scaled(height),
+      }}
+    />
+  );
+}
+
+function renderTitleColumnPaddingControl({
+  P,
+  controlKey,
+  scaled,
+  width,
+  maxFraction,
+  side,
+  paired,
+  anchorStyle,
+}: {
+  P: string;
+  controlKey: 'titleLeftPadding' | 'titleRightPadding';
+  scaled: (value: number) => string;
+  width: number;
+  maxFraction: number;
+  side: 'left' | 'right';
+  paired: boolean;
+  anchorStyle?: React.CSSProperties;
+}) {
+  return (
+    <div
+      data-controls={controlKey}
+      {...(paired ? { 'data-controls-paired': '' } : {})}
+      data-controls-axis="x"
+      data-controls-variant="column-padding"
+      {...(side === 'right' ? { 'data-controls-reverse': '' } : {})}
+      data-controls-min="0"
+      data-controls-max-fraction={String(maxFraction)}
+      className={`${P}-control-anchor`}
+      style={{
+        top: 0,
+        ...(side === 'left' ? { left: 0 } : { right: 0 }),
+        width: scaled(width),
+        height: '100%',
+        ...anchorStyle,
+      }}
+    />
+  );
+}
+
 function StickyTitle({
   P,
   title,
@@ -1284,6 +1398,7 @@ function StickyTitle({
   titleTextBoxStyle,
   titleStyle,
   showTextBoxOutline = false,
+  topPaddingControl,
 }: {
   P: string;
   title?: string;
@@ -1294,12 +1409,16 @@ function StickyTitle({
   titleTextBoxStyle: React.CSSProperties;
   titleStyle: React.CSSProperties;
   showTextBoxOutline?: boolean;
+  topPaddingControl?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [height, setHeight] = useState(0);
   const displayedTitle = title ?? '';
+  const usesViewportCenterSticky = position === 'left' || position === 'center' || position === 'right';
 
   useLayoutEffect(() => {
+    if (!usesViewportCenterSticky) return;
+
     const el = ref.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
 
@@ -1309,7 +1428,7 @@ function StickyTitle({
     const observer = new ResizeObserver(updateHeight);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [displayedTitle]);
+  }, [displayedTitle, usesViewportCenterSticky]);
 
   return (
     <div
@@ -1322,17 +1441,23 @@ function StickyTitle({
         `${P}-title-position-${position}`,
       ].join(' ')}
       style={{
-        [`--${P}-title-height`]: `${height}px`,
+        ...(usesViewportCenterSticky ? { [`--${P}-title-height`]: `${height}px` } : {}),
         ...titleContainerStyle,
       } as React.CSSProperties}
     >
       <div
-        className={showTextBoxOutline ? `${P}-title-text-inner` : `${P}-title-text-inner-hidden`}
+        className={`${P}-title-text-stack`}
         style={titleTextBoxStyle}
       >
-        <span className={`${P}-title-text`} style={titleStyle}>
-          {displayedTitle}
-        </span>
+        {topPaddingControl}
+        <div
+          className={showTextBoxOutline ? `${P}-title-text-inner` : `${P}-title-text-inner-hidden`}
+          style={{ width: '100%' }}
+        >
+          <span className={`${P}-title-text`} style={titleStyle}>
+            {displayedTitle}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1340,15 +1465,35 @@ function StickyTitle({
 
 const TITLE_CROSSFADE_SIGMA = 45;
 
+function readCssVarPx(element: HTMLElement | null | undefined, varName: string, fallback: number): number {
+  let el: HTMLElement | null | undefined = element;
+  while (el) {
+    const raw = getComputedStyle(el).getPropertyValue(varName).trim();
+    if (raw) {
+      const parsed = parseFloat(raw);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    el = el.parentElement;
+  }
+  return fallback;
+}
+
+function getPreviewViewportMetrics(element?: HTMLElement | null): { top: number; centerY: number } {
+  const height = readCssVarPx(element, '--cntrl-viewport-height', window.innerHeight);
+  const top = readCssVarPx(element, '--cntrl-article-top', 0);
+  return { top, centerY: top + height / 2 };
+}
+
 function getTitleStickyDistance(rect: DOMRect, position: TitlePosition, element?: HTMLElement | null): number {
+  const { top: viewportTop, centerY } = getPreviewViewportMetrics(element);
   if (position === 'top') {
     const stickyTop = element
-      ? parseFloat(getComputedStyle(element).top) || 0
-      : 0;
+      ? parseFloat(getComputedStyle(element).top) || viewportTop
+      : viewportTop;
     return Math.abs(rect.top - stickyTop);
   }
   const titleCenter = rect.top + rect.height / 2;
-  return Math.abs(titleCenter - window.innerHeight / 2);
+  return Math.abs(titleCenter - centerY);
 }
 
 function computeTitleTransitionState(
@@ -1487,6 +1632,8 @@ export function Mercury({
   const cornerRadius = settings?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
   const position = settings?.position ?? 'center';
   const titleTopPadding = settings?.titleTopPadding ?? 0;
+  const titleLeftPadding = settings?.titleLeftPadding ?? 0;
+  const titleRightPadding = settings?.titleRightPadding ?? 0;
   const transition = resolveTransition(settings?.transition);
   const lightbox = settings?.lightbox ?? 'on';
   const isOverlayLayout = layoutType === 'b';
@@ -1508,20 +1655,47 @@ export function Mercury({
   const titleWidthStyle = scaled(titleWidth);
   const titleTextWidthStyle: React.CSSProperties = {
     width: titleWidthStyle,
-    maxWidth: '100%',
   };
   const singleTitleGalleryEdgePadding = layoutType === 'a' ? galleryPaddingRight : galleryPaddingLeft;
-  const singleTitleLayoutStyle: React.CSSProperties = !isOverlayLayout
-    ? {
+  const singleTitleLayoutStyle: React.CSSProperties = isOverlayLayout
+    ? { width: '100%' }
+    : {
         width: `calc(100% - ${scaled(imgWidth)} - ${scaled(singleTitleGalleryEdgePadding)})`,
         ...(layoutType === 'c' ? { marginLeft: 'auto' } : {}),
-      }
-    : {};
+      };
   const galleryPaddingRightWidth = Math.max(galleryPaddingRight, PADDING_HANDLE_SIZE);
   const galleryPaddingLeftWidth = Math.max(galleryPaddingLeft, PADDING_HANDLE_SIZE);
   const galleryPaddingBetweenHeight = Math.max(galleryPaddingBetween, PADDING_HANDLE_SIZE);
   const titleTopPaddingHeight = Math.max(titleTopPadding, PADDING_HANDLE_SIZE);
+  const titleLeftPaddingWidth = Math.max(titleLeftPadding, PADDING_HANDLE_SIZE);
+  const titleRightPaddingWidth = Math.max(titleRightPadding, PADDING_HANDLE_SIZE);
   const galleryPaddingMaxFraction = Math.max(0, (wrapperWidth ?? 1) - (imgWidth ?? DEFAULT_IMG_WIDTH));
+  const titleColumnMaxFraction = layoutType === 'a'
+    ? Math.max(0, (wrapperWidth ?? 1) - (imgWidth ?? DEFAULT_IMG_WIDTH) - galleryPaddingRight)
+    : layoutType === 'c'
+      ? Math.max(0, (wrapperWidth ?? 1) - (imgWidth ?? DEFAULT_IMG_WIDTH) - galleryPaddingLeft)
+      : layoutType === 'b'
+        ? (wrapperWidth ?? 1)
+        : 1;
+  const showTitleTopPaddingControl = showControls && (layoutType === 'a' || layoutType === 'b' || layoutType === 'c') && position === 'top';
+  const showTitleLeftPaddingControl = showControls && (
+    ((layoutType === 'a' || layoutType === 'b') && (position === 'left' || position === 'top'))
+    || (layoutType === 'c' && (position === 'left' || position === 'top'))
+  );
+  const showTitleRightPaddingControl = showControls && (
+    ((layoutType === 'c' || layoutType === 'b') && position === 'right')
+    || (layoutType === 'a' && position === 'right')
+  );
+  const hasMultipleItems = items.length > 1;
+  const titleGalleryInset = !isOverlayLayout
+    ? scaled((layoutType === 'c' ? galleryPaddingLeft : galleryPaddingRight) + (imgWidth ?? DEFAULT_IMG_WIDTH))
+    : undefined;
+  const titleLeftPaddingControlStyle: React.CSSProperties | undefined = layoutType === 'c' && titleGalleryInset
+    ? { left: titleGalleryInset }
+    : undefined;
+  const titleRightPaddingControlStyle: React.CSSProperties | undefined = layoutType === 'a' && titleGalleryInset
+    ? { right: titleGalleryInset }
+    : undefined;
   const entryPaddingControlStyle: React.CSSProperties = isOverlayLayout
     ? { left: 0, width: '100%' }
     : layoutType === 'a'
@@ -1660,26 +1834,17 @@ export function Mercury({
           className={`${P}-wrapper`}
           style={{
             width: scalingValue(wrapperWidth, isEditor ?? false),
-            [`--${P}-title-top-padding`]: position === 'top' ? scaled(titleTopPadding) : undefined,
+            [`--${P}-title-top-padding`]: (layoutType === 'a' || layoutType === 'b' || layoutType === 'c') && position === 'top' ? scaled(titleTopPadding) : undefined,
+            [`--${P}-title-left-padding`]: (
+              ((layoutType === 'a' || layoutType === 'b') && (position === 'left' || position === 'top'))
+              || (layoutType === 'c' && (position === 'left' || position === 'top'))
+            ) ? scaled(titleLeftPadding) : undefined,
+            [`--${P}-title-right-padding`]: (
+              ((layoutType === 'c' || layoutType === 'b') && position === 'right')
+              || (layoutType === 'a' && position === 'right')
+            ) ? scaled(titleRightPadding) : undefined,
           } as React.CSSProperties}
         >
-          {showControls && position === 'top' && (
-            <div
-              data-controls="titleTopPadding"
-              data-controls-axis="y"
-              data-controls-variant="row-padding"
-              data-controls-min="0"
-              data-controls-center-only-drag=""
-              data-controls-hit-placement="left-y"
-              className={`${P}-control-anchor`}
-              style={{
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: scaled(titleTopPaddingHeight),
-              }}
-            />
-          )}
           {usesSingleTitle && (
             <div className={`${P}-single-title-layer`}>
               <StickyTitle
@@ -1695,6 +1860,14 @@ export function Mercury({
                 titleTextBoxStyle={titleTextBoxStyle}
                 titleStyle={titleStyle}
                 showTextBoxOutline={showControls}
+                topPaddingControl={showTitleTopPaddingControl
+                  ? renderTitleTopPaddingControl({
+                    P,
+                    scaled,
+                    height: titleTopPaddingHeight,
+                    paired: false,
+                  })
+                  : undefined}
               />
             </div>
           )}
@@ -1713,6 +1886,14 @@ export function Mercury({
               titleTextBoxStyle: usesSingleTitle ? { maxWidth: '100%' } : titleTextBoxStyle,
               titleStyle,
               showTextBoxOutline: showControls && !usesSingleTitle,
+              topPaddingControl: showTitleTopPaddingControl && !usesSingleTitle
+                ? renderTitleTopPaddingControl({
+                  P,
+                  scaled,
+                  height: titleTopPaddingHeight,
+                  paired: hasMultipleItems,
+                })
+                : undefined,
             };
 
             return (
@@ -1726,6 +1907,26 @@ export function Mercury({
                     : undefined,
                 }}
               >
+                {showTitleLeftPaddingControl && renderTitleColumnPaddingControl({
+                  P,
+                  controlKey: 'titleLeftPadding',
+                  scaled,
+                  width: titleLeftPaddingWidth,
+                  maxFraction: titleColumnMaxFraction,
+                  side: 'left',
+                  paired: hasMultipleItems,
+                  anchorStyle: titleLeftPaddingControlStyle,
+                })}
+                {showTitleRightPaddingControl && renderTitleColumnPaddingControl({
+                  P,
+                  controlKey: 'titleRightPadding',
+                  scaled,
+                  width: titleRightPaddingWidth,
+                  maxFraction: titleColumnMaxFraction,
+                  side: 'right',
+                  paired: hasMultipleItems,
+                  anchorStyle: titleRightPaddingControlStyle,
+                })}
                 {showControls && showEntryPaddingAfter && (
                   <div
                     data-controls="galleryPaddingBetween"

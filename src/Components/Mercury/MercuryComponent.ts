@@ -112,11 +112,58 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       {
+        title: 'AX-2 Space Suit',
+        gallery: [
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-1.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-2.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-3.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-4.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-5.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-6.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+        ],
+      },
+      {
         title: 'Earth-orbital mission',
         gallery: [
           {
             media: [
               { url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg', name: '', objectFit: 'cover' },
               { url: '', name: '', objectFit: 'cover' },
             ],
           },
@@ -128,7 +175,25 @@ const schema: ComponentSchemaV1 = {
           },
           {
             media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
               { url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg', name: '', objectFit: 'cover' },
               { url: '', name: '', objectFit: 'cover' },
             ],
           },
@@ -145,47 +210,37 @@ const schema: ComponentSchemaV1 = {
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
-            ],
-          },
-        ],
-      },
-      {
-        title: 'Lunar Module Pilot',
-        gallery: [
-          {
-            media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg', name: '', objectFit: 'cover' },
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-7.jpg', name: '', objectFit: 'cover' },
               { url: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg', name: '', objectFit: 'cover' },
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-8.jpg', name: '', objectFit: 'cover' },
               { url: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-8.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
-            ],
-          },
-        ],
-      },
-      {
-        title: 'Command Module',
-        gallery: [
-          {
-            media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-9.jpg', name: '', objectFit: 'cover' },
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-9.jpg', name: '', objectFit: 'cover' },
               { url: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-10.jpg', name: '', objectFit: 'cover' },
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-10.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-11.jpg', name: '', objectFit: 'cover' },
+              { url: '', name: '', objectFit: 'cover' },
+            ],
+          },
+          {
+            media: [
+              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-12.jpg', name: '', objectFit: 'cover' },
               { url: '', name: '', objectFit: 'cover' },
             ],
           },
@@ -264,6 +319,8 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'toggle-cycle', enum: ['left', 'center', 'right', 'top'] },
       },
       titleTopPadding: createRangeControlLayoutProperty('Title Top Padding'),
+      titleLeftPadding: createRangeControlLayoutProperty('Title Left Padding'),
+      titleRightPadding: createRangeControlLayoutProperty('Title Right Padding'),
       transition: {
         type: 'string',
         scope: 'common',
@@ -392,17 +449,17 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       type: 'a',
-      position: 'center',
+      position: 'left',
       transition: 'scroll',
       titleColor: '#000000',
-      titleFontFamily: 'Arial',
+      titleFontFamily: 'Goudy Bookletter 1911',
       titleFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
       },
       titleLetterSpacing: 0,
       titleWordSpacing: 0,
-      titleAlign: 'left',
+      titleAlign: 'center',
       titleTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
@@ -433,45 +490,52 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       d: {
         wrapperWidth: 1,
-        imgWidth: 300 / 1440,
+        imgWidth: 600 / 1440,
         titleWidth: 400 / 1440,
-        galleryPaddingRight: 0,
-        galleryPaddingLeft: 0,
-        galleryPaddingBetween: 0,
+        galleryPaddingRight: 30 / 1440,
+        galleryPaddingLeft: 30 / 1440,
+        galleryPaddingBetween: 30 / 1440,
         titleTopPadding: 0,
-        cornerRadius: 8 / 1440,
-        titleFontSize: 0.027,
-        titleLineHeight: 0.0222,
+        titleLeftPadding: 0,
+        titleRightPadding: 0,
+        cornerRadius: 4 / 1440,
+        titleFontSize: 73 / 1440,
+        titleLineHeight: 66 / 1440,
         lightboxCounterFontSize: 0.01,
         lightboxCounterLineHeight: 0.01,
       },
       m: {
         wrapperWidth: 1,
-        imgWidth: 120 / 375,
-        titleWidth: 220 / 375,
-        galleryPaddingRight: 0,
-        galleryPaddingLeft: 0,
-        galleryPaddingBetween: 0,
+        imgWidth: 200 / 375,
+        titleWidth: 210 / 375,
+        galleryPaddingRight: 10 / 375,
+        galleryPaddingLeft: 10 / 375,
+        galleryPaddingBetween: 10 / 375,
         titleTopPadding: 0,
+        titleLeftPadding: 0,
+        titleRightPadding: 0,
         cornerRadius: 8 / 375,
-        titleFontSize: 0.1066,
-        titleLineHeight: 0.0853,
-        lightboxCounterFontSize: 0.0373,
-        lightboxCounterLineHeight: 0.0373,
+        titleFontSize: 30 / 375,
+        titleLineHeight: 25 / 375,
+        lightboxCounterFontSize: 14 / 375,
+        lightboxCounterLineHeight: 14 / 375,
       },
       t: {
         wrapperWidth: 1,
         imgWidth: 300 / 768,
-        titleWidth: 260 / 768,
-        galleryPaddingRight: 0,
-        galleryPaddingLeft: 0,
-        galleryPaddingBetween: 0,
+        titleWidth: 320 / 768,
+        galleryPaddingRight: 20 / 768,
+        galleryPaddingLeft: 20 / 768,
+        galleryPaddingBetween: 20 / 768,
         titleTopPadding: 0,
+        titleLeftPadding: 0,
+        titleRightPadding: 0,
         cornerRadius: 8 / 768,
-        titleFontSize: 0.03255,
-        titleLineHeight: 0.03255,
-        lightboxCounterFontSize: 0.01,
-        lightboxCounterLineHeight: 0.01,
+        position: 'center',
+        titleFontSize: 58 / 768,
+        titleLineHeight: 48 / 768,
+        lightboxCounterFontSize: 8 / 768,
+        lightboxCounterLineHeight: 8 / 768,
       },
     },
     displayRules: [
