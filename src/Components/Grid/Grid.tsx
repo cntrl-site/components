@@ -83,13 +83,12 @@ function getCSS(P: string): string {
 }
 .${P}-item-image-wrapper-fit-slider {
   display: grid;
-}
-.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer,
-.${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
-  grid-area: 1 / 1;
-  width: 100%;
+  overflow: hidden;
+  position: relative;
 }
 .${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer {
+  grid-area: 1 / 1;
+  width: 100%;
   display: grid;
   visibility: hidden;
   pointer-events: none;
@@ -109,8 +108,13 @@ function getCSS(P: string): string {
   object-fit: contain;
 }
 .${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
-  align-self: stretch;
-  min-height: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.${P}-item-slider .splide__track {
+  overflow: hidden;
 }
 .${P}-item-image-link {
   width: 100%;
@@ -395,6 +399,33 @@ function getCSS(P: string): string {
   width: 100%;
 }
 `;
+}
+
+function pickRandomSlideDirection(): 'ltr' | 'ttb' {
+  return Math.random() < 0.5 ? 'ltr' : 'ttb';
+}
+
+function resumeSplideAutoplay(splide: { Components: { Autoplay?: { pause: (stop?: boolean) => void; play: () => void } } }) {
+  const autoplay = splide.Components.Autoplay;
+  if (!autoplay) return;
+  autoplay.pause(false);
+  autoplay.play();
+}
+
+function handleRandomSlideMoved(splide: {
+  options: { direction?: string };
+  Components: { Autoplay?: { pause: (stop?: boolean) => void; play: () => void } };
+}) {
+  const next = pickRandomSlideDirection();
+  if (splide.options.direction !== next) {
+    splide.options = { ...splide.options, direction: next };
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      resumeSplideAutoplay(splide);
+    });
+  });
 }
 
 type GridProps = {
@@ -1551,9 +1582,16 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         ...(imageBorderRadius ? { borderRadius: imageBorderRadius } : {}),
       };
 
-  const [dir, setDir] = useState('ltr');
   const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const resolvedSplideDirection = transition === 'fade'
+    ? 'ltr'
+    : direction === 'horizontal'
+      ? 'ltr'
+      : direction === 'vertical'
+        ? 'ttb'
+        : 'ltr';
 
   useEffect(() => {
     const el = containerRef.current;
@@ -1769,7 +1807,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     })()
                     :
                     <>
-                    {isFitSlider && shouldAlignEntries && (
+                    {isFitSlider && (
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
                         {displayItems.map(({ displayMedia }) => (
                           isVideoMedia(displayMedia) ? (
@@ -1797,20 +1835,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                         rewind: transition === 'fade',
                         pauseOnHover: false,
                         pauseOnFocus: false,
-                        direction: transition === 'fade' ? 'ltr' : direction !== 'random'
-                          ? direction === 'horizontal'
-                            ? 'ltr'
-                            : 'ttb'
-                          : dir as 'ltr' | 'ttb' | 'rtl',
+                        direction: resolvedSplideDirection,
                       }}
                       onMoved={(splide) => {
                         if (direction !== 'random' || transition === 'fade') return;
-                        const next = Math.random() > 0.5 ? Math.random() > 0.5 ? 'rtl' : 'ltr' : 'ttb';
-                        setDir(next);
-
-                        setTimeout(() => {
-                          splide.refresh();
-                        }, 0);
+                        handleRandomSlideMoved(splide);
                       }}
                     >
                       {displayItems.map(({ displayMedia, lightboxMedia }, imgIndex) => {
