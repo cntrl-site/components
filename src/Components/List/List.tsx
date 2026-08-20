@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
@@ -82,6 +82,8 @@ export type ListSettings = {
   entriesCount: number;
   cellMinHeight: number;
   imageOnHover: 'on' | 'off';
+  imagePosition: 'left' | 'center' | 'right' | 'cursor';
+  imageInterpolation: 'on' | 'off';
   imageSize?: { min: number; max: number };
   dividerWidth: number;
   showVisibility: boolean[];
@@ -154,8 +156,6 @@ type HoverImageState = {
   objectFit: 'cover' | 'contain';
   isVideo: boolean;
   widthPx: number;
-  x: number;
-  y: number;
 };
 
 function isVideoMedia(media: Pick<ListMedia, 'url' | 'type' | 'name'>): boolean {
@@ -283,6 +283,200 @@ function getCutItemDividerWidths(
 }
 
 const HOVER_IMAGE_CURSOR_OFFSET = 10;
+const HOVER_IMAGE_EDGE_PADDING = 10;
+
+const HOVER_MEDIA_FOLLOW = {
+  positionEase: 0.14,
+  rotationEase: 0.09,
+  rotationFactor: 2.5,
+  maxRotation: 20,
+};
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function lerpValue(current: number, target: number, ease: number): number {
+  return current + (target - current) * ease;
+}
+
+type HoverImagePositionMode = ListSettings['imagePosition'];
+
+function getListHoverImagePosition(
+  mode: HoverImagePositionMode,
+  container: HTMLElement | null,
+  event: React.MouseEvent | null,
+  imageWidthPx: number,
+): { x: number; y: number } {
+  if (!container) {
+    return { x: 0, y: 0 };
+  }
+
+  const listWidth = container.offsetWidth;
+  const listHeight = container.offsetHeight;
+  const verticalCenterY = listHeight / 2;
+
+  if (mode === 'cursor' && event) {
+    const rect = container.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left + HOVER_IMAGE_CURSOR_OFFSET,
+      y: event.clientY - rect.top + HOVER_IMAGE_CURSOR_OFFSET,
+    };
+  }
+
+  switch (mode) {
+    case 'left':
+      return { x: HOVER_IMAGE_EDGE_PADDING + imageWidthPx / 2, y: verticalCenterY };
+    case 'center':
+      return { x: listWidth / 2, y: verticalCenterY };
+    case 'right':
+      return { x: listWidth - HOVER_IMAGE_EDGE_PADDING - imageWidthPx / 2, y: verticalCenterY };
+    default:
+      return { x: listWidth / 2, y: verticalCenterY };
+  }
+}
+
+function useHoverMediaFollow(active: boolean, interpolationEnabled: boolean) {
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef({
+    x: 0,
+    y: 0,
+    rotation: 0,
+    targetX: 0,
+    targetY: 0,
+    targetRotation: 0,
+    lastX: 0,
+    hasLastX: false,
+  });
+  const rafRef = useRef<number | null>(null);
+
+  const applyTransform = useCallback(() => {
+    const el = anchorRef.current;
+    const state = stateRef.current;
+    if (!el) return;
+
+    el.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) translate(-50%, -50%) rotate(${state.rotation.toFixed(3)}deg)`;
+  }, []);
+
+  const stopLoop = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  const tick = useCallback(() => {
+    const state = stateRef.current;
+
+    if (interpolationEnabled) {
+      state.x = lerpValue(state.x, state.targetX, HOVER_MEDIA_FOLLOW.positionEase);
+      state.y = lerpValue(state.y, state.targetY, HOVER_MEDIA_FOLLOW.positionEase);
+      state.rotation = lerpValue(state.rotation, state.targetRotation, HOVER_MEDIA_FOLLOW.rotationEase);
+    } else {
+      state.x = state.targetX;
+      state.y = state.targetY;
+      state.rotation = state.targetRotation;
+    }
+
+    applyTransform();
+
+    const positionSettled =
+      Math.abs(state.x - state.targetX) < 0.4
+      && Math.abs(state.y - state.targetY) < 0.4;
+    const rotationSettled = Math.abs(state.rotation - state.targetRotation) < 0.08;
+
+    if (!positionSettled || !rotationSettled) {
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      rafRef.current = null;
+    }
+  }, [applyTransform, interpolationEnabled]);
+
+  const scheduleTick = useCallback(() => {
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(tick);
+    }
+  }, [tick]);
+
+  const onShow = useCallback((x: number, y: number) => {
+    const state = stateRef.current;
+    state.targetX = x;
+    state.targetY = y;
+    state.targetRotation = 0;
+    state.x = x;
+    state.y = y;
+    state.rotation = 0;
+    state.lastX = x;
+    state.hasLastX = true;
+    applyTransform();
+    if (interpolationEnabled) {
+      scheduleTick();
+    }
+  }, [applyTransform, interpolationEnabled, scheduleTick]);
+
+  const onCursorMove = useCallback((x: number, y: number) => {
+    if (!active) return;
+
+    const state = stateRef.current;
+    if (interpolationEnabled && state.hasLastX) {
+      const dx = x - state.lastX;
+      state.targetRotation = clamp(
+        dx * HOVER_MEDIA_FOLLOW.rotationFactor,
+        -HOVER_MEDIA_FOLLOW.maxRotation,
+        HOVER_MEDIA_FOLLOW.maxRotation,
+      );
+    } else {
+      state.targetRotation = 0;
+    }
+
+    state.lastX = x;
+    state.hasLastX = true;
+    state.targetX = x;
+    state.targetY = y;
+
+    if (interpolationEnabled) {
+      scheduleTick();
+      return;
+    }
+
+    state.x = x;
+    state.y = y;
+    state.rotation = state.targetRotation;
+    applyTransform();
+  }, [active, applyTransform, interpolationEnabled, scheduleTick]);
+
+  const exit = useCallback((onComplete?: () => void) => {
+    stopLoop();
+    stateRef.current.hasLastX = false;
+    onComplete?.();
+  }, [stopLoop]);
+
+  const reset = useCallback(() => {
+    stopLoop();
+    stateRef.current = {
+      x: 0,
+      y: 0,
+      rotation: 0,
+      targetX: 0,
+      targetY: 0,
+      targetRotation: 0,
+      lastX: 0,
+      hasLastX: false,
+    };
+    if (anchorRef.current) {
+      anchorRef.current.style.transform = '';
+    }
+  }, [stopLoop]);
+
+  useEffect(() => {
+    if (!active) {
+      reset();
+    }
+    return stopLoop;
+  }, [active, reset, stopLoop]);
+
+  return { anchorRef, onShow, onCursorMove, exit, reset };
+}
 
 function getCSS(P: string): string {
   return `
@@ -295,14 +489,21 @@ function getCSS(P: string): string {
   box-sizing: border-box;
 }
 
-.${P}-hover-image,
-.${P}-hover-video {
+.${P}-hover-media-anchor {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 10;
   pointer-events: none;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.${P}-hover-image,
+.${P}-hover-video {
+  position: relative;
   display: block;
+  pointer-events: none;
 }
 
 .${P}-list-item {
@@ -1797,6 +1998,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     cutLabel,
     imageSize,
     imageOnHover,
+    imagePosition = 'cursor',
+    imageInterpolation = 'on',
     entryHoverEffect,
     entryHoverShowOption,
     rowPaddingTop,
@@ -1814,7 +2017,14 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
   const [visibleRowCount, setVisibleRowCount] = useState<number | undefined>(undefined);
   const [hoverImage, setHoverImage] = useState<HoverImageState | null>(null);
+  const hoverShowPositionRef = useRef<{ x: number; y: number } | null>(null);
   const showHoverImage = imageOnHover === 'on' && (!isEditor || isPreviewMode);
+  const isCursorImagePosition = imagePosition === 'cursor';
+  const interpolationEnabled = isCursorImagePosition && imageInterpolation === 'on';
+  const { anchorRef, onShow, onCursorMove, exit } = useHoverMediaFollow(
+    Boolean(showHoverImage && hoverImage !== null),
+    interpolationEnabled,
+  );
   const cutEnabled = (cut ?? 0) > 0;
   const isVerticalLayout = type === 'b';
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2106,34 +2316,35 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     : 0;
   const columnsRightEdge = resolvedContentWidth;
 
-  const getHoverImagePosition = (event: React.MouseEvent) => {
-    const container = containerRef.current;
-    if (!container) {
-      return { x: 0, y: 0 };
-    }
-
-    const rect = container.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left + HOVER_IMAGE_CURSOR_OFFSET,
-      y: event.clientY - rect.top + HOVER_IMAGE_CURSOR_OFFSET,
-    };
-  };
+  const resolveHoverImagePosition = (event: React.MouseEvent | null, widthPx: number) =>
+    getListHoverImagePosition(
+      imagePosition,
+      containerRef.current,
+      isCursorImagePosition ? event : null,
+      widthPx,
+    );
 
   const handleRowMouseEnter = (row: ListItemRow, event: React.MouseEvent) => {
     if (!showHoverImage) return;
 
     const image = row.image;
     if (!image?.url) {
-      setHoverImage(null);
+      exit(() => setHoverImage(null));
       return;
     }
 
-    const { x, y } = getHoverImagePosition(event);
     const minWidth = imageSize?.min ?? 80;
     const maxWidth = imageSize?.max ?? 320;
-    const widthPx = hoverImage?.rowId === row.id
+    const isSameRow = hoverImage?.rowId === row.id;
+    const widthPx = isSameRow
       ? hoverImage.widthPx
       : randomBetween(minWidth, maxWidth);
+    const { x, y } = resolveHoverImagePosition(event, widthPx);
+
+    if (isSameRow && isCursorImagePosition) {
+      onCursorMove(x, y);
+      return;
+    }
 
     setHoverImage({
       rowId: row.id,
@@ -2141,32 +2352,28 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       objectFit: 'contain',
       isVideo: isVideoMedia(image),
       widthPx,
-      x,
-      y,
     });
+    hoverShowPositionRef.current = { x, y };
   };
 
   const handleWrapperMouseMove = (event: React.MouseEvent) => {
-    if (!showHoverImage || !hoverImage) return;
+    if (!showHoverImage || !hoverImage || !isCursorImagePosition) return;
 
-    const { x, y } = getHoverImagePosition(event);
-    setHoverImage((prev) => {
-      if (!prev) return prev;
-      if (prev.x === x && prev.y === y) return prev;
-      return { ...prev, x, y };
-    });
+    const { x, y } = resolveHoverImagePosition(event, hoverImage.widthPx);
+    onCursorMove(x, y);
   };
 
   const handleWrapperMouseLeave = () => {
-    setHoverImage(null);
+    if (!hoverImage) return;
+    exit(() => setHoverImage(null));
   };
 
   const handleCutItemMouseEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (revealHoverActive) {
       setRevealOpenDirectionFromMouseEnter(event, P);
     }
-    if (!showHoverImage) return;
-    setHoverImage(null);
+    if (!showHoverImage || !hoverImage) return;
+    exit(() => setHoverImage(null));
   };
 
   const handleCutItemMouseLeave = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -2174,6 +2381,14 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       setRevealCloseDirectionFromMouseLeave(event, P);
     }
   };
+
+  useLayoutEffect(() => {
+    if (!hoverImage || !hoverShowPositionRef.current) return;
+
+    const { x, y } = hoverShowPositionRef.current;
+    hoverShowPositionRef.current = null;
+    onShow(x, y);
+  }, [hoverImage?.rowId, hoverImage?.url, onShow]);
 
   useLayoutEffect(() => {
     if (!showControls || isVerticalLayout) {
@@ -2853,18 +3068,17 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               height: 'auto',
               maxHeight: hoverSize,
               objectFit: 'contain',
-              left: hoverImage.x,
-              top: hoverImage.y,
-              position: 'absolute',
             };
 
             return (
-              <ListHoverMedia
-                key={`${hoverImage.rowId}-${hoverImage.url}`}
-                media={hoverImage}
-                className={hoverImage.isVideo ? `${P}-hover-video` : `${P}-hover-image`}
-                style={hoverMediaStyle}
-              />
+              <div ref={anchorRef} className={`${P}-hover-media-anchor`}>
+                <ListHoverMedia
+                  key={`${hoverImage.rowId}-${hoverImage.url}`}
+                  media={hoverImage}
+                  className={hoverImage.isVideo ? `${P}-hover-video` : `${P}-hover-image`}
+                  style={hoverMediaStyle}
+                />
+              </div>
             );
           })()}
         </div>
