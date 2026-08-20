@@ -5,6 +5,7 @@ import { LightboxComponent } from './Lightbox/LightboxComponent';
 import { FormComponent } from './Form/FormComponent';
 import { OnelinerFormComponent } from './OnelinerForm/OnelinerFormComponent';
 import { MarqueeComponent } from './Marquee/MarqueeComponent';
+import { MarqueeTextComponent } from './MarqueeText/MarqueeTextComponent';
 import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridComponent';
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
@@ -28,6 +29,7 @@ export const components: Component[] = [
   FormComponent,
   OnelinerFormComponent,
   MarqueeComponent,
+  MarqueeTextComponent,
   TestimonialGridComponent,
   TestimonialSingleComponent,
   GridComponent,
