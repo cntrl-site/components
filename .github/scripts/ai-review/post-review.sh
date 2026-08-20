@@ -55,6 +55,12 @@ fmt_duration() { # $1=seconds -> mm:ss  (coerces junk/empty to 0)
   awk -v s="${1:-0}" 'BEGIN { s = int(s + 0); printf "%02d:%02d", int(s / 60), s % 60 }'
 }
 
+# Single source of truth for "does this text render as notes": both the
+# status-cell label and emit_notes must agree on it, or the label lies.
+has_content() { # $1=string -> succeeds when it contains any non-whitespace
+  [ -n "$(printf '%s' "$1" | tr -d '[:space:]')" ]
+}
+
 status_cell() { # $1=status  $2=findings (coerces junk/empty to 0)  $3=has_notes(true|false)
   local count
   count="$(awk -v n="${2:-0}" 'BEGIN { printf "%d", n + 0 }')"
@@ -62,7 +68,7 @@ status_cell() { # $1=status  $2=findings (coerces junk/empty to 0)  $3=has_notes
     clean)    printf '✅ Clean' ;;
     # A findings status can carry zero line-anchored comments when the agent
     # only wrote non-line-specific notes. Label that from the actual notes
-    # content (the same predicate emit_notes uses) rather than printing the
+    # content (has_content, shared with emit_notes) rather than printing the
     # confusing "❌ 0 finding(s)" — or claiming notes exist when they don't.
     findings) if [ "$count" -gt 0 ]; then
                 printf '❌ %s finding(s)' "$count"
@@ -110,7 +116,7 @@ read_summary() { # $1=findings-file
 # the notes are non-empty.
 emit_notes() { # $1=label  $2=summary-markdown
   local label="$1" body="$2"
-  [ -z "$(printf '%s' "$body" | tr -d '[:space:]')" ] && return 0
+  has_content "$body" || return 0
   printf '<details>\n<summary>%s — notes</summary>\n\n%s\n\n</details>\n\n' "$label" "$body"
 }
 
@@ -120,7 +126,7 @@ NUM="$(printf '%s' "$ALL_COMMENTS" | jq 'length')"
 
 QUAL_SUMMARY="$(read_summary "${QUAL_FINDINGS_FILE:-}")"
 QUAL_HAS_NOTES=false
-[ -n "$(printf '%s' "$QUAL_SUMMARY" | tr -d '[:space:]')" ] && QUAL_HAS_NOTES=true
+has_content "$QUAL_SUMMARY" && QUAL_HAS_NOTES=true
 QUAL_CELL="$(status_cell "${QUAL_STATUS:-}" "${QUAL_FINDINGS:-0}" "$QUAL_HAS_NOTES")"
 
 BODY_FILE="/tmp/ai-review-body.md"
