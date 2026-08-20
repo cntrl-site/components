@@ -227,6 +227,8 @@ function getCSS(P: string): string {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
   transition: background-color 250ms;
 }
 .${P}-wrapper.${P}-entry-hover-default .${P}-item:not(.${P}-item-open):hover .${P}-icon-image,
@@ -598,8 +600,8 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
                           <span className={`${P}-icon ${P}-icon-custom ${iconAnimClass}`} aria-hidden="true">
                             <SvgImage
                               url={iconSrc}
-                              fill={iconColor}
-                              hoverFill={iconHoverColor}
+                              fill={`var(--${P}-icon-color)`}
+                              hoverFill={`var(--${P}-icon-hover-color, var(--${P}-icon-color))`}
                               className={`${P}-icon-image`}
                             />
                           </span>
