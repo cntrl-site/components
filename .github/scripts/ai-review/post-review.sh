@@ -55,16 +55,21 @@ fmt_duration() { # $1=seconds -> mm:ss  (coerces junk/empty to 0)
   awk -v s="${1:-0}" 'BEGIN { s = int(s + 0); printf "%02d:%02d", int(s / 60), s % 60 }'
 }
 
-status_cell() { # $1=status  $2=findings
+status_cell() { # $1=status  $2=findings (coerces junk/empty to 0)  $3=has_notes(true|false)
+  local count
+  count="$(awk -v n="${2:-0}" 'BEGIN { printf "%d", n + 0 }')"
   case "$1" in
     clean)    printf '✅ Clean' ;;
-    # status=findings with a zero line-anchored count means the agent only
-    # wrote non-line-specific notes (the `summary` field) — label it as such
-    # instead of the confusing "❌ 0 finding(s)".
-    findings) if [ "${2:-0}" -gt 0 ]; then
-                printf '❌ %s finding(s)' "$2"
-              else
+    # A findings status can carry zero line-anchored comments when the agent
+    # only wrote non-line-specific notes. Label that from the actual notes
+    # content (the same predicate emit_notes uses) rather than printing the
+    # confusing "❌ 0 finding(s)" — or claiming notes exist when they don't.
+    findings) if [ "$count" -gt 0 ]; then
+                printf '❌ %s finding(s)' "$count"
+              elif [ "${3:-false}" = true ]; then
                 printf '📝 Notes only (see below)'
+              else
+                printf '✅ Clean'
               fi ;;
     skipped)  printf '⏭️ Skipped (agent did not run)' ;;
     failed)   printf '⚠️ Failed' ;;
@@ -109,13 +114,14 @@ emit_notes() { # $1=label  $2=summary-markdown
   printf '<details>\n<summary>%s — notes</summary>\n\n%s\n\n</details>\n\n' "$label" "$body"
 }
 
-QUAL_CELL="$(status_cell "${QUAL_STATUS:-}" "${QUAL_FINDINGS:-0}")"
-
 QUAL_COMMENTS="$(collect_comments "${QUAL_FINDINGS_FILE:-}" "$QUAL_MARKER" "$QUAL_LABEL")"
 ALL_COMMENTS="$QUAL_COMMENTS"
 NUM="$(printf '%s' "$ALL_COMMENTS" | jq 'length')"
 
 QUAL_SUMMARY="$(read_summary "${QUAL_FINDINGS_FILE:-}")"
+QUAL_HAS_NOTES=false
+[ -n "$(printf '%s' "$QUAL_SUMMARY" | tr -d '[:space:]')" ] && QUAL_HAS_NOTES=true
+QUAL_CELL="$(status_cell "${QUAL_STATUS:-}" "${QUAL_FINDINGS:-0}" "$QUAL_HAS_NOTES")"
 
 BODY_FILE="/tmp/ai-review-body.md"
 # Hidden markers go ABOVE the heading/table (a comment line inside a markdown
