@@ -58,7 +58,14 @@ fmt_duration() { # $1=seconds -> mm:ss  (coerces junk/empty to 0)
 status_cell() { # $1=status  $2=findings
   case "$1" in
     clean)    printf '✅ Clean' ;;
-    findings) printf '❌ %s finding(s)' "${2:-0}" ;;
+    # status=findings with a zero line-anchored count means the agent only
+    # wrote non-line-specific notes (the `summary` field) — label it as such
+    # instead of the confusing "❌ 0 finding(s)".
+    findings) if [ "${2:-0}" -gt 0 ]; then
+                printf '❌ %s finding(s)' "$2"
+              else
+                printf '📝 Notes only (see below)'
+              fi ;;
     skipped)  printf '⏭️ Skipped (agent did not run)' ;;
     failed)   printf '⚠️ Failed' ;;
     *)        printf '— Not run' ;;
