@@ -1,0 +1,197 @@
+name: AI Code Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review (required for manual dispatch)'
+        required: true
+        type: number
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  # Required by anthropics/claude-code-action@v1 for its own GitHub OIDC token
+  # mint. Independent of model auth — we authenticate to Anthropic with the
+  # ANTHROPIC_API_KEY secret injected as anthropic_api_key.
+  id-token: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  REVIEW_MODEL: claude-opus-4-8
+  SUMMARY_MARKER: '<!-- ai-review-summary -->'
+
+jobs:
+  resolve-pr:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+    steps:
+      - name: Resolve PR number
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "pr_number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ github.event.inputs.pr_number }}" ]; then
+            echo "pr_number=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::No PR number available. Use workflow_dispatch with a pr_number input."
+            exit 1
+          fi
+
+  # Thermo-nuclear code-quality reviewer. This is the only agent today; adding
+  # another (e.g. a security reviewer) means copying this job, swapping the
+  # prompt/marker/findings file, uploading its findings artifact, and wiring its
+  # outputs into the post-review job below.
+  quality-review:
+    needs: resolve-pr
+    # Skip bot-authored PRs (claude-code-action rejects unrecognized bots and
+    # there's no value reviewing automated updates) and fork PRs (the
+    # ANTHROPIC_API_KEY secret is not available to forks).
+    if: >-
+      github.event.pull_request.user.type != 'Bot' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.results.outputs.status }}
+      num_findings: ${{ steps.results.outputs.num_findings }}
+      record_sha: ${{ steps.results.outputs.record_sha }}
+      head_sha: ${{ steps.state.outputs.head_sha }}
+      turns: ${{ steps.results.outputs.turns }}
+      cost: ${{ steps.results.outputs.cost }}
+      duration: ${{ steps.results.outputs.duration }}
+    env:
+      AGENT: quality
+      MARKER: '<!-- ai-review-quality -->'
+      REPO: ${{ github.repository }}
+      PR: ${{ needs.resolve-pr.outputs.pr_number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          filter: blob:none
+          fetch-depth: 0
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          mkdir -p ~/.local/bin
+          ln -sf "$(npm prefix -g)/bin/claude" ~/.local/bin/claude
+
+      - name: Gather continuity state
+        id: state
+        env:
+          GH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/ai-review/gather-state.sh
+
+      # No continue-on-error: a genuine action failure (bad model, Anthropic
+      # auth, crash) must turn the job — and the workflow — red. The action's own
+      # workflow-validation gate exits 0 (a benign skip, surfaced by the
+      # Compute results step), so it does NOT trip this.
+      - uses: anthropics/claude-code-action@b7d4743d48297882c74b24c8bce8ec28a62d1d7c # v1.0.159
+        id: review
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are the CODE QUALITY reviewer for PR #${{ needs.resolve-pr.outputs.pr_number }} in ${{ github.repository }}.
+
+            IMPORTANT: Do NOT post anything to GitHub (no comments, no reviews, no gh mutations). The `gh` CLI is pre-authenticated for READ queries only. Your sole output is the findings file described below; the workflow posts it.
+
+            Apply the thermo-nuclear code-quality rubric: `Read` the file `.claude/skills/coding/review/thermo-nuclear-code-quality-review/SKILL.md` from the checkout and follow it verbatim as your complete review rubric. (You may also try the `/thermo-nuclear-code-quality-review` skill, but reading the file is the dependable path.)
+
+            Determine what to review (do your own diffing with read-only commands):
+            - PRIOR_SHA="${{ steps.state.outputs.prior_sha }}"  (empty means first run)
+            - HEAD_SHA="${{ steps.state.outputs.head_sha }}"
+            - If PRIOR_SHA is non-empty and `git merge-base --is-ancestor "$PRIOR_SHA" "$HEAD_SHA"` succeeds, review only the incremental diff: `git diff "$PRIOR_SHA" "$HEAD_SHA"`.
+            - Otherwise (first run, rebase, or force-push) review the full PR diff: `gh pr diff ${{ needs.resolve-pr.outputs.pr_number }}`.
+            - You may (and for thermo-nuclear structural judgment SHOULD) read full files for holistic context.
+
+            Avoid repeats: read `/tmp/quality-open-threads.md` — these are your still-open prior findings. Do NOT raise any issue already covered there; only report genuinely new problems, and prefer a small number of high-conviction findings.
+
+            Write your findings to `/tmp/quality-findings.json` with EXACTLY this schema:
+            {
+              "summary": "<markdown for non-line-specific structural findings, e.g. 'this file crosses 1k lines', cross-cutting code-judo, or empty string>",
+              "comments": [
+                { "path": "<in-scope file>", "line": <int new-file line that is part of the diff>, "body": "<markdown finding + suggested restructuring>" }
+              ]
+            }
+            Rules for the file: `line` must be a changed/added line on the new (RIGHT) side of the diff. Put non-line-specific structural findings into `summary`. If there are no findings, write {"summary":"","comments":[]}.
+          claude_args: >-
+            --model ${{ env.REVIEW_MODEL }}
+            --max-turns 40
+            --allowedTools Read,Write,Glob,Grep,Skill,Bash(gh pr diff *),Bash(gh pr view *),Bash(git diff *),Bash(git log *),Bash(git show *),Bash(git merge-base *),Bash(git rev-parse *),Bash(cat *),Bash(ls *),Bash(grep *),Bash(wc *),Bash(head *),Bash(tail *),Bash(find *)
+
+      - name: Compute results
+        id: results
+        if: always()
+        env:
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          FINDINGS_FILE: /tmp/quality-findings.json
+          HEAD_SHA: ${{ steps.state.outputs.head_sha }}
+          PRIOR_SHA: ${{ steps.state.outputs.prior_sha }}
+        run: bash .github/scripts/ai-review/compute-results.sh
+
+      # Hand the findings to the post-review job (which posts the combined
+      # review). Only when the agent actually ran — the action is
+      # validation-skipped on PRs until this workflow is on the default branch,
+      # and produces no execution_file in that case.
+      - name: Upload findings
+        if: always() && steps.review.outcome == 'success' && steps.review.outputs.execution_file
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ai-review-findings-quality
+          path: /tmp/quality-findings.json
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # Posts ONE combined review once the agent(s) finish: the body is the per-run
+  # status table + a collapsed notes block per agent, and every line-anchored
+  # finding is attached as an inline comment on that review. Shares data across
+  # jobs via job outputs (table) and artifacts (findings).
+  post-review:
+    needs: [resolve-pr, quality-review]
+    # Run whenever the agent job actually ran (success OR failure), so the
+    # review can report a ⚠️ Failed agent. Stay skipped only when it was skipped
+    # (fork/bot PR) or the run was cancelled (superseded).
+    if: ${{ !cancelled() && needs.quality-review.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    env:
+      REPO: ${{ github.repository }}
+      PR: ${{ needs.resolve-pr.outputs.pr_number }}
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      HEAD_SHA: ${{ needs.quality-review.outputs.head_sha }}
+      QUAL_MARKER: '<!-- ai-review-quality -->'
+      QUAL_FINDINGS_FILE: /tmp/findings/quality/quality-findings.json
+      QUAL_STATUS: ${{ needs.quality-review.outputs.status }}
+      QUAL_FINDINGS: ${{ needs.quality-review.outputs.num_findings }}
+      QUAL_RECORD_SHA: ${{ needs.quality-review.outputs.record_sha }}
+      QUAL_TURNS: ${{ needs.quality-review.outputs.turns }}
+      QUAL_COST: ${{ needs.quality-review.outputs.cost }}
+      QUAL_DURATION: ${{ needs.quality-review.outputs.duration }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          filter: blob:none
+          fetch-depth: 1
+
+      # Findings may be absent (agent clean-with-no-summary, skipped, or
+      # failed); the post-review script treats a missing file as "no inline
+      # comments", so tolerate a missing artifact.
+      - name: Download quality findings
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ai-review-findings-quality
+          path: /tmp/findings/quality
+
+      - name: Post combined review
+        run: bash .github/scripts/ai-review/post-review.sh

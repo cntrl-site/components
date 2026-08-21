@@ -106,3 +106,5 @@ dist
 
 # Ignore built files
 /lib/
+
+.claude/settings.local.json

@@ -718,6 +718,18 @@ const schema: ComponentSchemaV1 = {
         title: 'Image On Hover',
         display: { type: 'toggle-cycle', enum: ['on', 'off'] },
       },
+      imagePosition: {
+        type: 'string',
+        scope: 'layout',
+        title: 'Image Position',
+        display: { type: 'toggle-cycle', enum: ['left', 'center', 'right', 'cursor'] },
+      },
+      imageInterpolation: {
+        type: 'boolean',
+        scope: 'common',
+        title: 'Interpolation',
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
+      },
       imageSize: {
         type: 'object',
         scope: 'layout',
@@ -858,6 +870,8 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       imageOnHover: 'on',
+      imagePosition: 'cursor',
+      imageInterpolation: 'on',
       entryHoverEffect: 'default',
       entryHoverShowOption: 'always',
       cutLabel: 'SEE ALL',
@@ -960,6 +974,10 @@ const schema: ComponentSchemaV1 = {
         if: { name: 'type', value: 'a' },
         then: { name: `properties.${letter}ColumnPaddingBottom.display.visible`, value: false },
       })),
+      {
+        if: { name: 'imagePosition', value: 'cursor', isNotEqual: true },
+        then: { name: 'properties.imageInterpolation.display.enabled', value: false },
+      },
     ],
     layout: [
       '__componentName__',
@@ -971,6 +989,8 @@ const schema: ComponentSchemaV1 = {
       'entriesCount',
       'cellMinHeight',
       'imageOnHover',
+      'imagePosition',
+      'imageInterpolation',
       'imageSize',
       'dividerWidth',
       'showVisibility',
@@ -998,6 +1018,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', title: '', items: ['columns', 'wrapperWidth'] },
         { type: 'row', title: 'Entries', items: ['entriesCount', 'cellMinHeight'] },
         { type: 'row', title: '', items: ['imageOnHover', 'imageSize'] },
+        { type: 'row', title: '', items: ['imagePosition', 'imageInterpolation'] },
         { type: 'row', title: 'Entry Hover', items: ['entryHoverEffect', 'entryHoverShowOption'] },
         { type: 'row', title: 'Divider Settings', items: ['dividerWidth', 'showVisibility'] },
       ],

@@ -363,7 +363,7 @@ const schema: ComponentSchemaV1 = {
       dividerStyle: 'dotted',
       entryHoverEffect: 'default',
       autoclose: 'off',
-      icon: 'https://cdn.cntrl.site/component-assets/PlusIcon.svg',
+      icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01M0GB8Z9EQFMGYA20F2J0ACA8.svg',
       iconAnimation: 'rotate 45',
       questionColor: '#000000',
       answerColor: '#000000',
