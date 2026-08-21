@@ -137,6 +137,11 @@ const MIN_CONTENT_SEQUENCE_REPEAT = 3;
 const MAX_CONTENT_SEQUENCE_REPEAT = 12;
 const OUTER_SET_COPIES = 3;
 const DEFAULT_CAP_HEIGHT_RATIO = 0.72;
+const CURVE_AMPLITUDE_SCALE = 100;
+const CURVE_FREQUENCY_SCALE = 10;
+
+const normalizeCurveAmplitude = (value: number): number => Math.max(0, value) / CURVE_AMPLITUDE_SCALE;
+const normalizeCurveFrequency = (value: number): number => Math.max(0, value) / CURVE_FREQUENCY_SCALE;
 
 const restartTrackAnimation = (track: HTMLElement) => {
   track.style.setProperty('animation-name', 'none');
@@ -173,12 +178,81 @@ type MarqueeTextItemViewProps = {
   isCurve: boolean;
 };
 
-const applyWaveTransform = (el: HTMLElement, y: number, rotateDeg: number) => {
-  el.style.transform = `translate3d(0, ${y}px, 0) rotate(${rotateDeg}deg)`;
+const applyWaveTransform = (el: HTMLElement, x: number, y: number, rotateDeg: number) => {
+  el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotateDeg}deg)`;
 };
 
 const clearWaveTransform = (el: HTMLElement) => {
   el.style.transform = '';
+};
+
+const readTranslateX = (transform: string): number => {
+  if (!transform || transform === 'none') return 0;
+  try {
+    return new DOMMatrixReadOnly(transform).m41;
+  } catch {
+    return 0;
+  }
+};
+
+const getLocalCenterX = (el: HTMLElement, ancestor: HTMLElement): number => {
+  let x = el.offsetWidth / 2;
+  let node: HTMLElement | null = el;
+  while (node && node !== ancestor) {
+    x += node.offsetLeft;
+    x += readTranslateX(getComputedStyle(node).transform);
+    const parent = node.offsetParent as HTMLElement | null;
+    if (!parent || parent === node) break;
+    node = parent;
+  }
+  return x;
+};
+
+const WAVE_ARC_LUT_SAMPLES = 96;
+
+type WaveArcLut = {
+  wavelength: number;
+  periodArc: number;
+  x: Float64Array;
+  s: Float64Array;
+};
+
+// Invert s(x) = ∫ sqrt(1 + (A k cos(k t))²) dt so glyphs keep their layout
+// advance along the curve instead of along horizontal x.
+const buildWaveArcLut = (amplitude: number, k: number, samples: number): WaveArcLut | null => {
+  if (k <= 0 || amplitude <= 0 || samples < 2) return null;
+  const wavelength = (2 * Math.PI) / k;
+  const x = new Float64Array(samples + 1);
+  const s = new Float64Array(samples + 1);
+  const slopeAmp = amplitude * k;
+  const ds = (t: number) => Math.sqrt(1 + (slopeAmp * Math.cos(k * t)) ** 2);
+  const dx = wavelength / samples;
+  for (let i = 0; i < samples; i += 1) {
+    const t0 = i * dx;
+    const t1 = t0 + dx;
+    x[i + 1] = t1;
+    s[i + 1] = s[i] + (ds(t0) + ds(t1)) * 0.5 * dx;
+  }
+  return { wavelength, periodArc: s[samples], x, s };
+};
+
+const xFromArcLength = (lut: WaveArcLut, targetS: number): number => {
+  if (lut.periodArc <= 0) return targetS;
+  const sign = targetS < 0 ? -1 : 1;
+  const sAbs = Math.abs(targetS);
+  const n = Math.floor(sAbs / lut.periodArc);
+  const r = sAbs - n * lut.periodArc;
+  const { s, x } = lut;
+  let lo = 0;
+  let hi = s.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (s[mid] <= r) lo = mid;
+    else hi = mid;
+  }
+  const span = s[hi] - s[lo];
+  const t = span > 0 ? (r - s[lo]) / span : 0;
+  return sign * (n * lut.wavelength + x[lo] + (x[hi] - x[lo]) * t);
 };
 
 const buildCurveBackgroundPath = (
@@ -187,13 +261,23 @@ const buildCurveBackgroundPath = (
   frequency: number,
   centerY: number,
 ): string => {
-  const samples = Math.max(48, Math.ceil(Math.max(0, frequency) * 32));
-  const k = width > 0 ? (2 * Math.PI * Math.max(0, frequency)) / width : 0;
-  const parts: string[] = [];
-  for (let i = 0; i <= samples; i++) {
-    const x = (i / samples) * width;
-    const y = centerY + amplitude * Math.sin(k * x);
-    parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)} ${y.toFixed(2)}`);
+  const periods = Math.max(0, frequency);
+  const k = width > 0 ? (2 * Math.PI * periods) / width : 0;
+  const yAt = (x: number) => centerY + amplitude * Math.sin(k * x);
+  const dyAt = (x: number) => amplitude * k * Math.cos(k * x);
+  const segments = Math.max(4, Math.ceil(periods * 4));
+  const parts: string[] = [`M0 ${yAt(0).toFixed(2)}`];
+  for (let i = 0; i < segments; i++) {
+    const x0 = (i / segments) * width;
+    const x1 = ((i + 1) / segments) * width;
+    const dx = x1 - x0;
+    const y0 = yAt(x0);
+    const y1 = yAt(x1);
+    const c1x = x0 + dx / 3;
+    const c1y = y0 + (dyAt(x0) * dx) / 3;
+    const c2x = x1 - dx / 3;
+    const c2y = y1 - (dyAt(x1) * dx) / 3;
+    parts.push(`C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`);
   }
   return parts.join(' ');
 };
@@ -254,7 +338,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     layoutType,
     curveAmplitude,
     curveFrequency,
-    angle,
     textFontFamily,
     textFontSettings,
     textFontSize,
@@ -266,6 +349,8 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     backgroundColor,
   } = settings;
   const isCurveLayout = layoutType === 'curve';
+  const amplitudeRatio = normalizeCurveAmplitude(curveAmplitude);
+  const curvePeriods = normalizeCurveFrequency(curveFrequency);
   const scopedCss = useMemo(() => getCSS(P, animationDistance, isCurveLayout), [P, animationDistance, isCurveLayout]);
 
   const textCss = useMemo<CSSProperties>(() => textStylesToCss({
@@ -406,7 +491,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     if (!wrapper || !set) return;
     let raf = 0;
     const measure = () => {
-      const width = wrapper.getBoundingClientRect().width || wrapper.offsetWidth;
+      const width = wrapper.offsetWidth;
       const bandHeight = set.offsetHeight;
       if (width > 0) setCurveWidthPx((prev) => (Math.abs(prev - width) > 0.5 ? width : prev));
       if (bandHeight > 0) setCurveBandHeightPx((prev) => (Math.abs(prev - bandHeight) > 0.5 ? bandHeight : prev));
@@ -431,39 +516,50 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     restartTrackAnimation(track);
   }, [useMarqueeTrack, animationDistance, direction, pxPerSec]);
 
-  // Curve layout only: a sine wave (amplitude + frequency across the wrapper width).
-  // Each glyph and image is placed independently from its untransformed x in the
-  // viewport, with rotation from the wave's local slope. Straight and angle never
-  // enter this loop, and a cancelled flag stops any in-flight frame after leaving curve.
+  // Curve layout only: a sine wave in the band's local layout space (offsetWidth
+  // + offsetLeft), not screen getBoundingClientRect. Glyphs are placed by arc
+  // length so layout advance (including letter-spacing) is kept along the path,
+  // not along horizontal x. Straight never enters this loop.
   useLayoutEffect(() => {
     if (!isCurveLayout || !hasContent) return;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
     let raf = 0;
     let cancelled = false;
+    let lut: WaveArcLut | null = null;
+    let lutKey = '';
     const tick = () => {
       if (cancelled) return;
+      const band = wrapper.querySelector<HTMLElement>(`.${P}-marquee-wrapper`) ?? wrapper;
+      const width = band.offsetWidth || 1;
+      const amplitude = width * amplitudeRatio;
+      const k = (2 * Math.PI * curvePeriods) / width;
+      const nextLutKey = `${width}|${amplitude}|${k}`;
+      if (nextLutKey !== lutKey) {
+        lutKey = nextLutKey;
+        lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
+      }
       const wrapperRect = wrapper.getBoundingClientRect();
-      const width = wrapperRect.width || 1;
-      const amplitude = width * Math.max(0, curveAmplitude);
-      const k = (2 * Math.PI * Math.max(0, curveFrequency)) / width;
       const viewLeft = wrapperRect.left;
       const viewRight = wrapperRect.right;
+      const extraRight = lut && lut.wavelength > 0
+        ? Math.max(0, (lut.periodArc / lut.wavelength - 1) * width)
+        : 0;
       const items = wrapper.querySelectorAll<HTMLElement>('[data-marquee-text-item]');
       items.forEach((item) => {
         const itemRect = item.getBoundingClientRect();
-        if (itemRect.right < viewLeft || itemRect.left > viewRight) return;
+        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) return;
         const nodes = item.querySelectorAll<HTMLElement>('[data-marquee-wave-node]');
         nodes.forEach((el) => {
           const inner = el.firstElementChild as HTMLElement | null;
           if (!inner) return;
-          const rect = el.getBoundingClientRect();
-          const centerX = rect.left + rect.width / 2 - wrapperRect.left;
-          const phase = k * centerX;
+          const localX = getLocalCenterX(el, band);
+          const xPath = lut ? xFromArcLength(lut, localX) : localX;
+          const phase = k * xPath;
           const y = amplitude * Math.sin(phase);
           const slope = amplitude * k * Math.cos(phase);
           const rotateDeg = Math.atan(slope) * (180 / Math.PI);
-          applyWaveTransform(inner, y, rotateDeg);
+          applyWaveTransform(inner, xPath - localX, y, rotateDeg);
         });
       });
       raf = requestAnimationFrame(tick);
@@ -478,7 +574,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
       });
       wrapper.querySelectorAll<HTMLElement>('[data-marquee-text-item]').forEach(clearWaveTransform);
     };
-  }, [isCurveLayout, curveAmplitude, curveFrequency, hasContent, setWidth, contentKey]);
+  }, [isCurveLayout, amplitudeRatio, curvePeriods, hasContent, setWidth, contentKey, P]);
 
   const onTrackEnter = () => {
     if (hoverPauseEnabled) setIsHovering(true);
@@ -487,44 +583,29 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     if (hoverPauseEnabled) setIsHovering(false);
   };
 
-  // Angle layout: rotating the band in place clips its corners against the
-  // wrapper's own box, since a CSS transform doesn't affect layout size. Instead
-  // the wrapper gets extra top/bottom padding sized to fit the rotated band.
-  // Percentage padding-top/bottom resolves against the containing block's WIDTH
-  // (a CSS quirk), so this is exact without measuring anything - it's a plain
-  // function of the `angle` prop, computed the same way on the server (where the
-  // editor's "auto" height calculator renders this via renderToStaticMarkup, and
-  // any effect/ref-based measurement would just read back zero) and the client.
-  const anglePaddingPercent = layoutType === 'angle'
-    ? Math.abs(Math.sin((angle * Math.PI) / 180)) * 50
-    : 0;
   const curvePaddingPercent = isCurveLayout
-    ? Math.max(0, curveAmplitude) * 100
+    ? amplitudeRatio * 100
     : 0;
-  const wrapperStyle: CSSProperties | undefined = layoutType === 'angle'
-    ? { paddingTop: `${anglePaddingPercent}%`, paddingBottom: `${anglePaddingPercent}%` }
-    : undefined;
   const bandStyle: CSSProperties = {
-    ...(layoutType === 'angle'
-      ? { transform: `rotate(${angle}deg)`, transformOrigin: 'center' }
-      : isCurveLayout
-        ? { paddingTop: `${curvePaddingPercent}%`, paddingBottom: `${curvePaddingPercent}%` }
-        : {}),
+    ...(isCurveLayout
+      ? { paddingTop: `${curvePaddingPercent}%`, paddingBottom: `${curvePaddingPercent}%` }
+      : {}),
     ...(!isCurveLayout ? { backgroundColor } : {}),
   };
-  const curveAmplitudePx = curveWidthPx * Math.max(0, curveAmplitude);
+  const curveAmplitudePx = curveWidthPx * amplitudeRatio;
   const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveBandHeightPx > 0
     ? buildCurveBackgroundPath(
       curveWidthPx,
       curveAmplitudePx,
-      curveFrequency,
+      curvePeriods,
       curveAmplitudePx + curveBandHeightPx / 2,
     )
     : '';
+  const curveViewBoxH = curveAmplitudePx * 2 + curveBandHeightPx;
   const curveBgSvg = curveBgPath ? (
     <svg
       className={`${P}-curve-bg`}
-      viewBox={`0 0 ${curveWidthPx} ${curveAmplitudePx * 2 + curveBandHeightPx}`}
+      viewBox={`0 0 ${curveWidthPx} ${curveViewBoxH}`}
       preserveAspectRatio="none"
       aria-hidden
     >
@@ -533,7 +614,8 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
         fill="none"
         stroke={backgroundColor}
         strokeWidth={curveBandHeightPx}
-        strokeLinecap="square"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   ) : null;
@@ -565,7 +647,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     const durationS = `${Math.max(0, durationMs) / 1000}s`;
 
     return (
-      <div ref={wrapperRef} className={`${P}-wrapper`} aria-label="Marquee text" style={wrapperStyle}>
+      <div ref={wrapperRef} className={`${P}-wrapper`} aria-label="Marquee text">
         <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
         {capRef}
         <div className={`${P}-marquee-wrapper`} style={bandStyle}>
@@ -601,7 +683,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   }
 
   return (
-    <div ref={wrapperRef} className={`${P}-wrapper`} style={wrapperStyle}>
+    <div ref={wrapperRef} className={`${P}-wrapper`}>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       {capRef}
       <div className={`${P}-marquee-wrapper`} style={bandStyle}>
@@ -633,10 +715,9 @@ export type MarqueeTextSettings = {
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
   gap: number;
-  layoutType: 'curve' | 'angle';
+  layoutType: 'straight' | 'curve';
   curveAmplitude: number;
   curveFrequency: number;
-  angle: number;
   textFontFamily: string;
   textFontSettings: {
     fontWeight: number;
