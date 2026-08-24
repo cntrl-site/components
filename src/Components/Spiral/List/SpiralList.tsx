@@ -6,6 +6,7 @@ import { useScopedStyles } from '../../utils/useScopedStyles';
 const ORBIT_STEPS = 48;
 const DEG_PER_SEC_PER_SPEED_UNIT = 10;
 const MAX_TOTAL_ITEMS = 400;
+const OVERFLOW_TURNS = 1;
 const DEFAULT_WIDTH = 1120 / 1440;
 const DEFAULT_IMAGE_WIDTH = 140 / 1440;
 const DEFAULT_TURN_HEIGHT = 550 / 1440;
@@ -24,6 +25,7 @@ function getCSS(P: string, keyframes: string): string {
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
+  clip-path: inset(0);
   isolation: isolate;
 }
 .${P}-item {
@@ -134,8 +136,6 @@ function resolveCommonCount(
   return Math.min(max, Math.max(min, Math.round(resolved)));
 }
 
-// Layout settings use `numeric-input` and may be stored as article-width units,
-// raw pixels, or accidentally double-divided by the layout exemplary (~1440).
 function resolveLayoutMetric(
   value: number | undefined,
   defaultValue: number,
@@ -145,9 +145,7 @@ function resolveLayoutMetric(
   const raw = typeof value === 'string' ? Number(value) : value;
   let resolved = raw ?? defaultValue;
   if (!Number.isFinite(resolved)) return defaultValue;
-  if (resolved > 0 && resolved < 0.01) {
-    resolved *= LAYOUT_EXEMPLARY;
-  } else if (resolved > 5) {
+  if (resolved > max / LAYOUT_EXEMPLARY) {
     resolved /= LAYOUT_EXEMPLARY;
   }
   return Math.min(max, Math.max(min, resolved));
@@ -182,12 +180,10 @@ function isVideoMedia(media: SpiralMedia): boolean {
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url ?? '');
 }
 
-// Perspective factor of a point on the cylinder: 1 at the front, (1 - d) / (1 + d) at the back.
 function getOrbitScale(depthFactor: number, angle: number): number {
   return (1 - depthFactor) / (1 - depthFactor * Math.cos(angle));
 }
 
-// Largest horizontal excursion over a full turn, normalized to the component `width`.
 function getSpreadFactor(depthFactor: number): number {
   let max = 0;
   for (let degrees = 0; degrees < 360; degrees += 1) {
@@ -201,7 +197,6 @@ function getMaxItemWidthFactor(isCover: boolean, scatter: number): number {
   return isCover ? 1 : 1 + SIZE_JITTER * (0.35 + scatter);
 }
 
-// `width` is the outer bounding box. Reserve half of the widest item on each side.
 function getOrbitRadius(
   width: number,
   imageWidth: number,
@@ -277,12 +272,16 @@ function getOrbitKeyframes(
   return `@keyframes ${P}-orbit {\n${frames.join('\n')}\n}`;
 }
 
+function mod(value: number, length: number): number {
+  return ((value % length) + length) % length;
+}
+
 function getOrbitPhase(index: number, itemsPerTurn: number): number {
-  return (index % itemsPerTurn) / itemsPerTurn;
+  return getOrbitSlotIndex(index, itemsPerTurn) / itemsPerTurn;
 }
 
 function getOrbitSlotIndex(index: number, itemsPerTurn: number): number {
-  return index % itemsPerTurn;
+  return mod(index, itemsPerTurn);
 }
 
 function getTurnIndex(index: number, itemsPerTurn: number): number {
@@ -357,13 +356,12 @@ export function SpiralList({
   );
 
   const verticalStep = turnHeight / itemsPerTurn;
-  const totalItems = Math.min(MAX_TOTAL_ITEMS, turns * itemsPerTurn);
   const imageHeight = imageWidth * getAspectHeightFactor(imageDisplay);
-  const maxItemHalfHeight = (imageHeight * getMaxItemWidthFactor(isCover, scatter)) / 2;
-  const verticalJitterPadding = scatter === 0 ? 0 : scatter * verticalStep * 0.5;
-  const verticalInset = maxItemHalfHeight + verticalJitterPadding;
+  const visibleItems = Math.min(MAX_TOTAL_ITEMS, turns * itemsPerTurn);
+  const overflowItems = OVERFLOW_TURNS * itemsPerTurn;
+  const totalItems = visibleItems + overflowItems * 2;
   const spiralSpan = Math.max(0, turns - 1) * turnHeight + (itemsPerTurn - 1) * verticalStep;
-  const wrapperHeight = verticalInset + spiralSpan + verticalInset;
+  const wrapperHeight = spiralSpan;
 
   const motionEnabled = speed > 0;
   const useScrollMotion = playback === 'scroll' && motionEnabled;
@@ -420,12 +418,13 @@ export function SpiralList({
         }}
       >
         {Array.from({ length: totalItems }, (_, index) => {
-          const item = mediaItems[index % mediaItems.length];
+          const logicalIndex = index - overflowItems;
+          const item = mediaItems[mod(logicalIndex, mediaItems.length)];
           const media = item.image as SpiralMedia;
-          const slotIndex = getOrbitSlotIndex(index, itemsPerTurn);
-          const phase = getOrbitPhase(index, itemsPerTurn);
+          const slotIndex = getOrbitSlotIndex(logicalIndex, itemsPerTurn);
+          const phase = getOrbitPhase(logicalIndex, itemsPerTurn);
           const orbitPhase = useScrollMotion ? normalizePhase(phase + scrollOrbitProgress) : phase;
-          const verticalOffset = getVerticalOffset(index, itemsPerTurn, turnHeight, verticalStep);
+          const verticalOffset = getVerticalOffset(logicalIndex, itemsPerTurn, turnHeight, verticalStep);
           const verticalJitter = scatter === 0 ? 0 : (hashUnit(slotIndex + 7.3) - 0.5) * scatter * verticalStep;
           const sizeJitter = isCover
             ? 1
@@ -441,7 +440,7 @@ export function SpiralList({
           } as CSSProperties;
 
           const itemStyle: CSSProperties = {
-            top: scaled(verticalInset + verticalOffset + verticalJitter),
+            top: scaled(verticalOffset + verticalJitter),
             transform: 'translateY(-50%)',
             ...orbitCssVars,
             ...(useCssAnimation
@@ -492,7 +491,7 @@ export function SpiralList({
 
           return (
             <div
-              key={`${turns}-${itemsPerTurn}-${index}`}
+              key={`${turns}-${itemsPerTurn}-${logicalIndex}`}
               className={useCssAnimation ? `${P}-item` : `${P}-item ${P}-item-static`}
               style={itemStyle}
             >
