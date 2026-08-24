@@ -50,6 +50,15 @@ function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
   pointer-events: none;
   z-index: 0;
 }
+.${P}-ribbon {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 0;
+}
 
 @keyframes ${P}-marquee-left {
   from { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
@@ -347,7 +356,9 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     textTextAppearance,
     textColor,
     backgroundColor,
+    ribbonWidth: ribbonWidthSetting,
   } = settings;
+  const ribbonWidth = ribbonWidthSetting ?? textLineHeight;
   const isCurveLayout = layoutType === 'curve';
   const amplitudeRatio = normalizeCurveAmplitude(curveAmplitude);
   const curvePeriods = normalizeCurveFrequency(curveFrequency);
@@ -380,11 +391,13 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const setRef = useRef<HTMLDivElement | null>(null);
+  const ribbonRef = useRef<HTMLDivElement | null>(null);
   const capRefEl = useRef<HTMLSpanElement | null>(null);
   const [capHeightPx, setCapHeightPx] = useState(0);
   const [opticalOffsetY, setOpticalOffsetY] = useState(0);
   const [curveBandHeightPx, setCurveBandHeightPx] = useState(0);
   const [curveWidthPx, setCurveWidthPx] = useState(0);
+  const [ribbonHeightPx, setRibbonHeightPx] = useState(0);
 
   const contentKey = useMemo(
     () => (content ?? []).map((i) => `${i.text}${i.image?.url ?? ''}`).join(' '),
@@ -479,6 +492,26 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
       ro.disconnect();
     };
   }, [useMarqueeTrack, contentKey, contentSequenceRepeat, originalItemCount, capHeightPx]);
+
+  useLayoutEffect(() => {
+    const ribbon = ribbonRef.current;
+    if (!ribbon) return;
+    let raf = 0;
+    const measure = () => {
+      const height = ribbon.offsetHeight;
+      if (height > 0) setRibbonHeightPx((prev) => (Math.abs(prev - height) > 0.5 ? height : prev));
+    };
+    raf = requestAnimationFrame(measure);
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    });
+    ro.observe(ribbon);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [ribbonWidth, isEditor]);
 
   useLayoutEffect(() => {
     if (!isCurveLayout) {
@@ -586,22 +619,35 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   const curvePaddingPercent = isCurveLayout
     ? amplitudeRatio * 100
     : 0;
+  const ribbonHeightCss = scaled(ribbonWidth);
   const bandStyle: CSSProperties = {
+    minHeight: ribbonHeightCss,
     ...(isCurveLayout
       ? { paddingTop: `${curvePaddingPercent}%`, paddingBottom: `${curvePaddingPercent}%` }
       : {}),
-    ...(!isCurveLayout ? { backgroundColor } : {}),
+  };
+  const ribbonStyle: CSSProperties = {
+    height: ribbonHeightCss,
+    ...(!isCurveLayout ? { backgroundColor } : { visibility: 'hidden' }),
+  };
+  const setStyle: CSSProperties = {
+    gap: scaled(gap),
+    minHeight: ribbonHeightCss,
   };
   const curveAmplitudePx = curveWidthPx * amplitudeRatio;
-  const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveBandHeightPx > 0
+  const curveStrokeWidth = ribbonHeightPx > 0 ? ribbonHeightPx : curveBandHeightPx;
+  // Content band must be at least the ribbon stroke so overflow:hidden does not clip
+  // the wave background at sine peaks (stroke extends ±ribbon/2 around the path).
+  const curveContentBandPx = Math.max(curveBandHeightPx, curveStrokeWidth);
+  const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveContentBandPx > 0
     ? buildCurveBackgroundPath(
       curveWidthPx,
       curveAmplitudePx,
       curvePeriods,
-      curveAmplitudePx + curveBandHeightPx / 2,
+      curveAmplitudePx + curveContentBandPx / 2,
     )
     : '';
-  const curveViewBoxH = curveAmplitudePx * 2 + curveBandHeightPx;
+  const curveViewBoxH = curveAmplitudePx * 2 + curveContentBandPx;
   const curveBgSvg = curveBgPath ? (
     <svg
       className={`${P}-curve-bg`}
@@ -613,12 +659,15 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
         d={curveBgPath}
         fill="none"
         stroke={backgroundColor}
-        strokeWidth={curveBandHeightPx}
+        strokeWidth={curveStrokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
   ) : null;
+  const ribbon = (
+    <div ref={ribbonRef} className={`${P}-ribbon`} style={ribbonStyle} aria-hidden />
+  );
 
   const renderItem = (item: MarqueeTextItem, copyIndex: number, slotIndex: number) => (
     <MarqueeTextItemView
@@ -651,6 +700,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
         <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
         {capRef}
         <div className={`${P}-marquee-wrapper`} style={bandStyle}>
+          {ribbon}
           {curveBgSvg}
           <div
             ref={trackRef}
@@ -670,7 +720,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
                 key={`set-${copyIndex}`}
                 ref={copyIndex === 0 ? setRef : undefined}
                 className={`${P}-marquee-set`}
-                style={{ gap: scaled(gap), paddingRight: scaled(gap) }}
+                style={{ ...setStyle, paddingRight: scaled(gap) }}
                 aria-hidden={copyIndex > 0}
               >
                 {setContent.map((item, slotIndex) => renderItem(item, copyIndex, slotIndex))}
@@ -687,11 +737,12 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       {capRef}
       <div className={`${P}-marquee-wrapper`} style={bandStyle}>
+        {ribbon}
         {curveBgSvg}
         <div
           ref={setRef}
           className={cn(`${P}-marquee-set`, `${P}-marquee-static`)}
-          style={{ gap: scaled(gap) }}
+          style={setStyle}
           aria-label="Marquee text"
         >
           {content?.map((item, itemIndex) => renderItem(item, 0, itemIndex))}
@@ -715,6 +766,7 @@ export type MarqueeTextSettings = {
   direction: 'left' | 'right';
   pauseOnHover: 'on' | 'off';
   gap: number;
+  ribbonWidth?: number;
   layoutType: 'straight' | 'curve';
   curveAmplitude: number;
   curveFrequency: number;

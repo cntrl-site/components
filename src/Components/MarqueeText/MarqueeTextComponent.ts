@@ -48,6 +48,13 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         display: { type: 'numeric-input' },
       },
+      ribbonWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Ribbon Width',
+        min: 0,
+        display: { type: 'numeric-input' },
+      },
       layoutType: {
         type: 'string',
         scope: 'common',
@@ -124,7 +131,7 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'style-panel-color-picker' },
         type: 'string',
         scope: 'common',
-        title: 'Background Color',
+        title: 'Ribbon Color',
       },
     },
     defaults: {
@@ -146,6 +153,7 @@ const schema: ComponentSchemaV1 = {
       m: {
         speed: 0.55,
         gap: 0.04,
+        ribbonWidth: 0.08,
         curveAmplitude: 6,
         curveFrequency: 15,
         textFontSize: 0.08,
@@ -154,6 +162,7 @@ const schema: ComponentSchemaV1 = {
       t: {
         speed: 1.64,
         gap: 0.02,
+        ribbonWidth: 0.05,
         curveAmplitude: 5,
         curveFrequency: 15,
         textFontSize: 0.05,
@@ -162,6 +171,7 @@ const schema: ComponentSchemaV1 = {
       d: {
         speed: 1.64,
         gap: 0.02,
+        ribbonWidth: 0.035,
         curveAmplitude: 5,
         curveFrequency: 15,
         textFontSize: 0.035,
@@ -184,6 +194,7 @@ const schema: ComponentSchemaV1 = {
       'direction',
       'pauseOnHover',
       'gap',
+      'ribbonWidth',
       'layoutType',
       'curveAmplitude',
       'curveFrequency',
@@ -198,8 +209,8 @@ const schema: ComponentSchemaV1 = {
       layout: [
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['direction', 'speed'] },
-        { type: 'row', items: ['gap', 'pauseOnHover'] },
-        { type: 'row', items: ['layoutType'] },
+        { type: 'row', items: ['ribbonWidth', 'gap'] },
+        { type: 'row', items: ['pauseOnHover', 'layoutType'] },
         { type: 'row', items: ['curveAmplitude', 'curveFrequency'] },
       ],
     },
