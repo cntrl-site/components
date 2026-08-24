@@ -74,7 +74,6 @@ function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
   display: flex;
   flex-direction: row;
   width: max-content;
-  will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   flex-wrap: nowrap;
@@ -160,21 +159,19 @@ const restartTrackAnimation = (track: HTMLElement) => {
   track.style.removeProperty('-webkit-animation-name');
 };
 
-const expandSetContent = (items: MarqueeTextItem[], repeat: number): MarqueeTextItem[] => {
-  const result: MarqueeTextItem[] = [];
-  for (let i = 0; i < repeat; i++) result.push(...items);
-  return result;
-};
+const expandSetContent = (items: MarqueeTextItem[], repeat: number): MarqueeTextItem[] => (
+  Array.from({ length: repeat * items.length }, (_, i) => items[i % items.length])
+);
 
-let sharedCanvasCtx: CanvasRenderingContext2D | null | undefined;
+const sharedCanvas = { ctx: undefined as CanvasRenderingContext2D | null | undefined };
 const getSharedCanvasCtx = (): CanvasRenderingContext2D | null => {
-  if (sharedCanvasCtx !== undefined) return sharedCanvasCtx;
+  if (sharedCanvas.ctx !== undefined) return sharedCanvas.ctx;
   if (typeof document === 'undefined') {
-    sharedCanvasCtx = null;
-    return sharedCanvasCtx;
+    sharedCanvas.ctx = null;
+    return sharedCanvas.ctx;
   }
-  sharedCanvasCtx = document.createElement('canvas').getContext('2d');
-  return sharedCanvasCtx;
+  sharedCanvas.ctx = document.createElement('canvas').getContext('2d');
+  return sharedCanvas.ctx;
 };
 
 type MarqueeTextItemViewProps = {
@@ -204,17 +201,26 @@ const readTranslateX = (transform: string): number => {
   }
 };
 
-const getLocalCenterX = (el: HTMLElement, ancestor: HTMLElement): number => {
-  let x = el.offsetWidth / 2;
-  let node: HTMLElement | null = el;
-  while (node && node !== ancestor) {
-    x += node.offsetLeft;
-    x += readTranslateX(getComputedStyle(node).transform);
+// Layout-only X in ancestor space; track translateX is added once per frame.
+const getLayoutLocalCenterX = (el: HTMLElement, ancestor: HTMLElement): number => {
+  const walk = (node: HTMLElement | null, x: number): number => {
+    if (!node || node === ancestor) return x;
+    const nextX = x + node.offsetLeft;
     const parent = node.offsetParent as HTMLElement | null;
-    if (!parent || parent === node) break;
-    node = parent;
-  }
-  return x;
+    if (!parent || parent === node) return nextX;
+    return walk(parent, nextX);
+  };
+  return walk(el, el.offsetWidth / 2);
+};
+
+type WaveGlyphCache = {
+  inner: HTMLElement;
+  layoutLocalX: number;
+};
+
+type WaveItemCache = {
+  item: HTMLElement;
+  glyphs: WaveGlyphCache[];
 };
 
 const WAVE_ARC_LUT_SAMPLES = 96;
@@ -236,12 +242,12 @@ const buildWaveArcLut = (amplitude: number, k: number, samples: number): WaveArc
   const slopeAmp = amplitude * k;
   const ds = (t: number) => Math.sqrt(1 + (slopeAmp * Math.cos(k * t)) ** 2);
   const dx = wavelength / samples;
-  for (let i = 0; i < samples; i += 1) {
+  Array.from({ length: samples }, (_, i) => {
     const t0 = i * dx;
     const t1 = t0 + dx;
     x[i + 1] = t1;
     s[i + 1] = s[i] + (ds(t0) + ds(t1)) * 0.5 * dx;
-  }
+  });
   return { wavelength, periodArc: s[samples], x, s };
 };
 
@@ -252,13 +258,12 @@ const xFromArcLength = (lut: WaveArcLut, targetS: number): number => {
   const n = Math.floor(sAbs / lut.periodArc);
   const r = sAbs - n * lut.periodArc;
   const { s, x } = lut;
-  let lo = 0;
-  let hi = s.length - 1;
-  while (hi - lo > 1) {
+  const findBracket = (lo: number, hi: number): [number, number] => {
+    if (hi - lo <= 1) return [lo, hi];
     const mid = (lo + hi) >> 1;
-    if (s[mid] <= r) lo = mid;
-    else hi = mid;
-  }
+    return s[mid] <= r ? findBracket(mid, hi) : findBracket(lo, mid);
+  };
+  const [lo, hi] = findBracket(0, s.length - 1);
   const span = s[hi] - s[lo];
   const t = span > 0 ? (r - s[lo]) / span : 0;
   return sign * (n * lut.wavelength + x[lo] + (x[hi] - x[lo]) * t);
@@ -275,8 +280,7 @@ const buildCurveBackgroundPath = (
   const yAt = (x: number) => centerY + amplitude * Math.sin(k * x);
   const dyAt = (x: number) => amplitude * k * Math.cos(k * x);
   const segments = Math.max(4, Math.ceil(periods * 4));
-  const parts: string[] = [`M0 ${yAt(0).toFixed(2)}`];
-  for (let i = 0; i < segments; i++) {
+  const curveParts = Array.from({ length: segments }, (_, i) => {
     const x0 = (i / segments) * width;
     const x1 = ((i + 1) / segments) * width;
     const dx = x1 - x0;
@@ -286,9 +290,9 @@ const buildCurveBackgroundPath = (
     const c1y = y0 + (dyAt(x0) * dx) / 3;
     const c2x = x1 - dx / 3;
     const c2y = y1 - (dyAt(x1) * dx) / 3;
-    parts.push(`C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`);
-  }
-  return parts.join(' ');
+    return `C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  });
+  return [`M0 ${yAt(0).toFixed(2)}`, ...curveParts].join(' ');
 };
 
 const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOffsetY, imageGapPx, isCurve }: MarqueeTextItemViewProps) => {
@@ -302,9 +306,7 @@ const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOff
       style={imageHeightStyle}
     />
   );
-  const imageNode = image && (isCurve
-    ? <span className={`${P}-item-image-wrap`} data-marquee-wave-node>{image}</span>
-    : image);
+  const imageNode = image && (isCurve ? <span className={`${P}-item-image-wrap`} data-marquee-wave-node>{image}</span>: image);
   const textNode = isCurve
     ? (
       <span className={`${P}-text`} style={textStyle}>
@@ -325,17 +327,13 @@ const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOff
   return (
     <div className={`${P}-item`} data-marquee-text-item style={{ gap: imageGapPx }}>
       {item.link
-        ? (
-          <a href={item.link} target="_self" rel="noopener noreferrer" className={`${P}-item-link`} style={{ gap: imageGapPx }}>
-            {content}
-          </a>
-        )
+        ? <a href={item.link} className={`${P}-item-link`} style={{ gap: imageGapPx }}>{content}</a>
         : content}
     </div>
   );
 };
 
-export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEditMode }: MarqueeTextProps) => {
+export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: MarqueeTextProps) => {
   const { prefix: P } = useScopedStyles();
   const [setWidth, setSetWidth] = useState(0);
   const animationDistance = setWidth > 0 ? Math.round(setWidth) : 0;
@@ -379,20 +377,28 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   }, isEditor), [textFontFamily, textFontSettings, textLetterSpacing, textWordSpacing, textFontSize, textLineHeight, textTextAppearance, textColor, isEditor]);
 
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
-  const originalItemCount = content?.length ?? 0;
-  const hasContent = originalItemCount > 0;
+  const hasContent = (content?.length ?? 0) > 0;
   const autoplayEnabled = isEditor ? Boolean(isPreviewMode) : true;
   const useMarqueeTrack = hasContent && (autoplayEnabled || Boolean(isEditor));
   const pxPerSec = Math.max(0, speed) * PX_PER_SEC_PER_SPEED_UNIT;
   const hoverPauseEnabled = autoplayEnabled && pauseOnHover === 'on';
   const [isHovering, setIsHovering] = useState(false);
-  void isEditMode;
+  const playState: 'paused' | 'running' = !autoplayEnabled
+    ? 'paused'
+    : hoverPauseEnabled
+      ? (isHovering ? 'paused' : 'running')
+      : 'running';
+  const waveShouldLoop = playState === 'running' && pxPerSec > 0 && animationDistance > 0;
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const bandRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const setRef = useRef<HTMLDivElement | null>(null);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
   const capRefEl = useRef<HTMLSpanElement | null>(null);
+  const waveShouldLoopRef = useRef(waveShouldLoop);
+  const waveKickRef = useRef<(() => void) | null>(null);
+  waveShouldLoopRef.current = waveShouldLoop;
   const [capHeightPx, setCapHeightPx] = useState(0);
   const [opticalOffsetY, setOpticalOffsetY] = useState(0);
   const [curveBandHeightPx, setCurveBandHeightPx] = useState(0);
@@ -400,7 +406,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   const [ribbonHeightPx, setRibbonHeightPx] = useState(0);
 
   const contentKey = useMemo(
-    () => (content ?? []).map((i) => `${i.text}${i.image?.url ?? ''}`).join(' '),
+    () => (content ?? []).map((i) => `${i.text}\0${i.image?.url ?? ''}`).join('\0'),
     [content],
   );
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
@@ -417,8 +423,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     setSetWidth(0);
   }, [contentKey]);
 
-  // Cap-height + optical vertical offset: canvas metrics size images to the glyph
-  // cap height and shift text so empty space above/below ink is equal in the line box.
+  // Cap-height + optical vertical offset for image sizing / text baseline balance.
   useLayoutEffect(() => {
     const el = capRefEl.current;
     if (!el) return;
@@ -441,8 +446,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
       const fontAscent = metrics.fontBoundingBoxAscent || 0;
       const fontDescent = metrics.fontBoundingBoxDescent || 0;
       setCapHeightPx((prev) => (Math.abs(prev - inkAscent) > 0.5 ? inkAscent : prev));
-      // Equalize empty space above/below ink inside the font bounding box (half-leading
-      // is already symmetric, so only the font-box asymmetry needs correcting).
       const nextOffset = (fontAscent > 0 || fontDescent > 0)
         ? ((fontDescent - inkDescent) - (fontAscent - inkAscent)) / 2
         : 0;
@@ -461,11 +464,11 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
-    let raf = 0;
+    const raf = { id: 0 };
     const measure = () => {
       const containerWidth = wrapper.getBoundingClientRect().width || wrapper.offsetWidth;
       const rawSetWidth = set.getBoundingClientRect().width || set.offsetWidth;
-      if (originalItemCount > 0 && containerWidth > 0 && rawSetWidth > 0) {
+      if (hasContent && containerWidth > 0 && rawSetWidth > 0) {
         const singleCycleWidth = rawSetWidth / contentSequenceRepeat;
         if (singleCycleWidth > 0) {
           const targetRepeat = Math.min(
@@ -480,35 +483,35 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
       }
       if (rawSetWidth > 0) setSetWidth(rawSetWidth);
     };
-    raf = requestAnimationFrame(measure);
+    raf.id = requestAnimationFrame(measure);
     const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
+      cancelAnimationFrame(raf.id);
+      raf.id = requestAnimationFrame(measure);
     });
     ro.observe(wrapper);
     ro.observe(set);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf.id);
       ro.disconnect();
     };
-  }, [useMarqueeTrack, contentKey, contentSequenceRepeat, originalItemCount, capHeightPx]);
+  }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx]);
 
   useLayoutEffect(() => {
     const ribbon = ribbonRef.current;
     if (!ribbon) return;
-    let raf = 0;
+    const raf = { id: 0 };
     const measure = () => {
       const height = ribbon.offsetHeight;
       if (height > 0) setRibbonHeightPx((prev) => (Math.abs(prev - height) > 0.5 ? height : prev));
     };
-    raf = requestAnimationFrame(measure);
+    raf.id = requestAnimationFrame(measure);
     const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
+      cancelAnimationFrame(raf.id);
+      raf.id = requestAnimationFrame(measure);
     });
     ro.observe(ribbon);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf.id);
       ro.disconnect();
     };
   }, [ribbonWidth, isEditor]);
@@ -522,22 +525,22 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     const wrapper = wrapperRef.current;
     const set = setRef.current;
     if (!wrapper || !set) return;
-    let raf = 0;
+    const raf = { id: 0 };
     const measure = () => {
       const width = wrapper.offsetWidth;
       const bandHeight = set.offsetHeight;
       if (width > 0) setCurveWidthPx((prev) => (Math.abs(prev - width) > 0.5 ? width : prev));
       if (bandHeight > 0) setCurveBandHeightPx((prev) => (Math.abs(prev - bandHeight) > 0.5 ? bandHeight : prev));
     };
-    raf = requestAnimationFrame(measure);
+    raf.id = requestAnimationFrame(measure);
     const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measure);
+      cancelAnimationFrame(raf.id);
+      raf.id = requestAnimationFrame(measure);
     });
     ro.observe(wrapper);
     ro.observe(set);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf.id);
       ro.disconnect();
     };
   }, [isCurveLayout, contentKey, capHeightPx, textLineHeight, textFontSize, useMarqueeTrack]);
@@ -549,65 +552,121 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     restartTrackAnimation(track);
   }, [useMarqueeTrack, animationDistance, direction, pxPerSec]);
 
-  // Curve layout only: a sine wave in the band's local layout space (offsetWidth
-  // + offsetLeft), not screen getBoundingClientRect. Glyphs are placed by arc
-  // length so layout advance (including letter-spacing) is kept along the path,
-  // not along horizontal x. Straight never enters this loop.
   useLayoutEffect(() => {
     if (!isCurveLayout || !hasContent) return;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
-    let raf = 0;
-    let cancelled = false;
-    let lut: WaveArcLut | null = null;
-    let lutKey = '';
-    const tick = () => {
-      if (cancelled) return;
-      const band = wrapper.querySelector<HTMLElement>(`.${P}-marquee-wrapper`) ?? wrapper;
+
+    const wave = {
+      raf: 0,
+      cancelled: false,
+      lut: null as WaveArcLut | null,
+      lutKey: '',
+      itemsCache: [] as WaveItemCache[],
+      cacheDirty: true,
+    };
+
+    const clearWaveTransforms = () => {
+      for (const item of wave.itemsCache) {
+        for (const glyph of item.glyphs) clearWaveTransform(glyph.inner);
+      }
+    };
+
+    const rebuildCache = () => {
+      const band = bandRef.current ?? wrapper;
+      wave.itemsCache = Array.from(
+        wrapper.querySelectorAll<HTMLElement>('[data-marquee-text-item]'),
+        (item) => {
+          const glyphs: WaveGlyphCache[] = [];
+          item.querySelectorAll<HTMLElement>('[data-marquee-wave-node]').forEach((node) => {
+            const inner = node.firstElementChild as HTMLElement | null;
+            if (!inner) return;
+            glyphs.push({
+              inner,
+              layoutLocalX: getLayoutLocalCenterX(node, band),
+            });
+          });
+          return { item, glyphs };
+        },
+      );
+      wave.cacheDirty = false;
+    };
+
+    const applyWave = () => {
+      if (wave.cacheDirty) rebuildCache();
+      const band = bandRef.current ?? wrapper;
       const width = band.offsetWidth || 1;
       const amplitude = width * amplitudeRatio;
       const k = (2 * Math.PI * curvePeriods) / width;
       const nextLutKey = `${width}|${amplitude}|${k}`;
-      if (nextLutKey !== lutKey) {
-        lutKey = nextLutKey;
-        lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
+      if (nextLutKey !== wave.lutKey) {
+        wave.lutKey = nextLutKey;
+        wave.lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
       }
+
+      const track = trackRef.current;
+      const trackTx = track ? readTranslateX(getComputedStyle(track).transform) : 0;
       const wrapperRect = wrapper.getBoundingClientRect();
       const viewLeft = wrapperRect.left;
       const viewRight = wrapperRect.right;
-      const extraRight = lut && lut.wavelength > 0
-        ? Math.max(0, (lut.periodArc / lut.wavelength - 1) * width)
+      const extraRight = wave.lut && wave.lut.wavelength > 0
+        ? Math.max(0, (wave.lut.periodArc / wave.lut.wavelength - 1) * width)
         : 0;
-      const items = wrapper.querySelectorAll<HTMLElement>('[data-marquee-text-item]');
-      items.forEach((item) => {
+
+      for (const { item, glyphs } of wave.itemsCache) {
         const itemRect = item.getBoundingClientRect();
-        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) return;
-        const nodes = item.querySelectorAll<HTMLElement>('[data-marquee-wave-node]');
-        nodes.forEach((el) => {
-          const inner = el.firstElementChild as HTMLElement | null;
-          if (!inner) return;
-          const localX = getLocalCenterX(el, band);
-          const xPath = lut ? xFromArcLength(lut, localX) : localX;
+        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) continue;
+        for (const glyph of glyphs) {
+          const localX = glyph.layoutLocalX + trackTx;
+          const xPath = wave.lut ? xFromArcLength(wave.lut, localX) : localX;
           const phase = k * xPath;
           const y = amplitude * Math.sin(phase);
           const slope = amplitude * k * Math.cos(phase);
           const rotateDeg = Math.atan(slope) * (180 / Math.PI);
-          applyWaveTransform(inner, xPath - localX, y, rotateDeg);
-        });
-      });
-      raf = requestAnimationFrame(tick);
+          applyWaveTransform(glyph.inner, xPath - localX, y, rotateDeg);
+        }
+      }
     };
-    raf = requestAnimationFrame(tick);
+
+    const tick = () => {
+      if (wave.cancelled) return;
+      wave.raf = 0;
+      applyWave();
+      if (waveShouldLoopRef.current && !document.hidden) {
+        wave.raf = requestAnimationFrame(tick);
+      }
+    };
+
+    const kick = () => {
+      if (wave.cancelled || wave.raf) return;
+      wave.raf = requestAnimationFrame(tick);
+    };
+
+    waveKickRef.current = kick;
+    kick();
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(wave.raf);
+        wave.raf = 0;
+        return;
+      }
+      kick();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      wrapper.querySelectorAll<HTMLElement>('[data-marquee-wave-node]').forEach((el) => {
-        const inner = el.firstElementChild as HTMLElement | null;
-        if (inner) clearWaveTransform(inner);
-      });
-      wrapper.querySelectorAll<HTMLElement>('[data-marquee-text-item]').forEach(clearWaveTransform);
+      wave.cancelled = true;
+      waveKickRef.current = null;
+      cancelAnimationFrame(wave.raf);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearWaveTransforms();
     };
-  }, [isCurveLayout, amplitudeRatio, curvePeriods, hasContent, setWidth, contentKey, P]);
+  }, [isCurveLayout, amplitudeRatio, curvePeriods, hasContent, setWidth, contentKey, contentSequenceRepeat, capHeightPx]);
+
+  useLayoutEffect(() => {
+    waveKickRef.current?.();
+  }, [waveShouldLoop]);
 
   const onTrackEnter = () => {
     if (hoverPauseEnabled) setIsHovering(true);
@@ -636,8 +695,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   };
   const curveAmplitudePx = curveWidthPx * amplitudeRatio;
   const curveStrokeWidth = ribbonHeightPx > 0 ? ribbonHeightPx : curveBandHeightPx;
-  // Content band must be at least the ribbon stroke so overflow:hidden does not clip
-  // the wave background at sine peaks (stroke extends ±ribbon/2 around the path).
+  // Keep content band >= stroke so overflow:hidden does not clip sine peaks.
   const curveContentBandPx = Math.max(curveBandHeightPx, curveStrokeWidth);
   const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveContentBandPx > 0
     ? buildCurveBackgroundPath(
@@ -687,11 +745,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
   );
 
   if (useMarqueeTrack) {
-    const playState = !autoplayEnabled
-      ? 'paused'
-      : hoverPauseEnabled
-        ? (isHovering ? 'paused' : 'running')
-        : 'running';
     const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
     const durationS = `${Math.max(0, durationMs) / 1000}s`;
 
@@ -699,7 +752,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
       <div ref={wrapperRef} className={`${P}-wrapper`} aria-label="Marquee text">
         <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
         {capRef}
-        <div className={`${P}-marquee-wrapper`} style={bandStyle}>
+        <div ref={bandRef} className={`${P}-marquee-wrapper`} style={bandStyle}>
           {ribbon}
           {curveBgSvg}
           <div
@@ -736,7 +789,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode, isEdit
     <div ref={wrapperRef} className={`${P}-wrapper`}>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       {capRef}
-      <div className={`${P}-marquee-wrapper`} style={bandStyle}>
+      <div ref={bandRef} className={`${P}-marquee-wrapper`} style={bandStyle}>
         {ribbon}
         {curveBgSvg}
         <div

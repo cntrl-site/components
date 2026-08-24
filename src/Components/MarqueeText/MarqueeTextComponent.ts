@@ -318,7 +318,7 @@ export const MarqueeTextComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Simple-Marquee.mp4',
+    url: 'https://cdn.cntrl.site/component-assets/Text_Marquee.mp4',
   },
   schema,
   sourceCode: marqueeTextSourceRaw,
