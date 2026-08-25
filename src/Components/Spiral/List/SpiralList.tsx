@@ -99,6 +99,7 @@ export type SpiralListSettings = {
   /** @deprecated use `playback` */
   pauseOnHover?: 'on' | 'off';
   cornerRadius?: number;
+  blur?: 'on' | 'off';
   imageDisplay?: {
     display?: 'fit' | 'cover';
     ratioValue?: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
@@ -260,7 +261,8 @@ function getOrbitBlur(angle: number): number {
   return getOrbitDepthEffect(angle, BACKGROUND_BLUR, FOREGROUND_BLUR);
 }
 
-function getOrbitFilter(angle: number): string {
+function getOrbitFilter(angle: number, blurEnabled: boolean): string {
+  if (!blurEnabled) return 'none';
   const blur = getOrbitBlur(angle);
   return blur <= 0 ? 'none' : `blur(${blur}px)`;
 }
@@ -273,6 +275,7 @@ function getOrbitKeyframeStyles(
   spreadFactor: number,
   progress: number,
   isCover: boolean,
+  blurEnabled: boolean,
 ): string {
   const { offset, scale } = getOrbitPose(depthFactor, spreadFactor, progress * Math.PI * 2);
   const angle = progress * Math.PI * 2;
@@ -281,7 +284,7 @@ function getOrbitKeyframeStyles(
   const left = `calc(${scaled(centerX)} - var(--spiral-base-w) * ${layoutWidthFactor} / 2)`;
   const widthStyle = `calc(var(--spiral-base-w) * ${layoutWidthFactor})`;
   const heightStyle = isCover ? `height: calc(var(--spiral-base-h) * ${layoutWidthFactor});` : '';
-  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)}; filter: ${getOrbitFilter(angle)};`;
+  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)}; filter: ${getOrbitFilter(angle, blurEnabled)};`;
 }
 
 function getOrbitKeyframes(
@@ -292,12 +295,13 @@ function getOrbitKeyframes(
   depthFactor: number,
   spreadFactor: number,
   isCover: boolean,
+  blurEnabled: boolean,
 ): string {
   const frames: string[] = [];
   for (let step = 0; step <= ORBIT_STEPS; step += 1) {
     const progress = step / ORBIT_STEPS;
     frames.push(
-      `  ${round(progress * 100)}% { ${getOrbitKeyframeStyles(scaled, width, orbitRadius, depthFactor, spreadFactor, progress, isCover)} }`,
+      `  ${round(progress * 100)}% { ${getOrbitKeyframeStyles(scaled, width, orbitRadius, depthFactor, spreadFactor, progress, isCover, blurEnabled)} }`,
     );
   }
   return `@keyframes ${P}-orbit {\n${frames.join('\n')}\n}`;
@@ -367,6 +371,7 @@ export function SpiralList({
   const direction = settings?.direction === 'left' ? 'left' : 'right';
   const playback = settings?.playback === 'scroll' ? 'scroll' : 'autoplay';
   const cornerRadius = settings?.cornerRadius ?? 0;
+  const blurEnabled = settings?.blur !== 'off';
   const imageDisplay = useMemo(() => normalizeImageDisplay(settings?.imageDisplay), [settings?.imageDisplay]);
   const isCover = imageDisplay.display === 'cover';
 
@@ -377,8 +382,8 @@ export function SpiralList({
     [width, imageWidth, isCover, scatter],
   );
   const scopedCss = useMemo(
-    () => getCSS(P, getOrbitKeyframes(P, scaled, width, orbitRadius, depthFactor, spreadFactor, isCover)),
-    [P, width, orbitRadius, depthFactor, spreadFactor, isCover, isEditor],
+    () => getCSS(P, getOrbitKeyframes(P, scaled, width, orbitRadius, depthFactor, spreadFactor, isCover, blurEnabled)),
+    [P, width, orbitRadius, depthFactor, spreadFactor, isCover, blurEnabled, isEditor],
   );
 
   const mediaItems = useMemo(
@@ -486,7 +491,7 @@ export function SpiralList({
                   ...(isCover ? { height: scaled(imageHeight * scale) } : {}),
                   zIndex: getOrbitZIndex(scale),
                   opacity: getOrbitOpacity(angle),
-                  filter: getOrbitFilter(angle),
+                  filter: getOrbitFilter(angle, blurEnabled),
                 }),
           };
 

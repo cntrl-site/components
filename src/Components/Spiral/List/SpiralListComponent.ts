@@ -148,12 +148,19 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         max: 9999,
       },
+      blur: {
+        type: 'string',
+        scope: 'common',
+        title: 'Blur',
+        display: { type: 'toggle-cycle', enum: ['on', 'off'] },
+      },
     },
     defaults: {
       itemsPerTurn: 13,
       turns: 4,
       direction: 'right',
       playback: 'autoplay',
+      blur: 'on',
       imageDisplay: {
         display: 'fit',
         ratioValue: '2:3',
@@ -198,6 +205,7 @@ const schema: ComponentSchemaV1 = {
       'direction',
       'imageDisplay',
       'cornerRadius',
+      'blur',
     ],
   },
   panels: [
@@ -213,7 +221,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['imageWidth', 'turnHeight'] },
         { type: 'row', items: ['cornerRadius', 'imageDisplay'] },
         { type: 'row', items: ['itemsPerTurn', 'turns'] },
-        { type: 'row', items: ['playback'] },
+        { type: 'row', items: ['playback', 'blur'] },
       ],
     },
   ],
