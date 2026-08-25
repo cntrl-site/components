@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { CommonComponentProps } from '../../props';
-import { scalingValue } from '../../utils/scalingValue';
-import { useScopedStyles } from '../../utils/useScopedStyles';
+import { CommonComponentProps } from '../props';
+import { scalingValue } from '../utils/scalingValue';
+import { useScopedStyles } from '../utils/useScopedStyles';
 
 const ORBIT_STEPS = 48;
 const DEG_PER_SEC_PER_SPEED_UNIT = 10;
@@ -73,17 +73,17 @@ ${keyframes}
 `;
 }
 
-type SpiralMedia = {
+type HelixMedia = {
   url?: string;
   name?: string;
   type?: 'image' | 'video';
 };
 
-export type SpiralListContentItem = {
-  image?: SpiralMedia;
+export type HelixContentItem = {
+  image?: HelixMedia;
 };
 
-export type SpiralListSettings = {
+export type HelixSettings = {
   width?: number;
   /** @deprecated use `width` */
   spread?: number;
@@ -107,9 +107,9 @@ export type SpiralListSettings = {
   } | string;
 };
 
-type SpiralListProps = {
-  settings?: SpiralListSettings;
-  content?: SpiralListContentItem[];
+type HelixProps = {
+  settings?: HelixSettings;
+  content?: HelixContentItem[];
   isEditor?: boolean;
   isPreviewMode?: boolean;
   isEditMode?: boolean;
@@ -157,7 +157,7 @@ function resolveLayoutMetric(
   return Math.min(max, Math.max(min, resolved));
 }
 
-function normalizeImageDisplay(raw: SpiralListSettings['imageDisplay']): ImageDisplay {
+function normalizeImageDisplay(raw: HelixSettings['imageDisplay']): ImageDisplay {
   if (typeof raw === 'string') {
     return {
       display: raw.toLowerCase() === 'cover' ? 'cover' : 'fit',
@@ -180,7 +180,7 @@ function getAspectHeightFactor(imageDisplay: ImageDisplay): number {
   return effectiveHeight / effectiveWidth;
 }
 
-function isVideoMedia(media: SpiralMedia): boolean {
+function isVideoMedia(media: HelixMedia): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url ?? '');
@@ -281,9 +281,9 @@ function getOrbitKeyframeStyles(
   const angle = progress * Math.PI * 2;
   const centerX = getOrbitCenterX(width, orbitRadius, offset);
   const layoutWidthFactor = round(scale);
-  const left = `calc(${scaled(centerX)} - var(--spiral-base-w) * ${layoutWidthFactor} / 2)`;
-  const widthStyle = `calc(var(--spiral-base-w) * ${layoutWidthFactor})`;
-  const heightStyle = isCover ? `height: calc(var(--spiral-base-h) * ${layoutWidthFactor});` : '';
+  const left = `calc(${scaled(centerX)} - var(--helix-base-w) * ${layoutWidthFactor} / 2)`;
+  const widthStyle = `calc(var(--helix-base-w) * ${layoutWidthFactor})`;
+  const heightStyle = isCover ? `height: calc(var(--helix-base-h) * ${layoutWidthFactor});` : '';
   return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)}; filter: ${getOrbitFilter(angle, blurEnabled)};`;
 }
 
@@ -348,12 +348,12 @@ function getScrollOrbitProgress(scrollProgress: number, speed: number, direction
   return normalizePhase(signedProgress);
 }
 
-export function SpiralList({
+export function Helix({
   settings,
   content,
   isEditor,
   isPreviewMode,
-}: SpiralListProps) {
+}: HelixProps) {
   const { prefix: P } = useScopedStyles();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -396,8 +396,8 @@ export function SpiralList({
   const visibleItems = Math.min(MAX_TOTAL_ITEMS, turns * itemsPerTurn);
   const overflowItems = OVERFLOW_TURNS * itemsPerTurn;
   const totalItems = visibleItems + overflowItems * 2;
-  const spiralSpan = Math.max(0, turns - 1) * turnHeight + (itemsPerTurn - 1) * verticalStep;
-  const wrapperHeight = spiralSpan;
+  const helixSpan = Math.max(0, turns - 1) * turnHeight + (itemsPerTurn - 1) * verticalStep;
+  const wrapperHeight = helixSpan;
 
   const motionEnabled = speed > 0;
   const useScrollMotion = playback === 'scroll' && motionEnabled;
@@ -456,7 +456,7 @@ export function SpiralList({
         {Array.from({ length: totalItems }, (_, index) => {
           const logicalIndex = index - overflowItems;
           const item = mediaItems[mod(logicalIndex, mediaItems.length)];
-          const media = item.image as SpiralMedia;
+          const media = item.image as HelixMedia;
           const slotIndex = getOrbitSlotIndex(logicalIndex, itemsPerTurn);
           const phase = getOrbitPhase(logicalIndex, itemsPerTurn);
           const orbitPhase = useScrollMotion ? normalizePhase(phase + scrollOrbitProgress) : phase;
@@ -471,8 +471,8 @@ export function SpiralList({
           const layoutWidth = getOrbitLayoutWidth(itemWidth, scale);
           const centerX = getOrbitCenterX(width, orbitRadius, offset);
           const orbitCssVars = {
-            '--spiral-base-w': scaled(itemWidth),
-            ...(isCover ? { '--spiral-base-h': scaled(imageHeight) } : {}),
+            '--helix-base-w': scaled(itemWidth),
+            ...(isCover ? { '--helix-base-h': scaled(imageHeight) } : {}),
           } as CSSProperties;
 
           const itemStyle: CSSProperties = {

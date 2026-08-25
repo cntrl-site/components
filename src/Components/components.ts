@@ -19,7 +19,7 @@ import { SimpleButtonComponent } from './SimpleButton/SimpleButtonComponent';
 import { WaterfallComponent } from './Waterfall/WaterfallComponent';
 import { Slider20Component } from './Slider20/Slider20Component';
 import { MercuryComponent } from './Mercury/MercuryComponent';
-import { SpiralListComponent } from './Spiral/List/SpiralListComponent';
+import { HelixComponent } from './Helix/HelixComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -42,5 +42,5 @@ export const components: Component[] = [
   SimpleButtonComponent,
   Slider20Component,
   MercuryComponent,
-  SpiralListComponent,
+  HelixComponent,
 ];

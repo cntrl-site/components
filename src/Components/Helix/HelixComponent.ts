@@ -1,24 +1,13 @@
-import { SpiralList } from './SpiralList';
-import { ComponentSchemaV1 } from '../../../types/SchemaV1';
-import spiralListSourceRaw from './SpiralList.tsx?raw';
+import { Helix } from './Helix';
+import { ComponentSchemaV1 } from '../../types/SchemaV1';
+import helixSourceRaw from './Helix.tsx?raw';
 
 const defaultImageUrls = [
-  'https://cdn.cntrl.site/component-assets/Mercury-default-1.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-7.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-2.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-8.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-3.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-9.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-4.jpg',
-  'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-10.jpg',
-  'https://cdn.cntrl.site/component-assets/Mercury-default-5.jpg',
+  'https://cdn.cntrl.site/component-assets/Helix-default-1.png',
+  'https://cdn.cntrl.site/component-assets/Helix-default-2.png',
+  'https://cdn.cntrl.site/component-assets/Helix-default-3.png',
+  'https://cdn.cntrl.site/component-assets/Helix-default-4.png',
+  'https://cdn.cntrl.site/component-assets/Helix-default-5.png',
 ];
 
 const schema: ComponentSchemaV1 = {
@@ -156,13 +145,13 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      itemsPerTurn: 13,
-      turns: 4,
+      itemsPerTurn: 14,
+      turns: 3,
       direction: 'right',
       playback: 'autoplay',
-      blur: 'on',
+      blur: 'off',
       imageDisplay: {
-        display: 'fit',
+        display: 'cover',
         ratioValue: '2:3',
         reversed: false,
       },
@@ -170,17 +159,17 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: {
       d: {
         defaultPaddingTop: 30 / 1440,
-        width: 1120 / 1440,
-        imageWidth: 140 / 1440,
-        turnHeight: 550 / 1440,
-        speed: 2.8,
+        width: 800 / 1440,
+        imageWidth: 160 / 1440,
+        turnHeight: 380 / 1440,
+        speed: 2.2,
         cornerRadius: 0,
       },
       m: {
         defaultPaddingTop: 10 / 375,
         width: 320 / 375,
         imageWidth: 75 / 375,
-        turnHeight: 300 / 375,
+        turnHeight: 310 / 375,
         speed: 2.8,
         cornerRadius: 0,
       },
@@ -188,7 +177,7 @@ const schema: ComponentSchemaV1 = {
         defaultPaddingTop: 20 / 768,
         width: 620 / 768,
         imageWidth: 100 / 768,
-        turnHeight: 450 / 768,
+        turnHeight: 280 / 768,
         speed: 2.8,
         cornerRadius: 0,
       },
@@ -227,12 +216,16 @@ const schema: ComponentSchemaV1 = {
   ],
 };
 
-export const SpiralListComponent = {
-  element: SpiralList,
-  id: 'spiral-list',
-  name: 'Spiral',
+export const HelixComponent = {
+  element: Helix,
+  id: 'helix',
+  name: 'Helix',
   category: 'lists',
   layoutMode: 'structured' as const,
+  preview: {
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/Helix.mp4',
+  },
   version: 1,
   defaultSize: {
     d: {
@@ -241,7 +234,7 @@ export const SpiralListComponent = {
     },
   },
   schema,
-  sourceCode: spiralListSourceRaw,
+  sourceCode: helixSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
     parameters: [],
