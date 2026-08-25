@@ -22,7 +22,6 @@ const FOREGROUND_OPACITY = 1;
 const BACKGROUND_BLUR = 1.5;
 const FOREGROUND_BLUR = 0;
 const FOREGROUND_OPACITY_ZONE = 0.85;
-const LAYOUT_EXEMPLARY = 1440;
 
 function getCSS(P: string, keyframes: string): string {
   return `
@@ -85,9 +84,7 @@ export type HelixContentItem = {
 
 export type HelixSettings = {
   width?: number;
-  /** @deprecated use `width` */
   spread?: number;
-  /** @deprecated use `width` */
   wrapperWidth?: number;
   imageWidth?: number;
   turnHeight?: number;
@@ -125,8 +122,6 @@ function round(value: number): number {
   return Number(value.toFixed(4));
 }
 
-// Common settings must use `common-numeric-input`. Older saves may contain values
-// that were accidentally divided by the layout exemplary (~1440).
 function resolveCommonCount(
   value: number | undefined,
   defaultValue: number,
@@ -134,11 +129,8 @@ function resolveCommonCount(
   max: number,
 ): number {
   const raw = typeof value === 'string' ? Number(value) : value;
-  let resolved = raw ?? defaultValue;
+  const resolved = raw ?? defaultValue;
   if (!Number.isFinite(resolved)) return defaultValue;
-  if (resolved > 0 && resolved < 1) {
-    resolved = Math.round(resolved * LAYOUT_EXEMPLARY);
-  }
   return Math.min(max, Math.max(min, Math.round(resolved)));
 }
 
@@ -149,11 +141,8 @@ function resolveLayoutMetric(
   max = 9999,
 ): number {
   const raw = typeof value === 'string' ? Number(value) : value;
-  let resolved = raw ?? defaultValue;
+  const resolved = raw ?? defaultValue;
   if (!Number.isFinite(resolved)) return defaultValue;
-  if (resolved > max / LAYOUT_EXEMPLARY) {
-    resolved /= LAYOUT_EXEMPLARY;
-  }
   return Math.min(max, Math.max(min, resolved));
 }
 
