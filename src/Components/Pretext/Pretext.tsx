@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
+import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { scalingValue, useScopedStyles } from '../utils/index';
 import { normalizeFontFamilyCssValue, TextStyles } from '../utils/textStylesToCss';
@@ -15,6 +16,13 @@ const FIT_ITERATIONS = 10;
 const MAX_LINES = 4000;
 const DROP_CAP_GAP = 0.12;
 const DROP_CAP_SIZE_RATIO = 0.92;
+/**
+ * The vector node editor is portaled straight to `document.body` so its
+ * anchors can be grabbed even where a host app's own selection/resize
+ * chrome renders in a sibling stacking context above this component's own
+ * box — no z-index set inside that box could ever reach past it.
+ */
+const EDITOR_PORTAL_Z_INDEX = 999;
 
 export const SHAPE_IDS = [
   'rectangle',
@@ -77,7 +85,6 @@ type PretextSettings = {
   fitText?: 'on' | 'off';
   dropCap?: 'on' | 'off';
   dropCapLines?: number;
-  guides?: 'on' | 'off';
   backgroundColor?: string;
   textColor?: string;
   linkColor?: string;
@@ -1332,6 +1339,18 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
     };
   }, [viewBox]);
 
+  // Same as toPath, but into this editor's own pixel space (its viewBox is the
+  // box's own width/height) — what the outline is drawn in and what the
+  // pointer-distance check below needs, so it agrees with the `+` cursor.
+  const toLocalPx = useCallback((clientX: number, clientY: number): Pt => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+    return {
+      x: ((clientX - rect.left) / rect.width) * box.width,
+      y: ((clientY - rect.top) / rect.height) * box.height,
+    };
+  }, [box.width, box.height]);
+
   // The pointer is captured by the overlay for the whole drag, so the move and
   // release land here whatever they pass over — and stay off the editor around
   // us. Window listeners could not do both: swallowing the release to keep the
@@ -1420,10 +1439,14 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   const insertNode = (event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
-    const hit = nearestSegmentHit(contours, toPath(event.clientX, event.clientY));
-    // The reach is set in pixels, so it feels the same whatever the box size.
-    const reach = ADD_POINT_REACH * (viewBox.width / Math.max(1, box.width));
-    if (!hit || hit.distance > reach) return;
+    // Hit-test against the outline in the same pixel space it's drawn in
+    // (via toPx) — matching path-space units here would skew distances
+    // whenever the box isn't square relative to the shape's viewBox, so the
+    // `+` cursor (an accurate pixel-space stroke hit) and this check could
+    // disagree and silently drop the click.
+    const pixelContours = mapContours(contours, toPx);
+    const hit = nearestSegmentHit(pixelContours, toLocalPx(event.clientX, event.clientY));
+    if (!hit || hit.distance > ADD_POINT_REACH) return;
     const { contours: next, nodeIndex } = insertNodeOnSegment(contours, hit.contour, hit.segment, hit.t);
     if (nodeIndex < 0) return;
     setSelection({ contour: hit.contour, node: nodeIndex });
@@ -1479,6 +1502,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
       data-pretext-path-editor
+      data-selection="none"
     >
       {/* Catches double-clicks that land near the outline rather than on it.
           It never stops propagation, so the editor still selects the item. */}
@@ -1546,6 +1570,61 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   );
 }
 
+type FloatingRect = { top: number; left: number; width: number; height: number };
+
+function readFloatingRect(element: HTMLElement): FloatingRect {
+  const rect = element.getBoundingClientRect();
+  return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
+}
+
+function floatingRectsEqual(a: FloatingRect, b: FloatingRect): boolean {
+  return Math.abs(a.top - b.top) < 0.5
+    && Math.abs(a.left - b.left) < 0.5
+    && Math.abs(a.width - b.width) < 0.5
+    && Math.abs(a.height - b.height) < 0.5;
+}
+
+/**
+ * Tracks `element`'s viewport rect for as long as `active` is true, by
+ * polling every frame rather than via ResizeObserver/scroll listeners: a
+ * host canvas can pan or zoom through a CSS transform with no accompanying
+ * scroll/resize event, and that's the one signal a portaled overlay can't
+ * afford to miss while it's glued to an anchor living in a different part
+ * of the DOM.
+ */
+function useFloatingRect(element: HTMLElement | null, active: boolean): FloatingRect | null {
+  const [rect, setRect] = useState<FloatingRect | null>(null);
+  useEffect(() => {
+    if (!element || !active) {
+      setRect(null);
+      return;
+    }
+    let frame = 0;
+    let last: FloatingRect | null = null;
+    const tick = () => {
+      const next = readFloatingRect(element);
+      if (!last || !floatingRectsEqual(last, next)) {
+        last = next;
+        setRect(next);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(frame);
+  }, [element, active]);
+  return rect;
+}
+
+// Deliberately not the host's own `portalId` container: shared portal nodes
+// like the CMS's `#component-portal` set their own z-index and so form a
+// stacking context of their own — anything dropped inside is capped at that
+// z-index no matter what value it declares internally. document.body has no
+// such ceiling, which is the whole point of floating above the host's chrome
+// (e.g. resize handles) instead of just above sibling components.
+function resolveEditorPortalTarget(): HTMLElement | null {
+  return typeof document === 'undefined' ? null : document.body;
+}
+
 /* ------------------------------------------------------------------ *
  * Column
  * ------------------------------------------------------------------ */
@@ -1608,7 +1687,7 @@ function PretextColumn({
   typography,
   pathEditor,
 }: ColumnProps) {
-  const columnRef = useRef<HTMLDivElement | null>(null);
+  const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const [box, setBox] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [metrics, setMetrics] = useState<ColumnMetrics | null>(null);
@@ -1643,7 +1722,7 @@ function PretextColumn({
   }, [needsConversion, onConvertPath, rings]);
 
   useIsomorphicLayoutEffect(() => {
-    const element = columnRef.current;
+    const element = columnEl;
     if (!element || typeof ResizeObserver === 'undefined') return;
     const update = () => {
       const rect = element.getBoundingClientRect();
@@ -1657,7 +1736,7 @@ function PretextColumn({
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
+  }, [columnEl]);
 
   useEffect(() => {
     const fonts = typeof document !== 'undefined' ? (document as any).fonts : undefined;
@@ -1773,8 +1852,12 @@ function PretextColumn({
   const lineHeightPx = metrics ? metrics.lineHeight * appliedScale : 0;
   const textAlign: React.CSSProperties['textAlign'] = align === 'justify' ? 'left' : align;
 
+  const showPathEditor = Boolean(pathEditor && draftContours && box.width > 0 && box.height > 0);
+  const editorRect = useFloatingRect(columnEl, showPathEditor);
+  const portalTarget = showPathEditor && editorRect ? resolveEditorPortalTarget() : null;
+
   return (
-    <div className={`${P}-column`} ref={columnRef}>
+    <div className={`${P}-column`} ref={setColumnEl}>
       <div
         className={`${P}-flow${allowOverflow ? '' : ` ${P}-clip`}`}
         style={{ ...typography, ['--' + P + '-fit']: appliedScale } as React.CSSProperties}
@@ -1834,16 +1917,30 @@ function PretextColumn({
           </svg>
         )}
       </div>
-      {pathEditor && draftContours && box.width > 0 && box.height > 0 && (
-        <PretextPathEditor
-          P={P}
-          box={box}
-          viewBox={viewBox}
-          contours={draftContours}
-          snap={pathEditor.snap}
-          onChange={pathEditor.onChange}
-          onCommit={pathEditor.onCommit}
-        />
+      {portalTarget && editorRect && draftContours && pathEditor && createPortal(
+        <div
+          data-selection="none"
+          style={{
+            position: 'fixed',
+            top: editorRect.top,
+            left: editorRect.left,
+            width: editorRect.width,
+            height: editorRect.height,
+            zIndex: EDITOR_PORTAL_Z_INDEX,
+            pointerEvents: 'none',
+          }}
+        >
+          <PretextPathEditor
+            P={P}
+            box={{ width: editorRect.width, height: editorRect.height }}
+            viewBox={viewBox}
+            contours={draftContours}
+            snap={pathEditor.snap}
+            onChange={pathEditor.onChange}
+            onCommit={pathEditor.onCommit}
+          />
+        </div>,
+        portalTarget,
       )}
       <div className={`${P}-a11y`}>
         {plainParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
@@ -1858,7 +1955,10 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const editor = isEditor ?? false;
   const selected = Boolean(isSelected) || Boolean(isEditMode);
 
-  const items = useMemo(() => (Array.isArray(content) && content.length ? content : [{}]), [content]);
+  const item = useMemo<PretextContentItem>(
+    () => (Array.isArray(content) ? content[0] ?? {} : {}),
+    [content],
+  );
 
   const shape = settings?.shape ?? 'rectangle';
   const customPath = settings?.customPath ?? '';
@@ -1869,7 +1969,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const allowOverflow = (settings?.overflowMode ?? 'clip') === 'visible';
   const fitEnabled = (settings?.fitText ?? 'off') === 'on';
   const dropCapLines = (settings?.dropCap ?? 'off') === 'on' ? Math.max(2, Math.round(settings?.dropCapLines ?? 3)) : 0;
-  const showGuides = editor && selected && !isPreviewMode && (settings?.guides ?? 'off') === 'on';
+  const showGuides = editor && selected && !isPreviewMode;
 
   /* -- vector editing ----------------------------------------------------- */
 
@@ -1927,30 +2027,23 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       onCommit: (next: VecContour[]) => writePath(next, true),
     };
   }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, settings, writePath]);
-  // The path is a component-wide setting, so one column carries the handles:
-  // the first that has no per-column path of its own.
-  const editorColumn = useMemo(
-    () => items.findIndex(item => !(item?.path ?? '').trim()),
-    [items],
-  );
+  // The path is a component-wide setting, carried by the column unless it has
+  // a path of its own.
+  const usesSharedPath = !(item?.path ?? '').trim();
 
-  const [fitScales, setFitScales] = useState<number[]>([]);
-  const fitScalesRef = useRef<number[]>([]);
+  const [fitScale, setFitScale] = useState<number | undefined>(undefined);
+  const fitScaleRef = useRef<number | undefined>(undefined);
 
-  const handleFitScale = useMemo(() => items.map((_, index) => (value: number) => {
-    const current = fitScalesRef.current[index];
+  const handleFitScale = useCallback((value: number) => {
+    const current = fitScaleRef.current;
     if (current !== undefined && Math.abs(current - value) < 0.005) return;
-    const next = [...fitScalesRef.current];
-    next[index] = value;
-    fitScalesRef.current = next;
-    setFitScales(next);
-  }), [items]);
+    fitScaleRef.current = value;
+    setFitScale(value);
+  }, []);
 
-  const sharedScale = useMemo(() => {
-    if (!fitEnabled) return 1;
-    const values = fitScales.slice(0, items.length).filter(value => typeof value === 'number');
-    return values.length ? Math.min(...values) : 1;
-  }, [fitScales, items.length, fitEnabled]);
+  const sharedScale = useMemo(() => (
+    fitEnabled && typeof fitScale === 'number' ? fitScale : 1
+  ), [fitScale, fitEnabled]);
 
   const fitVar = (value: string) => `calc(${value} * var(--${P}-fit, 1))`;
 
@@ -1982,27 +2075,24 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           ...colorVars,
         }}
       >
-        {items.map((item, index) => (
-          <PretextColumn
-            key={index}
-            P={P}
-            item={item}
-            shape={shape}
-            customPath={customPath}
-            pathFit={pathFit}
-            viewBox={viewBox}
-            mode={mode}
-            align={align}
-            allowOverflow={allowOverflow}
-            fitEnabled={fitEnabled}
-            scale={sharedScale}
-            onFitScale={handleFitScale[index]}
-            dropCapLines={index === 0 ? dropCapLines : 0}
-            showGuides={showGuides || (pathEditing && index === editorColumn)}
-            typography={typography}
-            pathEditor={index === editorColumn ? pathEditor : null}
-          />
-        ))}
+        <PretextColumn
+          P={P}
+          item={item}
+          shape={shape}
+          customPath={customPath}
+          pathFit={pathFit}
+          viewBox={viewBox}
+          mode={mode}
+          align={align}
+          allowOverflow={allowOverflow}
+          fitEnabled={fitEnabled}
+          scale={sharedScale}
+          onFitScale={handleFitScale}
+          dropCapLines={dropCapLines}
+          showGuides={showGuides || pathEditing}
+          typography={typography}
+          pathEditor={usesSharedPath ? pathEditor : null}
+        />
       </div>
     </>
   );

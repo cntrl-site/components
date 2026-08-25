@@ -23,7 +23,7 @@ const schema: ComponentSchemaV1 = {
     properties: {
       shape: {
         type: 'string',
-        scope: 'common',
+        scope: 'layout',
         title: 'Shape',
         display: {
           type: 'drop-down',
@@ -34,7 +34,7 @@ const schema: ComponentSchemaV1 = {
       },
       customPath: {
         type: 'string',
-        scope: 'common',
+        scope: 'layout',
         title: 'Path',
         tooltip: 'SVG path (M…) or a point list (0,0 100,0 50,100). Used when Shape is set to custom.',
         display: { type: 'full-width-input', placeholder: 'M0,0 C…' },
@@ -91,13 +91,6 @@ const schema: ComponentSchemaV1 = {
         max: 8,
         step: 1,
         display: { type: 'numeric-input' },
-      },
-      guides: {
-        type: 'string',
-        scope: 'common',
-        title: 'Guides',
-        tooltip: 'Outlines the path while editing. Never shown on the published site.',
-        display: { type: 'toggle-cycle', enum: ['off', 'on'] },
       },
       backgroundColor: {
         type: 'string',
@@ -173,7 +166,7 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      shape: 'teardrop',
+      shape: 'diamond',
       customPath: '',
       pathSnap: 0,
       pathFit: 'stretch',
@@ -182,7 +175,6 @@ const schema: ComponentSchemaV1 = {
       fitText: 'off',
       dropCap: 'off',
       dropCapLines: 3,
-      guides: 'on',
       backgroundColor: 'rgba(0, 0, 0, 0)',
       textFontFamily: 'Goudy Bookletter 1911',
       textFontSettings: {
@@ -225,7 +217,6 @@ const schema: ComponentSchemaV1 = {
       'fitText',
       'dropCap',
       'dropCapLines',
-      'guides',
     ],
   },
   panels: [
@@ -237,8 +228,6 @@ const schema: ComponentSchemaV1 = {
       layout: [
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', title: 'Path', items: ['shape', 'shapeMode'] },
-        // { type: 'row', items: ['customPath'] },
-        // { type: 'row', items: ['guides'] },
         { type: 'row', title: 'Text Flow', items: ['overflowMode', 'dropCap'] }
       ],
     },
@@ -305,13 +294,7 @@ const schema: ComponentSchemaV1 = {
           {
             type: 'paragraph',
             children: [
-              { text: 'Style is viewed by many as a shallow obsession with disembodied surfaces. However our activities as designers are based on style’s function as a cultural communicator. A vocabulary or set of formal characteristics constitutes a particular style, recognized most frequently in retrospect. Style itself is the visual language of a culture: in fashion, in consumer goods, in art, in literature, in all media.' },
-            ],
-          },
-          {
-            type: 'paragraph',
-            children: [
-              { text: 'Style is ephemeral; it is timely. To be in style is to embody the influences and values of your time.' },
+              { text: 'Style is viewed by many as a shallow obsession with disembodied surfaces. However our activities as designers are based on style’s function as a cultural communicator. A vocabulary or set of formal characteristics constitutes a particular style, recognized most frequently in retrospect. Style itself is the visual language of a culture: in fashion, in consumer goods, in art, in literature, in all media. Style is ephemeral; it is timely. To be in style is to embody the influences and values of your time.' },
             ],
           },
         ],
