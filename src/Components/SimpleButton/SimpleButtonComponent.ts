@@ -193,11 +193,11 @@ const schema = {
       backgroundColor: {
         type: 'string',
         scope: 'common',
-        title: 'Background Default',
+        title: 'BG Default',
         titleByState: {
-          default: 'Background Default',
-          hover: 'Background Hover',
-          active: 'Background Active',
+          default: 'BG Default',
+          hover: 'BG Hover',
+          active: 'BG Active',
         },
         display: { type: 'palette-color-picker' },
       },

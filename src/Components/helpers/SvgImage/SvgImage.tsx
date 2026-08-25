@@ -11,10 +11,12 @@ interface SvgImageProps {
 }
 
 const isSvgMaskableUrl = (url: string): boolean => {
-  const u = url.trim();
-  if (u.startsWith('data:image/svg+xml')) return true;
-  const path = u.split(/[?#]/)[0] ?? u;
-  return path.endsWith('.svg');
+  const lower = url.trim().toLowerCase();
+  if (lower.startsWith('data:image/svg+xml')) return true;
+  if (lower.includes('image/svg+xml')) return true;
+  if (lower.includes('.svg')) return true;
+  if (lower.startsWith('blob:')) return true;
+  return false;
 };
 
 const maskImageUrlCss = (href: string): string => {
