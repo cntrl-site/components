@@ -17,9 +17,11 @@ const SCATTER = 28 / 100;
 const DEFAULT_SPEED = 2.8;
 const MAX_DEPTH_FACTOR = 0.9;
 const SIZE_JITTER = 0.22;
-const BACKGROUND_OPACITY = 0.7;
+const BACKGROUND_OPACITY = 0.5;
 const FOREGROUND_OPACITY = 1;
-const FOREGROUND_OPACITY_ZONE = 0.15;
+const BACKGROUND_BLUR = 1.5;
+const FOREGROUND_BLUR = 0;
+const FOREGROUND_OPACITY_ZONE = 0.85;
 const LAYOUT_EXEMPLARY = 1440;
 
 function getCSS(P: string, keyframes: string): string {
@@ -38,7 +40,7 @@ function getCSS(P: string, keyframes: string): string {
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   animation-fill-mode: both;
-  will-change: left, width, height, z-index, opacity;
+  will-change: left, width, height, z-index, opacity, filter;
 }
 .${P}-item-static {
   animation-name: none;
@@ -238,16 +240,29 @@ function getOrbitZIndex(scale: number): number {
   return Math.round(scale * 1000);
 }
 
-function getOrbitOpacity(angle: number): number {
+function getOrbitDepthEffect(angle: number, backgroundValue: number, foregroundValue: number): number {
   const cosAngle = Math.cos(angle);
-  const fullOpacityCos = Math.cos((FOREGROUND_OPACITY_ZONE * Math.PI) / 2);
+  const fullForegroundCos = Math.cos((FOREGROUND_OPACITY_ZONE * Math.PI) / 2);
 
-  if (cosAngle >= fullOpacityCos) {
-    return FOREGROUND_OPACITY;
+  if (cosAngle >= fullForegroundCos) {
+    return foregroundValue;
   }
 
-  const t = (cosAngle + 1) / (fullOpacityCos + 1);
-  return round(BACKGROUND_OPACITY + (FOREGROUND_OPACITY - BACKGROUND_OPACITY) * t);
+  const t = (cosAngle + 1) / (fullForegroundCos + 1);
+  return round(backgroundValue + (foregroundValue - backgroundValue) * t);
+}
+
+function getOrbitOpacity(angle: number): number {
+  return getOrbitDepthEffect(angle, BACKGROUND_OPACITY, FOREGROUND_OPACITY);
+}
+
+function getOrbitBlur(angle: number): number {
+  return getOrbitDepthEffect(angle, BACKGROUND_BLUR, FOREGROUND_BLUR);
+}
+
+function getOrbitFilter(angle: number): string {
+  const blur = getOrbitBlur(angle);
+  return blur <= 0 ? 'none' : `blur(${blur}px)`;
 }
 
 function getOrbitKeyframeStyles(
@@ -266,7 +281,7 @@ function getOrbitKeyframeStyles(
   const left = `calc(${scaled(centerX)} - var(--spiral-base-w) * ${layoutWidthFactor} / 2)`;
   const widthStyle = `calc(var(--spiral-base-w) * ${layoutWidthFactor})`;
   const heightStyle = isCover ? `height: calc(var(--spiral-base-h) * ${layoutWidthFactor});` : '';
-  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)};`;
+  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)}; filter: ${getOrbitFilter(angle)};`;
 }
 
 function getOrbitKeyframes(
@@ -471,6 +486,7 @@ export function SpiralList({
                   ...(isCover ? { height: scaled(imageHeight * scale) } : {}),
                   zIndex: getOrbitZIndex(scale),
                   opacity: getOrbitOpacity(angle),
+                  filter: getOrbitFilter(angle),
                 }),
           };
 
