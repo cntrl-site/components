@@ -19,6 +19,7 @@ import { SimpleButtonComponent } from './SimpleButton/SimpleButtonComponent';
 import { WaterfallComponent } from './Waterfall/WaterfallComponent';
 import { Slider20Component } from './Slider20/Slider20Component';
 import { MercuryComponent } from './Mercury/MercuryComponent';
+import { PretextComponent } from './Pretext/PretextComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -41,4 +42,5 @@ export const components: Component[] = [
   SimpleButtonComponent,
   Slider20Component,
   MercuryComponent,
+  PretextComponent,
 ];
