@@ -137,8 +137,8 @@ const schema: ComponentSchemaV1 = {
     defaults: {
       direction: 'left',
       pauseOnHover: 'off',
-      layoutType: 'straight',
-      textFontFamily: 'Goudy Bookletter 1911',
+      layoutType: 'curve',
+      textFontFamily: 'Antique Série',
       textFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -146,8 +146,8 @@ const schema: ComponentSchemaV1 = {
       textLetterSpacing: 0,
       textWordSpacing: 0,
       textTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
-      textColor: '#000000',
-      backgroundColor: '#FFFFFF00',
+      textColor: '#FFFFFF',
+      backgroundColor: '#2E12F0',
     },
     layoutDefaults: {
       m: {
@@ -160,21 +160,21 @@ const schema: ComponentSchemaV1 = {
         textLineHeight: 0.08,
       },
       t: {
-        speed: 1.64,
+        speed: 1.3,
         gap: 0.02,
-        ribbonWidth: 0.05,
+        ribbonWidth: 0.11,
         curveAmplitude: 5,
         curveFrequency: 15,
-        textFontSize: 0.05,
+        textFontSize: 0.07,
         textLineHeight: 0.05,
       },
       d: {
-        speed: 1.64,
+        speed: 2.5,
         gap: 0.02,
-        ribbonWidth: 0.035,
+        ribbonWidth: 0.11,
         curveAmplitude: 5,
-        curveFrequency: 15,
-        textFontSize: 0.035,
+        curveFrequency: 18,
+        textFontSize: 0.071,
         textLineHeight: 0.035,
       },
     },
@@ -264,37 +264,13 @@ const schema: ComponentSchemaV1 = {
     },
     default: [
       { 
-        text: 'NEW COLLECTION',
+        text: 'NEW WORK',
         image: { 
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
+          url: 'https://cdn.cntrl.site/component-assets/marquee_text_icon.svg',
           name: '',
         },
         link: '',
-      },
-      { 
-        text: 'SHOP NOW',
-        image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
-          name: '',
-        },
-        link: '',
-      },
-      { 
-        text: 'LIMITED EDITION',
-        image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
-          name: '',
-        },
-        link: '',
-      },
-      { 
-        text: 'EXPLORE MORE',
-        image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
-          name: '',
-        },
-        link: '',
-      },
+      }
     ],
   },
 };
