@@ -208,11 +208,11 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         '__componentName__',
+        { type: 'row', items: ['direction', 'speed'] },
         { type: 'row', items: ['width'] },
         { type: 'row', items: ['imageWidth', 'turnHeight'] },
         { type: 'row', items: ['cornerRadius', 'imageDisplay'] },
         { type: 'row', items: ['itemsPerTurn', 'turns'] },
-        { type: 'row', items: ['direction', 'speed'] },
         { type: 'row', items: ['playback'] },
       ],
     },

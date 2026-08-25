@@ -17,6 +17,9 @@ const SCATTER = 28 / 100;
 const DEFAULT_SPEED = 2.8;
 const MAX_DEPTH_FACTOR = 0.9;
 const SIZE_JITTER = 0.22;
+const BACKGROUND_OPACITY = 0.7;
+const FOREGROUND_OPACITY = 1;
+const FOREGROUND_OPACITY_ZONE = 0.15;
 const LAYOUT_EXEMPLARY = 1440;
 
 function getCSS(P: string, keyframes: string): string {
@@ -35,7 +38,7 @@ function getCSS(P: string, keyframes: string): string {
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   animation-fill-mode: both;
-  will-change: left, width, height, z-index;
+  will-change: left, width, height, z-index, opacity;
 }
 .${P}-item-static {
   animation-name: none;
@@ -235,6 +238,18 @@ function getOrbitZIndex(scale: number): number {
   return Math.round(scale * 1000);
 }
 
+function getOrbitOpacity(angle: number): number {
+  const cosAngle = Math.cos(angle);
+  const fullOpacityCos = Math.cos((FOREGROUND_OPACITY_ZONE * Math.PI) / 2);
+
+  if (cosAngle >= fullOpacityCos) {
+    return FOREGROUND_OPACITY;
+  }
+
+  const t = (cosAngle + 1) / (fullOpacityCos + 1);
+  return round(BACKGROUND_OPACITY + (FOREGROUND_OPACITY - BACKGROUND_OPACITY) * t);
+}
+
 function getOrbitKeyframeStyles(
   scaled: (value: number) => string,
   width: number,
@@ -245,12 +260,13 @@ function getOrbitKeyframeStyles(
   isCover: boolean,
 ): string {
   const { offset, scale } = getOrbitPose(depthFactor, spreadFactor, progress * Math.PI * 2);
+  const angle = progress * Math.PI * 2;
   const centerX = getOrbitCenterX(width, orbitRadius, offset);
   const layoutWidthFactor = round(scale);
   const left = `calc(${scaled(centerX)} - var(--spiral-base-w) * ${layoutWidthFactor} / 2)`;
   const widthStyle = `calc(var(--spiral-base-w) * ${layoutWidthFactor})`;
   const heightStyle = isCover ? `height: calc(var(--spiral-base-h) * ${layoutWidthFactor});` : '';
-  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%);`;
+  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)};`;
 }
 
 function getOrbitKeyframes(
@@ -454,6 +470,7 @@ export function SpiralList({
                   width: scaled(layoutWidth),
                   ...(isCover ? { height: scaled(imageHeight * scale) } : {}),
                   zIndex: getOrbitZIndex(scale),
+                  opacity: getOrbitOpacity(angle),
                 }),
           };
 
