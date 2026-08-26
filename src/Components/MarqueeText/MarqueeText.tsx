@@ -744,62 +744,53 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     <span ref={capRefEl} aria-hidden className={`${P}-cap-ref`} style={textCss}>H</span>
   );
 
-  if (useMarqueeTrack) {
-    const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
-    const durationS = `${Math.max(0, durationMs) / 1000}s`;
+  const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
+  const durationS = `${Math.max(0, durationMs) / 1000}s`;
 
-    return (
-      <div ref={wrapperRef} className={`${P}-wrapper`} aria-label="Marquee text">
-        <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
-        {capRef}
-        <div ref={bandRef} className={`${P}-marquee-wrapper`} style={bandStyle}>
-          {ribbon}
-          {curveBgSvg}
-          <div
-            ref={trackRef}
-            className={`${P}-marquee-track`}
-            data-direction={direction}
-            onMouseEnter={onTrackEnter}
-            onMouseLeave={onTrackLeave}
-            style={{
-              WebkitAnimationDuration: durationS,
-              animationDuration: durationS,
-              WebkitAnimationPlayState: playState,
-              animationPlayState: playState,
-            }}
-          >
-            {Array.from({ length: copies }, (_, copyIndex) => (
-              <div
-                key={`set-${copyIndex}`}
-                ref={copyIndex === 0 ? setRef : undefined}
-                className={`${P}-marquee-set`}
-                style={{ ...setStyle, paddingRight: scaled(gap) }}
-                aria-hidden={copyIndex > 0}
-              >
-                {setContent.map((item, slotIndex) => renderItem(item, copyIndex, slotIndex))}
-              </div>
-            ))}
-          </div>
+  const inner = useMarqueeTrack ? (
+    <div
+      ref={trackRef}
+      className={`${P}-marquee-track`}
+      data-direction={direction}
+      onMouseEnter={onTrackEnter}
+      onMouseLeave={onTrackLeave}
+      style={{
+        WebkitAnimationDuration: durationS,
+        animationDuration: durationS,
+        WebkitAnimationPlayState: playState,
+        animationPlayState: playState,
+      }}
+    >
+      {Array.from({ length: copies }, (_, copyIndex) => (
+        <div
+          key={`set-${copyIndex}`}
+          ref={copyIndex === 0 ? setRef : undefined}
+          className={`${P}-marquee-set`}
+          style={{ ...setStyle, paddingRight: scaled(gap) }}
+          aria-hidden={copyIndex > 0}
+        >
+          {setContent.map((item, slotIndex) => renderItem(item, copyIndex, slotIndex))}
         </div>
-      </div>
-    );
-  }
+      ))}
+    </div>
+  ) : (
+    <div
+      ref={setRef}
+      className={cn(`${P}-marquee-set`, `${P}-marquee-static`)}
+      style={setStyle}
+    >
+      {content?.map((item, itemIndex) => renderItem(item, 0, itemIndex))}
+    </div>
+  );
 
   return (
-    <div ref={wrapperRef} className={`${P}-wrapper`}>
+    <div ref={wrapperRef} className={`${P}-wrapper`} aria-label="Marquee text">
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       {capRef}
       <div ref={bandRef} className={`${P}-marquee-wrapper`} style={bandStyle}>
         {ribbon}
         {curveBgSvg}
-        <div
-          ref={setRef}
-          className={cn(`${P}-marquee-set`, `${P}-marquee-static`)}
-          style={setStyle}
-          aria-label="Marquee text"
-        >
-          {content?.map((item, itemIndex) => renderItem(item, 0, itemIndex))}
-        </div>
+        {inner}
       </div>
     </div>
   );
