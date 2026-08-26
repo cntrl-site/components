@@ -1,4 +1,4 @@
-import { Pretext, SHAPE_IDS } from './Pretext';
+import { Pretext, SHAPE_IDS, settingsForEditablePreset } from './Pretext';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import pretextSourceRaw from './Pretext.tsx?raw';
 
@@ -310,6 +310,16 @@ export const PretextComponent = {
   name: 'Pretext',
   category: 'typography',
   version: 1,
+  normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, prevSettings: Record<string, any>) => {
+    const shape = nextSettings.shape;
+    if (typeof shape !== 'string' || shape === 'custom' || (SHAPE_IDS as readonly string[]).indexOf(shape) === -1) {
+      return nextSettings;
+    }
+    return {
+      ...nextSettings,
+      ...settingsForEditablePreset(shape as typeof SHAPE_IDS[number], 1, prevSettings),
+    };
+  },
   defaultSize: {
     d: {
       width: 620,

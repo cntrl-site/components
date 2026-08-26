@@ -307,6 +307,14 @@ export function mapContours(contours: VecContour[], transform: (point: Pt) => Pt
   }));
 }
 
+/** Uniform (or axis-independent) scale about `origin` — keeps proportions when sx === sy. */
+export function scaleContours(contours: VecContour[], origin: Pt, scaleX: number, scaleY: number = scaleX): VecContour[] {
+  return mapContours(contours, point => ({
+    x: origin.x + (point.x - origin.x) * scaleX,
+    y: origin.y + (point.y - origin.y) * scaleY,
+  }));
+}
+
 /** Cubic arc → up to four cubic segments, so pasted SVGs keep their curves. */
 function arcToCubics(
   from: Pt,
@@ -601,6 +609,23 @@ export function flattenContours(contours: VecContour[]): Ring[] {
   return rings;
 }
 
+/** Bounding box of the drawn outline (curves included), in path/viewBox units. */
+function contoursBBox(contours: VecContour[]): { minX: number; minY: number; maxX: number; maxY: number } {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const ring of flattenContours(contours)) {
+    for (const point of ring) {
+      if (point.x < minX) minX = point.x;
+      if (point.x > maxX) maxX = point.x;
+      if (point.y < minY) minY = point.y;
+      if (point.y > maxY) maxY = point.y;
+    }
+  }
+  return { minX, minY, maxX, maxY };
+}
+
 /** Handles that make a point sit smoothly between its neighbours. */
 function smoothHandles(previous: Pt, point: Pt, next: Pt): { in: Pt; out: Pt } {
   const tangent = { x: (next.x - previous.x) / 6, y: (next.y - previous.y) / 6 };
@@ -634,6 +659,55 @@ export function ringsToContours(rings: Ring[]): VecContour[] {
         })),
       };
     });
+}
+
+/**
+ * Top-left of an editable viewBox path's drawn outline. Used when swapping
+ * presets so a shape that was dragged stays put instead of jumping to 0,0.
+ */
+function editablePathOrigin(previous?: {
+  customPath?: string;
+  pathFit?: string;
+  pathViewBox?: string;
+}): Pt {
+  if (
+    !previous
+    || previous.pathFit !== 'viewbox'
+    || previous.pathViewBox !== EDIT_VIEW_BOX
+    || !previous.customPath
+  ) {
+    return { x: 0, y: 0 };
+  }
+  const contours = parsePathNodes(previous.customPath);
+  if (!contours.length) return { x: 0, y: 0 };
+  const bbox = contoursBBox(contours);
+  if (!isFinite(bbox.minX) || !isFinite(bbox.minY)) return { x: 0, y: 0 };
+  return { x: bbox.minX, y: bbox.minY };
+}
+
+/** Turns a preset into the editable viewBox path the editor persists after a shape pick. */
+export function settingsForEditablePreset(
+  shape: ShapeId,
+  aspect = 1,
+  previous?: { customPath?: string; pathFit?: string; pathViewBox?: string },
+): {
+  shape: 'custom';
+  customPath: string;
+  pathFit: 'viewbox';
+  pathViewBox: string;
+} {
+  const origin = editablePathOrigin(previous);
+  const rings = getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
+  const contours = mapContours(
+    ringsToContours(rings),
+    point => ({ x: point.x * EDIT_SPAN + origin.x, y: point.y * EDIT_SPAN + origin.y }),
+  );
+  return {
+    shape: 'custom',
+    customPath: serializeContours(contours),
+    pathFit: 'viewbox',
+    pathViewBox: EDIT_VIEW_BOX,
+  };
 }
 
 function snapValue(value: number, step: number): number {
@@ -1255,6 +1329,37 @@ function getCSS(P: string): string {
   stroke-width: 1;
   pointer-events: none;
 }
+.${P}-editor-body {
+  fill: transparent;
+  pointer-events: fill;
+  cursor: move;
+}
+.${P}-editor-body:active {
+  cursor: grabbing;
+}
+.${P}-editor-bbox {
+  fill: none;
+  stroke: #FF5C02;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.${P}-editor-scale {
+  fill: #FFFFFF;
+  stroke: #FF5C02;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+.${P}-editor-scale-grab {
+  fill: transparent;
+  stroke: none;
+  pointer-events: auto;
+  cursor: nwse-resize;
+}
+.${P}-editor-scale-grab-nesw {
+  cursor: nesw-resize;
+}
 .${P}-editor-handle-line {
   stroke: #FF5C02;
   stroke-width: 1;
@@ -1299,10 +1404,20 @@ const ANCHOR_SIZE = 7;
 const HANDLE_RADIUS = 3.5;
 /** Invisible grab radius around a point, so it can be caught without aiming. */
 const GRAB_RADIUS = 9;
+/** Visible size of a uniform-scale corner handle. */
+const SCALE_HANDLE_SIZE = 8;
+/** Invisible grab around a scale corner, so it can be caught without aiming. */
+const SCALE_GRAB_SIZE = 14;
+/** Push scale handles outside the bbox so they don't cover corner anchors. */
+const SCALE_HANDLE_OUTSET = 10;
 /** How far from the outline a double-click still adds a point, in pixels. */
 const ADD_POINT_REACH = 24;
 /** Nudge step for arrow keys, in path units. */
 const NUDGE_STEP = 1;
+/** Smallest allowed uniform scale while dragging a corner (avoids collapse). */
+const MIN_SHAPE_SCALE = 0.05;
+/** Keyboard +/- scale factor about the shape's center. */
+const KEYBOARD_SCALE_STEP = 1.08;
 
 type PathSelection = { contour: number; node: number };
 
@@ -1316,6 +1431,63 @@ type PathDrag = {
   mirror: boolean;
   moved: boolean;
 };
+
+/** Dragging the shape's body translates every contour together, clamped to `box`. */
+type ShapeDrag = {
+  pointerId: number;
+  origin: Pt;
+  startContours: VecContour[];
+  bbox: { minX: number; minY: number; maxX: number; maxY: number };
+  moved: boolean;
+};
+
+type ScaleCorner = 'nw' | 'ne' | 'se' | 'sw';
+
+/** Dragging a bbox corner scales every contour about the opposite corner. */
+type ShapeScale = {
+  pointerId: number;
+  corner: ScaleCorner;
+  origin: Pt;
+  /** Distance from origin to the dragged corner at pointer-down — scale = current / start. */
+  startDistance: number;
+  startContours: VecContour[];
+  moved: boolean;
+};
+
+function bboxCorner(
+  bbox: { minX: number; minY: number; maxX: number; maxY: number },
+  corner: ScaleCorner,
+): Pt {
+  switch (corner) {
+    case 'nw': return { x: bbox.minX, y: bbox.minY };
+    case 'ne': return { x: bbox.maxX, y: bbox.minY };
+    case 'se': return { x: bbox.maxX, y: bbox.maxY };
+    case 'sw': return { x: bbox.minX, y: bbox.maxY };
+  }
+}
+
+function oppositeScaleCorner(corner: ScaleCorner): ScaleCorner {
+  switch (corner) {
+    case 'nw': return 'se';
+    case 'ne': return 'sw';
+    case 'se': return 'nw';
+    case 'sw': return 'ne';
+  }
+}
+
+/** Bbox corner pushed outward — keeps scale grabs clear of path anchors. */
+function scaleHandlePoint(
+  bbox: { minX: number; minY: number; maxX: number; maxY: number },
+  corner: ScaleCorner,
+): Pt {
+  const point = bboxCorner(bbox, corner);
+  const outwardX = corner === 'nw' || corner === 'sw' ? -1 : 1;
+  const outwardY = corner === 'nw' || corner === 'ne' ? -1 : 1;
+  return {
+    x: point.x + outwardX * SCALE_HANDLE_OUTSET,
+    y: point.y + outwardY * SCALE_HANDLE_OUTSET,
+  };
+}
 
 type PathEditorProps = {
   P: string;
@@ -1332,19 +1504,23 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   const contoursRef = useRef(contours);
   contoursRef.current = contours;
   const dragRef = useRef<PathDrag | null>(null);
+  const shapeDragRef = useRef<ShapeDrag | null>(null);
+  const shapeScaleRef = useRef<ShapeScale | null>(null);
   const [selection, setSelection] = useState<PathSelection | null>(null);
 
+  // 1 viewBox unit = 1 px here: the shape is pinned at its natural size, not
+  // stretched to fill the box, so the edit handles must agree with that.
   const toPx = useCallback((point: Pt): Pt => ({
-    x: ((point.x - viewBox.x) / viewBox.width) * box.width,
-    y: ((point.y - viewBox.y) / viewBox.height) * box.height,
-  }), [viewBox, box.width, box.height]);
+    x: point.x - viewBox.x,
+    y: point.y - viewBox.y,
+  }), [viewBox]);
 
   const toPath = useCallback((clientX: number, clientY: number): Pt => {
     const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+    if (!rect) return { x: 0, y: 0 };
     return {
-      x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
-      y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
+      x: viewBox.x + (clientX - rect.left),
+      y: viewBox.y + (clientY - rect.top),
     };
   }, [viewBox]);
 
@@ -1365,6 +1541,53 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   // us. Window listeners could not do both: swallowing the release to keep the
   // canvas out of it also kept it from ever reaching the window.
   const onPointerMove = (event: React.PointerEvent) => {
+    const shapeScale = shapeScaleRef.current;
+    if (shapeScale && event.pointerId === shapeScale.pointerId) {
+      event.stopPropagation();
+      event.preventDefault();
+      if (shapeScale.startDistance <= 0) return;
+      const point = toPath(event.clientX, event.clientY);
+      const distance = Math.hypot(point.x - shapeScale.origin.x, point.y - shapeScale.origin.y);
+      const nextScale = Math.max(MIN_SHAPE_SCALE, distance / shapeScale.startDistance);
+      if (!shapeScale.moved && Math.abs(nextScale - 1) < 1e-4) return;
+      shapeScale.moved = true;
+      onChange(scaleContours(shapeScale.startContours, shapeScale.origin, nextScale));
+      return;
+    }
+    const shapeDrag = shapeDragRef.current;
+    if (shapeDrag && event.pointerId === shapeDrag.pointerId) {
+      event.stopPropagation();
+      event.preventDefault();
+      const point = toPath(event.clientX, event.clientY);
+      // Clamp so the shape's own bounding box never moves fully clear of
+      // `box` — smaller than the box, it's confined inside it; larger, it's
+      // confined to always keep the box covered (same formula either way).
+      const { bbox } = shapeDrag;
+      const bboxWidth = bbox.maxX - bbox.minX;
+      const bboxHeight = bbox.maxY - bbox.minY;
+      const rawDx = point.x - shapeDrag.origin.x;
+      const rawDy = point.y - shapeDrag.origin.y;
+      // A too-thin contour (fewer than 3 drawn points) has no finite bbox to
+      // clamp against — move it unclamped rather than stick it at NaN.
+      let dx = rawDx;
+      let dy = rawDy;
+      if (isFinite(bboxWidth) && isFinite(bboxHeight)) {
+        const pxMinX = bbox.minX - viewBox.x;
+        const pxMinY = bbox.minY - viewBox.y;
+        const lowX = Math.min(0, box.width - bboxWidth);
+        const highX = Math.max(0, box.width - bboxWidth);
+        const lowY = Math.min(0, box.height - bboxHeight);
+        const highY = Math.max(0, box.height - bboxHeight);
+        const clampedMinX = Math.min(highX, Math.max(lowX, pxMinX + rawDx));
+        const clampedMinY = Math.min(highY, Math.max(lowY, pxMinY + rawDy));
+        dx = clampedMinX - pxMinX;
+        dy = clampedMinY - pxMinY;
+      }
+      if (!shapeDrag.moved && dx === 0 && dy === 0) return;
+      shapeDrag.moved = true;
+      onChange(mapContours(shapeDrag.startContours, p => ({ x: p.x + dx, y: p.y + dy })));
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || event.pointerId !== drag.pointerId) return;
     event.stopPropagation();
@@ -1392,6 +1615,29 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   };
 
   const endDrag = (event: React.PointerEvent) => {
+    const shapeScale = shapeScaleRef.current;
+    if (shapeScale && event.pointerId === shapeScale.pointerId) {
+      shapeScaleRef.current = null;
+      event.stopPropagation();
+      const svg = svgRef.current;
+      if (svg?.hasPointerCapture(shapeScale.pointerId)) svg.releasePointerCapture(shapeScale.pointerId);
+      if (shapeScale.moved) onCommit(contoursRef.current);
+      return;
+    }
+    const shapeDrag = shapeDragRef.current;
+    if (shapeDrag && event.pointerId === shapeDrag.pointerId) {
+      shapeDragRef.current = null;
+      event.stopPropagation();
+      const svg = svgRef.current;
+      if (svg?.hasPointerCapture(shapeDrag.pointerId)) svg.releasePointerCapture(shapeDrag.pointerId);
+      if (shapeDrag.moved) {
+        onCommit(contoursRef.current);
+      } else {
+        // A click that never travels deselects, same as the background surface.
+        setSelection(null);
+      }
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || event.pointerId !== drag.pointerId) return;
     dragRef.current = null;
@@ -1405,6 +1651,41 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   /** Grab affordances are editor-only: nothing outside should act on them. */
   const swallow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
+  };
+
+  const startShapeDrag = (event: React.PointerEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+    svgRef.current?.focus({ preventScroll: true });
+    shapeDragRef.current = {
+      pointerId: event.pointerId,
+      origin: toPath(event.clientX, event.clientY),
+      startContours: cloneContours(contours),
+      bbox: contoursBBox(contours),
+      moved: false,
+    };
+    svgRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const startShapeScale = (event: React.PointerEvent, corner: ScaleCorner) => {
+    event.stopPropagation();
+    event.preventDefault();
+    svgRef.current?.focus({ preventScroll: true });
+    setSelection(null);
+    const bbox = contoursBBox(contours);
+    const origin = bboxCorner(bbox, oppositeScaleCorner(corner));
+    const handle = scaleHandlePoint(bbox, corner);
+    const startDistance = Math.hypot(handle.x - origin.x, handle.y - origin.y);
+    if (!isFinite(startDistance) || startDistance <= 0) return;
+    shapeScaleRef.current = {
+      pointerId: event.pointerId,
+      corner,
+      origin,
+      startDistance,
+      startContours: cloneContours(contours),
+      moved: false,
+    };
+    svgRef.current?.setPointerCapture(event.pointerId);
   };
 
   const startDrag = (
@@ -1464,6 +1745,21 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
+    // +/- grow/shrink the whole shape about its center, keeping proportions.
+    // Works with or without a selected point — scaling is always about the bbox.
+    if (event.key === '=' || event.key === '+' || event.key === '-' || event.key === '_') {
+      event.preventDefault();
+      event.stopPropagation();
+      const bbox = contoursBBox(contours);
+      if (!isFinite(bbox.minX) || !isFinite(bbox.maxX)) return;
+      const origin = { x: (bbox.minX + bbox.maxX) / 2, y: (bbox.minY + bbox.maxY) / 2 };
+      const grow = event.key === '=' || event.key === '+';
+      const factor = grow ? KEYBOARD_SCALE_STEP : 1 / KEYBOARD_SCALE_STEP;
+      const next = scaleContours(contours, origin, factor);
+      onChange(next);
+      onCommit(next);
+      return;
+    }
     if (!selection) return;
     const { contour, node } = selection;
     if (event.key === 'Escape') {
@@ -1495,6 +1791,13 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   };
 
   const outline = useMemo(() => serializeContours(mapContours(contours, toPx)), [contours, toPx]);
+  const shapeBBox = useMemo(() => contoursBBox(contours), [contours]);
+  const bboxTopLeft = toPx({ x: shapeBBox.minX, y: shapeBBox.minY });
+  const showScaleHandles = !selection
+    && isFinite(shapeBBox.minX)
+    && isFinite(shapeBBox.maxX)
+    && shapeBBox.maxX > shapeBBox.minX
+    && shapeBBox.maxY > shapeBBox.minY;
 
   return (
     <svg
@@ -1525,6 +1828,16 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       />
       <path className={`${P}-editor-hit`} d={outline} onDoubleClick={insertNode} />
       <path className={`${P}-editor-outline`} d={outline} />
+      {/* Dragging anywhere inside the shape moves it as a whole, clamped to
+          `box` in onPointerMove. Sits above the surface/hit paths, so it
+          also takes over their double-click-to-insert-node duty. */}
+      <path
+        className={`${P}-editor-body`}
+        d={outline}
+        fillRule="evenodd"
+        onPointerDown={startShapeDrag}
+        onDoubleClick={insertNode}
+      />
       {contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
         const isSelected = selection?.contour === contourIndex && selection?.node === nodeIndex;
         const anchor = toPx(node.p);
@@ -1576,6 +1889,43 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
           </g>
         );
       }))}
+      {/* Uniform scale about the opposite corner. Shown when no point is
+          selected (transform mode); click empty/body to dismiss a point. */}
+      {showScaleHandles && (
+        <g>
+          <rect
+            className={`${P}-editor-bbox`}
+            x={bboxTopLeft.x}
+            y={bboxTopLeft.y}
+            width={shapeBBox.maxX - shapeBBox.minX}
+            height={shapeBBox.maxY - shapeBBox.minY}
+          />
+          {(['nw', 'ne', 'se', 'sw'] as const).map((corner) => {
+            const point = toPx(scaleHandlePoint(shapeBBox, corner));
+            const nesw = corner === 'ne' || corner === 'sw';
+            return (
+              <g key={corner}>
+                <rect
+                  className={`${P}-editor-scale`}
+                  x={point.x - SCALE_HANDLE_SIZE / 2}
+                  y={point.y - SCALE_HANDLE_SIZE / 2}
+                  width={SCALE_HANDLE_SIZE}
+                  height={SCALE_HANDLE_SIZE}
+                />
+                <rect
+                  className={`${P}-editor-scale-grab${nesw ? ` ${P}-editor-scale-grab-nesw` : ''}`}
+                  x={point.x - SCALE_GRAB_SIZE / 2}
+                  y={point.y - SCALE_GRAB_SIZE / 2}
+                  width={SCALE_GRAB_SIZE}
+                  height={SCALE_GRAB_SIZE}
+                  onPointerDown={event => startShapeScale(event, corner)}
+                  onClick={swallow}
+                />
+              </g>
+            );
+          })}
+        </g>
+      )}
     </svg>
   );
 }
@@ -1710,26 +2060,48 @@ function PretextColumn({
 
   const aspect = box.height > 0 ? box.width / box.height : 1;
   const draftContours = pathEditor?.contours ?? null;
-  const rings = useMemo(() => {
+  // Preset shapes (diamond, ellipse, circle, ...) have no declared size of
+  // their own — they only ever make sense stretched to fill the box. An
+  // actual path (a shared custom path, a per-column path override, or a live
+  // vector-editor draft) does have a natural size, given by its viewBox —
+  // `isPathShape` marks that case so it can be pinned instead of stretched.
+  const { rings: unitRings, isPathShape } = useMemo(() => {
     if (draftContours) {
       const drawn = flattenContours(draftContours);
-      if (drawn.length) return mapToViewBox(drawn, viewBox);
+      if (drawn.length) return { rings: mapToViewBox(drawn, viewBox), isPathShape: true };
     }
     const spec = (item?.path ?? '').trim() || (shape === 'custom' ? customPath : '');
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
-    if (parsed && parsed.length) return parsed;
-    return getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
+    if (parsed && parsed.length) return { rings: parsed, isPathShape: true };
+    return { rings: getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect), isPathShape: false };
     // aspect only matters for the circle preset; round it to avoid churn
   }, [draftContours, item?.path, shape, customPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
 
-  // Turning editing on for a preset (or a stretched path) hands over the shape
-  // as it looks right now: sampled, thinned back to nodes, in viewbox units.
+  // The layout math below (spansAtY etc.) treats rings as normalized 0..1
+  // fractions of the box and multiplies them back out by box.width/height.
+  // For an actual path, pre-scaling here by (natural size / box size) cancels
+  // that multiplication out, so the shape ends up pinned at its own fixed
+  // viewBox size, anchored to the component's top-left, instead of
+  // stretching to fill the box. Presets keep the old fill-the-box behavior
+  // until editing converts them — pin during that conversion so they don't
+  // flash at full height first.
   const onConvertPath = pathEditor?.onConvert;
   const needsConversion = pathEditor?.needsConversion ?? false;
+  // Conversion pins the path to the viewBox. Apply that pin on this first
+  // paint too, otherwise the stretched preset flashes at full box height.
+  const pinToViewBox = isPathShape || needsConversion;
+
+  const rings = useMemo(() => {
+    if (!pinToViewBox || box.width <= 0 || box.height <= 0) return unitRings;
+    const scaleX = viewBox.width / box.width;
+    const scaleY = viewBox.height / box.height;
+    return unitRings.map(ring => ring.map(point => ({ x: point.x * scaleX, y: point.y * scaleY })));
+  }, [unitRings, pinToViewBox, viewBox.width, viewBox.height, box.width, box.height]);
+
   useEffect(() => {
-    if (!needsConversion || !onConvertPath || !rings.length) return;
-    onConvertPath(mapContours(ringsToContours(rings), point => ({ x: point.x * EDIT_SPAN, y: point.y * EDIT_SPAN })));
-  }, [needsConversion, onConvertPath, rings]);
+    if (!needsConversion || !onConvertPath || !unitRings.length) return;
+    onConvertPath(mapContours(ringsToContours(unitRings), point => ({ x: point.x * EDIT_SPAN, y: point.y * EDIT_SPAN })));
+  }, [needsConversion, onConvertPath, unitRings]);
 
   useIsomorphicLayoutEffect(() => {
     const element = columnEl;
