@@ -59,9 +59,10 @@ const schema: ComponentSchemaV1 = {
       shapeMode: {
         type: 'string',
         scope: 'common',
-        title: 'Text',
-        tooltip: 'Contain — text fills the path. Avoid — text flows around the path.',
-        display: { type: 'toggle-cycle', enum: ['contain', 'avoid'] },
+        title: '',
+        tooltip: 'A — text fills the path. B — text flows around the path.',
+        display: { type: 'radio-group' },
+        enum: ['A', 'B'],
       },
       overflowMode: {
         type: 'string',
@@ -91,6 +92,12 @@ const schema: ComponentSchemaV1 = {
         max: 8,
         step: 1,
         display: { type: 'numeric-input' },
+      },
+      image: {
+        type: ['string', 'null'] as const,
+        scope: 'common',
+        title: 'Image',
+        display: { type: 'settings-image-input' },
       },
       backgroundColor: {
         type: 'string',
@@ -170,11 +177,12 @@ const schema: ComponentSchemaV1 = {
       customPath: '',
       pathSnap: 0,
       pathFit: 'stretch',
-      shapeMode: 'contain',
+      shapeMode: 'A',
       overflowMode: 'clip',
       fitText: 'off',
       dropCap: 'off',
       dropCapLines: 3,
+      image: null,
       backgroundColor: 'rgba(0, 0, 0, 0)',
       textFontFamily: 'Goudy Bookletter 1911',
       textFontSettings: {
@@ -217,6 +225,13 @@ const schema: ComponentSchemaV1 = {
       'fitText',
       'dropCap',
       'dropCapLines',
+      'image',
+    ],
+    displayRules: [
+      {
+        if: { name: 'shapeMode', value: 'B', isNotEqual: true },
+        then: { name: 'properties.image.display.visible', value: false },
+      },
     ],
   },
   panels: [
@@ -227,7 +242,9 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         { type: 'row', items: ['__componentName__'] },
-        { type: 'row', title: 'Path', items: ['shape', 'shapeMode'] },
+        { type: 'row', items: ['shapeMode'] },
+        { type: 'row', items: ['shape'] },
+        { type: 'row', title: 'Image', items: ['image'] },
         { type: 'row', title: 'Text Flow', items: ['overflowMode', 'dropCap'] }
       ],
     },
@@ -333,7 +350,7 @@ export const PretextComponent = {
   sourceCode: pretextSourceRaw,
   assetsPaths: {
     content: [],
-    parameters: [],
+    parameters: [{ path: 'image', placeholderEnabled: true }],
   },
   fontSettingsPaths: {
     content: [],

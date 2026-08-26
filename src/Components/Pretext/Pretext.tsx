@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
@@ -83,11 +83,12 @@ type PretextSettings = {
   pathFit?: PathFit;
   pathViewBox?: string;
   pathSnap?: number;
-  shapeMode?: 'contain' | 'avoid';
+  shapeMode?: 'A' | 'B';
   overflowMode?: 'clip' | 'visible';
   fitText?: 'on' | 'off';
   dropCap?: 'on' | 'off';
   dropCapLines?: number;
+  image?: string | null;
   backgroundColor?: string;
   textColor?: string;
   linkColor?: string;
@@ -121,6 +122,39 @@ type Span = { x0: number; x1: number };
 
 function clamp01(value: number): number {
   return value < 0 ? 0 : value > 1 ? 1 : value;
+}
+
+function ringsToPathPx(rings: Ring[], box: { width: number; height: number }): string {
+  return rings
+    .filter(ring => ring.length > 0)
+    .map(ring => `M ${ring.map(point => `${point.x * box.width} ${point.y * box.height}`).join(' L ')} Z`)
+    .join(' ');
+}
+
+function ringsBBoxPx(rings: Ring[], box: { width: number; height: number }): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+} | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const ring of rings) {
+    for (const point of ring) {
+      const x = point.x * box.width;
+      const y = point.y * box.height;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) return null;
+  return { x: minX, y: minY, width, height };
 }
 
 function ringOf(pairs: [number, number][]): Ring {
@@ -694,7 +728,7 @@ export function settingsForEditablePreset(
   aspect = 1,
   previous?: { customPath?: string; pathFit?: string; pathViewBox?: string },
 ): {
-  shape: 'custom';
+  shape: ShapeId;
   customPath: string;
   pathFit: 'viewbox';
   pathViewBox: string;
@@ -706,7 +740,9 @@ export function settingsForEditablePreset(
     point => ({ x: point.x * EDIT_SPAN + origin.x, y: point.y * EDIT_SPAN + origin.y }),
   );
   return {
-    shape: 'custom',
+    // Keep the preset id so the settings dropdown reflects the pick; path
+    // edits later flip to `custom` via writePath.
+    shape,
     customPath: serializeContours(contours),
     pathFit: 'viewbox',
     pathViewBox: EDIT_VIEW_BOX,
@@ -1229,6 +1265,14 @@ function getCSS(P: string): string {
   flex: 1 1 0;
   min-width: 0;
   height: 100%;
+}
+.${P}-shape-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
 }
 .${P}-flow {
   position: absolute;
@@ -2015,6 +2059,7 @@ type ColumnProps = {
   dropCapLines: number;
   showGuides: boolean;
   typography: React.CSSProperties;
+  imageUrl?: string | null;
   pathEditor?: PathEditorBinding | null;
 };
 
@@ -2048,8 +2093,10 @@ function PretextColumn({
   dropCapLines,
   showGuides,
   typography,
+  imageUrl,
   pathEditor,
 }: ColumnProps) {
+  const imageId = `pretext-shape-image-${useId().replace(/:/g, '')}`;
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const [box, setBox] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -2073,7 +2120,9 @@ function PretextColumn({
       const drawn = flattenContours(draftContours);
       if (drawn.length) return { rings: mapToViewBox(drawn, viewBox), isPathShape: true };
     }
-    const spec = shape === 'custom' ? customPath.trim() : '';
+    // Prefer a stored path whenever present (preset picks materialize into
+    // customPath while keeping the preset id on `shape` for the dropdown).
+    const spec = customPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
     if (parsed && parsed.length) return { rings: parsed, isPathShape: true };
     return { rings: getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect), isPathShape: false };
@@ -2240,9 +2289,51 @@ function PretextColumn({
   const showPathEditor = Boolean(pathEditor && draftContours && box.width > 0 && box.height > 0);
   const editorRect = useFloatingRect(columnEl, showPathEditor);
   const portalTarget = showPathEditor && editorRect ? resolveEditorPortalTarget() : null;
+  const shapeImagePath = useMemo(
+    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(rings, box) : ''),
+    [imageUrl, rings, box.width, box.height],
+  );
+  const shapeImageBounds = useMemo(
+    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsBBoxPx(rings, box) : null),
+    [imageUrl, rings, box.width, box.height],
+  );
+  const patternId = `${imageId}-pattern`;
 
   return (
     <div className={`${P}-column`} ref={setColumnEl}>
+      {imageUrl && shapeImagePath && shapeImageBounds ? (
+        <svg
+          className={`${P}-shape-image`}
+          viewBox={`0 0 ${box.width} ${box.height}`}
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <defs>
+            <pattern
+              id={patternId}
+              patternUnits="userSpaceOnUse"
+              x={shapeImageBounds.x}
+              y={shapeImageBounds.y}
+              width={shapeImageBounds.width}
+              height={shapeImageBounds.height}
+            >
+              <image
+                href={imageUrl}
+                x={0}
+                y={0}
+                width={shapeImageBounds.width}
+                height={shapeImageBounds.height}
+                preserveAspectRatio="xMidYMid slice"
+              />
+            </pattern>
+          </defs>
+          <path
+            d={shapeImagePath}
+            fill={`url(#${patternId})`}
+            fillRule="evenodd"
+          />
+        </svg>
+      ) : null}
       <div
         className={`${P}-flow${allowOverflow ? '' : ` ${P}-clip`}`}
         style={{ ...typography, ['--' + P + '-fit']: appliedScale } as React.CSSProperties}
@@ -2349,7 +2440,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const customPath = settings?.customPath ?? '';
   const pathFit = settings?.pathFit ?? 'stretch';
   const viewBox = useMemo(() => parseViewBox(settings?.pathViewBox), [settings?.pathViewBox]);
-  const mode = settings?.shapeMode ?? 'contain';
+  const mode = settings?.shapeMode === 'B' ? 'avoid' : 'contain';
   const align = settings?.textAlign ?? 'left';
   const allowOverflow = (settings?.overflowMode ?? 'clip') === 'visible';
   const fitEnabled = (settings?.fitText ?? 'off') === 'on';
@@ -2403,8 +2494,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     return parsed.length ? parsed : null;
   }, [pathEditing, draft, customPath]);
 
-  const isEditablePath = shape === 'custom'
-    && pathFit === 'viewbox'
+  const isEditablePath = pathFit === 'viewbox'
     && (settings?.pathViewBox ?? '') === EDIT_VIEW_BOX
     && Boolean(editContours);
 
@@ -2417,7 +2507,10 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       serialized,
       contours: next,
     }));
-    if (commit) onUpdateSettings?.({ ...settings, customPath: serialized });
+    if (commit) {
+      // Manual point edits diverge from the named preset.
+      onUpdateSettings?.({ ...settings, shape: 'custom', customPath: serialized });
+    }
   }, [customPath, onUpdateSettings, settings]);
 
   const pathEditor = useMemo<PathEditorBinding | null>(() => {
@@ -2431,7 +2524,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
         setDraft({ base: serialized, serialized, contours: next });
         onUpdateSettings?.({
           ...settings,
-          shape: 'custom',
           pathFit: 'viewbox',
           pathViewBox: EDIT_VIEW_BOX,
           customPath: serialized,
@@ -2502,6 +2594,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           dropCapLines={dropCapLines}
           showGuides={(showGuides || pathEditing) && shapeOverlayVisible}
           typography={typography}
+          imageUrl={mode === 'avoid' ? settings?.image : null}
           pathEditor={shapeOverlayVisible ? pathEditor : null}
         />
       </div>
