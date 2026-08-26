@@ -466,8 +466,8 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     if (!wrapper || !set) return;
     const raf = { id: 0 };
     const measure = () => {
-      const containerWidth = wrapper.getBoundingClientRect().width || wrapper.offsetWidth;
-      const rawSetWidth = set.getBoundingClientRect().width || set.offsetWidth;
+      const containerWidth = wrapper.offsetWidth || wrapper.getBoundingClientRect().width;
+      const rawSetWidth = set.offsetWidth || set.getBoundingClientRect().width;
       if (hasContent && containerWidth > 0 && rawSetWidth > 0) {
         const singleCycleWidth = rawSetWidth / contentSequenceRepeat;
         if (singleCycleWidth > 0) {
