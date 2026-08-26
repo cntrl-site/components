@@ -278,14 +278,6 @@ const schema: ComponentSchemaV1 = {
             type: 'rich-text',
           },
         },
-        path: {
-          type: 'string',
-          label: 'Path',
-          placeholder: 'Optional path for this column...',
-          display: {
-            type: 'text-input',
-          },
-        },
       },
     },
     default: [
@@ -298,7 +290,6 @@ const schema: ComponentSchemaV1 = {
             ],
           },
         ],
-        path: '',
       },
     ],
   },

@@ -21,8 +21,12 @@ const DROP_CAP_SIZE_RATIO = 0.92;
  * anchors can be grabbed even where a host app's own selection/resize
  * chrome renders in a sibling stacking context above this component's own
  * box — no z-index set inside that box could ever reach past it.
+ *
+ * Keep this above the CMS article/editor stack (`.editor` is z-index 1,
+ * `#component-portal` is 2) and below host UI chrome (toolbar 4, ItemParams
+ * SnapBar container 5) so the orange outline never paints over panels.
  */
-const EDITOR_PORTAL_Z_INDEX = 999;
+const EDITOR_PORTAL_Z_INDEX = 3;
 
 export const SHAPE_IDS = [
   'rectangle',
@@ -71,7 +75,6 @@ type RichBlock = {
 
 type PretextContentItem = {
   text?: RichBlock[];
-  path?: string;
 };
 
 type PretextSettings = {
@@ -2062,20 +2065,20 @@ function PretextColumn({
   const draftContours = pathEditor?.contours ?? null;
   // Preset shapes (diamond, ellipse, circle, ...) have no declared size of
   // their own — they only ever make sense stretched to fill the box. An
-  // actual path (a shared custom path, a per-column path override, or a live
-  // vector-editor draft) does have a natural size, given by its viewBox —
-  // `isPathShape` marks that case so it can be pinned instead of stretched.
+  // actual path (a shared custom path, or a live vector-editor draft) does
+  // have a natural size, given by its viewBox — `isPathShape` marks that
+  // case so it can be pinned instead of stretched.
   const { rings: unitRings, isPathShape } = useMemo(() => {
     if (draftContours) {
       const drawn = flattenContours(draftContours);
       if (drawn.length) return { rings: mapToViewBox(drawn, viewBox), isPathShape: true };
     }
-    const spec = (item?.path ?? '').trim() || (shape === 'custom' ? customPath : '');
+    const spec = shape === 'custom' ? customPath.trim() : '';
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
     if (parsed && parsed.length) return { rings: parsed, isPathShape: true };
     return { rings: getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect), isPathShape: false };
     // aspect only matters for the circle preset; round it to avoid churn
-  }, [draftContours, item?.path, shape, customPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
+  }, [draftContours, shape, customPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
 
   // The layout math below (spansAtY etc.) treats rings as normalized 0..1
   // fractions of the box and multiplies them back out by box.width/height.
@@ -2438,9 +2441,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       onCommit: (next: VecContour[]) => writePath(next, true),
     };
   }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, settings, writePath]);
-  // The path is a component-wide setting, carried by the column unless it has
-  // a path of its own.
-  const usesSharedPath = !(item?.path ?? '').trim();
 
   const [fitScale, setFitScale] = useState<number | undefined>(undefined);
   const fitScaleRef = useRef<number | undefined>(undefined);
@@ -2502,7 +2502,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           dropCapLines={dropCapLines}
           showGuides={(showGuides || pathEditing) && shapeOverlayVisible}
           typography={typography}
-          pathEditor={usesSharedPath && shapeOverlayVisible ? pathEditor : null}
+          pathEditor={shapeOverlayVisible ? pathEditor : null}
         />
       </div>
     </>
