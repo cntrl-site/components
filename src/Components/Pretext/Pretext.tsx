@@ -699,27 +699,45 @@ export function ringsToContours(rings: Ring[]): VecContour[] {
 }
 
 /**
- * Top-left of an editable viewBox path's drawn outline. Used when swapping
- * presets so a shape that was dragged stays put instead of jumping to 0,0.
+ * Where a newly picked preset should sit in path coordinates.
+ * Reuses the previous path's drawn bbox so switching forms keeps size/position
+ * (including after a stretch commit rematerialized the path into pixels).
+ * Falls back to the full edit viewBox when there is no usable previous path.
  */
-function editablePathOrigin(previous?: {
+function editablePathTargetRect(previous?: {
   customPath?: string;
   pathFit?: string;
   pathViewBox?: string;
-}): Pt {
+}): { x: number; y: number; width: number; height: number } {
+  const full = { x: 0, y: 0, width: EDIT_SPAN, height: EDIT_SPAN };
   if (
     !previous
     || previous.pathFit !== 'viewbox'
     || previous.pathViewBox !== EDIT_VIEW_BOX
     || !previous.customPath
   ) {
-    return { x: 0, y: 0 };
+    return full;
   }
   const contours = parsePathNodes(previous.customPath);
-  if (!contours.length) return { x: 0, y: 0 };
+  if (!contours.length) return full;
   const bbox = contoursBBox(contours);
-  if (!isFinite(bbox.minX) || !isFinite(bbox.minY)) return { x: 0, y: 0 };
-  return { x: bbox.minX, y: bbox.minY };
+  const width = bbox.maxX - bbox.minX;
+  const height = bbox.maxY - bbox.minY;
+  if (!isFinite(bbox.minX) || !isFinite(bbox.minY) || !(width > 0) || !(height > 0)) {
+    return full;
+  }
+  return { x: bbox.minX, y: bbox.minY, width, height };
+}
+
+/** True when path coords live outside the edit viewBox (typically rematerialized pixels). */
+function pathExceedsEditViewBox(contours: VecContour[], viewBox: ViewBox, pad = 1): boolean {
+  if (!contours.length) return false;
+  const bbox = contoursBBox(contours);
+  if (!isFinite(bbox.minX) || !isFinite(bbox.maxX)) return false;
+  return bbox.minX < viewBox.x - pad
+    || bbox.minY < viewBox.y - pad
+    || bbox.maxX > viewBox.x + viewBox.width + pad
+    || bbox.maxY > viewBox.y + viewBox.height + pad;
 }
 
 /** Turns a preset into the editable viewBox path the editor persists after a shape pick. */
@@ -733,11 +751,11 @@ export function settingsForEditablePreset(
   pathFit: 'viewbox';
   pathViewBox: string;
 } {
-  const origin = editablePathOrigin(previous);
+  const target = editablePathTargetRect(previous);
   const rings = getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
   const contours = mapContours(
     ringsToContours(rings),
-    point => ({ x: point.x * EDIT_SPAN + origin.x, y: point.y * EDIT_SPAN + origin.y }),
+    point => ({ x: point.x * target.width + target.x, y: point.y * target.height + target.y }),
   );
   return {
     // Keep the preset id so the settings dropdown reflects the pick; path
@@ -1542,11 +1560,13 @@ type PathEditorProps = {
   viewBox: ViewBox;
   contours: VecContour[];
   snap: number;
+  /** When true, map the edit viewBox across the full component box (presets). */
+  stretchToBox: boolean;
   onChange: (contours: VecContour[]) => void;
   onCommit: (contours: VecContour[]) => void;
 };
 
-function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit }: PathEditorProps) {
+function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onChange, onCommit }: PathEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const contoursRef = useRef(contours);
   contoursRef.current = contours;
@@ -1555,21 +1575,37 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   const shapeScaleRef = useRef<ShapeScale | null>(null);
   const [selection, setSelection] = useState<PathSelection | null>(null);
 
-  // 1 viewBox unit = 1 px here: the shape is pinned at its natural size, not
-  // stretched to fill the box, so the edit handles must agree with that.
-  const toPx = useCallback((point: Pt): Pt => ({
-    x: point.x - viewBox.x,
-    y: point.y - viewBox.y,
-  }), [viewBox]);
+  const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
+  const scaleY = viewBox.height > 0 ? box.height / viewBox.height : 1;
+
+  // Pinned custom paths: 1 viewBox unit = 1 px. Presets stretch the edit
+  // space across the full component so handles track the text shape.
+  const toPx = useCallback((point: Pt): Pt => (
+    stretchToBox
+      ? {
+        x: (point.x - viewBox.x) * scaleX,
+        y: (point.y - viewBox.y) * scaleY,
+      }
+      : {
+        x: point.x - viewBox.x,
+        y: point.y - viewBox.y,
+      }
+  ), [stretchToBox, viewBox, scaleX, scaleY]);
 
   const toPath = useCallback((clientX: number, clientY: number): Pt => {
     const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
+    if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+    if (stretchToBox) {
+      return {
+        x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
+        y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
+      };
+    }
     return {
       x: viewBox.x + (clientX - rect.left),
       y: viewBox.y + (clientY - rect.top),
     };
-  }, [viewBox]);
+  }, [stretchToBox, viewBox]);
 
   // Same as toPath, but into this editor's own pixel space (its viewBox is the
   // box's own width/height) — what the outline is drawn in and what the
@@ -1582,6 +1618,19 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       y: ((clientY - rect.top) / rect.height) * box.height,
     };
   }, [box.width, box.height]);
+
+  // First commit on a stretched preset rematerializes into pixel space so
+  // flipping `shape` to `custom` (which pins) keeps the same on-screen size.
+  const commitContours = useCallback((next: VecContour[]) => {
+    if (!stretchToBox) {
+      onCommit(next);
+      return;
+    }
+    onCommit(mapContours(next, point => ({
+      x: viewBox.x + (point.x - viewBox.x) * scaleX,
+      y: viewBox.y + (point.y - viewBox.y) * scaleY,
+    })));
+  }, [stretchToBox, onCommit, viewBox, scaleX, scaleY]);
 
   // The pointer is captured by the overlay for the whole drag, so the move and
   // release land here whatever they pass over — and stay off the editor around
@@ -1619,16 +1668,27 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       let dx = rawDx;
       let dy = rawDy;
       if (isFinite(bboxWidth) && isFinite(bboxHeight)) {
-        const pxMinX = bbox.minX - viewBox.x;
-        const pxMinY = bbox.minY - viewBox.y;
-        const lowX = Math.min(0, box.width - bboxWidth);
-        const highX = Math.max(0, box.width - bboxWidth);
-        const lowY = Math.min(0, box.height - bboxHeight);
-        const highY = Math.max(0, box.height - bboxHeight);
-        const clampedMinX = Math.min(highX, Math.max(lowX, pxMinX + rawDx));
-        const clampedMinY = Math.min(highY, Math.max(lowY, pxMinY + rawDy));
-        dx = clampedMinX - pxMinX;
-        dy = clampedMinY - pxMinY;
+        if (stretchToBox) {
+          const lowX = Math.min(viewBox.x, viewBox.x + viewBox.width - bboxWidth);
+          const highX = Math.max(viewBox.x, viewBox.x + viewBox.width - bboxWidth);
+          const lowY = Math.min(viewBox.y, viewBox.y + viewBox.height - bboxHeight);
+          const highY = Math.max(viewBox.y, viewBox.y + viewBox.height - bboxHeight);
+          const clampedMinX = Math.min(highX, Math.max(lowX, bbox.minX + rawDx));
+          const clampedMinY = Math.min(highY, Math.max(lowY, bbox.minY + rawDy));
+          dx = clampedMinX - bbox.minX;
+          dy = clampedMinY - bbox.minY;
+        } else {
+          const pxMinX = bbox.minX - viewBox.x;
+          const pxMinY = bbox.minY - viewBox.y;
+          const lowX = Math.min(0, box.width - bboxWidth);
+          const highX = Math.max(0, box.width - bboxWidth);
+          const lowY = Math.min(0, box.height - bboxHeight);
+          const highY = Math.max(0, box.height - bboxHeight);
+          const clampedMinX = Math.min(highX, Math.max(lowX, pxMinX + rawDx));
+          const clampedMinY = Math.min(highY, Math.max(lowY, pxMinY + rawDy));
+          dx = clampedMinX - pxMinX;
+          dy = clampedMinY - pxMinY;
+        }
       }
       if (!shapeDrag.moved && dx === 0 && dy === 0) return;
       shapeDrag.moved = true;
@@ -1668,7 +1728,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       event.stopPropagation();
       const svg = svgRef.current;
       if (svg?.hasPointerCapture(shapeScale.pointerId)) svg.releasePointerCapture(shapeScale.pointerId);
-      if (shapeScale.moved) onCommit(contoursRef.current);
+      if (shapeScale.moved) commitContours(contoursRef.current);
       return;
     }
     const shapeDrag = shapeDragRef.current;
@@ -1678,7 +1738,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       const svg = svgRef.current;
       if (svg?.hasPointerCapture(shapeDrag.pointerId)) svg.releasePointerCapture(shapeDrag.pointerId);
       if (shapeDrag.moved) {
-        onCommit(contoursRef.current);
+        commitContours(contoursRef.current);
       } else {
         // A click that never travels deselects, same as the background surface.
         setSelection(null);
@@ -1691,7 +1751,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
     event.stopPropagation();
     const svg = svgRef.current;
     if (svg?.hasPointerCapture(drag.pointerId)) svg.releasePointerCapture(drag.pointerId);
-    if (drag.moved) onCommit(contoursRef.current);
+    if (drag.moved) commitContours(contoursRef.current);
   };
 
 
@@ -1756,7 +1816,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       if (next === contours) return;
       setSelection(kind === 'anchor' ? null : { contour: contourIndex, node: nodeIndex });
       onChange(next);
-      onCommit(next);
+      commitContours(next);
       return;
     }
     setSelection({ contour: contourIndex, node: nodeIndex });
@@ -1788,7 +1848,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
     if (nodeIndex < 0) return;
     setSelection({ contour: hit.contour, node: nodeIndex });
     onChange(next);
-    onCommit(next);
+    commitContours(next);
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -1804,7 +1864,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       const factor = grow ? KEYBOARD_SCALE_STEP : 1 / KEYBOARD_SCALE_STEP;
       const next = scaleContours(contours, origin, factor);
       onChange(next);
-      onCommit(next);
+      commitContours(next);
       return;
     }
     if (!selection) return;
@@ -1821,7 +1881,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       if (next === contours) return;
       setSelection(null);
       onChange(next);
-      onCommit(next);
+      commitContours(next);
       return;
     }
     const base = snap > 0 ? snap : NUDGE_STEP;
@@ -1834,12 +1894,16 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
     if (!anchor) return;
     const next = moveNodeTo(contours, contour, node, { x: anchor.x + shift[0], y: anchor.y + shift[1] });
     onChange(next);
-    onCommit(next);
+    commitContours(next);
   };
 
   const outline = useMemo(() => serializeContours(mapContours(contours, toPx)), [contours, toPx]);
   const shapeBBox = useMemo(() => contoursBBox(contours), [contours]);
   const bboxTopLeft = toPx({ x: shapeBBox.minX, y: shapeBBox.minY });
+  const bboxSize = {
+    width: toPx({ x: shapeBBox.maxX, y: shapeBBox.minY }).x - bboxTopLeft.x,
+    height: toPx({ x: shapeBBox.minX, y: shapeBBox.maxY }).y - bboxTopLeft.y,
+  };
   const showScaleHandles = !selection
     && isFinite(shapeBBox.minX)
     && isFinite(shapeBBox.maxX)
@@ -1930,7 +1994,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
                 event.preventDefault();
                 const next = toggleNodeSmooth(contours, contourIndex, nodeIndex);
                 onChange(next);
-                onCommit(next);
+                commitContours(next);
               }}
             />
           </g>
@@ -1944,8 +2008,8 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
             className={`${P}-editor-bbox`}
             x={bboxTopLeft.x}
             y={bboxTopLeft.y}
-            width={shapeBBox.maxX - shapeBBox.minX}
-            height={shapeBBox.maxY - shapeBBox.minY}
+            width={bboxSize.width}
+            height={bboxSize.height}
           />
           {(['nw', 'ne', 'se', 'sw'] as const).map((corner) => {
             const point = toPx(scaleHandlePoint(shapeBBox, corner));
@@ -2110,22 +2174,17 @@ function PretextColumn({
 
   const aspect = box.height > 0 ? box.width / box.height : 1;
   const draftContours = pathEditor?.contours ?? null;
-  // Preset shapes (diamond, ellipse, circle, ...) have no declared size of
-  // their own — they only ever make sense stretched to fill the box. An
-  // actual path (a shared custom path, or a live vector-editor draft) does
-  // have a natural size, given by its viewBox — `isPathShape` marks that
-  // case so it can be pinned instead of stretched.
-  const { rings: unitRings, isPathShape } = useMemo(() => {
+  const unitRings = useMemo(() => {
     if (draftContours) {
       const drawn = flattenContours(draftContours);
-      if (drawn.length) return { rings: mapToViewBox(drawn, viewBox), isPathShape: true };
+      if (drawn.length) return mapToViewBox(drawn, viewBox);
     }
     // Prefer a stored path whenever present (preset picks materialize into
     // customPath while keeping the preset id on `shape` for the dropdown).
     const spec = customPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
-    if (parsed && parsed.length) return { rings: parsed, isPathShape: true };
-    return { rings: getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect), isPathShape: false };
+    if (parsed && parsed.length) return parsed;
+    return getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
     // aspect only matters for the circle preset; round it to avoid churn
   }, [draftContours, shape, customPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
 
@@ -2134,14 +2193,21 @@ function PretextColumn({
   // For an actual path, pre-scaling here by (natural size / box size) cancels
   // that multiplication out, so the shape ends up pinned at its own fixed
   // viewBox size, anchored to the component's top-left, instead of
-  // stretching to fill the box. Presets keep the old fill-the-box behavior
-  // until editing converts them — pin during that conversion so they don't
-  // flash at full height first.
+  // stretching to fill the box.
+  //
+  // A path that still lives in the edit viewBox (0–100) stretches to fill
+  // the component. Once coords are rematerialized into pixels (or a preset
+  // is fitted into a previous pixel bbox), pin so size/position stay put —
+  // including for named presets, otherwise stretch maps e.g. 68–328 against
+  // a 100×100 viewBox and the shape jumps.
   const onConvertPath = pathEditor?.onConvert;
   const needsConversion = pathEditor?.needsConversion ?? false;
-  // Conversion pins the path to the viewBox. Apply that pin on this first
-  // paint too, otherwise the stretched preset flashes at full box height.
-  const pinToViewBox = isPathShape || needsConversion;
+  const exceedsEditViewBox = useMemo(() => {
+    const contours = draftContours
+      ?? (customPath.trim() ? parsePathNodes(customPath) : null);
+    return Boolean(contours && pathExceedsEditViewBox(contours, viewBox));
+  }, [draftContours, customPath, viewBox]);
+  const pinToViewBox = shape === 'custom' || exceedsEditViewBox;
 
   const rings = useMemo(() => {
     if (!pinToViewBox || box.width <= 0 || box.height <= 0) return unitRings;
@@ -2412,6 +2478,7 @@ function PretextColumn({
             viewBox={viewBox}
             contours={draftContours}
             snap={pathEditor.snap}
+            stretchToBox={!pinToViewBox}
             onChange={pathEditor.onChange}
             onCommit={pathEditor.onCommit}
           />

@@ -64,13 +64,6 @@ const schema: ComponentSchemaV1 = {
         display: { type: 'radio-group' },
         enum: ['A', 'B'],
       },
-      overflowMode: {
-        type: 'string',
-        scope: 'common',
-        title: 'Overflow',
-        tooltip: 'What happens to text that does not fit the path.',
-        display: { type: 'toggle-cycle', enum: ['clip', 'visible'] },
-      },
       fitText: {
         type: 'string',
         scope: 'common',
@@ -96,7 +89,7 @@ const schema: ComponentSchemaV1 = {
       image: {
         type: ['string', 'null'] as const,
         scope: 'common',
-        title: 'Image',
+        title: '',
         display: { type: 'settings-image-input' },
       },
       backgroundColor: {
@@ -178,7 +171,6 @@ const schema: ComponentSchemaV1 = {
       pathSnap: 0,
       pathFit: 'stretch',
       shapeMode: 'A',
-      overflowMode: 'clip',
       fitText: 'off',
       dropCap: 'off',
       dropCapLines: 3,
@@ -221,7 +213,6 @@ const schema: ComponentSchemaV1 = {
       'pathSnap',
       'pathFit',
       'shapeMode',
-      'overflowMode',
       'fitText',
       'dropCap',
       'dropCapLines',
@@ -245,7 +236,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['shapeMode'] },
         { type: 'row', items: ['shape'] },
         { type: 'row', title: 'Image', items: ['image'] },
-        { type: 'row', title: 'Text Flow', items: ['overflowMode', 'dropCap'] }
+        { type: 'row', items: ['dropCap'] }
       ],
     },
     {
@@ -330,16 +321,16 @@ export const PretextComponent = {
   },
   defaultSize: {
     d: {
-      width: 620,
-      height: 780,
+      width: 380,
+      height: 382,
     },
     t: {
-      width: 620,
-      height: 780,
+      width: 380,
+      height: 382,
     },
     m: {
       width: 334,
-      height: 480,
+      height: 336,
     },
   },
   preview: {
