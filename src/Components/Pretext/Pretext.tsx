@@ -1217,13 +1217,21 @@ function getCSS(P: string): string {
   /* Sits above the editor's own interaction blocker, which is z-index 1. */
   z-index: 10;
   overflow: visible;
-  pointer-events: auto;
+  /* Pass through to default item select/drag until a path point is selected. */
+  pointer-events: none;
   touch-action: none;
   outline: none;
+}
+.${P}-editor-armed {
+  pointer-events: auto;
 }
 .${P}-editor-surface {
   fill: transparent;
   cursor: default;
+  pointer-events: none;
+}
+.${P}-editor-armed .${P}-editor-surface {
+  pointer-events: auto;
 }
 .${P}-editor-hit {
   fill: none;
@@ -1235,6 +1243,7 @@ function getCSS(P: string): string {
 .${P}-editor-grab {
   fill: transparent;
   stroke: none;
+  pointer-events: auto;
   cursor: grab;
 }
 .${P}-editor-grab:active {
@@ -1490,7 +1499,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
   return (
     <svg
       ref={svgRef}
-      className={`${P}-editor`}
+      className={`${P}-editor${selection ? ` ${P}-editor-armed` : ''}`}
       width={box.width}
       height={box.height}
       viewBox={`0 0 ${box.width} ${box.height}`}
@@ -1505,7 +1514,8 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       data-selection="none"
     >
       {/* Catches double-clicks that land near the outline rather than on it.
-          It never stops propagation, so the editor still selects the item. */}
+          It never stops propagation, so the editor still selects the item.
+          Pointer events are off until a path point is selected (armed). */}
       <rect
         className={`${P}-editor-surface`}
         width={box.width}
@@ -1971,10 +1981,39 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const dropCapLines = (settings?.dropCap ?? 'off') === 'on' ? Math.max(2, Math.round(settings?.dropCapLines ?? 3)) : 0;
   const showGuides = editor && selected && !isPreviewMode;
 
+  // Host editor signals item drag/resize/nudge on window — hide the shape overlay
+  // for the same stretch so it doesn't float over the moving selection chrome.
+  const [isItemTransforming, setIsItemTransforming] = useState(false);
+  useEffect(() => {
+    if (!editor || !selected) {
+      setIsItemTransforming(false);
+      return;
+    }
+    const start = () => setIsItemTransforming(true);
+    const end = () => setIsItemTransforming(false);
+    const startEvents = [
+      'ArticleEditor.Item:drag-start',
+      'ArticleEditor.Selection:resize-start',
+      'ArticleEditor.Selection:move-start',
+    ] as const;
+    const endEvents = [
+      'ArticleEditor.Item:drag-end',
+      'ArticleEditor.Selection:resize-end',
+      'ArticleEditor.Selection:move-end',
+    ] as const;
+    for (const name of startEvents) window.addEventListener(name, start);
+    for (const name of endEvents) window.addEventListener(name, end);
+    return () => {
+      for (const name of startEvents) window.removeEventListener(name, start);
+      for (const name of endEvents) window.removeEventListener(name, end);
+    };
+  }, [editor, selected]);
+
   /* -- vector editing ----------------------------------------------------- */
 
   const pathEditing = editor && selected && !isPreviewMode
     && typeof onUpdateSettings === 'function';
+  const shapeOverlayVisible = !isItemTransforming;
   const pathSnap = Math.max(0, settings?.pathSnap ?? 0);
   // The draft the handles are dragging. `base` is the stored path the session
   // started from, `serialized` what the draft writes out — while either still
@@ -2089,9 +2128,9 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           scale={sharedScale}
           onFitScale={handleFitScale}
           dropCapLines={dropCapLines}
-          showGuides={showGuides || pathEditing}
+          showGuides={(showGuides || pathEditing) && shapeOverlayVisible}
           typography={typography}
-          pathEditor={usesSharedPath ? pathEditor : null}
+          pathEditor={usesSharedPath && shapeOverlayVisible ? pathEditor : null}
         />
       </div>
     </>

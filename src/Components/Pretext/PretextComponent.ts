@@ -308,7 +308,7 @@ export const PretextComponent = {
   element: Pretext,
   id: 'pretext',
   name: 'Pretext',
-  category: 'ui-elements',
+  category: 'typography',
   version: 1,
   defaultSize: {
     d: {
