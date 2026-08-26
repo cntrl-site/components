@@ -1410,7 +1410,7 @@ const SCALE_HANDLE_SIZE = 8;
 const SCALE_GRAB_SIZE = 14;
 /** Push scale handles outside the bbox so they don't cover corner anchors. */
 const SCALE_HANDLE_OUTSET = 10;
-/** How far from the outline a double-click still adds a point, in pixels. */
+/** How far from the outline a click still adds a point, in pixels. */
 const ADD_POINT_REACH = 24;
 /** Nudge step for arrow keys, in path units. */
 const NUDGE_STEP = 1;
@@ -1816,27 +1816,27 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, onChange, onCommit
       data-pretext-path-editor
       data-selection="none"
     >
-      {/* Catches double-clicks that land near the outline rather than on it.
-          It never stops propagation, so the editor still selects the item.
+      {/* Catches clicks that land near the outline rather than on it. It
+          never stops propagation, so the editor still selects the item.
           Pointer events are off until a path point is selected (armed). */}
       <rect
         className={`${P}-editor-surface`}
         width={box.width}
         height={box.height}
         onPointerDown={() => setSelection(null)}
-        onDoubleClick={insertNode}
+        onClick={insertNode}
       />
-      <path className={`${P}-editor-hit`} d={outline} onDoubleClick={insertNode} />
+      <path className={`${P}-editor-hit`} d={outline} onClick={insertNode} />
       <path className={`${P}-editor-outline`} d={outline} />
       {/* Dragging anywhere inside the shape moves it as a whole, clamped to
           `box` in onPointerMove. Sits above the surface/hit paths, so it
-          also takes over their double-click-to-insert-node duty. */}
+          also takes over their click-to-insert-node duty. */}
       <path
         className={`${P}-editor-body`}
         d={outline}
         fillRule="evenodd"
         onPointerDown={startShapeDrag}
-        onDoubleClick={insertNode}
+        onClick={insertNode}
       />
       {contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
         const isSelected = selection?.contour === contourIndex && selection?.node === nodeIndex;
