@@ -1619,18 +1619,11 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     };
   }, [box.width, box.height]);
 
-  // First commit on a stretched preset rematerializes into pixel space so
-  // flipping `shape` to `custom` (which pins) keeps the same on-screen size.
+  // Keep path coords in viewBox space (0–100) so top/left stay proportional
+  // when the component box scales with the article — never rematerialize to px.
   const commitContours = useCallback((next: VecContour[]) => {
-    if (!stretchToBox) {
-      onCommit(next);
-      return;
-    }
-    onCommit(mapContours(next, point => ({
-      x: viewBox.x + (point.x - viewBox.x) * scaleX,
-      y: viewBox.y + (point.y - viewBox.y) * scaleY,
-    })));
-  }, [stretchToBox, onCommit, viewBox, scaleX, scaleY]);
+    onCommit(next);
+  }, [onCommit]);
 
   // The pointer is captured by the overlay for the whole drag, so the move and
   // release land here whatever they pass over — and stay off the editor around
@@ -2188,18 +2181,14 @@ function PretextColumn({
     // aspect only matters for the circle preset; round it to avoid churn
   }, [draftContours, shape, customPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
 
-  // The layout math below (spansAtY etc.) treats rings as normalized 0..1
-  // fractions of the box and multiplies them back out by box.width/height.
-  // For an actual path, pre-scaling here by (natural size / box size) cancels
-  // that multiplication out, so the shape ends up pinned at its own fixed
-  // viewBox size, anchored to the component's top-left, instead of
-  // stretching to fill the box.
+  // Layout treats rings as 0..1 fractions of the box. Paths stored in the
+  // edit viewBox (0–100) map through mapToViewBox and scale with the box —
+  // matching CMS article-width scaling for top/left.
   //
-  // A path that still lives in the edit viewBox (0–100) stretches to fill
-  // the component. Once coords are rematerialized into pixels (or a preset
-  // is fitted into a previous pixel bbox), pin so size/position stay put —
-  // including for named presets, otherwise stretch maps e.g. 68–328 against
-  // a 100×100 viewBox and the shape jumps.
+  // Legacy paths rematerialized into component pixels (while pathViewBox is
+  // still 0 0 100 100) must not pin to absolute px on every resize. Freeze the
+  // first measured box as a reference so pixel coords become stable fractions,
+  // and migrate to real viewBox coords when the editor can persist.
   const onConvertPath = pathEditor?.onConvert;
   const needsConversion = pathEditor?.needsConversion ?? false;
   const exceedsEditViewBox = useMemo(() => {
@@ -2207,19 +2196,57 @@ function PretextColumn({
       ?? (customPath.trim() ? parsePathNodes(customPath) : null);
     return Boolean(contours && pathExceedsEditViewBox(contours, viewBox));
   }, [draftContours, customPath, viewBox]);
-  const pinToViewBox = shape === 'custom' || exceedsEditViewBox;
+
+  const [legacyRefBox, setLegacyRefBox] = useState<{ width: number; height: number } | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    if (!exceedsEditViewBox) {
+      if (legacyRefBox) setLegacyRefBox(null);
+      return;
+    }
+    if (!legacyRefBox && box.width > 0 && box.height > 0) {
+      setLegacyRefBox({ width: box.width, height: box.height });
+    }
+  }, [exceedsEditViewBox, box.width, box.height, legacyRefBox]);
 
   const rings = useMemo(() => {
-    if (!pinToViewBox || box.width <= 0 || box.height <= 0) return unitRings;
-    const scaleX = viewBox.width / box.width;
-    const scaleY = viewBox.height / box.height;
+    if (!exceedsEditViewBox || box.width <= 0 || box.height <= 0) return unitRings;
+    const ref = legacyRefBox ?? box;
+    const scaleX = viewBox.width / ref.width;
+    const scaleY = viewBox.height / ref.height;
     return unitRings.map(ring => ring.map(point => ({ x: point.x * scaleX, y: point.y * scaleY })));
-  }, [unitRings, pinToViewBox, viewBox.width, viewBox.height, box.width, box.height]);
+  }, [unitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
+  const migratedPathRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!needsConversion || !onConvertPath || !unitRings.length) return;
+    if (!onConvertPath || box.width <= 0 || box.height <= 0) return;
+
+    if (exceedsEditViewBox) {
+      if (migratedPathRef.current === customPath) return;
+      const contours = draftContours
+        ?? (customPath.trim() ? parsePathNodes(customPath) : null);
+      if (!contours?.length) return;
+      const normalized = mapContours(contours, point => ({
+        x: viewBox.x + ((point.x - viewBox.x) / box.width) * viewBox.width,
+        y: viewBox.y + ((point.y - viewBox.y) / box.height) * viewBox.height,
+      }));
+      migratedPathRef.current = serializeContours(normalized);
+      onConvertPath(normalized);
+      return;
+    }
+
+    if (!needsConversion || !unitRings.length) return;
     onConvertPath(mapContours(ringsToContours(unitRings), point => ({ x: point.x * EDIT_SPAN, y: point.y * EDIT_SPAN })));
-  }, [needsConversion, onConvertPath, unitRings]);
+  }, [
+    needsConversion,
+    exceedsEditViewBox,
+    onConvertPath,
+    unitRings,
+    draftContours,
+    customPath,
+    viewBox,
+    box.width,
+    box.height,
+  ]);
 
   useIsomorphicLayoutEffect(() => {
     const element = columnEl;
@@ -2478,7 +2505,7 @@ function PretextColumn({
             viewBox={viewBox}
             contours={draftContours}
             snap={pathEditor.snap}
-            stretchToBox={!pinToViewBox}
+            stretchToBox={!exceedsEditViewBox}
             onChange={pathEditor.onChange}
             onCommit={pathEditor.onCommit}
           />
@@ -2563,7 +2590,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
 
   const isEditablePath = pathFit === 'viewbox'
     && (settings?.pathViewBox ?? '') === EDIT_VIEW_BOX
-    && Boolean(editContours);
+    && Boolean(editContours && !pathExceedsEditViewBox(editContours, viewBox));
 
   const writePath = useCallback((next: VecContour[], commit: boolean) => {
     const serialized = serializeContours(next);
