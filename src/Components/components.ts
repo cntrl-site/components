@@ -21,6 +21,7 @@ import { WaterfallComponent } from './Waterfall/WaterfallComponent';
 import { Slider20Component } from './Slider20/Slider20Component';
 import { MercuryComponent } from './Mercury/MercuryComponent';
 import { HelixComponent } from './Helix/HelixComponent';
+import { BurgerComponent } from './Burger/BurgerComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -45,4 +46,5 @@ export const components: Component[] = [
   Slider20Component,
   MercuryComponent,
   HelixComponent,
+  BurgerComponent,
 ];
