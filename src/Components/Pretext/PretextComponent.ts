@@ -235,8 +235,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['shapeMode'] },
         { type: 'row', items: ['shape'] },
-        { type: 'row', title: 'Image', items: ['image'] },
-        { type: 'row', items: ['dropCap'] }
+        { type: 'row', items: ['image', 'dropCap'] }
       ],
     },
     {
