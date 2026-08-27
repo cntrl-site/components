@@ -86,6 +86,16 @@ const schema: ComponentSchemaV1 = {
         step: 1,
         display: { type: 'numeric-input' },
       },
+      dropCapSize: {
+        type: 'number',
+        scope: 'common',
+        title: 'Drop cap size',
+        tooltip: 'Height of the drop cap, in lines of body text.',
+        min: 1,
+        max: 8,
+        step: 0.5,
+        display: { type: 'common-numeric-input' },
+      },
       image: {
         type: ['string', 'null'] as const,
         scope: 'common',
@@ -174,6 +184,7 @@ const schema: ComponentSchemaV1 = {
       fitText: 'off',
       dropCap: 'off',
       dropCapLines: 3,
+      dropCapSize: 3,
       image: null,
       backgroundColor: 'rgba(0, 0, 0, 0)',
       textFontFamily: 'Goudy Bookletter 1911',
@@ -216,12 +227,17 @@ const schema: ComponentSchemaV1 = {
       'fitText',
       'dropCap',
       'dropCapLines',
+      'dropCapSize',
       'image',
     ],
     displayRules: [
       {
         if: { name: 'shapeMode', value: 'B', isNotEqual: true },
         then: { name: 'properties.image.display.visible', value: false },
+      },
+      {
+        if: { name: 'dropCap', value: 'on', isNotEqual: true },
+        then: { name: 'properties.dropCapSize.display.visible', value: false },
       },
     ],
   },
@@ -235,7 +251,8 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['shapeMode'] },
         { type: 'row', items: ['shape'] },
-        { type: 'row', items: ['image', 'dropCap'] }
+        { type: 'row', items: ['image', 'dropCap'] },
+        { type: 'row', items: ['dropCapSize'] },
       ],
     },
     {

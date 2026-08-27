@@ -15,7 +15,7 @@ const MIN_FIT_SCALE = 0.25;
 const FIT_ITERATIONS = 10;
 const MAX_LINES = 4000;
 const DROP_CAP_GAP = 0.12;
-const DROP_CAP_SIZE_RATIO = 0.92;
+const DROP_CAP_SIZE_DEFAULT = 3;
 /**
  * The vector node editor is portaled straight to `document.body` so its
  * anchors can be grabbed even where a host app's own selection/resize
@@ -88,6 +88,7 @@ type PretextSettings = {
   fitText?: 'on' | 'off';
   dropCap?: 'on' | 'off';
   dropCapLines?: number;
+  dropCapSize?: number;
   image?: string | null;
   backgroundColor?: string;
   textColor?: string;
@@ -2355,6 +2356,7 @@ type ColumnProps = {
   scale: number;
   onFitScale: (scale: number) => void;
   dropCapLines: number;
+  dropCapSize: number;
   showGuides: boolean;
   typography: React.CSSProperties;
   imageUrl?: string | null;
@@ -2389,6 +2391,7 @@ function PretextColumn({
   scale,
   onFitScale,
   dropCapLines,
+  dropCapSize,
   showGuides,
   typography,
   imageUrl,
@@ -2548,7 +2551,7 @@ function PretextColumn({
     const parsedLineHeight = parseFloat(computed.lineHeight);
     const lineHeight = Number.isNaN(parsedLineHeight) ? fontSize * 1.2 : parsedLineHeight;
 
-    capSpan.style.fontSize = `${lineHeight * Math.max(1, dropCapLines) * DROP_CAP_SIZE_RATIO}px`;
+    capSpan.style.fontSize = `${lineHeight * dropCapSize}px`;
 
     const widths = spans.map(span => span.getBoundingClientRect().width);
     const spaceWidth = spaceSpan.getBoundingClientRect().width;
@@ -2556,9 +2559,12 @@ function PretextColumn({
 
     element.replaceChildren();
     setMetrics({ widths, spaceWidth, lineHeight, capWidth });
-  }, [tokens, typography, dropCapChar, dropCapLines, fontsReady, box.width]);
+  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width]);
 
   const capInset = metrics && dropCapChar ? metrics.capWidth + metrics.lineHeight * DROP_CAP_GAP : 0;
+  // A glyph taller than `dropCapLines` (e.g. a big dropCapSize) still needs that many
+  // wrapped lines cleared, or trailing text would overlap the cap's lower half.
+  const capLineSpan = Math.max(dropCapLines, Math.ceil(dropCapSize));
 
   const naturalScale = useMemo(() => {
     if (!metrics || !tokens.length || box.width <= 0 || box.height <= 0) return 1;
@@ -2576,7 +2582,7 @@ function PretextColumn({
       scale: candidate,
       allowOverflow: false,
       capInset: capInset * candidate,
-      capLines: dropCapChar ? dropCapLines : 0,
+      capLines: dropCapChar ? capLineSpan : 0,
     });
     if (run(1).placed >= tokens.length) return 1;
     if (run(MIN_FIT_SCALE).placed < tokens.length) return MIN_FIT_SCALE;
@@ -2588,7 +2594,7 @@ function PretextColumn({
       else high = middle;
     }
     return low;
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, dropCapLines]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan]);
 
   useEffect(() => {
     onFitScale(naturalScale);
@@ -2613,9 +2619,9 @@ function PretextColumn({
       scale: appliedScale,
       allowOverflow,
       capInset: capInset * appliedScale,
-      capLines: dropCapChar ? dropCapLines : 0,
+      capLines: dropCapChar ? capLineSpan : 0,
     });
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, dropCapLines]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan]);
 
   const lineHeightPx = metrics ? metrics.lineHeight * appliedScale : 0;
   const textAlign: React.CSSProperties['textAlign'] = align === 'justify' ? 'left' : align;
@@ -2673,20 +2679,6 @@ function PretextColumn({
         style={{ ...typography, ['--' + P + '-fit']: appliedScale } as React.CSSProperties}
       >
         <div className={`${P}-measure`} ref={measureRef} style={typography} aria-hidden />
-        {dropCapChar && metrics && (
-          <div
-            className={`${P}-drop-cap`}
-            aria-hidden
-            style={{
-              top: `${result.capTop}px`,
-              left: `${result.capLeft}px`,
-              fontSize: `${lineHeightPx * Math.max(1, dropCapLines) * DROP_CAP_SIZE_RATIO}px`,
-              lineHeight: `${lineHeightPx * Math.max(1, dropCapLines)}px`,
-            }}
-          >
-            {dropCapChar}
-          </div>
-        )}
         {result.segments.map((segment, segmentIndex) => {
           const segmentTokens = tokens.slice(segment.from, segment.to);
           const isFirstSegment = segmentIndex === 0;
@@ -2727,6 +2719,21 @@ function PretextColumn({
           </svg>
         )}
       </div>
+      {dropCapChar && metrics && (
+        <div
+          className={`${P}-drop-cap`}
+          aria-hidden
+          style={{
+            ...typography,
+            top: `${result.capTop}px`,
+            left: `${result.capLeft}px`,
+            fontSize: `${lineHeightPx * dropCapSize}px`,
+            lineHeight: `${lineHeightPx * dropCapSize}px`,
+          }}
+        >
+          {dropCapChar}
+        </div>
+      )}
       {portalTarget && editorRect && draftContours && pathEditor && createPortal(
         <div
           data-selection="none"
@@ -2780,6 +2787,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const allowOverflow = (settings?.overflowMode ?? 'clip') === 'visible';
   const fitEnabled = (settings?.fitText ?? 'off') === 'on';
   const dropCapLines = (settings?.dropCap ?? 'off') === 'on' ? Math.max(2, Math.round(settings?.dropCapLines ?? 3)) : 0;
+  const dropCapSize = settings?.dropCapSize ?? DROP_CAP_SIZE_DEFAULT;
   const showGuides = editor && selected && !isPreviewMode;
 
   // Host editor signals item drag/resize/nudge on window — hide the shape overlay
@@ -2929,6 +2937,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           scale={sharedScale}
           onFitScale={handleFitScale}
           dropCapLines={dropCapLines}
+          dropCapSize={dropCapSize}
           showGuides={(showGuides || pathEditing) && shapeOverlayVisible}
           typography={typography}
           imageUrl={mode === 'avoid' ? settings?.image : null}
