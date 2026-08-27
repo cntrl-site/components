@@ -821,6 +821,46 @@ export function moveNodeTo(contours: VecContour[], contourIndex: number, nodeInd
   return next;
 }
 
+/** Translates a set of selected anchors (and their handles) together, leaving the rest of the shape fixed. */
+export function moveSelectedNodesBy(
+  contours: VecContour[],
+  selection: { contour: number; node: number }[],
+  dx: number,
+  dy: number,
+): VecContour[] {
+  if (!selection.length) return contours;
+  const next = cloneContours(contours);
+  for (const { contour, node } of selection) {
+    const target = next[contour]?.nodes[node];
+    if (!target) continue;
+    target.p = { x: target.p.x + dx, y: target.p.y + dy };
+    if (target.in) target.in = { x: target.in.x + dx, y: target.in.y + dy };
+    if (target.out) target.out = { x: target.out.x + dx, y: target.out.y + dy };
+  }
+  return next;
+}
+
+/** Removes several nodes at once — descending per contour so earlier removals don't shift later indices. */
+export function removeContourNodes(
+  contours: VecContour[],
+  selection: { contour: number; node: number }[],
+): VecContour[] {
+  const byContour = new Map<number, number[]>();
+  for (const { contour, node } of selection) {
+    const nodes = byContour.get(contour) ?? [];
+    nodes.push(node);
+    byContour.set(contour, nodes);
+  }
+  let next = contours;
+  byContour.forEach((nodeIndices, contourIndex) => {
+    const sorted = [...nodeIndices].sort((a, b) => b - a);
+    for (const nodeIndex of sorted) {
+      next = removeContourNode(next, contourIndex, nodeIndex);
+    }
+  });
+  return next;
+}
+
 export function setNodeHandle(
   contours: VecContour[],
   contourIndex: number,
@@ -1597,6 +1637,15 @@ type ShapeDrag = {
   moved: boolean;
 };
 
+/** Dragging one anchor of a multi-point selection translates the whole selection together. */
+type GroupDrag = {
+  pointerId: number;
+  origin: Pt;
+  startContours: VecContour[];
+  selection: PathSelection[];
+  moved: boolean;
+};
+
 type ScaleCorner = 'nw' | 'ne' | 'se' | 'sw';
 
 /** Dragging a bbox corner scales every contour about the opposite corner. */
@@ -1670,7 +1719,9 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
   const dragRef = useRef<PathDrag | null>(null);
   const shapeDragRef = useRef<ShapeDrag | null>(null);
   const shapeScaleRef = useRef<ShapeScale | null>(null);
-  const [selection, setSelection] = useState<PathSelection | null>(null);
+  const groupDragRef = useRef<GroupDrag | null>(null);
+  /** Multiple nodes at once — shift-click adds/removes a node from this set. */
+  const [selection, setSelection] = useState<PathSelection[]>([]);
   /** Double-click inside the shape arms move/scale body interaction. */
   const [shapeArmed, setShapeArmed] = useState(false);
 
@@ -1736,7 +1787,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       // Swallow so the host does not enter preview and unmount the editor.
       event.preventDefault();
       event.stopPropagation();
-      setSelection(null);
+      setSelection([]);
       setShapeArmed(true);
       svgRef.current?.focus({ preventScroll: true });
     };
@@ -1814,6 +1865,22 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       onChange(mapContours(shapeDrag.startContours, p => ({ x: p.x + dx, y: p.y + dy })));
       return;
     }
+    const groupDrag = groupDragRef.current;
+    if (groupDrag && event.pointerId === groupDrag.pointerId) {
+      event.stopPropagation();
+      event.preventDefault();
+      const point = toPath(event.clientX, event.clientY);
+      let dx = point.x - groupDrag.origin.x;
+      let dy = point.y - groupDrag.origin.y;
+      if (event.shiftKey) {
+        if (Math.abs(dx) > Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
+      if (!groupDrag.moved && dx === 0 && dy === 0) return;
+      groupDrag.moved = true;
+      onChange(moveSelectedNodesBy(groupDrag.startContours, groupDrag.selection, dx, dy));
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || event.pointerId !== drag.pointerId) return;
     event.stopPropagation();
@@ -1868,8 +1935,17 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
         commitContours(contoursRef.current, { preserveShape: true });
       } else {
         // A click that never travels deselects the point, same as the surface.
-        setSelection(null);
+        setSelection([]);
       }
+      return;
+    }
+    const groupDrag = groupDragRef.current;
+    if (groupDrag && event.pointerId === groupDrag.pointerId) {
+      groupDragRef.current = null;
+      event.stopPropagation();
+      const svg = svgRef.current;
+      if (svg?.hasPointerCapture(groupDrag.pointerId)) svg.releasePointerCapture(groupDrag.pointerId);
+      if (groupDrag.moved) commitContours(contoursRef.current);
       return;
     }
     const drag = dragRef.current;
@@ -1905,7 +1981,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     event.stopPropagation();
     event.preventDefault();
     svgRef.current?.focus({ preventScroll: true });
-    setSelection(null);
+    setSelection([]);
     setShapeArmed(true);
     const bbox = contoursBBox(contours);
     const origin = bboxCorner(bbox, oppositeScaleCorner(corner));
@@ -1942,12 +2018,36 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
         ? removeContourNode(contours, contourIndex, nodeIndex)
         : clearNodeHandle(contours, contourIndex, nodeIndex, kind);
       if (next === contours) return;
-      setSelection(kind === 'anchor' ? null : { contour: contourIndex, node: nodeIndex });
+      setSelection(kind === 'anchor' ? [] : [{ contour: contourIndex, node: nodeIndex }]);
       onChange(next);
       commitContours(next);
       return;
     }
-    setSelection({ contour: contourIndex, node: nodeIndex });
+    // Shift-click an anchor toggles it into/out of the multi-selection
+    // instead of dragging — mirrors the usual vector-editor convention.
+    if (kind === 'anchor' && event.shiftKey) {
+      setSelection(current => (
+        current.some(entry => entry.contour === contourIndex && entry.node === nodeIndex)
+          ? current.filter(entry => !(entry.contour === contourIndex && entry.node === nodeIndex))
+          : [...current, { contour: contourIndex, node: nodeIndex }]
+      ));
+      return;
+    }
+    // A plain click on an anchor that's already part of a multi-selection
+    // drags the whole group together; anything else replaces the selection.
+    if (kind === 'anchor' && selection.length > 1
+      && selection.some(entry => entry.contour === contourIndex && entry.node === nodeIndex)) {
+      groupDragRef.current = {
+        pointerId: event.pointerId,
+        origin: toPath(event.clientX, event.clientY),
+        startContours: cloneContours(contours),
+        selection,
+        moved: false,
+      };
+      svgRef.current?.setPointerCapture(event.pointerId);
+      return;
+    }
+    setSelection([{ contour: contourIndex, node: nodeIndex }]);
     dragRef.current = {
       kind,
       contour: contourIndex,
@@ -1975,7 +2075,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     if (!hit || hit.distance > ADD_POINT_REACH) return;
     const { contours: next, nodeIndex } = insertNodeOnSegment(contours, hit.contour, hit.segment, hit.t);
     if (nodeIndex < 0) return;
-    setSelection({ contour: hit.contour, node: nodeIndex });
+    setSelection([{ contour: hit.contour, node: nodeIndex }]);
     onChange(next);
     commitContours(next);
   };
@@ -1998,18 +2098,17 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     }
     if (event.key === 'Escape') {
       event.stopPropagation();
-      setSelection(null);
+      setSelection([]);
       setShapeArmed(false);
       return;
     }
-    if (!selection) return;
-    const { contour, node } = selection;
+    if (!selection.length) return;
     if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
       event.stopPropagation();
-      const next = removeContourNode(contours, contour, node);
+      const next = removeContourNodes(contours, selection);
       if (next === contours) return;
-      setSelection(null);
+      setSelection([]);
       onChange(next);
       commitContours(next);
       return;
@@ -2020,9 +2119,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     if (!shift) return;
     event.preventDefault();
     event.stopPropagation();
-    const anchor = contours[contour]?.nodes[node]?.p;
-    if (!anchor) return;
-    const next = moveNodeTo(contours, contour, node, { x: anchor.x + shift[0], y: anchor.y + shift[1] });
+    const next = moveSelectedNodesBy(contours, selection, shift[0], shift[1]);
     onChange(next);
     commitContours(next);
   };
@@ -2035,12 +2132,12 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     height: toPx({ x: shapeBBox.minX, y: shapeBBox.maxY }).y - bboxTopLeft.y,
   };
   const showScaleHandles = shapeArmed
-    && !selection
+    && selection.length === 0
     && isFinite(shapeBBox.minX)
     && isFinite(shapeBBox.maxX)
     && shapeBBox.maxX > shapeBBox.minX
     && shapeBBox.maxY > shapeBBox.minY;
-  const armed = Boolean(selection) || shapeArmed;
+  const armed = selection.length > 0 || shapeArmed;
   /** Outline, anchors, and scale chrome — only after double-click. */
   const showControls = armed;
 
@@ -2069,7 +2166,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
         width={box.width}
         height={box.height}
         onPointerDown={() => {
-          setSelection(null);
+          setSelection([]);
           setShapeArmed(false);
         }}
         onClick={insertNode}
@@ -2086,11 +2183,12 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
         onClick={insertNode}
       />
       {showControls && contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
-        const isSelected = selection?.contour === contourIndex && selection?.node === nodeIndex;
+        const isSelected = selection.some(entry => entry.contour === contourIndex && entry.node === nodeIndex);
         const anchor = toPx(node.p);
         return (
           <g key={`${contourIndex}-${nodeIndex}`}>
-            {isSelected && (['in', 'out'] as const).map((which) => {
+            {/* Bezier handles are single-node controls — only surface them when exactly one node is selected. */}
+            {isSelected && selection.length === 1 && (['in', 'out'] as const).map((which) => {
               const handle = node[which];
               if (!handle) return null;
               const point = toPx(handle);
