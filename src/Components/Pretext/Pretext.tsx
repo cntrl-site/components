@@ -729,15 +729,47 @@ function editablePathTargetRect(previous?: {
   return { x: bbox.minX, y: bbox.minY, width, height };
 }
 
-/** True when path coords live outside the edit viewBox (typically rematerialized pixels). */
+/**
+ * True when path coords look like legacy rematerialized pixels (hundreds of
+ * units), not a 0–100 edit path whose bezier handles only poke slightly out.
+ */
 function pathExceedsEditViewBox(contours: VecContour[], viewBox: ViewBox, pad = 1): boolean {
   if (!contours.length) return false;
   const bbox = contoursBBox(contours);
   if (!isFinite(bbox.minX) || !isFinite(bbox.maxX)) return false;
-  return bbox.minX < viewBox.x - pad
-    || bbox.minY < viewBox.y - pad
-    || bbox.maxX > viewBox.x + viewBox.width + pad
-    || bbox.maxY > viewBox.y + viewBox.height + pad;
+  // Curved presets (esp. wave) overshoot the edit viewBox by a few units via
+  // smooth handles. Require ~half a viewBox of overflow so those aren't treated
+  // as pixel-space paths and wrongly shrunk by boxWidth/viewBox.
+  const padX = Math.max(pad, viewBox.width * 0.5);
+  const padY = Math.max(pad, viewBox.height * 0.5);
+  return bbox.minX < viewBox.x - padX
+    || bbox.minY < viewBox.y - padY
+    || bbox.maxX > viewBox.x + viewBox.width + padX
+    || bbox.maxY > viewBox.y + viewBox.height + padY;
+}
+
+/** Scale contours so their drawn outline fits inside `rect` (uniform, centered). */
+function fitContoursInRect(
+  contours: VecContour[],
+  rect: { x: number; y: number; width: number; height: number },
+): VecContour[] {
+  if (!contours.length) return contours;
+  const bbox = contoursBBox(contours);
+  const width = bbox.maxX - bbox.minX;
+  const height = bbox.maxY - bbox.minY;
+  if (!(width > 0) || !(height > 0)) return contours;
+  const inside = bbox.minX >= rect.x - 1e-6
+    && bbox.minY >= rect.y - 1e-6
+    && bbox.maxX <= rect.x + rect.width + 1e-6
+    && bbox.maxY <= rect.y + rect.height + 1e-6;
+  if (inside) return contours;
+  const scale = Math.min(rect.width / width, rect.height / height);
+  const originX = rect.x + (rect.width - width * scale) / 2;
+  const originY = rect.y + (rect.height - height * scale) / 2;
+  return mapContours(contours, point => ({
+    x: originX + (point.x - bbox.minX) * scale,
+    y: originY + (point.y - bbox.minY) * scale,
+  }));
 }
 
 /** Turns a preset into the editable viewBox path the editor persists after a shape pick. */
@@ -753,13 +785,18 @@ export function settingsForEditablePreset(
 } {
   const target = editablePathTargetRect(previous);
   const rings = getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
-  const contours = mapContours(
-    ringsToContours(rings),
-    point => ({ x: point.x * target.width + target.x, y: point.y * target.height + target.y }),
+  // Fit after mapping so curved-preset handle overshoot stays inside the target
+  // (and the edit viewBox), avoiding false legacy-pixel migration.
+  const contours = fitContoursInRect(
+    mapContours(
+      ringsToContours(rings),
+      point => ({ x: point.x * target.width + target.x, y: point.y * target.height + target.y }),
+    ),
+    target,
   );
   return {
-    // Keep the preset id so the settings dropdown reflects the pick; path
-    // edits later flip to `custom` via writePath.
+    // Keep the preset id so the settings dropdown reflects the pick; point
+    // edits later flip to `custom` via writePath (move/scale keep the id).
     shape,
     customPath: serializeContours(contours),
     pathFit: 'viewbox',
@@ -1554,6 +1591,11 @@ function scaleHandlePoint(
   };
 }
 
+type PathCommitOptions = {
+  /** Whole-shape move/scale keeps the preset id; point edits diverge to `custom`. */
+  preserveShape?: boolean;
+};
+
 type PathEditorProps = {
   P: string;
   box: { width: number; height: number };
@@ -1563,7 +1605,7 @@ type PathEditorProps = {
   /** When true, map the edit viewBox across the full component box (presets). */
   stretchToBox: boolean;
   onChange: (contours: VecContour[]) => void;
-  onCommit: (contours: VecContour[]) => void;
+  onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
 function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onChange, onCommit }: PathEditorProps) {
@@ -1621,8 +1663,8 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
 
   // Keep path coords in viewBox space (0–100) so top/left stay proportional
   // when the component box scales with the article — never rematerialize to px.
-  const commitContours = useCallback((next: VecContour[]) => {
-    onCommit(next);
+  const commitContours = useCallback((next: VecContour[], options?: PathCommitOptions) => {
+    onCommit(next, options);
   }, [onCommit]);
 
   // The pointer is captured by the overlay for the whole drag, so the move and
@@ -1721,7 +1763,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       event.stopPropagation();
       const svg = svgRef.current;
       if (svg?.hasPointerCapture(shapeScale.pointerId)) svg.releasePointerCapture(shapeScale.pointerId);
-      if (shapeScale.moved) commitContours(contoursRef.current);
+      if (shapeScale.moved) commitContours(contoursRef.current, { preserveShape: true });
       return;
     }
     const shapeDrag = shapeDragRef.current;
@@ -1731,7 +1773,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       const svg = svgRef.current;
       if (svg?.hasPointerCapture(shapeDrag.pointerId)) svg.releasePointerCapture(shapeDrag.pointerId);
       if (shapeDrag.moved) {
-        commitContours(contoursRef.current);
+        commitContours(contoursRef.current, { preserveShape: true });
       } else {
         // A click that never travels deselects, same as the background surface.
         setSelection(null);
@@ -1857,7 +1899,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       const factor = grow ? KEYBOARD_SCALE_STEP : 1 / KEYBOARD_SCALE_STEP;
       const next = scaleContours(contours, origin, factor);
       onChange(next);
-      commitContours(next);
+      commitContours(next, { preserveShape: true });
       return;
     }
     if (!selection) return;
@@ -2131,7 +2173,7 @@ type PathEditorBinding = {
   needsConversion: boolean;
   onConvert: (contours: VecContour[]) => void;
   onChange: (contours: VecContour[]) => void;
-  onCommit: (contours: VecContour[]) => void;
+  onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
 function PretextColumn({
@@ -2592,7 +2634,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     && (settings?.pathViewBox ?? '') === EDIT_VIEW_BOX
     && Boolean(editContours && !pathExceedsEditViewBox(editContours, viewBox));
 
-  const writePath = useCallback((next: VecContour[], commit: boolean) => {
+  const writePath = useCallback((next: VecContour[], commit: boolean, options?: PathCommitOptions) => {
     const serialized = serializeContours(next);
     setDraft(previous => ({
       base: previous && (previous.base === customPath || previous.serialized === customPath)
@@ -2602,8 +2644,10 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       contours: next,
     }));
     if (commit) {
-      // Manual point edits diverge from the named preset.
-      onUpdateSettings?.({ ...settings, shape: 'custom', customPath: serialized });
+      // Point/topology edits diverge from the named preset; whole-shape
+      // move/scale only updates the path and keeps the dropdown selection.
+      const nextShape = options?.preserveShape ? settings?.shape : 'custom';
+      onUpdateSettings?.({ ...settings, shape: nextShape, customPath: serialized });
     }
   }, [customPath, onUpdateSettings, settings]);
 
@@ -2624,7 +2668,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
         });
       },
       onChange: (next: VecContour[]) => writePath(next, false),
-      onCommit: (next: VecContour[]) => writePath(next, true),
+      onCommit: (next: VecContour[], options?: PathCommitOptions) => writePath(next, true, options),
     };
   }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, settings, writePath]);
 
