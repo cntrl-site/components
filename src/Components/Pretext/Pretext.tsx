@@ -954,6 +954,49 @@ export function nearestSegmentHit(contours: VecContour[], point: Pt): {
   return best;
 }
 
+/** No bezier handles on either side — a plain straight-line corner. */
+function isCornerNode(node: VecNode): boolean {
+  return !node.in && !node.out;
+}
+
+/**
+ * Anchors of the shape's other straight-line corners — targets a dragged
+ * corner can axis-align with. Curve anchors and handles are excluded: lining
+ * a bezier point up on an axis fights the curve rather than helping it.
+ */
+function collectSnapTargets(contours: VecContour[], exclude: { contour: number; node: number }): Pt[] {
+  const points: Pt[] = [];
+  contours.forEach((contour, contourIndex) => {
+    contour.nodes.forEach((node, nodeIndex) => {
+      if (contourIndex === exclude.contour && nodeIndex === exclude.node) return;
+      if (!isCornerNode(node)) return;
+      points.push(node.p);
+    });
+  });
+  return points;
+}
+
+/**
+ * Nearest candidate's coordinate on one axis, independent of the other axis —
+ * so a point can align its X with another point's X (or Y with Y) no matter
+ * how far apart they sit on the other axis, the way alignment guides work.
+ * Compared in pixel space via `toPx`. Null when nothing is within `reach`.
+ */
+function nearestAxisSnap(points: Pt[], target: Pt, axis: 'x' | 'y', toPx: (point: Pt) => Pt, reach: number): number | null {
+  const targetPx = toPx(target);
+  let best: number | null = null;
+  let bestDistance = reach;
+  for (const point of points) {
+    const pointPx = toPx(point);
+    const distance = Math.abs(pointPx[axis] - targetPx[axis]);
+    if (distance <= bestDistance) {
+      bestDistance = distance;
+      best = point[axis];
+    }
+  }
+  return best;
+}
+
 /**
  * Parses a user-authored path: either an SVG path (`M0,0 C…`, several subpaths
  * allowed — each becomes a ring, so overlaps read as holes) or a plain point
@@ -1521,6 +1564,8 @@ const SCALE_GRAB_SIZE = 14;
 const SCALE_HANDLE_OUTSET = 10;
 /** How far from the outline a click still adds a point, in pixels. */
 const ADD_POINT_REACH = 24;
+/** Catch radius for snapping a dragged anchor/handle onto another node's anchor or handle, in pixels. */
+const NODE_SNAP_REACH = 14;
 /** Nudge step for arrow keys, in path units. */
 const NUDGE_STEP = 1;
 /** Smallest allowed uniform scale while dragging a corner (avoids collapse). */
@@ -1538,6 +1583,8 @@ type PathDrag = {
   origin: Pt;
   anchor: Pt;
   mirror: boolean;
+  /** Axis snapping only makes sense for a straight-line corner, not a curve's anchor or handle. */
+  snapEligible: boolean;
   moved: boolean;
 };
 
@@ -1772,7 +1819,15 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     event.stopPropagation();
     event.preventDefault();
     const point = toPath(event.clientX, event.clientY);
-    const snapped = { x: snapValue(point.x, snap), y: snapValue(point.y, snap) };
+    const targets = drag.snapEligible
+      ? collectSnapTargets(contoursRef.current, { contour: drag.contour, node: drag.node })
+      : [];
+    const snapX = drag.snapEligible ? nearestAxisSnap(targets, point, 'x', toPx, NODE_SNAP_REACH) : null;
+    const snapY = drag.snapEligible ? nearestAxisSnap(targets, point, 'y', toPx, NODE_SNAP_REACH) : null;
+    const snapped = {
+      x: snapX ?? snapValue(point.x, snap),
+      y: snapY ?? snapValue(point.y, snap),
+    };
     if (drag.kind === 'anchor') {
       let dx = snapped.x - drag.origin.x;
       let dy = snapped.y - drag.origin.y;
@@ -1901,6 +1956,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       origin: toPath(event.clientX, event.clientY),
       anchor: node.p,
       mirror: kind !== 'anchor' && Boolean(node.in && node.out),
+      snapEligible: kind === 'anchor' && isCornerNode(node),
       moved: false,
     };
     svgRef.current?.setPointerCapture(event.pointerId);
