@@ -90,6 +90,11 @@ type PretextSettings = {
   dropCapLines?: number;
   dropCapSize?: number;
   image?: string | null;
+  /** Focal point of the image within the shape's mask, 0..1 (like object-position). Defaults to center. */
+  imageFocalX?: number;
+  imageFocalY?: number;
+  /** Extra zoom on top of the cover fit. 1 = just covers the mask. */
+  imageScale?: number;
   backgroundColor?: string;
   textColor?: string;
   linkColor?: string;
@@ -1700,6 +1705,63 @@ type PathCommitOptions = {
   preserveShape?: boolean;
 };
 
+/* ------------------------------------------------------------------ *
+ * Shape-image geometry — an image panned/zoomed independently of the
+ * mask it's clipped to, in the mask bbox's own pixel space.
+ * ------------------------------------------------------------------ */
+
+/** Extra zoom on top of cover. 1 = just covers; below 1 letterboxes inside the mask. */
+const MIN_IMAGE_SCALE = 0.1;
+const MAX_IMAGE_SCALE = 8;
+/**
+ * Below this much |slack| (px), an axis is pinned centered instead of panned.
+ * At scale 1 one axis is *always* exactly flush with the mask (zero slack,
+ * by construction of the cover fit) — dividing a pointer offset by a span
+ * that thin amplifies ordinary sub-pixel pointer noise into 0↔1 swings.
+ */
+const MIN_PANNABLE_SLACK = 4;
+
+type ImageTransform = { focalX: number; focalY: number; scale: number };
+
+/** Smallest uniform scale that makes the image cover `bounds` (like background-size: cover). */
+function coverScale(bounds: { width: number; height: number }, natural: { width: number; height: number }): number {
+  if (!(natural.width > 0) || !(natural.height > 0) || !(bounds.width > 0) || !(bounds.height > 0)) return 1;
+  return Math.max(bounds.width / natural.width, bounds.height / natural.height);
+}
+
+/** Rendered image size at a given zoom, before it's positioned. */
+function coveredImageSize(
+  bounds: { width: number; height: number },
+  natural: { width: number; height: number },
+  scale: number,
+): { width: number; height: number } {
+  const factor = coverScale(bounds, natural) * scale;
+  return { width: natural.width * factor, height: natural.height * factor };
+}
+
+/**
+ * Image's top-left in `bounds`-local px, from a focal point (0..1, like
+ * `object-position`: 0 = image's edge flush with the mask's near edge, 1 =
+ * flush with the far edge). Works for both cover (image larger) and contain
+ * (image smaller) — `boundsSize - renderedSize` flips sign either way.
+ */
+function imageOffsetFromFocal(
+  boundsSize: number,
+  renderedSize: number,
+  focal: number,
+): number {
+  return (boundsSize - renderedSize) * focal;
+}
+
+/** Inverse of `imageOffsetFromFocal`. */
+function focalFromImageOffset(boundsSize: number, renderedSize: number, offset: number): number {
+  const span = boundsSize - renderedSize;
+  if (Math.abs(span) < MIN_PANNABLE_SLACK) return 0.5;
+  return clamp01(offset / span);
+}
+
+type EditStage = 'none' | 'shape' | 'image';
+
 type PathEditorProps = {
   P: string;
   box: { width: number; height: number };
@@ -1708,11 +1770,14 @@ type PathEditorProps = {
   snap: number;
   /** When true, map the edit viewBox across the full component box (presets). */
   stretchToBox: boolean;
+  /** Shape and image editing are mutually exclusive; the host (PretextColumn) owns the cycle. */
+  stage: EditStage;
+  onStageChange: (stage: EditStage) => void;
   onChange: (contours: VecContour[]) => void;
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
-function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onChange, onCommit }: PathEditorProps) {
+function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stage, onStageChange, onChange, onCommit }: PathEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const bodyPathRef = useRef<SVGPathElement | null>(null);
   const contoursRef = useRef(contours);
@@ -1723,8 +1788,13 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
   const groupDragRef = useRef<GroupDrag | null>(null);
   /** Multiple nodes at once — shift-click adds/removes a node from this set. */
   const [selection, setSelection] = useState<PathSelection[]>([]);
-  /** Double-click inside the shape arms move/scale body interaction. */
-  const [shapeArmed, setShapeArmed] = useState(false);
+  const shapeArmed = stage === 'shape';
+
+  // Move keyboard focus onto this editor whenever the host arms shape editing,
+  // so Escape/+-/arrow keys land here without a separate click.
+  useEffect(() => {
+    if (shapeArmed) svgRef.current?.focus({ preventScroll: true });
+  }, [shapeArmed]);
 
   const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
   const scaleY = viewBox.height > 0 ? box.height / viewBox.height : 1;
@@ -1769,33 +1839,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       y: ((clientY - rect.top) / rect.height) * box.height,
     };
   }, [box.width, box.height]);
-
-  // Double-click on the path-editor overlay (capture, before the host item's
-  // own dblclick enters preview) arms move mode and reveals shape controls.
-  useEffect(() => {
-    const isPointOverEditor = (clientX: number, clientY: number): boolean => {
-      const svg = svgRef.current;
-      if (!svg) return false;
-      const rect = svg.getBoundingClientRect();
-      return clientX >= rect.left
-        && clientX <= rect.right
-        && clientY >= rect.top
-        && clientY <= rect.bottom;
-    };
-
-    const onDblClick = (event: MouseEvent) => {
-      if (!isPointOverEditor(event.clientX, event.clientY)) return;
-      // Swallow so the host does not enter preview and unmount the editor.
-      event.preventDefault();
-      event.stopPropagation();
-      setSelection([]);
-      setShapeArmed(true);
-      svgRef.current?.focus({ preventScroll: true });
-    };
-
-    document.addEventListener('dblclick', onDblClick, true);
-    return () => document.removeEventListener('dblclick', onDblClick, true);
-  }, []);
 
   // Keep path coords in viewBox space (0–100) so top/left stay proportional
   // when the component box scales with the article — never rematerialize to px.
@@ -1983,7 +2026,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     event.preventDefault();
     svgRef.current?.focus({ preventScroll: true });
     setSelection([]);
-    setShapeArmed(true);
+    onStageChange('shape');
     const bbox = contoursBBox(contours);
     const origin = bboxCorner(bbox, oppositeScaleCorner(corner));
     const handle = scaleHandlePoint(bbox, corner);
@@ -2100,7 +2143,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     if (event.key === 'Escape') {
       event.stopPropagation();
       setSelection([]);
-      setShapeArmed(false);
+      onStageChange('none');
       return;
     }
     if (!selection.length) return;
@@ -2168,7 +2211,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
         height={box.height}
         onPointerDown={() => {
           setSelection([]);
-          setShapeArmed(false);
+          onStageChange('none');
         }}
         onClick={insertNode}
       />
@@ -2276,6 +2319,263 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
   );
 }
 
+/** Dragging the image body pans it; the mask (`bounds`) never moves. */
+type ImagePan = {
+  pointerId: number;
+  origin: Pt;
+  startX: number;
+  startY: number;
+  width: number;
+  height: number;
+  moved: boolean;
+};
+
+/** Dragging a corner zooms about the opposite corner of `bounds`, same feel as the shape's own scale handles. */
+type ImageScaleDrag = {
+  pointerId: number;
+  anchor: Pt;
+  startDistance: number;
+  startScale: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+};
+
+type ImageEditorProps = {
+  P: string;
+  box: { width: number; height: number };
+  /** The shape's own bbox, in the same px space as `box` — the mask the image is clipped to. */
+  bounds: { x: number; y: number; width: number; height: number };
+  natural: { width: number; height: number } | null;
+  stage: EditStage;
+  onStageChange: (stage: EditStage) => void;
+  focalX: number;
+  focalY: number;
+  scale: number;
+  onChange: (next: ImageTransform) => void;
+  onCommit: (next: ImageTransform) => void;
+};
+
+/**
+ * Pan/zoom overlay for the image behind a shape mask — a sibling to
+ * `PretextPathEditor`, armed by the same double-click cycle (owned by
+ * `PretextColumn`) instead of shape editing, so the two never fight over
+ * the pointer at once.
+ */
+function PretextImageEditor({ P, box, bounds, natural, stage, onStageChange, focalX, focalY, scale, onChange, onCommit }: ImageEditorProps) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const panRef = useRef<ImagePan | null>(null);
+  const scaleRef = useRef<ImageScaleDrag | null>(null);
+  const liveRef = useRef<ImageTransform>({ focalX, focalY, scale });
+  liveRef.current = { focalX, focalY, scale };
+
+  const armed = stage === 'image';
+
+  useEffect(() => {
+    if (armed) svgRef.current?.focus({ preventScroll: true });
+  }, [armed]);
+
+  const toLocalPx = useCallback((clientX: number, clientY: number): Pt => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+    return {
+      x: ((clientX - rect.left) / rect.width) * box.width,
+      y: ((clientY - rect.top) / rect.height) * box.height,
+    };
+  }, [box.width, box.height]);
+
+  const startPan = (event: React.PointerEvent) => {
+    if (!natural) return;
+    event.stopPropagation();
+    event.preventDefault();
+    svgRef.current?.focus({ preventScroll: true });
+    const size = coveredImageSize(bounds, natural, scale);
+    panRef.current = {
+      pointerId: event.pointerId,
+      origin: toLocalPx(event.clientX, event.clientY),
+      startX: imageOffsetFromFocal(bounds.width, size.width, focalX),
+      startY: imageOffsetFromFocal(bounds.height, size.height, focalY),
+      width: size.width,
+      height: size.height,
+      moved: false,
+    };
+    svgRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const startScale = (event: React.PointerEvent, corner: ScaleCorner) => {
+    if (!natural) return;
+    event.stopPropagation();
+    event.preventDefault();
+    svgRef.current?.focus({ preventScroll: true });
+    const localBBox = { minX: 0, minY: 0, maxX: bounds.width, maxY: bounds.height };
+    const anchor = bboxCorner(localBBox, oppositeScaleCorner(corner));
+    const handle = bboxCorner(localBBox, corner);
+    const startDistance = Math.hypot(handle.x - anchor.x, handle.y - anchor.y);
+    if (!isFinite(startDistance) || startDistance <= 0) return;
+    const size = coveredImageSize(bounds, natural, scale);
+    scaleRef.current = {
+      pointerId: event.pointerId,
+      anchor,
+      startDistance,
+      startScale: scale,
+      startX: imageOffsetFromFocal(bounds.width, size.width, focalX),
+      startY: imageOffsetFromFocal(bounds.height, size.height, focalY),
+      moved: false,
+    };
+    svgRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent) => {
+    if (!natural) return;
+    const scaleDrag = scaleRef.current;
+    if (scaleDrag && event.pointerId === scaleDrag.pointerId) {
+      event.stopPropagation();
+      event.preventDefault();
+      // Anchor/start offsets live in bounds-local space; pointer is box-local.
+      const pointBox = toLocalPx(event.clientX, event.clientY);
+      const point = { x: pointBox.x - bounds.x, y: pointBox.y - bounds.y };
+      const distance = Math.hypot(point.x - scaleDrag.anchor.x, point.y - scaleDrag.anchor.y);
+      const nextScale = Math.min(
+        MAX_IMAGE_SCALE,
+        Math.max(MIN_IMAGE_SCALE, scaleDrag.startScale * (distance / scaleDrag.startDistance)),
+      );
+      if (!scaleDrag.moved && Math.abs(nextScale - scaleDrag.startScale) < 1e-4) return;
+      scaleDrag.moved = true;
+      // Uniform scale about the opposite corner — same construction as
+      // `scaleContours`, just applied to the image's own translate/scale.
+      const ratio = nextScale / scaleDrag.startScale;
+      const nextX = scaleDrag.anchor.x + (scaleDrag.startX - scaleDrag.anchor.x) * ratio;
+      const nextY = scaleDrag.anchor.y + (scaleDrag.startY - scaleDrag.anchor.y) * ratio;
+      const size = coveredImageSize(bounds, natural, nextScale);
+      onChange({
+        focalX: focalFromImageOffset(bounds.width, size.width, nextX),
+        focalY: focalFromImageOffset(bounds.height, size.height, nextY),
+        scale: nextScale,
+      });
+      return;
+    }
+    const pan = panRef.current;
+    if (pan && event.pointerId === pan.pointerId) {
+      event.stopPropagation();
+      event.preventDefault();
+      const point = toLocalPx(event.clientX, event.clientY);
+      const dx = point.x - pan.origin.x;
+      const dy = point.y - pan.origin.y;
+      if (!pan.moved && dx === 0 && dy === 0) return;
+      pan.moved = true;
+      onChange({
+        focalX: focalFromImageOffset(bounds.width, pan.width, pan.startX + dx),
+        focalY: focalFromImageOffset(bounds.height, pan.height, pan.startY + dy),
+        scale,
+      });
+    }
+  };
+
+  const endDrag = (event: React.PointerEvent) => {
+    const pan = panRef.current;
+    if (pan && event.pointerId === pan.pointerId) {
+      panRef.current = null;
+      event.stopPropagation();
+      if (svgRef.current?.hasPointerCapture(pan.pointerId)) svgRef.current.releasePointerCapture(pan.pointerId);
+      if (pan.moved) onCommit(liveRef.current);
+      return;
+    }
+    const scaleDrag = scaleRef.current;
+    if (scaleDrag && event.pointerId === scaleDrag.pointerId) {
+      scaleRef.current = null;
+      event.stopPropagation();
+      if (svgRef.current?.hasPointerCapture(scaleDrag.pointerId)) svgRef.current.releasePointerCapture(scaleDrag.pointerId);
+      if (scaleDrag.moved) onCommit(liveRef.current);
+    }
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      onStageChange('none');
+      return;
+    }
+    if (event.key === '=' || event.key === '+' || event.key === '-' || event.key === '_') {
+      event.preventDefault();
+      event.stopPropagation();
+      const grow = event.key === '=' || event.key === '+';
+      const nextScale = Math.min(MAX_IMAGE_SCALE, Math.max(MIN_IMAGE_SCALE, scale * (grow ? KEYBOARD_SCALE_STEP : 1 / KEYBOARD_SCALE_STEP)));
+      const next = { focalX, focalY, scale: nextScale };
+      onChange(next);
+      onCommit(next);
+    }
+  };
+
+  const corners: ScaleCorner[] = ['nw', 'ne', 'se', 'sw'];
+  const boundsBBox = { minX: bounds.x, minY: bounds.y, maxX: bounds.x + bounds.width, maxY: bounds.y + bounds.height };
+
+  return (
+    <svg
+      ref={svgRef}
+      className={`${P}-editor${armed ? ` ${P}-editor-armed` : ''}`}
+      width={box.width}
+      height={box.height}
+      viewBox={`0 0 ${box.width} ${box.height}`}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onLostPointerCapture={endDrag}
+      data-pretext-image-editor
+    >
+      <rect
+        className={`${P}-editor-surface`}
+        width={box.width}
+        height={box.height}
+        onPointerDown={() => onStageChange('none')}
+      />
+      {armed && (
+        <>
+          <rect
+            className={`${P}-editor-bbox`}
+            x={bounds.x}
+            y={bounds.y}
+            width={bounds.width}
+            height={bounds.height}
+          />
+          <rect
+            className={`${P}-editor-body`}
+            x={bounds.x}
+            y={bounds.y}
+            width={bounds.width}
+            height={bounds.height}
+            onPointerDown={startPan}
+          />
+          {corners.map((corner) => {
+            const point = scaleHandlePoint(boundsBBox, corner);
+            const nesw = corner === 'ne' || corner === 'sw';
+            return (
+              <g key={corner}>
+                <rect
+                  className={`${P}-editor-scale`}
+                  x={point.x - SCALE_HANDLE_SIZE / 2}
+                  y={point.y - SCALE_HANDLE_SIZE / 2}
+                  width={SCALE_HANDLE_SIZE}
+                  height={SCALE_HANDLE_SIZE}
+                />
+                <rect
+                  className={`${P}-editor-scale-grab${nesw ? ` ${P}-editor-scale-grab-nesw` : ''}`}
+                  x={point.x - SCALE_GRAB_SIZE / 2}
+                  y={point.y - SCALE_GRAB_SIZE / 2}
+                  width={SCALE_GRAB_SIZE}
+                  height={SCALE_GRAB_SIZE}
+                  onPointerDown={event => startScale(event, corner)}
+                />
+              </g>
+            );
+          })}
+        </>
+      )}
+    </svg>
+  );
+}
+
 type FloatingRect = { top: number; left: number; width: number; height: number };
 
 function readFloatingRect(element: HTMLElement): FloatingRect {
@@ -2360,7 +2660,11 @@ type ColumnProps = {
   showGuides: boolean;
   typography: React.CSSProperties;
   imageUrl?: string | null;
+  imageFocalX: number;
+  imageFocalY: number;
+  imageScale: number;
   pathEditor?: PathEditorBinding | null;
+  imageEditor?: ImageEditorBinding | null;
 };
 
 /**
@@ -2375,6 +2679,12 @@ type PathEditorBinding = {
   onConvert: (contours: VecContour[]) => void;
   onChange: (contours: VecContour[]) => void;
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
+};
+
+/** Same draft/commit split as `PathEditorBinding`, for the image's own pan/zoom. */
+type ImageEditorBinding = {
+  onChange: (next: ImageTransform) => void;
+  onCommit: (next: ImageTransform) => void;
 };
 
 function PretextColumn({
@@ -2395,7 +2705,11 @@ function PretextColumn({
   showGuides,
   typography,
   imageUrl,
+  imageFocalX,
+  imageFocalY,
+  imageScale,
   pathEditor,
+  imageEditor,
 }: ColumnProps) {
   const imageId = `pretext-shape-image-${useId().replace(/:/g, '')}`;
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
@@ -2403,6 +2717,28 @@ function PretextColumn({
   const [box, setBox] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [metrics, setMetrics] = useState<ColumnMetrics | null>(null);
   const [fontsReady, setFontsReady] = useState(0);
+  /** Shape and image editing share one arm/disarm cycle — never both at once. */
+  const [editStage, setEditStage] = useState<EditStage>('none');
+  useEffect(() => {
+    if (!pathEditor && !imageEditor) setEditStage('none');
+  }, [pathEditor, imageEditor]);
+
+  const [naturalImageSize, setNaturalImageSize] = useState<{ width: number; height: number } | null>(null);
+  useEffect(() => {
+    if (!imageUrl || typeof Image === 'undefined') {
+      setNaturalImageSize(null);
+      return;
+    }
+    let cancelled = false;
+    const probe = new Image();
+    probe.onload = () => {
+      if (!cancelled) setNaturalImageSize({ width: probe.naturalWidth, height: probe.naturalHeight });
+    };
+    probe.src = imageUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
 
   const blocks = useMemo(() => (Array.isArray(item?.text) ? item.text : []), [item]);
   const tokens = useMemo(() => tokenize(blocks), [blocks]);
@@ -2627,8 +2963,35 @@ function PretextColumn({
   const textAlign: React.CSSProperties['textAlign'] = align === 'justify' ? 'left' : align;
 
   const showPathEditor = Boolean(pathEditor && draftContours && box.width > 0 && box.height > 0);
-  const editorRect = useFloatingRect(columnEl, showPathEditor);
-  const portalTarget = showPathEditor && editorRect ? resolveEditorPortalTarget() : null;
+  const canArmImage = Boolean(imageEditor);
+  const showOverlayPortal = (showPathEditor || canArmImage) && box.width > 0 && box.height > 0;
+  const editorRect = useFloatingRect(columnEl, showOverlayPortal);
+  const portalTarget = showOverlayPortal && editorRect ? resolveEditorPortalTarget() : null;
+
+  // Double-click anywhere over the column (capture, before the host item's own
+  // dblclick enters preview) cycles shape → image editing — the single place
+  // that decides which of the two overlays gets the pointer next.
+  useEffect(() => {
+    if (!showPathEditor && !canArmImage) return;
+    const onDblClick = (event: MouseEvent) => {
+      const element = columnEl;
+      if (!element) return;
+      const rect = element.getBoundingClientRect();
+      const within = event.clientX >= rect.left && event.clientX <= rect.right
+        && event.clientY >= rect.top && event.clientY <= rect.bottom;
+      if (!within) return;
+      // Swallow so the host does not enter preview and unmount the editors.
+      event.preventDefault();
+      event.stopPropagation();
+      setEditStage((current) => {
+        if (current === 'shape' && canArmImage) return 'image';
+        return showPathEditor ? 'shape' : 'image';
+      });
+    };
+    document.addEventListener('dblclick', onDblClick, true);
+    return () => document.removeEventListener('dblclick', onDblClick, true);
+  }, [showPathEditor, canArmImage, columnEl]);
+
   const shapeImagePath = useMemo(
     () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(rings, box) : ''),
     [imageUrl, rings, box.width, box.height],
@@ -2637,11 +3000,24 @@ function PretextColumn({
     () => (imageUrl && box.width > 0 && box.height > 0 ? ringsBBoxPx(rings, box) : null),
     [imageUrl, rings, box.width, box.height],
   );
-  const patternId = `${imageId}-pattern`;
+  const clipId = `${imageId}-clip`;
+  // Before the natural size loads, fall back to filling the mask bbox exactly
+  // (equivalent to the old xMidYMid-slice default) rather than a jump cut once it's known.
+  const imageRect = useMemo(() => {
+    if (!shapeImageBounds) return null;
+    const natural = naturalImageSize ?? { width: shapeImageBounds.width, height: shapeImageBounds.height };
+    const size = coveredImageSize(shapeImageBounds, natural, imageScale);
+    return {
+      x: imageOffsetFromFocal(shapeImageBounds.width, size.width, imageFocalX),
+      y: imageOffsetFromFocal(shapeImageBounds.height, size.height, imageFocalY),
+      width: size.width,
+      height: size.height,
+    };
+  }, [shapeImageBounds, naturalImageSize, imageFocalX, imageFocalY, imageScale]);
 
   return (
     <div className={`${P}-column`} ref={setColumnEl}>
-      {imageUrl && shapeImagePath && shapeImageBounds ? (
+      {imageUrl && shapeImagePath && shapeImageBounds && imageRect ? (
         <svg
           className={`${P}-shape-image`}
           viewBox={`0 0 ${box.width} ${box.height}`}
@@ -2649,28 +3025,18 @@ function PretextColumn({
           aria-hidden
         >
           <defs>
-            <pattern
-              id={patternId}
-              patternUnits="userSpaceOnUse"
-              x={shapeImageBounds.x}
-              y={shapeImageBounds.y}
-              width={shapeImageBounds.width}
-              height={shapeImageBounds.height}
-            >
-              <image
-                href={imageUrl}
-                x={0}
-                y={0}
-                width={shapeImageBounds.width}
-                height={shapeImageBounds.height}
-                preserveAspectRatio="xMidYMid slice"
-              />
-            </pattern>
+            <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+              <path d={shapeImagePath} fillRule="evenodd" />
+            </clipPath>
           </defs>
-          <path
-            d={shapeImagePath}
-            fill={`url(#${patternId})`}
-            fillRule="evenodd"
+          <image
+            href={imageUrl}
+            x={shapeImageBounds.x + imageRect.x}
+            y={shapeImageBounds.y + imageRect.y}
+            width={imageRect.width}
+            height={imageRect.height}
+            preserveAspectRatio="none"
+            clipPath={`url(#${clipId})`}
           />
         </svg>
       ) : null}
@@ -2734,7 +3100,7 @@ function PretextColumn({
           {dropCapChar}
         </div>
       )}
-      {portalTarget && editorRect && draftContours && pathEditor && createPortal(
+      {portalTarget && editorRect && ((draftContours && pathEditor) || imageEditor) && createPortal(
         <div
           data-selection="none"
           style={{
@@ -2747,16 +3113,35 @@ function PretextColumn({
             pointerEvents: 'none',
           }}
         >
-          <PretextPathEditor
-            P={P}
-            box={{ width: editorRect.width, height: editorRect.height }}
-            viewBox={viewBox}
-            contours={draftContours}
-            snap={pathEditor.snap}
-            stretchToBox={!exceedsEditViewBox}
-            onChange={pathEditor.onChange}
-            onCommit={pathEditor.onCommit}
-          />
+          {draftContours && pathEditor && (
+            <PretextPathEditor
+              P={P}
+              box={{ width: editorRect.width, height: editorRect.height }}
+              viewBox={viewBox}
+              contours={draftContours}
+              snap={pathEditor.snap}
+              stretchToBox={!exceedsEditViewBox}
+              stage={editStage}
+              onStageChange={setEditStage}
+              onChange={pathEditor.onChange}
+              onCommit={pathEditor.onCommit}
+            />
+          )}
+          {imageEditor && shapeImageBounds && (
+            <PretextImageEditor
+              P={P}
+              box={{ width: editorRect.width, height: editorRect.height }}
+              bounds={shapeImageBounds}
+              natural={naturalImageSize}
+              stage={editStage}
+              onStageChange={setEditStage}
+              focalX={imageFocalX}
+              focalY={imageFocalY}
+              scale={imageScale}
+              onChange={imageEditor.onChange}
+              onCommit={imageEditor.onCommit}
+            />
+          )}
         </div>,
         portalTarget,
       )}
@@ -2879,6 +3264,42 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     };
   }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, settings, writePath]);
 
+  /* -- shape-image pan/zoom ------------------------------------------------ */
+
+  const hasShapeImage = mode === 'avoid' && Boolean(settings?.image);
+  const committedImageTransform = useMemo<ImageTransform>(() => ({
+    focalX: settings?.imageFocalX ?? 0.5,
+    focalY: settings?.imageFocalY ?? 0.5,
+    scale: settings?.imageScale ?? 1,
+  }), [settings?.imageFocalX, settings?.imageFocalY, settings?.imageScale]);
+  // Same draft split as the path: live values while dragging, committed once released.
+  const [imageDraft, setImageDraft] = useState<ImageTransform | null>(null);
+  const liveImageTransform = imageDraft ?? committedImageTransform;
+
+  const handleImageChange = useCallback((next: ImageTransform) => setImageDraft(next), []);
+  const handleImageCommit = useCallback((next: ImageTransform) => {
+    // Keep the draft pinned to `next` so clearing it never reveals the stale
+    // committed transform for a frame before onUpdateSettings lands.
+    setImageDraft(next);
+    onUpdateSettings?.({ ...settings, imageFocalX: next.focalX, imageFocalY: next.focalY, imageScale: next.scale });
+  }, [onUpdateSettings, settings]);
+
+  useEffect(() => {
+    if (!imageDraft) return;
+    if (
+      Math.abs(imageDraft.focalX - committedImageTransform.focalX) < 1e-9
+      && Math.abs(imageDraft.focalY - committedImageTransform.focalY) < 1e-9
+      && Math.abs(imageDraft.scale - committedImageTransform.scale) < 1e-9
+    ) {
+      setImageDraft(null);
+    }
+  }, [imageDraft, committedImageTransform]);
+
+  const imageEditor = useMemo<ImageEditorBinding | null>(() => {
+    if (!pathEditing || !hasShapeImage) return null;
+    return { onChange: handleImageChange, onCommit: handleImageCommit };
+  }, [pathEditing, hasShapeImage, handleImageChange, handleImageCommit]);
+
   const [fitScale, setFitScale] = useState<number | undefined>(undefined);
   const fitScaleRef = useRef<number | undefined>(undefined);
 
@@ -2941,7 +3362,11 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           showGuides={(showGuides || pathEditing) && shapeOverlayVisible}
           typography={typography}
           imageUrl={mode === 'avoid' ? settings?.image : null}
+          imageFocalX={liveImageTransform.focalX}
+          imageFocalY={liveImageTransform.focalY}
+          imageScale={liveImageTransform.scale}
           pathEditor={shapeOverlayVisible ? pathEditor : null}
+          imageEditor={shapeOverlayVisible ? imageEditor : null}
         />
       </div>
     </>
