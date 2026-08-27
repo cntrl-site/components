@@ -1393,7 +1393,8 @@ function getCSS(P: string): string {
   /* Sits above the editor's own interaction blocker, which is z-index 1. */
   z-index: 10;
   overflow: visible;
-  /* Pass through to default item select/drag until a path point is selected. */
+  /* Pass through to default item select/drag until a point is selected or
+     the shape is double-clicked into move mode. Scale/anchor grabs stay live. */
   pointer-events: none;
   touch-action: none;
   outline: none;
@@ -1413,8 +1414,11 @@ function getCSS(P: string): string {
   fill: none;
   stroke: transparent;
   stroke-width: 16;
-  pointer-events: stroke;
+  pointer-events: none;
   cursor: copy;
+}
+.${P}-editor-armed .${P}-editor-hit {
+  pointer-events: stroke;
 }
 .${P}-editor-grab {
   fill: transparent;
@@ -1433,8 +1437,11 @@ function getCSS(P: string): string {
 }
 .${P}-editor-body {
   fill: transparent;
-  pointer-events: fill;
+  pointer-events: none;
   cursor: move;
+}
+.${P}-editor-armed .${P}-editor-body {
+  pointer-events: fill;
 }
 .${P}-editor-body:active {
   cursor: grabbing;
@@ -1610,12 +1617,15 @@ type PathEditorProps = {
 
 function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onChange, onCommit }: PathEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const bodyPathRef = useRef<SVGPathElement | null>(null);
   const contoursRef = useRef(contours);
   contoursRef.current = contours;
   const dragRef = useRef<PathDrag | null>(null);
   const shapeDragRef = useRef<ShapeDrag | null>(null);
   const shapeScaleRef = useRef<ShapeScale | null>(null);
   const [selection, setSelection] = useState<PathSelection | null>(null);
+  /** Double-click inside the shape arms move/scale body interaction. */
+  const [shapeArmed, setShapeArmed] = useState(false);
 
   const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
   const scaleY = viewBox.height > 0 ? box.height / viewBox.height : 1;
@@ -1660,6 +1670,33 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       y: ((clientY - rect.top) / rect.height) * box.height,
     };
   }, [box.width, box.height]);
+
+  // Double-click on the path-editor overlay (capture, before the host item's
+  // own dblclick enters preview) arms move mode and reveals shape controls.
+  useEffect(() => {
+    const isPointOverEditor = (clientX: number, clientY: number): boolean => {
+      const svg = svgRef.current;
+      if (!svg) return false;
+      const rect = svg.getBoundingClientRect();
+      return clientX >= rect.left
+        && clientX <= rect.right
+        && clientY >= rect.top
+        && clientY <= rect.bottom;
+    };
+
+    const onDblClick = (event: MouseEvent) => {
+      if (!isPointOverEditor(event.clientX, event.clientY)) return;
+      // Swallow so the host does not enter preview and unmount the editor.
+      event.preventDefault();
+      event.stopPropagation();
+      setSelection(null);
+      setShapeArmed(true);
+      svgRef.current?.focus({ preventScroll: true });
+    };
+
+    document.addEventListener('dblclick', onDblClick, true);
+    return () => document.removeEventListener('dblclick', onDblClick, true);
+  }, []);
 
   // Keep path coords in viewBox space (0–100) so top/left stay proportional
   // when the component box scales with the article — never rematerialize to px.
@@ -1775,7 +1812,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       if (shapeDrag.moved) {
         commitContours(contoursRef.current, { preserveShape: true });
       } else {
-        // A click that never travels deselects, same as the background surface.
+        // A click that never travels deselects the point, same as the surface.
         setSelection(null);
       }
       return;
@@ -1814,6 +1851,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     event.preventDefault();
     svgRef.current?.focus({ preventScroll: true });
     setSelection(null);
+    setShapeArmed(true);
     const bbox = contoursBBox(contours);
     const origin = bboxCorner(bbox, oppositeScaleCorner(corner));
     const handle = scaleHandlePoint(bbox, corner);
@@ -1902,13 +1940,14 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
       commitContours(next, { preserveShape: true });
       return;
     }
-    if (!selection) return;
-    const { contour, node } = selection;
     if (event.key === 'Escape') {
       event.stopPropagation();
       setSelection(null);
+      setShapeArmed(false);
       return;
     }
+    if (!selection) return;
+    const { contour, node } = selection;
     if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
       event.stopPropagation();
@@ -1939,16 +1978,20 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     width: toPx({ x: shapeBBox.maxX, y: shapeBBox.minY }).x - bboxTopLeft.x,
     height: toPx({ x: shapeBBox.minX, y: shapeBBox.maxY }).y - bboxTopLeft.y,
   };
-  const showScaleHandles = !selection
+  const showScaleHandles = shapeArmed
+    && !selection
     && isFinite(shapeBBox.minX)
     && isFinite(shapeBBox.maxX)
     && shapeBBox.maxX > shapeBBox.minX
     && shapeBBox.maxY > shapeBBox.minY;
+  const armed = Boolean(selection) || shapeArmed;
+  /** Outline, anchors, and scale chrome — only after double-click. */
+  const showControls = armed;
 
   return (
     <svg
       ref={svgRef}
-      className={`${P}-editor${selection ? ` ${P}-editor-armed` : ''}`}
+      className={`${P}-editor${armed ? ` ${P}-editor-armed` : ''}`}
       width={box.width}
       height={box.height}
       viewBox={`0 0 ${box.width} ${box.height}`}
@@ -1964,27 +2007,29 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
     >
       {/* Catches clicks that land near the outline rather than on it. It
           never stops propagation, so the editor still selects the item.
-          Pointer events are off until a path point is selected (armed). */}
+          Pointer events are off until double-click arms the shape. */}
       <rect
         className={`${P}-editor-surface`}
         width={box.width}
         height={box.height}
-        onPointerDown={() => setSelection(null)}
+        onPointerDown={() => {
+          setSelection(null);
+          setShapeArmed(false);
+        }}
         onClick={insertNode}
       />
-      <path className={`${P}-editor-hit`} d={outline} onClick={insertNode} />
-      <path className={`${P}-editor-outline`} d={outline} />
-      {/* Dragging anywhere inside the shape moves it as a whole, clamped to
-          `box` in onPointerMove. Sits above the surface/hit paths, so it
-          also takes over their click-to-insert-node duty. */}
+      {showControls && <path className={`${P}-editor-hit`} d={outline} onClick={insertNode} />}
+      {showControls && <path className={`${P}-editor-outline`} d={outline} />}
+      {/* Body hit target for whole-shape drag while armed. */}
       <path
+        ref={bodyPathRef}
         className={`${P}-editor-body`}
         d={outline}
         fillRule="evenodd"
         onPointerDown={startShapeDrag}
         onClick={insertNode}
       />
-      {contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
+      {showControls && contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
         const isSelected = selection?.contour === contourIndex && selection?.node === nodeIndex;
         const anchor = toPx(node.p);
         return (
@@ -2035,8 +2080,8 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, onCh
           </g>
         );
       }))}
-      {/* Uniform scale about the opposite corner. Shown when no point is
-          selected (transform mode); click empty/body to dismiss a point. */}
+      {/* Uniform scale about the opposite corner. Shown after double-click
+          when no point is selected (transform mode). */}
       {showScaleHandles && (
         <g>
           <rect
