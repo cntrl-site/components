@@ -1579,6 +1579,20 @@ function getCSS(P: string): string {
 .${P}-editor-anchor-selected {
   fill: #FF5C02;
 }
+/* The part of the photo the mask crops away, shown while the image is armed.
+   Dimmed rather than desaturated on purpose: a filter would be re-rasterized
+   every frame of a pan drag, and dimming is what a crop UI reads as anyway. */
+.${P}-editor-ghost {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.${P}-editor-image-bounds {
+  fill: none;
+  stroke: #FF5C02;
+  stroke-width: 1;
+  opacity: 0.7;
+  pointer-events: none;
+}
 .${P}-a11y {
   position: absolute;
   width: 1px;
@@ -1700,6 +1714,20 @@ function scaleHandlePoint(
   };
 }
 
+type PathChangeOptions = {
+  /**
+   * Set by the whole-shape body drag, which moves the mask and the photo as one
+   * piece. `focalX`/`focalY`/`scale` are relative to the mask bbox's *size*, so
+   * a pure translation already carries the photo along for free — this flag
+   * just tells the column to stand down the machinery that otherwise pins the
+   * photo in place while the mask slides over it.
+   *
+   * Left unset by the gestures that should still re-crop rather than move:
+   * node drags, whole-shape scale, and keyboard nudge/scale.
+   */
+  carryImage?: boolean;
+};
+
 type PathCommitOptions = {
   /** Whole-shape move/scale keeps the preset id; point edits diverge to `custom`. */
   preserveShape?: boolean;
@@ -1760,6 +1788,36 @@ function focalFromImageOffset(boundsSize: number, renderedSize: number, offset: 
   return clamp01(offset / span);
 }
 
+/**
+ * Keep the image's box-absolute size and placement when the shape mask bbox
+ * changes (path-point edits). `imageScale` is extra zoom on top of cover, so a
+ * new cover fit would otherwise resize the photo with the mask.
+ */
+function preserveImageTransformAcrossBoundsChange(
+  prevBounds: { x: number; y: number; width: number; height: number },
+  nextBounds: { x: number; y: number; width: number; height: number },
+  natural: { width: number; height: number },
+  focalX: number,
+  focalY: number,
+  scale: number,
+): ImageTransform {
+  const oldSize = coveredImageSize(prevBounds, natural, scale);
+  const absX = prevBounds.x + imageOffsetFromFocal(prevBounds.width, oldSize.width, focalX);
+  const absY = prevBounds.y + imageOffsetFromFocal(prevBounds.height, oldSize.height, focalY);
+  const prevCover = coverScale(prevBounds, natural);
+  const nextCover = coverScale(nextBounds, natural);
+  const nextScale = Math.min(
+    MAX_IMAGE_SCALE,
+    Math.max(MIN_IMAGE_SCALE, nextCover > 0 ? scale * (prevCover / nextCover) : scale),
+  );
+  const newSize = coveredImageSize(nextBounds, natural, nextScale);
+  return {
+    focalX: focalFromImageOffset(nextBounds.width, newSize.width, absX - nextBounds.x),
+    focalY: focalFromImageOffset(nextBounds.height, newSize.height, absY - nextBounds.y),
+    scale: nextScale,
+  };
+}
+
 type EditStage = 'none' | 'shape' | 'image';
 
 type PathEditorProps = {
@@ -1773,11 +1831,13 @@ type PathEditorProps = {
   /** Shape and image editing are mutually exclusive; the host (PretextColumn) owns the cycle. */
   stage: EditStage;
   onStageChange: (stage: EditStage) => void;
-  onChange: (contours: VecContour[]) => void;
+  /** Lifts the node selection up to the column, which owns the double-click cycle. */
+  onSelectionChange?: (hasSelection: boolean) => void;
+  onChange: (contours: VecContour[], options?: PathChangeOptions) => void;
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
-function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stage, onStageChange, onChange, onCommit }: PathEditorProps) {
+function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stage, onStageChange, onSelectionChange, onChange, onCommit }: PathEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const bodyPathRef = useRef<SVGPathElement | null>(null);
   const contoursRef = useRef(contours);
@@ -1795,6 +1855,24 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
   useEffect(() => {
     if (shapeArmed) svgRef.current?.focus({ preventScroll: true });
   }, [shapeArmed]);
+
+  // Handing the stage to the image editor (or dropping out entirely) has to
+  // drop the node selection too: `armed` ORs the selection in, so a point left
+  // selected from the shape pass would keep anchors, handles and the outline
+  // painted on top of the image the user just stepped into. Keyed on the
+  // transition only, so the selection `insertNode` sets from a near-outline
+  // click — which lands after the surface has already set the stage to 'none'
+  // — still re-arms the editor the way it does today.
+  useEffect(() => {
+    if (!shapeArmed) setSelection(current => (current.length ? [] : current));
+  }, [shapeArmed]);
+
+  const hasSelection = selection.length > 0;
+  useEffect(() => {
+    onSelectionChange?.(hasSelection);
+  }, [hasSelection, onSelectionChange]);
+  // Unmounting with a point still selected would strand the column's flag on.
+  useEffect(() => () => onSelectionChange?.(false), [onSelectionChange]);
 
   const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
   const scaleY = viewBox.height > 0 ? box.height / viewBox.height : 1;
@@ -1906,7 +1984,10 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       }
       if (!shapeDrag.moved && dx === 0 && dy === 0) return;
       shapeDrag.moved = true;
-      onChange(mapContours(shapeDrag.startContours, p => ({ x: p.x + dx, y: p.y + dy })));
+      onChange(
+        mapContours(shapeDrag.startContours, p => ({ x: p.x + dx, y: p.y + dy })),
+        { carryImage: true },
+      );
       return;
     }
     const groupDrag = groupDragRef.current;
@@ -2347,6 +2428,10 @@ type ImageEditorProps = {
   /** The shape's own bbox, in the same px space as `box` — the mask the image is clipped to. */
   bounds: { x: number; y: number; width: number; height: number };
   natural: { width: number; height: number } | null;
+  /** Source of the ghost drawn outside the mask while cropping. */
+  imageUrl?: string | null;
+  /** The mask itself, as a px path in the same space as `bounds`. */
+  maskPath: string;
   stage: EditStage;
   onStageChange: (stage: EditStage) => void;
   focalX: number;
@@ -2362,8 +2447,9 @@ type ImageEditorProps = {
  * `PretextColumn`) instead of shape editing, so the two never fight over
  * the pointer at once.
  */
-function PretextImageEditor({ P, box, bounds, natural, stage, onStageChange, focalX, focalY, scale, onChange, onCommit }: ImageEditorProps) {
+function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage, onStageChange, focalX, focalY, scale, onChange, onCommit }: ImageEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const ghostMaskId = `pretext-image-ghost-${useId().replace(/:/g, '')}`;
   const panRef = useRef<ImagePan | null>(null);
   const scaleRef = useRef<ImageScaleDrag | null>(null);
   const liveRef = useRef<ImageTransform>({ focalX, focalY, scale });
@@ -2407,19 +2493,24 @@ function PretextImageEditor({ P, box, bounds, natural, stage, onStageChange, foc
     event.stopPropagation();
     event.preventDefault();
     svgRef.current?.focus({ preventScroll: true });
-    const localBBox = { minX: 0, minY: 0, maxX: bounds.width, maxY: bounds.height };
+    const size = coveredImageSize(bounds, natural, scale);
+    const startX = imageOffsetFromFocal(bounds.width, size.width, focalX);
+    const startY = imageOffsetFromFocal(bounds.height, size.height, focalY);
+    // The photo's own rect, in the bounds-local space the drag math runs in.
+    // Anchoring on its opposite corner is what pins that corner while you drag
+    // — anchored on the mask's corner instead, the photo slid as it resized.
+    const localBBox = { minX: startX, minY: startY, maxX: startX + size.width, maxY: startY + size.height };
     const anchor = bboxCorner(localBBox, oppositeScaleCorner(corner));
     const handle = bboxCorner(localBBox, corner);
     const startDistance = Math.hypot(handle.x - anchor.x, handle.y - anchor.y);
     if (!isFinite(startDistance) || startDistance <= 0) return;
-    const size = coveredImageSize(bounds, natural, scale);
     scaleRef.current = {
       pointerId: event.pointerId,
       anchor,
       startDistance,
       startScale: scale,
-      startX: imageOffsetFromFocal(bounds.width, size.width, focalX),
-      startY: imageOffsetFromFocal(bounds.height, size.height, focalY),
+      startX,
+      startY,
       moved: false,
     };
     svgRef.current?.setPointerCapture(event.pointerId);
@@ -2509,6 +2600,33 @@ function PretextImageEditor({ P, box, bounds, natural, stage, onStageChange, foc
   const corners: ScaleCorner[] = ['nw', 'ne', 'se', 'sw'];
   const boundsBBox = { minX: bounds.x, minY: bounds.y, maxX: bounds.x + bounds.width, maxY: bounds.y + bounds.height };
 
+  // The photo's full extent, in the same px space as `bounds` — the same
+  // construction the column uses to place the clipped <image>, so the ghost
+  // stays welded to the real thing through a pan or zoom.
+  const imageRect = useMemo(() => {
+    const source = natural ?? { width: bounds.width, height: bounds.height };
+    const size = coveredImageSize(bounds, source, scale);
+    if (!(size.width > 0) || !(size.height > 0)) return null;
+    return {
+      x: bounds.x + imageOffsetFromFocal(bounds.width, size.width, focalX),
+      y: bounds.y + imageOffsetFromFocal(bounds.height, size.height, focalY),
+      width: size.width,
+      height: size.height,
+    };
+  }, [natural, bounds.x, bounds.y, bounds.width, bounds.height, focalX, focalY, scale]);
+
+  // Scale handles sit on the photo, not on the mask — so the frame you grab is
+  // the size of the thing you're resizing. Falls back to the mask bbox for the
+  // moment before `natural` loads, when the two are the same rect anyway.
+  const handleBBox = imageRect
+    ? {
+      minX: imageRect.x,
+      minY: imageRect.y,
+      maxX: imageRect.x + imageRect.width,
+      maxY: imageRect.y + imageRect.height,
+    }
+    : boundsBBox;
+
   return (
     <svg
       ref={svgRef}
@@ -2530,6 +2648,36 @@ function PretextImageEditor({ P, box, bounds, natural, stage, onStageChange, foc
         height={box.height}
         onPointerDown={() => onStageChange('none')}
       />
+      {armed && imageUrl && imageRect && maskPath && (
+        <>
+          {/* Luminance mask: white over the whole photo, the shape punched out
+              in black. Only the cropped-away remainder gets painted, so the
+              live image inside the mask is never double-covered and dulled. */}
+          <defs>
+            <mask id={ghostMaskId} maskUnits="userSpaceOnUse" x={imageRect.x} y={imageRect.y} width={imageRect.width} height={imageRect.height}>
+              <rect x={imageRect.x} y={imageRect.y} width={imageRect.width} height={imageRect.height} fill="#FFFFFF" />
+              <path d={maskPath} fillRule="evenodd" fill="#000000" />
+            </mask>
+          </defs>
+          <image
+            className={`${P}-editor-ghost`}
+            href={imageUrl ?? undefined}
+            x={imageRect.x}
+            y={imageRect.y}
+            width={imageRect.width}
+            height={imageRect.height}
+            preserveAspectRatio="none"
+            mask={`url(#${ghostMaskId})`}
+          />
+          <rect
+            className={`${P}-editor-image-bounds`}
+            x={imageRect.x}
+            y={imageRect.y}
+            width={imageRect.width}
+            height={imageRect.height}
+          />
+        </>
+      )}
       {armed && (
         <>
           <rect
@@ -2548,7 +2696,7 @@ function PretextImageEditor({ P, box, bounds, natural, stage, onStageChange, foc
             onPointerDown={startPan}
           />
           {corners.map((corner) => {
-            const point = scaleHandlePoint(boundsBBox, corner);
+            const point = scaleHandlePoint(handleBBox, corner);
             const nesw = corner === 'ne' || corner === 'sw';
             return (
               <g key={corner}>
@@ -2663,6 +2811,13 @@ type ColumnProps = {
   imageFocalX: number;
   imageFocalY: number;
   imageScale: number;
+  /** Path used for the image mask — may lead `customPath` while settings sync. */
+  imageCustomPath: string;
+  pathDragActive: boolean;
+  /** The live drag moves the whole shape: let the photo ride along with it. */
+  pathCarryImage: boolean;
+  /** Fired once the carried placement has been adopted, to clear the flag. */
+  onCarryImageConsumed?: () => void;
   pathEditor?: PathEditorBinding | null;
   imageEditor?: ImageEditorBinding | null;
 };
@@ -2677,7 +2832,7 @@ type PathEditorBinding = {
   snap: number;
   needsConversion: boolean;
   onConvert: (contours: VecContour[]) => void;
-  onChange: (contours: VecContour[]) => void;
+  onChange: (contours: VecContour[], options?: PathChangeOptions) => void;
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
@@ -2685,6 +2840,16 @@ type PathEditorBinding = {
 type ImageEditorBinding = {
   onChange: (next: ImageTransform) => void;
   onCommit: (next: ImageTransform) => void;
+};
+
+/** Image mask/placement frozen for the duration of a path-edit session. */
+type FrozenShapeImage = {
+  rings: Ring[];
+  bounds: { x: number; y: number; width: number; height: number };
+  focalX: number;
+  focalY: number;
+  scale: number;
+  customPath: string;
 };
 
 function PretextColumn({
@@ -2708,6 +2873,10 @@ function PretextColumn({
   imageFocalX,
   imageFocalY,
   imageScale,
+  imageCustomPath,
+  pathDragActive,
+  pathCarryImage,
+  onCarryImageConsumed,
   pathEditor,
   imageEditor,
 }: ColumnProps) {
@@ -2795,6 +2964,25 @@ function PretextColumn({
     const scaleY = viewBox.height / ref.height;
     return unitRings.map(ring => ring.map(point => ({ x: point.x * scaleX, y: point.y * scaleY })));
   }, [unitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
+
+  // The shape image reads from the *committed* path, not the in-progress drag
+  // draft — text reflows live as nodes are dragged, but the image mask should
+  // hold still until the edit is committed rather than warping every frame.
+  const committedUnitRings = useMemo(() => {
+    const spec = imageCustomPath.trim();
+    const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
+    if (parsed && parsed.length) return parsed;
+    return getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
+    // aspect only matters for the circle preset; round it to avoid churn
+  }, [shape, imageCustomPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
+
+  const imageRings = useMemo(() => {
+    if (!exceedsEditViewBox || box.width <= 0 || box.height <= 0) return committedUnitRings;
+    const ref = legacyRefBox ?? box;
+    const scaleX = viewBox.width / ref.width;
+    const scaleY = viewBox.height / ref.height;
+    return committedUnitRings.map(ring => ring.map(point => ({ x: point.x * scaleX, y: point.y * scaleY })));
+  }, [committedUnitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
   const migratedPathRef = useRef<string | null>(null);
   useEffect(() => {
@@ -2968,6 +3156,13 @@ function PretextColumn({
   const editorRect = useFloatingRect(columnEl, showOverlayPortal);
   const portalTarget = showOverlayPortal && editorRect ? resolveEditorPortalTarget() : null;
 
+  // Read at event time rather than held in state: the cycle listener below
+  // should not rebind every time a point is selected or dropped.
+  const pathHasSelectionRef = useRef(false);
+  const onPathSelectionChange = useCallback((hasSelection: boolean) => {
+    pathHasSelectionRef.current = hasSelection;
+  }, []);
+
   // Double-click anywhere over the column (capture, before the host item's own
   // dblclick enters preview) cycles shape → image editing — the single place
   // that decides which of the two overlays gets the pointer next.
@@ -2984,6 +3179,11 @@ function PretextColumn({
       event.preventDefault();
       event.stopPropagation();
       setEditStage((current) => {
+        // Mid node-edit with a point selected, hold the stage. The anchor's own
+        // dblclick (toggle smooth) calls stopPropagation, but this listener is
+        // on document in the capture phase and runs first, so the guard has to
+        // be here — nothing downstream can prevent it.
+        if (current === 'shape' && pathHasSelectionRef.current) return current;
         if (current === 'shape' && canArmImage) return 'image';
         return showPathEditor ? 'shape' : 'image';
       });
@@ -2992,28 +3192,116 @@ function PretextColumn({
     return () => document.removeEventListener('dblclick', onDblClick, true);
   }, [showPathEditor, canArmImage, columnEl]);
 
+  const committedShapeImageBounds = useMemo(
+    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsBBoxPx(imageRings, box) : null),
+    [imageUrl, imageRings, box.width, box.height],
+  );
+
+  // Freeze the image mask only while a path handle is actively dragged. Between
+  // commits, `imageCustomPath` tracks the local draft so the clip updates without
+  // waiting on settings sync.
+  const freezeImageForPathEdit = pathDragActive && !pathCarryImage && editStage !== 'image';
+  const lastStableImageRef = useRef<FrozenShapeImage | null>(null);
+
+  if (!pathDragActive && imageUrl && committedShapeImageBounds) {
+    lastStableImageRef.current = {
+      rings: imageRings,
+      bounds: committedShapeImageBounds,
+      focalX: imageFocalX,
+      focalY: imageFocalY,
+      scale: imageScale,
+      customPath: imageCustomPath,
+    };
+  }
+
+  const dragFrozen = freezeImageForPathEdit ? lastStableImageRef.current : null;
+
+  const imagePathAnchorRef = useRef<FrozenShapeImage | null>(null);
+  const pathPreservedTransform = (() => {
+    const anchor = imagePathAnchorRef.current;
+    if (
+      pathDragActive
+      // Stays true through the commit and the re-anchor below, so the moved
+      // photo is adopted as the new resting state instead of being corrected
+      // back. The next drag's first onChange resets it.
+      || pathCarryImage
+      || !imageEditor
+      || !naturalImageSize
+      || !committedShapeImageBounds
+      || !anchor
+      || imageCustomPath === anchor.customPath
+    ) {
+      return null;
+    }
+    return preserveImageTransformAcrossBoundsChange(
+      anchor.bounds,
+      committedShapeImageBounds,
+      naturalImageSize,
+      anchor.focalX,
+      anchor.focalY,
+      anchor.scale,
+    );
+  })();
+
+  useIsomorphicLayoutEffect(() => {
+    if (pathDragActive || !imageEditor || !naturalImageSize || !committedShapeImageBounds) return;
+    const anchor = imagePathAnchorRef.current;
+    const pathChanged = Boolean(anchor && imageCustomPath !== anchor.customPath);
+    if (pathChanged && pathPreservedTransform) {
+      imageEditor.onCommit(pathPreservedTransform);
+    }
+    // The carry has now been folded into the anchor below, so retire the flag —
+    // otherwise it would keep suppressing the correction for the *next* path
+    // change, whatever caused it (undo, the shape dropdown, the path field).
+    if (pathChanged && pathCarryImage) onCarryImageConsumed?.();
+    imagePathAnchorRef.current = {
+      rings: imageRings,
+      bounds: committedShapeImageBounds,
+      focalX: pathPreservedTransform?.focalX ?? imageFocalX,
+      focalY: pathPreservedTransform?.focalY ?? imageFocalY,
+      scale: pathPreservedTransform?.scale ?? imageScale,
+      customPath: imageCustomPath,
+    };
+  }, [
+    pathDragActive,
+    pathCarryImage,
+    imageCustomPath,
+    imageRings,
+    committedShapeImageBounds,
+    imageEditor,
+    naturalImageSize,
+    imageFocalX,
+    imageFocalY,
+    imageScale,
+    pathPreservedTransform,
+    onCarryImageConsumed,
+  ]);
+
+  const activeImageRings = dragFrozen?.rings ?? imageRings;
+  const activeImageBounds = dragFrozen?.bounds ?? committedShapeImageBounds;
+  const activeImageFocalX = dragFrozen?.focalX ?? pathPreservedTransform?.focalX ?? imageFocalX;
+  const activeImageFocalY = dragFrozen?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
+  const activeImageScale = dragFrozen?.scale ?? pathPreservedTransform?.scale ?? imageScale;
+
   const shapeImagePath = useMemo(
-    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(rings, box) : ''),
-    [imageUrl, rings, box.width, box.height],
+    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(activeImageRings, box) : ''),
+    [imageUrl, activeImageRings, box.width, box.height],
   );
-  const shapeImageBounds = useMemo(
-    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsBBoxPx(rings, box) : null),
-    [imageUrl, rings, box.width, box.height],
-  );
+  const shapeImageBounds = activeImageBounds;
   const clipId = `${imageId}-clip`;
   // Before the natural size loads, fall back to filling the mask bbox exactly
   // (equivalent to the old xMidYMid-slice default) rather than a jump cut once it's known.
   const imageRect = useMemo(() => {
     if (!shapeImageBounds) return null;
     const natural = naturalImageSize ?? { width: shapeImageBounds.width, height: shapeImageBounds.height };
-    const size = coveredImageSize(shapeImageBounds, natural, imageScale);
+    const size = coveredImageSize(shapeImageBounds, natural, activeImageScale);
     return {
-      x: imageOffsetFromFocal(shapeImageBounds.width, size.width, imageFocalX),
-      y: imageOffsetFromFocal(shapeImageBounds.height, size.height, imageFocalY),
+      x: imageOffsetFromFocal(shapeImageBounds.width, size.width, activeImageFocalX),
+      y: imageOffsetFromFocal(shapeImageBounds.height, size.height, activeImageFocalY),
       width: size.width,
       height: size.height,
     };
-  }, [shapeImageBounds, naturalImageSize, imageFocalX, imageFocalY, imageScale]);
+  }, [shapeImageBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
 
   return (
     <div className={`${P}-column`} ref={setColumnEl}>
@@ -3123,6 +3411,7 @@ function PretextColumn({
               stretchToBox={!exceedsEditViewBox}
               stage={editStage}
               onStageChange={setEditStage}
+              onSelectionChange={onPathSelectionChange}
               onChange={pathEditor.onChange}
               onCommit={pathEditor.onCommit}
             />
@@ -3133,11 +3422,13 @@ function PretextColumn({
               box={{ width: editorRect.width, height: editorRect.height }}
               bounds={shapeImageBounds}
               natural={naturalImageSize}
+              imageUrl={imageUrl}
+              maskPath={shapeImagePath}
               stage={editStage}
               onStageChange={setEditStage}
-              focalX={imageFocalX}
-              focalY={imageFocalY}
-              scale={imageScale}
+              focalX={activeImageFocalX}
+              focalY={activeImageFocalY}
+              scale={activeImageScale}
               onChange={imageEditor.onChange}
               onCommit={imageEditor.onCommit}
             />
@@ -3214,6 +3505,24 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   // matches the setting, the draft is the truth; anything else means the path
   // was changed elsewhere (the text field, undo) and the draft is dropped.
   const [draft, setDraft] = useState<{ base: string; serialized: string; contours: VecContour[] } | null>(null);
+  const [pathDragActive, setPathDragActive] = useState(false);
+  // Latched by the drag that set it and deliberately *not* cleared on commit —
+  // the column reads it again after `pathDragActive` drops, to decide whether
+  // the photo's new spot is the intended one. Cleared by the next drag.
+  const [pathCarryImage, setPathCarryImage] = useState(false);
+  const onCarryImageConsumed = useCallback(() => setPathCarryImage(false), []);
+
+  const imageCustomPath = useMemo(() => {
+    if (!draft || draft.serialized === customPath) return customPath;
+    return draft.serialized;
+  }, [draft, customPath]);
+
+  useEffect(() => {
+    if (!pathEditing) {
+      setPathDragActive(false);
+      setPathCarryImage(false);
+    }
+  }, [pathEditing]);
 
   const editContours = useMemo(() => {
     if (!pathEditing) return null;
@@ -3259,8 +3568,15 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           customPath: serialized,
         });
       },
-      onChange: (next: VecContour[]) => writePath(next, false),
-      onCommit: (next: VecContour[], options?: PathCommitOptions) => writePath(next, true, options),
+      onChange: (next: VecContour[], options?: PathChangeOptions) => {
+        setPathDragActive(true);
+        setPathCarryImage(Boolean(options?.carryImage));
+        writePath(next, false);
+      },
+      onCommit: (next: VecContour[], options?: PathCommitOptions) => {
+        writePath(next, true, options);
+        setPathDragActive(false);
+      },
     };
   }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, settings, writePath]);
 
@@ -3365,6 +3681,10 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           imageFocalX={liveImageTransform.focalX}
           imageFocalY={liveImageTransform.focalY}
           imageScale={liveImageTransform.scale}
+          imageCustomPath={imageCustomPath}
+          pathDragActive={pathDragActive}
+          pathCarryImage={pathCarryImage}
+          onCarryImageConsumed={onCarryImageConsumed}
           pathEditor={shapeOverlayVisible ? pathEditor : null}
           imageEditor={shapeOverlayVisible ? imageEditor : null}
         />
