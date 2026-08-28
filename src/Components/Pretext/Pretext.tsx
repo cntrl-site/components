@@ -2148,6 +2148,19 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       commitContours(next);
       return;
     }
+    // Cmd (ctrl off Mac) switches the node's type instead of dragging: a
+    // straight corner grows bezier handles from its neighbours, a curve point
+    // drops them. Handles crowd the anchor on tight curves, so a click that
+    // lands on one still targets the node it belongs to rather than missing.
+    if (event.metaKey || event.ctrlKey) {
+      const next = toggleNodeSmooth(contours, contourIndex, nodeIndex);
+      if (next === contours) return;
+      // Single selection so the new handles (single-node controls) show up.
+      setSelection([{ contour: contourIndex, node: nodeIndex }]);
+      onChange(next);
+      commitContours(next);
+      return;
+    }
     // Shift-click an anchor toggles it into/out of the multi-selection
     // instead of dragging — mirrors the usual vector-editor convention.
     if (kind === 'anchor' && event.shiftKey) {
