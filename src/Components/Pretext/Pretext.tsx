@@ -669,6 +669,13 @@ function contoursBBox(contours: VecContour[]): { minX: number; minY: number; max
   return { minX, minY, maxX, maxY };
 }
 
+/** Centre of the drawn shape — the bbox the editor already puts on screen. */
+function contoursCenter(contours: VecContour[]): Pt | null {
+  const bbox = contoursBBox(contours);
+  if (!isFinite(bbox.minX) || !isFinite(bbox.maxX) || !isFinite(bbox.minY) || !isFinite(bbox.maxY)) return null;
+  return { x: (bbox.minX + bbox.maxX) / 2, y: (bbox.minY + bbox.maxY) / 2 };
+}
+
 /** Handles that make a point sit smoothly between its neighbours. */
 function smoothHandles(previous: Pt, point: Pt, next: Pt): { in: Pt; out: Pt } {
   const tangent = { x: (next.x - previous.x) / 6, y: (next.y - previous.y) / 6 };
@@ -1017,26 +1024,54 @@ function collectSnapTargets(contours: VecContour[], exclude: { contour: number; 
   return points;
 }
 
-/** A snapped coordinate on one axis, plus the point it was borrowed from. */
-type AxisSnap = { value: number; from: Pt };
+/** One coordinate a dragged point can land on, and what explains it. */
+type AxisSnap = {
+  value: number;
+  /** Where the symmetry axis sits, when this candidate is about one. */
+  axis: number | null;
+  /** The point it was borrowed from: an alignment partner, or the one mirrored. */
+  from: Pt | null;
+};
 
 /**
- * Nearest candidate's coordinate on one axis, independent of the other axis —
- * so a point can align its X with another point's X (or Y with Y) no matter
- * how far apart they sit on the other axis, the way alignment guides work.
- * Compared in pixel space via `toPx`. Null when nothing is within `reach`.
+ * Everything one axis can offer a dragged point, in the order ties break:
+ * the symmetry axes themselves, then the shape's other points, then those
+ * points reflected across the axes. The reflections are what turn "aligned"
+ * into "symmetric" — the perpendicular axis lines the pair up at the same
+ * time, so landing on both puts the point exactly opposite its counterpart.
  */
-function nearestAxisSnap(points: Pt[], target: Pt, axis: 'x' | 'y', toPx: (point: Pt) => Pt, reach: number): AxisSnap | null {
-  const targetPx = toPx(target);
+function axisCandidates(points: Pt[], centers: number[], axis: 'x' | 'y'): AxisSnap[] {
+  const axes = centers.filter((center, index) => (
+    isFinite(center) && centers.findIndex(other => Math.abs(other - center) < 1e-6) === index
+  ));
+  const candidates: AxisSnap[] = axes.map(center => ({ value: center, axis: center, from: null }));
+  for (const point of points) candidates.push({ value: point[axis], axis: null, from: point });
+  for (const center of axes) {
+    for (const point of points) candidates.push({ value: center * 2 - point[axis], axis: center, from: point });
+  }
+  return candidates;
+}
+
+/**
+ * Nearest candidate on one axis, independent of the other axis — so a point
+ * can align its X with another point's X (or Y with Y) no matter how far
+ * apart they sit on the other axis, the way alignment guides work. Compared
+ * in pixel space via `toPx`. Null when nothing is within `reach`.
+ */
+function nearestAxisSnap(candidates: AxisSnap[], target: Pt, axis: 'x' | 'y', toPx: (point: Pt) => Pt, reach: number): AxisSnap | null {
+  const targetPx = toPx(target)[axis];
   let best: AxisSnap | null = null;
-  let bestDistance = reach;
-  for (const point of points) {
-    const pointPx = toPx(point);
-    const distance = Math.abs(pointPx[axis] - targetPx[axis]);
-    if (distance <= bestDistance) {
-      bestDistance = distance;
-      best = { value: point[axis], from: point };
-    }
+  let bestDistance = Infinity;
+  for (const candidate of candidates) {
+    // `toPx` is separable, so the off-axis half of the probe is free to be
+    // the target's own — only the snapped axis is being measured.
+    const probe = axis === 'x' ? { x: candidate.value, y: target.y } : { x: target.x, y: candidate.value };
+    const distance = Math.abs(toPx(probe)[axis] - targetPx);
+    if (distance > reach) continue;
+    // Ties go to whichever came first, which is why the list is ordered.
+    if (best && distance >= bestDistance) continue;
+    best = candidate;
+    bestDistance = distance;
   }
   return best;
 }
@@ -1067,7 +1102,7 @@ const GUIDE_OVERSHOOT = 24;
  * Without it a snap that moved the point three pixels is indistinguishable
  * from a steady hand, and the user never learns the snaps are there.
  */
-type SnapGuide = { kind: 'align' | 'angle'; a: Pt; b: Pt };
+type SnapGuide = { kind: 'align' | 'angle' | 'center'; a: Pt; b: Pt };
 
 const NO_GUIDES: SnapGuide[] = [];
 
@@ -1104,16 +1139,36 @@ function alignmentGuide(from: Pt, to: Pt): SnapGuide {
   };
 }
 
+/** A symmetry axis, drawn right across the frame — what it stands for is the
+ *  mirror, not the pair of points that happened to suggest it. */
+function centreGuide(at: number, axis: 'x' | 'y', frame: { width: number; height: number }): SnapGuide {
+  return axis === 'x'
+    ? { kind: 'center', a: { x: at, y: 0 }, b: { x: at, y: frame.height } }
+    : { kind: 'center', a: { x: 0, y: at }, b: { x: frame.width, y: at } };
+}
+
+function axisGuide(snap: AxisSnap, axis: 'x' | 'y', landingPx: Pt, frame: { width: number; height: number }, toPx: (point: Pt) => Pt): SnapGuide {
+  if (snap.axis === null) return alignmentGuide(landingPx, toPx(snap.from ?? landingPx));
+  const probe = axis === 'x' ? { x: snap.axis, y: 0 } : { x: 0, y: snap.axis };
+  return centreGuide(toPx(probe)[axis], axis, frame);
+}
+
 /**
  * Lines for whichever axis snaps actually decided where the anchor landed.
  * Shift-locking an axis can override a snap, and a guide for an alignment
  * that isn't holding is worse than no guide at all.
  */
-function axisGuides(landing: Pt, snapX: AxisSnap | null, snapY: AxisSnap | null, toPx: (point: Pt) => Pt): SnapGuide[] {
+function axisGuides(
+  landing: Pt,
+  snapX: AxisSnap | null,
+  snapY: AxisSnap | null,
+  frame: { width: number; height: number },
+  toPx: (point: Pt) => Pt,
+): SnapGuide[] {
   const guides: SnapGuide[] = [];
   const landingPx = toPx(landing);
-  if (snapX && landing.x === snapX.value) guides.push(alignmentGuide(landingPx, toPx(snapX.from)));
-  if (snapY && landing.y === snapY.value) guides.push(alignmentGuide(landingPx, toPx(snapY.from)));
+  if (snapX && landing.x === snapX.value) guides.push(axisGuide(snapX, 'x', landingPx, frame, toPx));
+  if (snapY && landing.y === snapY.value) guides.push(axisGuide(snapY, 'y', landingPx, frame, toPx));
   return guides;
 }
 
@@ -1742,6 +1797,12 @@ function getCSS(P: string): string {
 .${P}-editor-snap-angle {
   stroke-dasharray: 4 3;
 }
+/* A symmetry axis runs the whole frame, so it has to sit back further than
+   an alignment line that only spans the two points it explains. */
+.${P}-editor-snap-center {
+  stroke-dasharray: 2 4;
+  opacity: 0.8;
+}
 .${P}-editor-handle-line {
   stroke: #FF5C02;
   stroke-width: 1;
@@ -1826,6 +1887,9 @@ type PathDrag = {
   pointerId: number;
   origin: Pt;
   anchor: Pt;
+  /** The shape's centre when the drag began — its axis of symmetry, held still
+   *  so the point being dragged can't drag the axis along with it. */
+  center: Pt | null;
   mirror: boolean;
   /** ⌘/Ctrl was down at pointer-down: switch the node's type if it never moves. */
   toggleOnRelease: boolean;
@@ -2094,6 +2158,8 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       }
   ), [stretchToBox, viewBox, scaleX, scaleY]);
 
+  const frameCenter = useMemo(() => fromPx({ x: box.width / 2, y: box.height / 2 }), [fromPx, box.width, box.height]);
+
   const toPath = useCallback((clientX: number, clientY: number): Pt => {
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
@@ -2132,6 +2198,13 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
   // us. Window listeners could not do both: swallowing the release to keep the
   // canvas out of it also kept it from ever reaching the window.
   const onPointerMove = (event: React.PointerEvent) => {
+    // ⌘/Ctrl suspends snapping for as long as it's held — for the times a
+    // point belongs a hair off the alignment the editor keeps offering. It
+    // takes the grid with it: "free" has to mean free, or the user is still
+    // fighting something. Shift's constraints are asked for outright, so they
+    // go on working alongside it. Read live off the move rather than latched
+    // at pointer-down, so it can be pressed and released mid-drag.
+    const freeDrag = event.metaKey || event.ctrlKey;
     const shapeScale = shapeScaleRef.current;
     if (shapeScale && event.pointerId === shapeScale.pointerId) {
       event.stopPropagation();
@@ -2185,8 +2258,27 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
           dy = clampedMinY - pxMinY;
         }
       }
+      // The same centre snap the points get, one level up: the shape's own
+      // middle settles onto the frame's, so it can be centred by eye without
+      // the result being off by a pixel. Per axis, so it can be centred
+      // horizontally while sitting wherever it likes vertically.
+      const guides: SnapGuide[] = [];
+      if (!freeDrag && isFinite(bboxWidth) && isFinite(bboxHeight)) {
+        // Where the shape's middle would land, against where the frame's is.
+        const centerPx = toPx({ x: bbox.minX + bboxWidth / 2 + dx, y: bbox.minY + bboxHeight / 2 + dy });
+        const framePx = { x: box.width / 2, y: box.height / 2 };
+        if (Math.abs(centerPx.x - framePx.x) <= NODE_SNAP_REACH) {
+          dx = frameCenter.x - bbox.minX - bboxWidth / 2;
+          guides.push(centreGuide(framePx.x, 'x', box));
+        }
+        if (Math.abs(centerPx.y - framePx.y) <= NODE_SNAP_REACH) {
+          dy = frameCenter.y - bbox.minY - bboxHeight / 2;
+          guides.push(centreGuide(framePx.y, 'y', box));
+        }
+      }
       if (!shapeDrag.moved && dx === 0 && dy === 0) return;
       shapeDrag.moved = true;
+      showSnapGuides(guides.length ? guides : NO_GUIDES);
       onChange(
         mapContours(shapeDrag.startContours, p => ({ x: p.x + dx, y: p.y + dy })),
         { carryImage: true },
@@ -2214,13 +2306,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
     event.stopPropagation();
     event.preventDefault();
     const point = toPath(event.clientX, event.clientY);
-    // ⌘/Ctrl suspends snapping for as long as it's held — for the times a
-    // point belongs a hair off the alignment the editor keeps offering. It
-    // takes the grid with it: "free" has to mean free, or the user is still
-    // fighting something. Shift's constraints are asked for outright, so they
-    // go on working alongside it. Read live off the move rather than latched
-    // at pointer-down, so it can be pressed and released mid-drag.
-    const freeDrag = event.metaKey || event.ctrlKey;
     if (drag.kind === 'anchor') {
       // Snap where the *anchor* would land, not where the pointer is: the grab
       // radius puts the two a few pixels apart, so aligning the pointer leaves
@@ -2230,8 +2315,12 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
         y: drag.anchor.y + (point.y - drag.origin.y),
       };
       const targets = freeDrag ? [] : collectSnapTargets(contoursRef.current, { contour: drag.contour, node: drag.node });
-      const snapX = nearestAxisSnap(targets, raw, 'x', toPx, NODE_SNAP_REACH);
-      const snapY = nearestAxisSnap(targets, raw, 'y', toPx, NODE_SNAP_REACH);
+      // Two axes are worth being symmetric about: the shape's own centre, and
+      // the frame's. They coincide until the shape is moved off centre, and
+      // the guide says which one is holding when they don't.
+      const centers = freeDrag ? [] : [drag.center, frameCenter].filter(Boolean) as Pt[];
+      const snapX = nearestAxisSnap(axisCandidates(targets, centers.map(center => center.x), 'x'), raw, 'x', toPx, NODE_SNAP_REACH);
+      const snapY = nearestAxisSnap(axisCandidates(targets, centers.map(center => center.y), 'y'), raw, 'y', toPx, NODE_SNAP_REACH);
       const landing = freeDrag
         ? raw
         : {
@@ -2245,7 +2334,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       // A click that never travels selects and nothing more.
       if (!drag.moved && landing.x === drag.anchor.x && landing.y === drag.anchor.y) return;
       drag.moved = true;
-      showSnapGuides(axisGuides(landing, snapX, snapY, toPx));
+      showSnapGuides(axisGuides(landing, snapX, snapY, box, toPx));
       onChange(moveNodeTo(contoursRef.current, drag.contour, drag.node, landing));
       return;
     }
@@ -2443,6 +2532,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       pointerId: event.pointerId,
       origin: toPath(event.clientX, event.clientY),
       anchor: node.p,
+      center: contoursCenter(contours),
       mirror: kind !== 'anchor' && Boolean(node.in && node.out),
       toggleOnRelease,
       moved: false,
