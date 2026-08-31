@@ -1871,6 +1871,9 @@ const SCALE_HANDLE_OUTSET = 10;
 const ADD_POINT_REACH = 24;
 /** Catch radius for snapping a dragged anchor/handle onto another node's anchor or handle, in pixels. */
 const NODE_SNAP_REACH = 14;
+/** Pointer travel below this (px) still counts as a click — used so ⌘/Ctrl+click can
+ *  toggle node type without a sub-pixel jitter counting as a free-move drag. */
+const CLICK_SLOP_PX = 4;
 /** Nudge step for arrow keys, in path units. */
 const NUDGE_STEP = 1;
 /** Smallest allowed uniform scale while dragging a corner (avoids collapse). */
@@ -1886,6 +1889,8 @@ type PathDrag = {
   node: number;
   pointerId: number;
   origin: Pt;
+  /** Screen position at pointer-down — click vs drag is decided in pixels, not path space. */
+  clientOrigin: Pt;
   anchor: Pt;
   /** The shape's centre when the drag began — its axis of symmetry, held still
    *  so the point being dragged can't drag the axis along with it. */
@@ -2315,10 +2320,11 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
         y: drag.anchor.y + (point.y - drag.origin.y),
       };
       const targets = freeDrag ? [] : collectSnapTargets(contoursRef.current, { contour: drag.contour, node: drag.node });
-      // Two axes are worth being symmetric about: the shape's own centre, and
-      // the frame's. They coincide until the shape is moved off centre, and
-      // the guide says which one is holding when they don't.
-      const centers = freeDrag ? [] : [drag.center, frameCenter].filter(Boolean) as Pt[];
+      // Symmetry axis for a dragged point is the shape's own centre (latched at
+      // pointer-down so moving the point can't drag the axis with it). Frame
+      // centering is handled by whole-shape drag — offering both here draws
+      // identical centre guides at two places whenever the shape is off-centre.
+      const centers = freeDrag || !drag.center ? [] : [drag.center];
       const snapX = nearestAxisSnap(axisCandidates(targets, centers.map(center => center.x), 'x'), raw, 'x', toPx, NODE_SNAP_REACH);
       const snapY = nearestAxisSnap(axisCandidates(targets, centers.map(center => center.y), 'y'), raw, 'y', toPx, NODE_SNAP_REACH);
       const landing = freeDrag
@@ -2415,11 +2421,16 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
     event.stopPropagation();
     const svg = svgRef.current;
     if (svg?.hasPointerCapture(drag.pointerId)) svg.releasePointerCapture(drag.pointerId);
-    if (drag.moved) {
-      commitContours(contoursRef.current);
+    const clientTravel = Math.hypot(event.clientX - drag.clientOrigin.x, event.clientY - drag.clientOrigin.y);
+    // Path-space `moved` can stay false when Control+drag on macOS loses capture
+    // before any pointermove (context-menu gesture). Screen travel still means
+    // this was a drag — only a real unmoved pointerup may toggle type.
+    const travelled = drag.moved || clientTravel > CLICK_SLOP_PX;
+    if (travelled) {
+      if (drag.moved) commitContours(contoursRef.current);
       return;
     }
-    if (!drag.toggleOnRelease) return;
+    if (!drag.toggleOnRelease || event.type !== 'pointerup') return;
     const next = toggleNodeSmooth(contoursRef.current, drag.contour, drag.node);
     if (next === contoursRef.current) return;
     onChange(next);
@@ -2531,6 +2542,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       node: nodeIndex,
       pointerId: event.pointerId,
       origin: toPath(event.clientX, event.clientY),
+      clientOrigin: { x: event.clientX, y: event.clientY },
       anchor: node.p,
       center: contoursCenter(contours),
       mirror: kind !== 'anchor' && Boolean(node.in && node.out),
@@ -2633,6 +2645,11 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
+      onContextMenu={(event) => {
+        // macOS treats Control+click as a context-menu gesture; without this,
+        // capture is lost mid-drag and a free-move is misread as a type toggle.
+        event.preventDefault();
+      }}
       data-pretext-path-editor
       data-selection="none"
     >
