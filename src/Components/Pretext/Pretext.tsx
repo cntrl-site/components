@@ -1000,27 +1000,25 @@ export function nearestSegmentHit(contours: VecContour[], point: Pt): {
   return best;
 }
 
-/** No bezier handles on either side — a plain straight-line corner. */
-function isCornerNode(node: VecNode): boolean {
-  return !node.in && !node.out;
-}
-
 /**
- * Anchors of the shape's other straight-line corners — targets a dragged
- * corner can axis-align with. Curve anchors and handles are excluded: lining
- * a bezier point up on an axis fights the curve rather than helping it.
+ * Every other anchor in the shape — what a dragged anchor can axis-align
+ * with. Curve anchors count as targets and as draggers: an anchor carries its
+ * handles with it, so lining one up on an axis slides the curve rather than
+ * reshaping it. Handle tips stay out; those snap by angle, not by axis.
  */
 function collectSnapTargets(contours: VecContour[], exclude: { contour: number; node: number }): Pt[] {
   const points: Pt[] = [];
   contours.forEach((contour, contourIndex) => {
     contour.nodes.forEach((node, nodeIndex) => {
       if (contourIndex === exclude.contour && nodeIndex === exclude.node) return;
-      if (!isCornerNode(node)) return;
       points.push(node.p);
     });
   });
   return points;
 }
+
+/** A snapped coordinate on one axis, plus the point it was borrowed from. */
+type AxisSnap = { value: number; from: Pt };
 
 /**
  * Nearest candidate's coordinate on one axis, independent of the other axis —
@@ -1028,19 +1026,195 @@ function collectSnapTargets(contours: VecContour[], exclude: { contour: number; 
  * how far apart they sit on the other axis, the way alignment guides work.
  * Compared in pixel space via `toPx`. Null when nothing is within `reach`.
  */
-function nearestAxisSnap(points: Pt[], target: Pt, axis: 'x' | 'y', toPx: (point: Pt) => Pt, reach: number): number | null {
+function nearestAxisSnap(points: Pt[], target: Pt, axis: 'x' | 'y', toPx: (point: Pt) => Pt, reach: number): AxisSnap | null {
   const targetPx = toPx(target);
-  let best: number | null = null;
+  let best: AxisSnap | null = null;
   let bestDistance = reach;
   for (const point of points) {
     const pointPx = toPx(point);
     const distance = Math.abs(pointPx[axis] - targetPx[axis]);
     if (distance <= bestDistance) {
       bestDistance = distance;
-      best = point[axis];
+      best = { value: point[axis], from: point };
     }
   }
   return best;
+}
+
+/* ------------------------------------------------------------------ *
+ * Smart snapping for curve points
+ *
+ * An anchor snaps by axis (above) whether or not it carries handles. A
+ * bezier handle can't: its X and Y mean nothing on their own, only the ray
+ * it makes with its anchor does. So handles snap by direction and length
+ * instead — the tangent that keeps the node smooth, the 45° family, and the
+ * opposite handle's length.
+ * ------------------------------------------------------------------ */
+
+/** Directions a dragged handle settles onto, on top of the smooth tangent. */
+const HANDLE_ANGLE_STEP = Math.PI / 4;
+/** How far off that ray a handle may sit and still snap onto it, in pixels. */
+const HANDLE_ANGLE_REACH = 8;
+/** ...and how far off in angle, so a short handle doesn't snap from anywhere. */
+const HANDLE_ANGLE_LIMIT = Math.PI / 18;
+/** Pixel gap that still reads as "the same length as the other handle". */
+const HANDLE_LENGTH_REACH = 8;
+/** How far past the points it explains a guide keeps drawing, in pixels. */
+const GUIDE_OVERSHOOT = 24;
+
+/**
+ * A line painted while a snap is holding, in the editor's own pixel space.
+ * Without it a snap that moved the point three pixels is indistinguishable
+ * from a steady hand, and the user never learns the snaps are there.
+ */
+type SnapGuide = { kind: 'align' | 'angle'; a: Pt; b: Pt };
+
+const NO_GUIDES: SnapGuide[] = [];
+
+function sameGuides(a: SnapGuide[], b: SnapGuide[]): boolean {
+  return a.length === b.length && a.every((guide, index) => (
+    guide.kind === b[index].kind
+    && guide.a.x === b[index].a.x && guide.a.y === b[index].a.y
+    && guide.b.x === b[index].b.x && guide.b.y === b[index].b.y
+  ));
+}
+
+/** Wraps an angle into (-π, π], so two directions can be compared. */
+function normalizeAngle(angle: number): number {
+  const turn = Math.PI * 2;
+  return ((angle + Math.PI) % turn + turn) % turn - Math.PI;
+}
+
+function unitVector(from: Pt, to: Pt): Pt | null {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 1e-6) return null;
+  return { x: dx / length, y: dy / length };
+}
+
+/** One alignment line, run past both ends so it reads as a guide, not a chord. */
+function alignmentGuide(from: Pt, to: Pt): SnapGuide {
+  const direction = unitVector(from, to);
+  if (!direction) return { kind: 'align', a: from, b: to };
+  return {
+    kind: 'align',
+    a: { x: from.x - direction.x * GUIDE_OVERSHOOT, y: from.y - direction.y * GUIDE_OVERSHOOT },
+    b: { x: to.x + direction.x * GUIDE_OVERSHOOT, y: to.y + direction.y * GUIDE_OVERSHOOT },
+  };
+}
+
+/**
+ * Lines for whichever axis snaps actually decided where the anchor landed.
+ * Shift-locking an axis can override a snap, and a guide for an alignment
+ * that isn't holding is worse than no guide at all.
+ */
+function axisGuides(landing: Pt, snapX: AxisSnap | null, snapY: AxisSnap | null, toPx: (point: Pt) => Pt): SnapGuide[] {
+  const guides: SnapGuide[] = [];
+  const landingPx = toPx(landing);
+  if (snapX && landing.x === snapX.value) guides.push(alignmentGuide(landingPx, toPx(snapX.from)));
+  if (snapY && landing.y === snapY.value) guides.push(alignmentGuide(landingPx, toPx(snapY.from)));
+  return guides;
+}
+
+/**
+ * The direction that keeps a node smooth: the continuation, through the
+ * anchor, of whatever enters it from the handle's other side — the opposite
+ * handle if the node has one, else the neighbour's control point on that
+ * segment, else the neighbouring anchor itself when the segment is straight.
+ * Snapping onto it is what lets a curve leave a straight edge, or a corner
+ * become properly smooth, without eyeballing the angle. Pixel space, so the
+ * snap follows what the user sees even on a stretched preset.
+ */
+function smoothTangent(
+  contour: VecContour | undefined,
+  nodeIndex: number,
+  which: 'in' | 'out',
+  toPx: (point: Pt) => Pt,
+): Pt | null {
+  const node = contour?.nodes[nodeIndex];
+  if (!contour || !node) return null;
+  const anchorPx = toPx(node.p);
+  const opposite = which === 'in' ? node.out : node.in;
+  if (opposite) return unitVector(toPx(opposite), anchorPx);
+  const count = contour.nodes.length;
+  const neighbourIndex = nodeIndex + (which === 'in' ? 1 : -1);
+  if (!contour.closed && (neighbourIndex < 0 || neighbourIndex >= count)) return null;
+  const neighbour = contour.nodes[(neighbourIndex + count) % count];
+  if (!neighbour) return null;
+  // With our own handle missing, the segment's tangent at this anchor runs
+  // from the neighbour's control point — or from the neighbour itself when
+  // that side has no handles either, i.e. a plain straight edge.
+  const control = (which === 'in' ? neighbour.in : neighbour.out) ?? neighbour.p;
+  return unitVector(toPx(control), anchorPx);
+}
+
+/**
+ * Settles a dragged handle onto whichever smart target it is already close
+ * to: the smooth tangent first — a curve that doesn't kink beats a round
+ * angle — then the 45° family, which is where the horizontal and vertical
+ * tangents that make circles and rounded corners come out clean live. Length
+ * is decided separately, so a curve can be made symmetric with its other
+ * handle without measuring. `lock` (shift) takes the nearest 45° step no
+ * matter how far off it is. Empty guides mean nothing snapped.
+ */
+function snapHandlePoint(
+  point: Pt,
+  anchor: Pt,
+  tangent: Pt | null,
+  oppositeLength: number | null,
+  lock: boolean,
+  toPx: (point: Pt) => Pt,
+  fromPx: (point: Pt) => Pt,
+): { point: Pt; guides: SnapGuide[] } {
+  const anchorPx = toPx(anchor);
+  const pointPx = toPx(point);
+  const dx = pointPx.x - anchorPx.x;
+  const dy = pointPx.y - anchorPx.y;
+  const length = Math.hypot(dx, dy);
+  // A handle sitting on its anchor has no direction to snap.
+  if (length < 1e-6) return { point, guides: NO_GUIDES };
+  const angle = Math.atan2(dy, dx);
+  const step = Math.round(angle / HANDLE_ANGLE_STEP) * HANDLE_ANGLE_STEP;
+
+  let snappedAngle: number | null = lock ? step : null;
+  let smooth = false;
+  if (!lock) {
+    const candidates: { angle: number; smooth: boolean }[] = [];
+    if (tangent) candidates.push({ angle: Math.atan2(tangent.y, tangent.x), smooth: true });
+    candidates.push({ angle: step, smooth: false });
+    for (const candidate of candidates) {
+      const delta = normalizeAngle(candidate.angle - angle);
+      if (Math.abs(delta) > HANDLE_ANGLE_LIMIT) continue;
+      // Perpendicular distance, not raw angle: a long handle has to be held
+      // much straighter than a short one to read as "on the ray".
+      if (Math.abs(Math.sin(delta)) * length > HANDLE_ANGLE_REACH) continue;
+      snappedAngle = candidate.angle;
+      smooth = candidate.smooth;
+      break;
+    }
+  }
+
+  const matchLength = oppositeLength !== null
+    && oppositeLength > 0
+    && Math.abs(length - oppositeLength) <= HANDLE_LENGTH_REACH;
+  if (snappedAngle === null && !matchLength) return { point, guides: NO_GUIDES };
+
+  const finalAngle = snappedAngle ?? angle;
+  const finalLength = matchLength ? oppositeLength as number : length;
+  const direction = { x: Math.cos(finalAngle), y: Math.sin(finalAngle) };
+  // The guide runs past the handle, and back through the anchor whenever the
+  // far side is part of what snapped — a smooth ray, or a matched length.
+  const forward = finalLength + (snappedAngle === null ? 0 : GUIDE_OVERSHOOT);
+  const back = matchLength ? finalLength : (smooth ? GUIDE_OVERSHOOT : 0);
+  return {
+    point: fromPx({ x: anchorPx.x + direction.x * finalLength, y: anchorPx.y + direction.y * finalLength }),
+    guides: [{
+      kind: 'angle',
+      a: { x: anchorPx.x - direction.x * back, y: anchorPx.y - direction.y * back },
+      b: { x: anchorPx.x + direction.x * forward, y: anchorPx.y + direction.y * forward },
+    }],
+  };
 }
 
 /**
@@ -1558,6 +1732,16 @@ function getCSS(P: string): string {
 .${P}-editor-scale-grab-nesw {
   cursor: nesw-resize;
 }
+/* Snap feedback. Deliberately not the editor's orange: a guide has to be
+   readable *through* the outline and handles it is drawn across. */
+.${P}-editor-snap {
+  stroke: #00B2FF;
+  stroke-width: 1;
+  pointer-events: none;
+}
+.${P}-editor-snap-angle {
+  stroke-dasharray: 4 3;
+}
 .${P}-editor-handle-line {
   stroke: #FF5C02;
   stroke-width: 1;
@@ -1643,8 +1827,8 @@ type PathDrag = {
   origin: Pt;
   anchor: Pt;
   mirror: boolean;
-  /** Axis snapping only makes sense for a straight-line corner, not a curve's anchor or handle. */
-  snapEligible: boolean;
+  /** ⌘/Ctrl was down at pointer-down: switch the node's type if it never moves. */
+  toggleOnRelease: boolean;
   moved: boolean;
 };
 
@@ -1848,6 +2032,13 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
   const groupDragRef = useRef<GroupDrag | null>(null);
   /** Multiple nodes at once — shift-click adds/removes a node from this set. */
   const [selection, setSelection] = useState<PathSelection[]>([]);
+  /** Lines for the snap currently holding, in this editor's px space. */
+  const [snapGuides, setSnapGuides] = useState<SnapGuide[]>(NO_GUIDES);
+  // Guides are recomputed on every pointer move but only change on the frames
+  // a snap starts or stops, so bail out of the identical ones.
+  const showSnapGuides = useCallback((next: SnapGuide[]) => {
+    setSnapGuides(current => (sameGuides(current, next) ? current : next));
+  }, []);
   const shapeArmed = stage === 'shape';
 
   // Move keyboard focus onto this editor whenever the host arms shape editing,
@@ -1888,6 +2079,18 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       : {
         x: point.x - viewBox.x,
         y: point.y - viewBox.y,
+      }
+  ), [stretchToBox, viewBox, scaleX, scaleY]);
+
+  const fromPx = useCallback((point: Pt): Pt => (
+    stretchToBox
+      ? {
+        x: viewBox.x + (scaleX > 0 ? point.x / scaleX : 0),
+        y: viewBox.y + (scaleY > 0 ? point.y / scaleY : 0),
+      }
+      : {
+        x: viewBox.x + point.x,
+        y: viewBox.y + point.y,
       }
   ), [stretchToBox, viewBox, scaleX, scaleY]);
 
@@ -2011,36 +2214,80 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
     event.stopPropagation();
     event.preventDefault();
     const point = toPath(event.clientX, event.clientY);
-    const targets = drag.snapEligible
-      ? collectSnapTargets(contoursRef.current, { contour: drag.contour, node: drag.node })
-      : [];
-    const snapX = drag.snapEligible ? nearestAxisSnap(targets, point, 'x', toPx, NODE_SNAP_REACH) : null;
-    const snapY = drag.snapEligible ? nearestAxisSnap(targets, point, 'y', toPx, NODE_SNAP_REACH) : null;
-    const snapped = {
-      x: snapX ?? snapValue(point.x, snap),
-      y: snapY ?? snapValue(point.y, snap),
-    };
+    // ⌘/Ctrl suspends snapping for as long as it's held — for the times a
+    // point belongs a hair off the alignment the editor keeps offering. It
+    // takes the grid with it: "free" has to mean free, or the user is still
+    // fighting something. Shift's constraints are asked for outright, so they
+    // go on working alongside it. Read live off the move rather than latched
+    // at pointer-down, so it can be pressed and released mid-drag.
+    const freeDrag = event.metaKey || event.ctrlKey;
     if (drag.kind === 'anchor') {
-      let dx = snapped.x - drag.origin.x;
-      let dy = snapped.y - drag.origin.y;
+      // Snap where the *anchor* would land, not where the pointer is: the grab
+      // radius puts the two a few pixels apart, so aligning the pointer leaves
+      // the point itself that far out of line.
+      const raw = {
+        x: drag.anchor.x + (point.x - drag.origin.x),
+        y: drag.anchor.y + (point.y - drag.origin.y),
+      };
+      const targets = freeDrag ? [] : collectSnapTargets(contoursRef.current, { contour: drag.contour, node: drag.node });
+      const snapX = nearestAxisSnap(targets, raw, 'x', toPx, NODE_SNAP_REACH);
+      const snapY = nearestAxisSnap(targets, raw, 'y', toPx, NODE_SNAP_REACH);
+      const landing = freeDrag
+        ? raw
+        : {
+          x: snapX?.value ?? snapValue(raw.x, snap),
+          y: snapY?.value ?? snapValue(raw.y, snap),
+        };
       if (event.shiftKey) {
-        if (Math.abs(dx) > Math.abs(dy)) dy = 0;
-        else dx = 0;
+        if (Math.abs(landing.x - drag.anchor.x) > Math.abs(landing.y - drag.anchor.y)) landing.y = drag.anchor.y;
+        else landing.x = drag.anchor.x;
       }
       // A click that never travels selects and nothing more.
-      if (!drag.moved && dx === 0 && dy === 0) return;
+      if (!drag.moved && landing.x === drag.anchor.x && landing.y === drag.anchor.y) return;
       drag.moved = true;
-      onChange(moveNodeTo(contoursRef.current, drag.contour, drag.node, {
-        x: drag.anchor.x + dx,
-        y: drag.anchor.y + dy,
-      }));
+      showSnapGuides(axisGuides(landing, snapX, snapY, toPx));
+      onChange(moveNodeTo(contoursRef.current, drag.contour, drag.node, landing));
       return;
     }
+    // A handle's X and Y mean nothing on their own, so it snaps by the ray it
+    // makes with its anchor instead: the smooth tangent, the 45° family, and
+    // the opposite handle's length. Only when none of those catch does it fall
+    // back to the coordinate grid.
+    const node = contoursRef.current[drag.contour]?.nodes[drag.node];
+    const mirroring = drag.mirror && !event.altKey;
+    // A mirrored opposite is a reflection of the handle being dragged: it is
+    // collinear and equal-length by construction, so offering it as a target
+    // would only snap the handle onto where it already is.
+    const opposite = mirroring || freeDrag ? null : (drag.kind === 'in' ? node?.out : node?.in);
+    const anchorPx = node ? toPx(node.p) : null;
+    const oppositePx = opposite ? toPx(opposite) : null;
+    // Under ⌘/Ctrl the only thing left is shift's outright 45° lock, so skip
+    // the search entirely unless shift is down — every target it could offer
+    // has just been withdrawn.
+    const smart = node && (!freeDrag || event.shiftKey)
+      ? snapHandlePoint(
+        point,
+        node.p,
+        mirroring || freeDrag ? null : smoothTangent(contoursRef.current[drag.contour], drag.node, drag.kind, toPx),
+        anchorPx && oppositePx ? Math.hypot(oppositePx.x - anchorPx.x, oppositePx.y - anchorPx.y) : null,
+        event.shiftKey,
+        toPx,
+        fromPx,
+      )
+      : { point, guides: NO_GUIDES };
+    const landing = smart.guides.length
+      ? smart.point
+      : (freeDrag ? point : { x: snapValue(point.x, snap), y: snapValue(point.y, snap) });
+    const current = drag.kind === 'in' ? node?.in : node?.out;
+    // A click that never travels leaves the handle alone, same as an anchor.
+    if (!drag.moved && current && landing.x === current.x && landing.y === current.y) return;
     drag.moved = true;
-    onChange(setNodeHandle(contoursRef.current, drag.contour, drag.node, drag.kind, snapped, drag.mirror && !event.altKey));
+    showSnapGuides(smart.guides);
+    onChange(setNodeHandle(contoursRef.current, drag.contour, drag.node, drag.kind, landing, mirroring));
   };
 
   const endDrag = (event: React.PointerEvent) => {
+    showSnapGuides(NO_GUIDES);
     const shapeScale = shapeScaleRef.current;
     if (shapeScale && event.pointerId === shapeScale.pointerId) {
       shapeScaleRef.current = null;
@@ -2079,7 +2326,15 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
     event.stopPropagation();
     const svg = svgRef.current;
     if (svg?.hasPointerCapture(drag.pointerId)) svg.releasePointerCapture(drag.pointerId);
-    if (drag.moved) commitContours(contoursRef.current);
+    if (drag.moved) {
+      commitContours(contoursRef.current);
+      return;
+    }
+    if (!drag.toggleOnRelease) return;
+    const next = toggleNodeSmooth(contoursRef.current, drag.contour, drag.node);
+    if (next === contoursRef.current) return;
+    onChange(next);
+    commitContours(next);
   };
 
 
@@ -2148,22 +2403,17 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       commitContours(next);
       return;
     }
-    // Cmd (ctrl off Mac) switches the node's type instead of dragging: a
-    // straight corner grows bezier handles from its neighbours, a curve point
-    // drops them. Handles crowd the anchor on tight curves, so a click that
-    // lands on one still targets the node it belongs to rather than missing.
-    if (event.metaKey || event.ctrlKey) {
-      const next = toggleNodeSmooth(contours, contourIndex, nodeIndex);
-      if (next === contours) return;
-      // Single selection so the new handles (single-node controls) show up.
-      setSelection([{ contour: contourIndex, node: nodeIndex }]);
-      onChange(next);
-      commitContours(next);
-      return;
-    }
+    // Cmd (ctrl off Mac) switches the node's type: a straight corner grows
+    // bezier handles from its neighbours, a curve point drops them. Handles
+    // crowd the anchor on tight curves, so a click that lands on one still
+    // targets the node it belongs to rather than missing. Held through a drag
+    // the same key means the opposite — leave the node as it is and let it
+    // move unsnapped — so the switch waits for a release that never travelled,
+    // and the branches below stand aside for it.
+    const toggleOnRelease = event.metaKey || event.ctrlKey;
     // Shift-click an anchor toggles it into/out of the multi-selection
     // instead of dragging — mirrors the usual vector-editor convention.
-    if (kind === 'anchor' && event.shiftKey) {
+    if (kind === 'anchor' && event.shiftKey && !toggleOnRelease) {
       setSelection(current => (
         current.some(entry => entry.contour === contourIndex && entry.node === nodeIndex)
           ? current.filter(entry => !(entry.contour === contourIndex && entry.node === nodeIndex))
@@ -2173,7 +2423,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
     }
     // A plain click on an anchor that's already part of a multi-selection
     // drags the whole group together; anything else replaces the selection.
-    if (kind === 'anchor' && selection.length > 1
+    if (kind === 'anchor' && !toggleOnRelease && selection.length > 1
       && selection.some(entry => entry.contour === contourIndex && entry.node === nodeIndex)) {
       groupDragRef.current = {
         pointerId: event.pointerId,
@@ -2194,7 +2444,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       origin: toPath(event.clientX, event.clientY),
       anchor: node.p,
       mirror: kind !== 'anchor' && Boolean(node.in && node.out),
-      snapEligible: kind === 'anchor' && isCornerNode(node),
+      toggleOnRelease,
       moved: false,
     };
     svgRef.current?.setPointerCapture(event.pointerId);
@@ -2311,6 +2561,16 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       />
       {showControls && <path className={`${P}-editor-hit`} d={outline} onClick={insertNode} />}
       {showControls && <path className={`${P}-editor-outline`} d={outline} />}
+      {showControls && snapGuides.map((guide, index) => (
+        <line
+          key={`${guide.kind}-${index}`}
+          className={`${P}-editor-snap ${P}-editor-snap-${guide.kind}`}
+          x1={guide.a.x}
+          y1={guide.a.y}
+          x2={guide.b.x}
+          y2={guide.b.y}
+        />
+      ))}
       {/* Body hit target for whole-shape drag while armed. */}
       <path
         ref={bodyPathRef}
