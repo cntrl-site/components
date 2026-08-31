@@ -3479,8 +3479,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const dropCapSize = settings?.dropCapSize ?? DROP_CAP_SIZE_DEFAULT;
   const showGuides = editor && selected && !isPreviewMode;
 
-  // Host editor signals item drag/resize/nudge on window — hide the shape overlay
-  // for the same stretch so it doesn't float over the moving selection chrome.
   const [isItemTransforming, setIsItemTransforming] = useState(false);
   useEffect(() => {
     if (!editor || !selected) {
@@ -3513,10 +3511,22 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     && typeof onUpdateSettings === 'function';
   const shapeOverlayVisible = !isItemTransforming;
   const pathSnap = Math.max(0, settings?.pathSnap ?? 0);
-  // The draft the handles are dragging. `base` is the stored path the session
-  // started from, `serialized` what the draft writes out — while either still
-  // matches the setting, the draft is the truth; anything else means the path
-  // was changed elsewhere (the text field, undo) and the draft is dropped.
+  const settingsRef = useRef(settings ?? {});
+  const settingsPropsKeyRef = useRef('');
+  const settingsPropsKey = [
+    settings?.customPath,
+    settings?.shape,
+    settings?.pathFit,
+    settings?.pathViewBox,
+    settings?.imageScale,
+    settings?.imageFocalX,
+    settings?.imageFocalY,
+    settings?.image,
+  ].join('\0');
+  if (settingsPropsKey !== settingsPropsKeyRef.current) {
+    settingsPropsKeyRef.current = settingsPropsKey;
+    settingsRef.current = settings ?? {};
+  }
   const [draft, setDraft] = useState<{ base: string; serialized: string; contours: VecContour[] } | null>(null);
   const [pathDragActive, setPathDragActive] = useState(false);
   // Latched by the drag that set it and deliberately *not* cleared on commit —
@@ -3558,12 +3568,14 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       contours: next,
     }));
     if (commit) {
-      // Point/topology edits diverge from the named preset; whole-shape
-      // move/scale only updates the path and keeps the dropdown selection.
-      const nextShape = options?.preserveShape ? settings?.shape : 'custom';
-      onUpdateSettings?.({ ...settings, shape: nextShape, customPath: serialized });
+
+      const latest = settingsRef.current;
+      const nextShape = options?.preserveShape ? latest.shape : 'custom';
+      const nextSettings = { ...latest, shape: nextShape, customPath: serialized };
+      settingsRef.current = nextSettings;
+      onUpdateSettings?.(nextSettings);
     }
-  }, [customPath, onUpdateSettings, settings]);
+  }, [customPath, onUpdateSettings]);
 
   const pathEditor = useMemo<PathEditorBinding | null>(() => {
     if (!pathEditing) return null;
@@ -3574,12 +3586,14 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       onConvert: (next: VecContour[]) => {
         const serialized = serializeContours(next);
         setDraft({ base: serialized, serialized, contours: next });
-        onUpdateSettings?.({
-          ...settings,
-          pathFit: 'viewbox',
+        const nextSettings = {
+          ...settingsRef.current,
+          pathFit: 'viewbox' as const,
           pathViewBox: EDIT_VIEW_BOX,
           customPath: serialized,
-        });
+        };
+        settingsRef.current = nextSettings;
+        onUpdateSettings?.(nextSettings);
       },
       onChange: (next: VecContour[], options?: PathChangeOptions) => {
         setPathDragActive(true);
@@ -3591,7 +3605,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
         setPathDragActive(false);
       },
     };
-  }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, settings, writePath]);
+  }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, writePath]);
 
   /* -- shape-image pan/zoom ------------------------------------------------ */
 
@@ -3601,17 +3615,21 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     focalY: settings?.imageFocalY ?? 0.5,
     scale: settings?.imageScale ?? 1,
   }), [settings?.imageFocalX, settings?.imageFocalY, settings?.imageScale]);
-  // Same draft split as the path: live values while dragging, committed once released.
   const [imageDraft, setImageDraft] = useState<ImageTransform | null>(null);
   const liveImageTransform = imageDraft ?? committedImageTransform;
 
   const handleImageChange = useCallback((next: ImageTransform) => setImageDraft(next), []);
   const handleImageCommit = useCallback((next: ImageTransform) => {
-    // Keep the draft pinned to `next` so clearing it never reveals the stale
-    // committed transform for a frame before onUpdateSettings lands.
     setImageDraft(next);
-    onUpdateSettings?.({ ...settings, imageFocalX: next.focalX, imageFocalY: next.focalY, imageScale: next.scale });
-  }, [onUpdateSettings, settings]);
+    const nextSettings = {
+      ...settingsRef.current,
+      imageFocalX: next.focalX,
+      imageFocalY: next.focalY,
+      imageScale: next.scale,
+    };
+    settingsRef.current = nextSettings;
+    onUpdateSettings?.(nextSettings);
+  }, [onUpdateSettings]);
 
   useEffect(() => {
     if (!imageDraft) return;
