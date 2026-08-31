@@ -21,6 +21,7 @@ function getCSS(P: string): string {
 .${P}-form {
   display: flex;
   width: 100%;
+  box-sizing: border-box;
   align-items: stretch;
   overflow: hidden;
   border-color: var(--${P}-stroke-color);
@@ -64,6 +65,7 @@ function getCSS(P: string): string {
 .${P}-input {
   flex: 1;
   min-width: 0;
+  box-sizing: border-box;
   background: transparent;
   border: none;
   outline: none;
