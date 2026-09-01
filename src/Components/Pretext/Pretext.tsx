@@ -23,10 +23,10 @@ const DROP_CAP_SIZE_DEFAULT = 3;
  * box — no z-index set inside that box could ever reach past it.
  *
  * Keep this above the CMS article/editor stack (`.editor` is z-index 1,
- * `#component-portal` is 2) and below host UI chrome (toolbar 4, ItemParams
- * SnapBar container 5) so the orange outline never paints over panels.
+ * `#component-portal` is 2) and below the layers list (3), toolbar (4), and
+ * ItemParams SnapBar container (5) so the orange outline never paints over panels.
  */
-const EDITOR_PORTAL_Z_INDEX = 3;
+const EDITOR_PORTAL_Z_INDEX = 2;
 
 export const SHAPE_IDS = [
   'rectangle',
