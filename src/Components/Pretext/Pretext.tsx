@@ -3453,7 +3453,9 @@ function PretextColumn({
     const computed = window.getComputedStyle(element);
     const fontSize = parseFloat(computed.fontSize) || 16;
     const parsedLineHeight = parseFloat(computed.lineHeight);
-    const lineHeight = Number.isNaN(parsedLineHeight) ? fontSize * 1.2 : parsedLineHeight;
+    const rawLineHeight = Number.isNaN(parsedLineHeight) ? fontSize * 1.2 : parsedLineHeight;
+    // Line boxes shorter than the glyphs overflow and get clipped by the flow container.
+    const lineHeight = Math.max(rawLineHeight, fontSize);
 
     capSpan.style.fontSize = `${lineHeight * dropCapSize}px`;
 
@@ -4030,18 +4032,22 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
 
   const fitVar = (value: string) => `calc(${value} * var(--${P}-fit, 1))`;
 
-  const typography = useMemo<React.CSSProperties>(() => ({
+  const typography = useMemo<React.CSSProperties>(() => {
+    const textFontSize = settings?.textFontSize ?? 0.012;
+    const textLineHeight = Math.max(settings?.textLineHeight ?? textFontSize, textFontSize);
+    return {
     fontFamily: normalizeFontFamilyCssValue(settings?.textFontFamily),
     fontWeight: settings?.textFontSettings?.fontWeight,
     fontStyle: settings?.textFontSettings?.fontStyle,
-    fontSize: fitVar(scalingValue(settings?.textFontSize ?? 0.012, editor)),
-    lineHeight: fitVar(scalingValue(settings?.textLineHeight ?? settings?.textFontSize ?? 0.012, editor)),
+    fontSize: fitVar(scalingValue(textFontSize, editor)),
+    lineHeight: fitVar(scalingValue(textLineHeight, editor)),
     letterSpacing: fitVar(scalingValue(settings?.textLetterSpacing ?? 0, editor)),
     wordSpacing: fitVar(scalingValue(settings?.textWordSpacing ?? 0, editor)),
     textTransform: settings?.textTextAppearance?.textTransform as React.CSSProperties['textTransform'],
     textDecoration: settings?.textTextAppearance?.textDecoration,
     fontVariant: settings?.textTextAppearance?.fontVariant,
-  }), [settings, editor, P]);
+  };
+  }, [settings, editor, P]);
 
   const colorVars = {
     [`--${P}-text-color`]: settings?.textColor ?? '#000000',
