@@ -3345,9 +3345,8 @@ function PretextColumn({
     return unitRings.map(ring => ring.map(point => ({ x: point.x * scaleX, y: point.y * scaleY })));
   }, [unitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
-  // The shape image reads from the *committed* path, not the in-progress drag
-  // draft — text reflows live as nodes are dragged, but the image mask should
-  // hold still until the edit is committed rather than warping every frame.
+  // Image mask tracks `imageCustomPath`, which includes the local path draft
+  // between commits so the clip updates live while handles are dragged.
   const committedUnitRings = useMemo(() => {
     const spec = imageCustomPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
@@ -3579,25 +3578,6 @@ function PretextColumn({
     [imageUrl, imageRings, box.width, box.height],
   );
 
-  // Freeze the image mask only while a path handle is actively dragged. Between
-  // commits, `imageCustomPath` tracks the local draft so the clip updates without
-  // waiting on settings sync.
-  const freezeImageForPathEdit = pathDragActive && !pathCarryImage && editStage !== 'image';
-  const lastStableImageRef = useRef<FrozenShapeImage | null>(null);
-
-  if (!pathDragActive && imageUrl && committedShapeImageBounds) {
-    lastStableImageRef.current = {
-      rings: imageRings,
-      bounds: committedShapeImageBounds,
-      focalX: imageFocalX,
-      focalY: imageFocalY,
-      scale: imageScale,
-      customPath: imageCustomPath,
-    };
-  }
-
-  const dragFrozen = freezeImageForPathEdit ? lastStableImageRef.current : null;
-
   const imagePathAnchorRef = useRef<FrozenShapeImage | null>(null);
   const pathPreservedTransform = (() => {
     const anchor = imagePathAnchorRef.current;
@@ -3659,17 +3639,38 @@ function PretextColumn({
     onCarryImageConsumed,
   ]);
 
-  const activeImageRings = dragFrozen?.rings ?? imageRings;
-  const activeImageBounds = dragFrozen?.bounds ?? committedShapeImageBounds;
-  const activeImageFocalX = dragFrozen?.focalX ?? pathPreservedTransform?.focalX ?? imageFocalX;
-  const activeImageFocalY = dragFrozen?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
-  const activeImageScale = dragFrozen?.scale ?? pathPreservedTransform?.scale ?? imageScale;
+  // While a handle is dragged (not a whole-shape carry), keep the photo pinned in
+  // column space as the live mask morphs around it.
+  const pathDragLiveTransform = useMemo(() => {
+    if (!pathDragActive || pathCarryImage || !naturalImageSize || !committedShapeImageBounds) return null;
+    const anchor = imagePathAnchorRef.current;
+    if (!anchor) return null;
+    return preserveImageTransformAcrossBoundsChange(
+      anchor.bounds,
+      committedShapeImageBounds,
+      naturalImageSize,
+      anchor.focalX,
+      anchor.focalY,
+      anchor.scale,
+    );
+  }, [
+    pathDragActive,
+    pathCarryImage,
+    naturalImageSize,
+    committedShapeImageBounds,
+    imageCustomPath,
+    imageRings,
+  ]);
+
+  const activeImageFocalX = pathDragLiveTransform?.focalX ?? pathPreservedTransform?.focalX ?? imageFocalX;
+  const activeImageFocalY = pathDragLiveTransform?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
+  const activeImageScale = pathDragLiveTransform?.scale ?? pathPreservedTransform?.scale ?? imageScale;
 
   const shapeImagePath = useMemo(
-    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(activeImageRings, box) : ''),
-    [imageUrl, activeImageRings, box.width, box.height],
+    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(imageRings, box) : ''),
+    [imageUrl, imageRings, box.width, box.height],
   );
-  const shapeImageBounds = activeImageBounds;
+  const shapeImageBounds = committedShapeImageBounds;
   const clipId = `${imageId}-clip`;
   // Before the natural size loads, fall back to filling the mask bbox exactly
   // (equivalent to the old xMidYMid-slice default) rather than a jump cut once it's known.
