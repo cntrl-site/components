@@ -114,4 +114,6 @@ export type ComponentSchemaV1 = {
   fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
+  navigationStates?: string[];
+  navigationStateProperties?: string[];
 };

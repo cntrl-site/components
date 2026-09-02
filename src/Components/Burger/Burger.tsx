@@ -4,6 +4,7 @@ import { buildColorVars, scalingValue, useScopedStyles } from '../utils';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 const MENU_ANIM_MS = 300;
+const NAV_STATE_ANIM_MS = 300;
 const PADDING_HANDLE_SIZE = 0.004;
 const TEXT_WIDTH_HANDLE_SIZE = 0.004;
 const MIN_TEXT_WIDTH_PX = 50;
@@ -84,7 +85,50 @@ type BurgerSettings = {
   textAlign?: TextStyles['textAlign'];
   textAppearance?: TextStyles['textAppearance'];
   stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor', string>>>;
+  navigationStateOverrides?: BurgerNavigationStateOverrides;
 };
+
+type BurgerNavigationState = 'default' | 'onScroll';
+
+const NAVIGATION_STATE_PROPERTIES = [
+  'panelHeight',
+  'logoMaxWidth',
+  'iconSize',
+  'navGap',
+  'navPaddingRight',
+  'navTextWidth',
+  'fontSize',
+  'lineHeight',
+  'letterSpacing',
+  'wordSpacing',
+  'textAppearance',
+] as const;
+
+type BurgerNavigationStateProperty = typeof NAVIGATION_STATE_PROPERTIES[number];
+
+type BurgerNavigationStateOverrides = Partial<
+  Record<Exclude<BurgerNavigationState, 'default'>, Pick<BurgerSettings, BurgerNavigationStateProperty>>
+>;
+
+// Colors stay in `stateOverrides` and are applied through the `-state-<name>` CSS
+// variables, so a navigation state only merges the remaining parameters.
+function resolveNavigationStateSettings(
+  settings: BurgerSettings,
+  state: BurgerNavigationState,
+): BurgerSettings {
+  const overrides = state === 'default' ? undefined : settings.navigationStateOverrides?.[state];
+  if (!overrides) return settings;
+
+  const resolved: BurgerSettings = { ...settings };
+  for (const key of NAVIGATION_STATE_PROPERTIES) {
+    const value = overrides[key];
+    if (value !== undefined) {
+      Object.assign(resolved, { [key]: value });
+    }
+  }
+
+  return resolved;
+}
 
 function isOpenOnlyLink(item: BurgerLink): boolean {
   const showIn = (item.showIn ?? 'always').trim().toLowerCase();
@@ -1232,6 +1276,48 @@ function getCSS(P: string): string {
   line-height: 0;
   font-size: 0;
 }
+.${P}-interactive .${P}-nav-bar {
+  transition:
+    background-color ${MENU_ANIM_MS}ms ease,
+    height ${NAV_STATE_ANIM_MS}ms ease,
+    min-height ${NAV_STATE_ANIM_MS}ms ease,
+    padding ${NAV_STATE_ANIM_MS}ms ease,
+    gap ${NAV_STATE_ANIM_MS}ms ease;
+}
+.${P}-interactive .${P}-nav-logo-inner,
+.${P}-interactive .${P}-nav-padding-right,
+.${P}-interactive .${P}-nav-gap-control,
+.${P}-interactive .${P}-link-text-box {
+  transition:
+    width ${NAV_STATE_ANIM_MS}ms ease,
+    height ${NAV_STATE_ANIM_MS}ms ease;
+}
+.${P}-interactive .${P}-nav-toggle-wrap .${P}-root {
+  transition:
+    width ${NAV_STATE_ANIM_MS}ms ease,
+    height ${NAV_STATE_ANIM_MS}ms ease,
+    min-width ${NAV_STATE_ANIM_MS}ms ease,
+    min-height ${NAV_STATE_ANIM_MS}ms ease,
+    max-width ${NAV_STATE_ANIM_MS}ms ease,
+    max-height ${NAV_STATE_ANIM_MS}ms ease;
+}
+.${P}-interactive .${P}-icon-line {
+  transition:
+    transform ${MENU_ANIM_MS}ms ease,
+    opacity ${MENU_ANIM_MS}ms ease,
+    top ${MENU_ANIM_MS}ms ease,
+    height ${NAV_STATE_ANIM_MS}ms ease;
+}
+.${P}-interactive .${P}-nav-link,
+.${P}-interactive .${P}-link,
+.${P}-interactive .${P}-link-text {
+  transition:
+    color 200ms ease,
+    font-size ${NAV_STATE_ANIM_MS}ms ease,
+    line-height ${NAV_STATE_ANIM_MS}ms ease,
+    letter-spacing ${NAV_STATE_ANIM_MS}ms ease,
+    word-spacing ${NAV_STATE_ANIM_MS}ms ease;
+}
 `;
 }
 
@@ -1332,7 +1418,7 @@ function wrapLinkTextWithWidth(
 }
 
 export function Burger({
-  settings,
+  settings: settingsProp,
   isEditor,
   isEditMode,
   isPreviewMode,
@@ -1352,6 +1438,15 @@ export function Burger({
   const [isOverlayActive, setIsOverlayActive] = useState(false);
   const [typeCNavPhase, setTypeCNavPhase] = useState<TypeCNavPhase>('closed');
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const previewState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
+  const liveScrollState = (!isEditor || isPreviewMode) && !previewState && isScrolled ? 'onScroll' : undefined;
+  const resolvedState = previewState ?? liveScrollState;
+  const navigationState: BurgerNavigationState = resolvedState === 'onScroll' ? 'onScroll' : 'default';
+  const settings = useMemo(
+    () => resolveNavigationStateSettings(settingsProp, navigationState),
+    [settingsProp, navigationState],
+  );
 
   const {
     type = 'b',
@@ -1520,36 +1615,36 @@ export function Burger({
         }),
     };
 
-  const prevSettingsRef = useRef(settings);
+  const prevSettingsRef = useRef(settingsProp);
   const prevLayoutIdRef = useRef(layoutId);
 
   useEffect(() => {
     if (!onUpdateSettings || !isEditor) {
-      prevSettingsRef.current = settings;
+      prevSettingsRef.current = settingsProp;
       prevLayoutIdRef.current = layoutId;
       return;
     }
 
     if (prevLayoutIdRef.current !== layoutId) {
-      prevSettingsRef.current = settings;
+      prevSettingsRef.current = settingsProp;
       prevLayoutIdRef.current = layoutId;
       return;
     }
 
     const prevSettings = prevSettingsRef.current;
-    if (prevSettings === settings) {
+    if (prevSettings === settingsProp) {
       return;
     }
 
-    const updatedSettings = applyBurgerSettingsChange(settings, prevSettings);
-    prevSettingsRef.current = settings;
+    const updatedSettings = applyBurgerSettingsChange(settingsProp, prevSettings);
+    prevSettingsRef.current = settingsProp;
 
-    if (!hasBurgerPaddingChanges(settings, updatedSettings)) {
+    if (!hasBurgerPaddingChanges(settingsProp, updatedSettings)) {
       return;
     }
 
     onUpdateSettings(updatedSettings);
-  }, [settings, onUpdateSettings, isEditor, layoutId]);
+  }, [settingsProp, onUpdateSettings, isEditor, layoutId]);
 
   const resolvedIconSize = scalingValue(iconSize, isEditor);
   const iconLineHeight = scalingValue(iconSize * 0.125, isEditor);
@@ -1576,9 +1671,6 @@ export function Burger({
 
   const items = Array.isArray(linkItems) ? linkItems : [];
   const socialItems = normalizeSocialLinks(socialLinkItems);
-  const previewState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
-  const liveScrollState = (!isEditor || isPreviewMode) && !previewState && isScrolled ? 'onScroll' : undefined;
-  const resolvedState = previewState ?? liveScrollState;
   const stateClass = resolvedState ? `${P}-state-${resolvedState}` : '';
   const editorClass = isEditor && !isPreviewMode ? `${P}-editor` : '';
   const interactiveClass = !isEditor || isPreviewMode ? `${P}-interactive` : '';

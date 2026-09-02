@@ -76,6 +76,22 @@ const paletteBookmarkItems = [
   'panelColor',
 ] as const;
 
+// Non-color parameters that a navigation state may override. Colors keep using
+// `stateOverrides`, so they are intentionally absent here.
+const navigationStateProperties = [
+  'panelHeight',
+  'logoMaxWidth',
+  'iconSize',
+  'navGap',
+  'navPaddingRight',
+  'navTextWidth',
+  'fontSize',
+  'lineHeight',
+  'letterSpacing',
+  'wordSpacing',
+  'textAppearance',
+] as const;
+
 const schema = {
   type: 'object',
   version: 1,
@@ -181,6 +197,7 @@ const schema = {
         titleByState: {
           default: 'Link Default',
           hover: 'Link Hover',
+          onScroll: 'Link Scroll',
         },
         display: { type: 'palette-color-picker' },
       },
@@ -191,6 +208,7 @@ const schema = {
         titleByState: {
           default: 'Social Default',
           hover: 'Social Hover',
+          onScroll: 'Social Scroll',
         },
         display: { type: 'palette-color-picker' },
       },
@@ -269,6 +287,10 @@ const schema = {
       stateOverrides: {
         type: 'object',
         scope: 'common',
+      },
+      navigationStateOverrides: {
+        type: 'object',
+        scope: 'layout',
       },
       gap: createRangeControlLayoutProperty('Gap'),
       navGap: {
@@ -586,9 +608,12 @@ const schema = {
     stateItems: {
       default: ['iconColor', 'closeButtonColor', 'linkColor', 'socialIconColor', 'menuBackgroundColor', 'overlayColor', 'panelColor'],
       hover: ['linkColor', 'socialIconColor'],
+      onScroll: ['iconColor', 'closeButtonColor', 'linkColor', 'socialIconColor', 'menuBackgroundColor', 'overlayColor', 'panelColor'],
     },
   },
   states: ['default', 'hover'],
+  navigationStates: ['default', 'onScroll'],
+  navigationStateProperties: [...navigationStateProperties],
 } satisfies ComponentSchemaV1;
 
 export const BurgerComponent = {
