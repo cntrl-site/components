@@ -3883,6 +3883,9 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const pathSnap = Math.max(0, settings?.pathSnap ?? 0);
   const settingsRef = useRef(settings ?? {});
   const settingsPropsKeyRef = useRef('');
+  // Path/image fields are gated so in-flight local writes aren't clobbered by
+  // lagging props. Everything else (e.g. shapeMode from the panel) must still
+  // refresh — otherwise the next path commit spreads a stale value back.
   const settingsPropsKey = [
     settings?.customPath,
     settings?.shape,
@@ -3896,6 +3899,25 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   if (settingsPropsKey !== settingsPropsKeyRef.current) {
     settingsPropsKeyRef.current = settingsPropsKey;
     settingsRef.current = settings ?? {};
+  } else if (settings) {
+    // Same fields as settingsPropsKey — keep local path/image writes; refresh the rest.
+    const {
+      customPath: _customPath,
+      shape: _shape,
+      pathFit: _pathFit,
+      pathViewBox: _pathViewBox,
+      imageScale: _imageScale,
+      imageFocalX: _imageFocalX,
+      imageFocalY: _imageFocalY,
+      image: _image,
+      ...ungated
+    } = settings;
+    const prev = settingsRef.current;
+    for (const key of Object.keys(ungated) as Array<keyof typeof ungated>) {
+      if (prev[key] === ungated[key]) continue;
+      settingsRef.current = { ...prev, ...ungated };
+      break;
+    }
   }
   const [draft, setDraft] = useState<{ base: string; serialized: string; contours: VecContour[] } | null>(null);
   const [pathDragActive, setPathDragActive] = useState(false);
@@ -3916,6 +3938,13 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       setPathCarryImage(false);
     }
   }, [pathEditing]);
+
+  // Drop the draft once props catch up. Leaving it around with
+  // `base === customPath` after undo would keep showing the edited path.
+  useEffect(() => {
+    if (!draft || pathDragActive) return;
+    if (draft.serialized === customPath) setDraft(null);
+  }, [draft, customPath, pathDragActive]);
 
   const editContours = useMemo(() => {
     if (!pathEditing) return null;
@@ -3938,7 +3967,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       contours: next,
     }));
     if (commit) {
-
       const latest = settingsRef.current;
       const nextShape = options?.preserveShape ? latest.shape : 'custom';
       const nextSettings = { ...latest, shape: nextShape, customPath: serialized };
