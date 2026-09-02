@@ -54,47 +54,33 @@ const textStyleProperties = {
   },
 };
 
+const POSITION_VALUES = [
+  'left-top',
+  'center-top',
+  'right-top',
+  'left-center',
+  'center-center',
+  'right-center',
+  'left-bottom',
+  'center-bottom',
+  'right-bottom',
+] as const;
+
 const paletteBookmarkItems = [
   'iconColor',
   'closeButtonColor',
   'linkColor',
+  'socialIconColor',
   'menuBackgroundColor',
   'overlayColor',
+  'panelColor',
 ] as const;
 
 const schema = {
   type: 'object',
   version: 1,
-  content: {
-    type: 'array',
-    settings: {
-      addItemFromFileExplorer: false,
-    },
-    items: {
-      type: 'object',
-      properties: {
-        label: {
-          type: 'string',
-          label: 'Label',
-          placeholder: 'Add label...',
-          display: { type: 'text-input' },
-        },
-        link: {
-          type: 'string',
-          label: 'Link',
-          placeholder: 'Add link...',
-          display: { type: 'text-input' },
-        },
-      },
-    },
-    default: [
-      { label: 'Home', link: '' },
-      { label: 'About', link: '' },
-      { label: 'Contact', link: '' },
-    ],
-  },
   settings: {
-    sizing: 'auto auto',
+    sizing: 'auto manual',
     properties: {
       type: {
         type: 'string',
@@ -102,6 +88,71 @@ const schema = {
         title: '',
         display: { type: 'radio-group' },
         enum: ['a', 'b', 'c'],
+      },
+      link: {
+        type: 'array',
+        scope: 'common',
+        display: { type: 'page-url-link' },
+        items: {
+          type: 'object',
+          properties: {
+            mode: { type: 'string', enum: ['page', 'url'] },
+            page: { type: 'string' },
+            url: { type: 'string', message: 'Paste URL here...' },
+            label: { type: 'string' },
+            anchor: { type: 'string' },
+            openIn: { type: 'string' },
+            showIn: { type: 'string', enum: ['always', 'open only'] },
+          },
+        },
+      },
+      socialLink: {
+        type: 'array',
+        scope: 'common',
+        display: { type: 'url-list' },
+        items: {
+          type: 'string',
+          message: 'Paste URL here...',
+        },
+      },
+      logo: {
+        type: 'object',
+        scope: 'common',
+        title: 'Logo',
+        display: { type: 'button-icon-switch' },
+        properties: {
+          mode: {
+            type: 'string',
+            enum: ['On', 'Off'],
+          },
+          icon: {
+            type: ['string', 'null'] as const,
+            title: 'Logo',
+            display: { type: 'settings-image-input' },
+          },
+        },
+      },
+      logoMaxWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Logo Max Width',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      panelHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Height',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      panelColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Panel',
+        display: { type: 'palette-color-picker' },
       },
       iconColor: {
         type: 'string',
@@ -130,6 +181,16 @@ const schema = {
         titleByState: {
           default: 'Link Default',
           hover: 'Link Hover',
+        },
+        display: { type: 'palette-color-picker' },
+      },
+      socialIconColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Social Default',
+        titleByState: {
+          default: 'Social Default',
+          hover: 'Social Hover',
         },
         display: { type: 'palette-color-picker' },
       },
@@ -168,16 +229,24 @@ const schema = {
       textWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Text width',
+        title: 'Open text width',
         display: { type: 'numeric-input' },
         min: 0,
         max: 9999,
       },
-      direction: {
+      navTextWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Closed text width',
+        display: { type: 'numeric-input' },
+        min: 0,
+        max: 9999,
+      },
+      position: {
         type: 'string',
         scope: 'layout',
-        title: 'Direction',
-        display: { type: 'toggle-cycle', enum: ['left', 'top', 'right', 'bottom'] },
+        title: 'Position',
+        display: { type: 'toggle-cycle', enum: [...POSITION_VALUES] },
       },
       horizontalAlign: {
         type: 'string',
@@ -202,6 +271,22 @@ const schema = {
         scope: 'common',
       },
       gap: createRangeControlLayoutProperty('Gap'),
+      navGap: {
+        type: 'number' as const,
+        scope: 'layout' as const,
+        title: 'Nav gap',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' as const, visible: false },
+      },
+      navPaddingRight: {
+        type: 'number' as const,
+        scope: 'layout' as const,
+        title: 'Nav padding right',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' as const, visible: false },
+      },
       textPaddingLeft: createRangeControlLayoutProperty('Text padding left'),
       textPaddingRight: createRangeControlLayoutProperty('Text padding right'),
       textPaddingTop: createRangeControlLayoutProperty('Text padding top'),
@@ -255,15 +340,29 @@ const schema = {
       },
     },
     defaults: {
+      link: [
+        { mode: 'page', page: '', url: '', label: 'Home', anchor: '', openIn: 'Same Tab' },
+        { mode: 'page', page: '', url: '', label: 'Works', anchor: '', openIn: 'Same Tab' },
+        { mode: 'page', page: '', url: '', label: 'About', anchor: '', openIn: 'Same Tab' },
+        { mode: 'page', page: '', url: '', label: 'Contact', anchor: '', openIn: 'Same Tab' },
+      ],
+      socialLink: ['', '', '', ''],
+      logo: {
+        mode: 'On',
+        icon: null,
+      },
+      panelColor: '#ffffff',
       iconColor: '#000000',
       linkColor: '#000000',
+      socialIconColor: '#000000',
       menuBackgroundColor: '#ffffff',
       overlayColor: 'rgba(0, 0, 0, 0.45)',
       closeButtonColor: '#000000',
       effect: 'fade',
       iconAnimation: 'a',
+      position: 'left-top',
       textOrientation: 'vertical',
-      fontFamily: 'Arial',
+      fontFamily: 'Goudy Bookletter 1911',
       fontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
@@ -272,17 +371,18 @@ const schema = {
       stateOverrides: {
         hover: {
           linkColor: '#666666',
+          socialIconColor: '#666666',
         },
       },
     },
     displayRules: [
       {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.menuWidth.display.visible', value: false },
+        if: { name: 'logo.mode', value: 'Off' },
+        then: { name: 'properties.logoMaxWidth.display.visible', value: false },
       },
       {
         if: { name: 'type', value: 'a' },
-        then: { name: 'properties.direction.display.visible', value: false },
+        then: { name: 'properties.menuWidth.display.visible', value: false },
       },
       {
         if: { name: 'type', value: 'a' },
@@ -293,27 +393,11 @@ const schema = {
         then: { name: 'properties.verticalAlign.display.visible', value: false },
       },
       {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.textWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.textPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.textPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.textPaddingTop.display.visible', value: false },
-      },
-      {
-        if: { name: 'type', value: 'a' },
-        then: { name: 'properties.textPaddingBottom.display.visible', value: false },
-      },
-      {
         if: { name: 'type', value: 'c', isNotEqual: true },
+        then: { name: 'properties.textOrientation.display.visible', value: false },
+      },
+      {
+        if: { name: 'type', value: 'c' },
         then: { name: 'properties.textOrientation.display.visible', value: false },
       },
       {
@@ -322,103 +406,34 @@ const schema = {
       },
       {
         if: { name: 'type', value: 'b' },
-        then: { name: 'properties.direction.display.enum', value: ['left', 'right'] },
+        then: { name: 'properties.horizontalAlign.display.visible', value: false },
+      },
+      {
+        if: { name: 'type', value: 'b' },
+        then: { name: 'properties.verticalAlign.display.visible', value: false },
       },
       {
         if: { name: 'type', value: 'c' },
-        then: { name: 'properties.direction.display.enum', value: ['top', 'bottom'] },
-      },
-      {
-        if: { name: 'direction', value: 'left' },
-        then: { name: 'properties.horizontalAlign.display.visible', value: false },
-      },
-      {
-        if: { name: 'direction', value: 'right' },
-        then: { name: 'properties.horizontalAlign.display.visible', value: false },
-      },
-      {
-        if: { name: 'direction', value: 'top' },
         then: { name: 'properties.verticalAlign.display.visible', value: false },
       },
       {
-        if: { name: 'direction', value: 'bottom' },
-        then: { name: 'properties.verticalAlign.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'left' },
-          { name: 'verticalAlign', value: 'top', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingTop.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'right' },
-          { name: 'verticalAlign', value: 'top', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingTop.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'left' },
-          { name: 'verticalAlign', value: 'bottom', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'right' },
-          { name: 'verticalAlign', value: 'bottom', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingBottom.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'top' },
-          { name: 'horizontalAlign', value: 'left', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'bottom' },
-          { name: 'horizontalAlign', value: 'left', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingLeft.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'top' },
-          { name: 'horizontalAlign', value: 'right', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingRight.display.visible', value: false },
-      },
-      {
-        if: [
-          { name: 'direction', value: 'bottom' },
-          { name: 'horizontalAlign', value: 'right', isNotEqual: true },
-        ],
-        then: { name: 'properties.textPaddingRight.display.visible', value: false },
-      },
-      {
-        if: { name: 'direction', value: 'left' },
-        then: { name: 'properties.textWidth.display.visible', value: false },
-      },
-      {
-        if: { name: 'direction', value: 'right' },
-        then: { name: 'properties.textWidth.display.visible', value: false },
+        if: { name: 'type', value: 'c' },
+        then: { name: 'properties.horizontalAlign.display.visible', value: false },
       },
     ],
     layoutDefaults: {
       m: {
         type: 'b',
-        direction: 'left',
-        horizontalAlign: 'left',
-        verticalAlign: 'top',
-        iconSize: 24 / 375,
+        position: 'left-top',
+        panelHeight: 56 / 375,
+        logoMaxWidth: 80 / 375,
+        iconSize: 16 / 375,
         menuWidth: 280 / 375,
         textWidth: 240 / 375,
-        gap: 12 / 375,
+        navTextWidth: 120 / 375,
+        gap: 24 / 375,
+        navGap: 24 / 375,
+        navPaddingRight: 10 / 375,
         textPaddingLeft: 10 / 375,
         textPaddingRight: 10 / 375,
         textPaddingTop: 10 / 375,
@@ -435,13 +450,16 @@ const schema = {
       },
       t: {
         type: 'b',
-        direction: 'left',
-        horizontalAlign: 'left',
-        verticalAlign: 'top',
-        iconSize: 24 / 768,
+        position: 'left-top',
+        panelHeight: 60 / 768,
+        logoMaxWidth: 100 / 768,
+        iconSize: 16 / 768,
         menuWidth: 300 / 768,
         textWidth: 260 / 768,
-        gap: 12 / 768,
+        navTextWidth: 140 / 768,
+        gap: 32 / 768,
+        navGap: 32 / 768,
+        navPaddingRight: 10 / 768,
         textPaddingLeft: 10 / 768,
         textPaddingRight: 10 / 768,
         textPaddingTop: 10 / 768,
@@ -458,19 +476,22 @@ const schema = {
       },
       d: {
         type: 'b',
-        direction: 'left',
-        horizontalAlign: 'left',
-        verticalAlign: 'top',
-        iconSize: 24 / 1440,
+        position: 'left-top',
+        panelHeight: 40 / 1440,
+        logoMaxWidth: 120 / 1440,
+        iconSize: 16 / 1440,
         menuWidth: 320 / 1440,
-        textWidth: 280 / 1440,
+        textWidth: 60 / 1440,
+        navTextWidth: 60 / 1440,
         gap: 12 / 1440,
+        navGap: 12 / 1440,
+        navPaddingRight: 10 / 1440,
         textPaddingLeft: 10 / 1440,
         textPaddingRight: 10 / 1440,
         textPaddingTop: 10 / 1440,
         textPaddingBottom: 10 / 1440,
         fontSize: 16 / 1440,
-        lineHeight: 20 / 1440,
+        lineHeight: 16 / 1440,
         letterSpacing: 0,
         wordSpacing: 0,
         textAppearance: {
@@ -478,26 +499,37 @@ const schema = {
           textDecoration: 'none',
           fontVariant: 'normal',
         },
+        textAlign: 'center',
       },
     },
     layout: [
       '__componentName__',
       'type',
+      'link',
+      'socialLink',
+      'logo',
+      'logoMaxWidth',
+      'panelHeight',
+      'panelColor',
       'iconColor',
       'iconSize',
       'iconAnimation',
       'linkColor',
+      'socialIconColor',
       'menuBackgroundColor',
       'overlayColor',
       'closeButtonColor',
       'effect',
       'menuWidth',
       'textWidth',
-      'direction',
+      'navTextWidth',
+      'position',
       'horizontalAlign',
       'verticalAlign',
       'textOrientation',
       'gap',
+      'navGap',
+      'navPaddingRight',
       'textPaddingLeft',
       'textPaddingRight',
       'textPaddingTop',
@@ -513,11 +545,24 @@ const schema = {
       layout: [
         '__componentName__',
         'type',
+        'logo',
+        { type: 'row', items: ['logoMaxWidth', 'panelHeight'] },
         { type: 'row', items: ['iconSize', 'iconAnimation'] },
         { type: 'row', items: ['menuWidth'] },
-        { type: 'row', items: ['direction', 'horizontalAlign', 'verticalAlign'] },
-        { type: 'row', items: ['textWidth', 'textOrientation'] },
+        'position',
+        { type: 'row', items: ['textWidth', 'navTextWidth'] },
         'effect',
+      ],
+    },
+    {
+      id: 'links',
+      icon: 'settings',
+      title: 'Links',
+      tooltip: 'Links Settings',
+      layout: [
+        '__componentName__',
+        'link',
+        'socialLink',
       ],
     },
     {
@@ -539,8 +584,8 @@ const schema = {
     items: [...paletteBookmarkItems],
     panelIds: ['general', 'typeStyle'],
     stateItems: {
-      default: ['iconColor', 'closeButtonColor', 'linkColor', 'menuBackgroundColor', 'overlayColor'],
-      hover: ['linkColor'],
+      default: ['iconColor', 'closeButtonColor', 'linkColor', 'socialIconColor', 'menuBackgroundColor', 'overlayColor', 'panelColor'],
+      hover: ['linkColor', 'socialIconColor'],
     },
   },
   states: ['default', 'hover'],
@@ -552,25 +597,26 @@ export const BurgerComponent = {
   name: 'Burger',
   category: 'dev',
   version: 1,
+  layoutMode: 'navigation' as const,
   defaultSize: {
     d: {
-      width: 24 / 1440,
-      height: 24 / 1440,
+      width: '100%',
+      height: 60 / 1440,
     },
     t: {
-      width: 24 / 768,
-      height: 24 / 768,
+      width: '100%',
+      height: 60 / 768,
     },
     m: {
-      width: 24 / 375,
-      height: 24 / 375,
+      width: '100%',
+      height: 56 / 375,
     },
   },
   schema,
   sourceCode: burgerSourceRaw,
   assetsPaths: {
     content: [],
-    parameters: [],
+    parameters: [{ path: 'logo.icon' }],
   },
   fontSettingsPaths: {
     content: [],

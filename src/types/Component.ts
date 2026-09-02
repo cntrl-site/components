@@ -16,7 +16,7 @@ export type Component = {
   name: string;
   category?: string;
   version?: number;
-  layoutMode?: 'freeform' | 'structured';
+  layoutMode?: 'freeform' | 'structured' | 'navigation';
   defaultSize?: ComponentDefaultSize;
   schema: any;
   preview?: {
