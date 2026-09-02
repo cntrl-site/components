@@ -39,6 +39,7 @@ type SimpleButtonSettings = {
   innerBoxShadow?: BoxShadow;
   innerBoxShadowColor?: string;
   stroke?: number;
+  blur?: number;
   backgroundColor?: string;
   textColor?: string;
   borderColor?: string;
@@ -140,6 +141,8 @@ function getCSS(P: string): string {
   border-color: var(--${P}-border-color);
   background-color: var(--${P}-background-color);
   color: var(--${P}-text-color);
+  -webkit-backdrop-filter: var(--${P}-backdrop-blur, none);
+  backdrop-filter: var(--${P}-backdrop-blur, none);
   cursor: pointer;
   font: inherit;
   white-space: pre-wrap;
@@ -147,7 +150,7 @@ function getCSS(P: string): string {
   word-break: break-word;
   user-select: none;
   pointer-events: auto;
-  transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms, box-shadow 250ms;
+  transition: color 250ms, background-color 250ms, border-color 250ms, transform 250ms, box-shadow 250ms, backdrop-filter 250ms;
   box-shadow: ${boxShadow};
 }
 .${P}-wrapper.${P}-editing .${P}-button {
@@ -455,6 +458,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
     innerBoxShadow = { top: 0, left: 0, right: 0, bottom: 0 },
     innerBoxShadowColor = 'rgba(0, 0, 0, 0)',
     stroke = 0,
+    blur = 0,
     backgroundColor = '#000000',
     textColor = '#ffffff',
     borderColor = '#ffffff',
@@ -527,6 +531,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
     [`--${P}-inner-box-shadow-y`]: scalingValue(innerBoxShadow.top, isEditor),
     [`--${P}-inner-box-shadow-blur`]: scalingValue(innerBoxShadow.right, isEditor),
     [`--${P}-inner-box-shadow-spread`]: scalingValue(innerBoxShadow.bottom, isEditor),
+    [`--${P}-backdrop-blur`]: blur > 0 ? `blur(${scalingValue(blur, isEditor)})` : undefined,
     paddingTop: scalingValue(padding.top, isEditor),
     paddingRight: scalingValue(padding.right, isEditor),
     paddingBottom: scalingValue(padding.bottom, isEditor),
