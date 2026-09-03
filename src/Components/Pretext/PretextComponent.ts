@@ -322,7 +322,7 @@ const schema: ComponentSchemaV1 = {
 export const PretextComponent = {
   element: Pretext,
   id: 'pretext',
-  name: 'Pretext',
+  name: 'Shaped Type',
   category: 'typography',
   version: 1,
   normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, prevSettings: Record<string, any>) => {
