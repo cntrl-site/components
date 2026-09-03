@@ -3364,6 +3364,9 @@ function PretextColumn({
   }, [committedUnitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
   const migratedPathRef = useRef<string | null>(null);
+  // Auto-convert writes through onUpdateSettings (undoable). Run at most once
+  // per mount so undoing that migration is not immediately re-applied.
+  const didAutoConvertRef = useRef(false);
   useEffect(() => {
     if (!onConvertPath || box.width <= 0 || box.height <= 0) return;
 
@@ -3381,7 +3384,8 @@ function PretextColumn({
       return;
     }
 
-    if (!needsConversion || !unitRings.length) return;
+    if (!needsConversion || !unitRings.length || didAutoConvertRef.current) return;
+    didAutoConvertRef.current = true;
     onConvertPath(mapContours(ringsToContours(unitRings), point => ({ x: point.x * EDIT_SPAN, y: point.y * EDIT_SPAN })));
   }, [
     needsConversion,

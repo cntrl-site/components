@@ -176,10 +176,8 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      shape: 'diamond',
-      customPath: '',
+      ...settingsForEditablePreset('diamond'),
       pathSnap: 0,
-      pathFit: 'stretch',
       shapeMode: 'A',
       fitText: 'off',
       dropCap: 'off',
