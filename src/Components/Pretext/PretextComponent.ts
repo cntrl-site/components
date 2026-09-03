@@ -351,7 +351,7 @@ export const PretextComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Simple-Marquee.mp4',
+    url: 'https://cdn.cntrl.site/component-assets/pretext.png',
   },
   schema,
   sourceCode: pretextSourceRaw,
