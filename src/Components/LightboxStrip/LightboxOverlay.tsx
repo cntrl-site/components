@@ -1137,14 +1137,13 @@ export const LightboxOverlay = ({
       return;
     }
     resetOverlayContentIdleTimer();
-    const dismissArea = dismissAreaRef.current;
-    if (!dismissArea) return;
+    // Document scope so editor chrome (settings panel) also resets idle hide
     const onPointerActivity = () => resetOverlayContentIdleTimer();
-    dismissArea.addEventListener('pointermove', onPointerActivity);
-    dismissArea.addEventListener('pointerdown', onPointerActivity);
+    document.addEventListener('pointermove', onPointerActivity, { passive: true });
+    document.addEventListener('pointerdown', onPointerActivity, { passive: true });
     return () => {
-      dismissArea.removeEventListener('pointermove', onPointerActivity);
-      dismissArea.removeEventListener('pointerdown', onPointerActivity);
+      document.removeEventListener('pointermove', onPointerActivity);
+      document.removeEventListener('pointerdown', onPointerActivity);
       if (overlayContentIdleTimerRef.current) {
         clearTimeout(overlayContentIdleTimerRef.current);
       }
