@@ -6,7 +6,6 @@ import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textS
 const MENU_ANIM_MS = 300;
 const NAV_STATE_ANIM_MS = 300;
 const PADDING_HANDLE_SIZE = 0.004;
-const TEXT_WIDTH_HANDLE_SIZE = 0.004;
 const MIN_TEXT_WIDTH_PX = 50;
 const ARTICLE_DESIGN_WIDTH = 1440;
 const MIN_TEXT_WIDTH = MIN_TEXT_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
@@ -135,7 +134,24 @@ function isOpenOnlyLink(item: BurgerLink): boolean {
   return showIn === 'open only' || showIn === 'open-only' || showIn === 'openonly';
 }
 
-function resolveBurgerLink(item: BurgerLink): {
+type BurgerPageRef = {
+  id: string;
+  slug: string;
+};
+
+function resolvePagePath(page: string, pages?: BurgerPageRef[]): string {
+  if (!page) return '';
+  const match = pages?.find((item) => item.id === page);
+  if (match) {
+    return match.slug === '' ? '/' : `/${match.slug}`;
+  }
+  if (page.startsWith('/') || page.startsWith('#') || /^[a-z][a-z\d+\-.]*:/i.test(page)) {
+    return page;
+  }
+  return pages ? `/${page}` : page;
+}
+
+function resolveBurgerLink(item: BurgerLink, pages?: BurgerPageRef[]): {
   label: string;
   href: string;
   target?: '_blank';
@@ -151,7 +167,7 @@ function resolveBurgerLink(item: BurgerLink): {
     return { label, href: item.url ?? '', target };
   }
 
-  const page = item.page ?? '';
+  const page = resolvePagePath(item.page ?? '', pages);
   const anchor = (item.anchor ?? '').replace(/^#/, '');
   const href = anchor ? (page ? `${page}#${anchor}` : `#${anchor}`) : page;
   return { label, href, target };
@@ -606,6 +622,15 @@ type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'socialIconCol
 
 type TypeCNavPhase = 'closed' | 'open';
 
+export type BurgerLinkNavigateEvent = {
+  mode: 'page' | 'url';
+  href: string;
+  page?: string;
+  url?: string;
+  anchor?: string;
+  target?: '_blank';
+};
+
 type BurgerProps = {
   settings: BurgerSettings;
   content?: unknown;
@@ -613,8 +638,16 @@ type BurgerProps = {
   isEditMode?: boolean;
   isPreviewMode?: boolean;
   activeEvent?: string;
+  /**
+   * Set by a navigation wrapper that decides when the bar counts as scrolled, e.g. the
+   * `switch` position, which only flips once the page is scrolled past the whole bar.
+   * When it is omitted the component watches the page scroll itself.
+   */
+  navigationState?: BurgerNavigationState;
   portalId?: string;
   layoutId?: string;
+  pages?: BurgerPageRef[];
+  onLinkNavigate?: (event: BurgerLinkNavigateEvent) => void;
   onUpdateSettings?: (settings: BurgerSettings) => void;
 } & CommonComponentProps;
 
@@ -1321,15 +1354,79 @@ function getCSS(P: string): string {
 `;
 }
 
+function getLinkHash(href: string): string {
+  const hashIndex = href.indexOf('#');
+  if (hashIndex === -1) return '';
+  try {
+    return decodeURIComponent(href.slice(hashIndex + 1));
+  } catch {
+    return href.slice(hashIndex + 1);
+  }
+}
+
+function isSameDocumentHref(href: string): boolean {
+  if (!href || href.startsWith('#')) return true;
+  try {
+    const url = new URL(href, window.location.href);
+    return url.pathname === window.location.pathname;
+  } catch {
+    return false;
+  }
+}
+
+function scrollToAnchor(hash: string): boolean {
+  if (!hash) return false;
+  const byId = document.getElementById(hash);
+  const bySectionId = document.querySelector(`[data-section-id="${CSS.escape(hash)}"]`);
+  const target = byId ?? bySectionId;
+  if (!(target instanceof HTMLElement)) return false;
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return true;
+}
+
 function handleLinkClick(
   event: MouseEvent<HTMLAnchorElement>,
   onClose: () => void,
-  isEditor?: boolean,
-  isPreviewMode?: boolean,
+  options: {
+    isEditor?: boolean;
+    isPreviewMode?: boolean;
+    isEditMode?: boolean;
+    item?: BurgerLink;
+    pages?: BurgerPageRef[];
+    onLinkNavigate?: (event: BurgerLinkNavigateEvent) => void;
+  } = {},
 ) {
-  if (isEditor && !isPreviewMode) {
+  const { isEditor, isPreviewMode, item, pages, onLinkNavigate } = options;
+
+  const href = event.currentTarget.getAttribute('href') ?? '';
+  const hash = getLinkHash(href);
+  const opensInNewTab = event.currentTarget.target === '_blank';
+
+  if (item && onLinkNavigate) {
     event.preventDefault();
+    event.stopPropagation();
+    const resolved = resolveBurgerLink(item, pages);
+    onLinkNavigate({
+      mode: item.mode === 'url' ? 'url' : 'page',
+      href: resolved.href || href,
+      page: item.page,
+      url: item.url,
+      anchor: (item.anchor ?? '').replace(/^#/, ''),
+      target: resolved.target,
+    });
+    onClose();
     return;
+  }
+
+  if (isEditor) {
+    event.preventDefault();
+    scrollToAnchor(hash);
+    onClose();
+    return;
+  }
+
+  if (!opensInNewTab && hash && isSameDocumentHref(href) && scrollToAnchor(hash)) {
+    event.preventDefault();
   }
 
   onClose();
@@ -1376,15 +1473,7 @@ function wrapLinkTextWithWidth(
   textWidth: number,
   showOutline: boolean,
   scaled: (value: number) => string,
-  options?: {
-    showTextWidthControl?: boolean;
-    textWidthMaxFraction?: number;
-    controlsKey?: string;
-  },
 ) {
-  const textWidthHandleSize = Math.max(TEXT_WIDTH_HANDLE_SIZE, PADDING_HANDLE_SIZE);
-  const controlsKey = options?.controlsKey ?? 'textWidth';
-
   return (
     <span
       className={`${P}-link-text-box`}
@@ -1396,23 +1485,6 @@ function wrapLinkTextWithWidth(
       >
         {textContent}
       </span>
-      {options?.showTextWidthControl ? (
-        <div
-          data-controls={controlsKey}
-          data-controls-axis="x"
-          data-controls-variant="column-width"
-          data-controls-max-fraction={String(options.textWidthMaxFraction ?? 1)}
-          className={`${P}-link-text-width-control`}
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: scaled(-textWidthHandleSize / 2),
-            width: scaled(textWidthHandleSize),
-            height: '100%',
-            pointerEvents: 'auto',
-          }}
-        />
-      ) : null}
     </span>
   );
 }
@@ -1423,7 +1495,10 @@ export function Burger({
   isEditMode,
   isPreviewMode,
   activeEvent,
+  navigationState: controlledNavigationState,
   layoutId,
+  pages,
+  onLinkNavigate,
   onUpdateSettings,
 }: BurgerProps) {
   const { prefix: P } = useScopedStyles();
@@ -1439,9 +1514,12 @@ export function Burger({
   const [typeCNavPhase, setTypeCNavPhase] = useState<TypeCNavPhase>('closed');
   const [isScrolled, setIsScrolled] = useState(false);
 
+  const isControlled = controlledNavigationState !== undefined;
   const previewState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
-  const liveScrollState = (!isEditor || isPreviewMode) && !previewState && isScrolled ? 'onScroll' : undefined;
-  const resolvedState = previewState ?? liveScrollState;
+  const scrollState = isControlled
+    ? controlledNavigationState
+    : (!isEditor || isPreviewMode) && isScrolled ? 'onScroll' : 'default';
+  const resolvedState = previewState ?? (scrollState === 'default' ? undefined : scrollState);
   const navigationState: BurgerNavigationState = resolvedState === 'onScroll' ? 'onScroll' : 'default';
   const settings = useMemo(
     () => resolveNavigationStateSettings(settingsProp, navigationState),
@@ -1584,11 +1662,6 @@ export function Burger({
       textWidth,
       showControls,
       scaled,
-      {
-        showTextWidthControl: showControls,
-        textWidthMaxFraction: isVerticalPanel ? menuWidth : 1,
-        controlsKey: 'textWidth',
-      },
     );
   };
 
@@ -1685,6 +1758,17 @@ export function Burger({
     setIsOpen(false);
   };
 
+  const onNavLinkClick = (event: MouseEvent<HTMLAnchorElement>, item?: BurgerLink) => {
+    handleLinkClick(event, closeMenu, {
+      isEditor,
+      isPreviewMode,
+      isEditMode,
+      item,
+      pages,
+      onLinkNavigate,
+    });
+  };
+
   const handleToggle = () => {
     if (isEditor && !isPreviewMode) return;
     setIsOpen((open) => !open);
@@ -1779,7 +1863,7 @@ export function Burger({
   }, [isEditor, isEditMode, isPreviewMode]);
 
   useEffect(() => {
-    if (isEditor && !isPreviewMode) {
+    if (isControlled || (isEditor && !isPreviewMode)) {
       setIsScrolled(false);
       return;
     }
@@ -1791,7 +1875,7 @@ export function Burger({
     updateScrolled();
     window.addEventListener('scroll', updateScrolled, { passive: true });
     return () => window.removeEventListener('scroll', updateScrolled);
-  }, [isEditor, isPreviewMode]);
+  }, [isControlled, isEditor, isPreviewMode]);
 
   const showOpenNavControls = showControls && (
     usesOverlayLightbox ? isOpen : (isHorizontalPanel && typeCNavPhase === 'open')
@@ -1802,14 +1886,14 @@ export function Burger({
     gapAxis: 'x' | 'y',
     options?: { useContainerGap?: boolean },
   ) => items.map((item, index) => {
-    const { label, href, target } = resolveBurgerLink(item);
+    const { label, href, target } = resolveBurgerLink(item, pages);
     const linkNode = href ? (
       <a
         href={href}
         target={target}
         rel={target === '_blank' ? 'noopener noreferrer' : undefined}
         className={linkClassName}
-        onClick={(event) => handleLinkClick(event, closeMenu, isEditor, isPreviewMode)}
+        onClick={(event) => onNavLinkClick(event, item)}
       >
         {renderOpenNavLinkLabel(label)}
       </a>
@@ -1872,7 +1956,7 @@ export function Burger({
               className={`${P}-social-link`}
               aria-label={host?.label ?? 'Link'}
               style={{ width: socialIconSize, height: socialIconSize }}
-              onClick={(event) => handleLinkClick(event, closeMenu, isEditor, isPreviewMode)}
+              onClick={(event) => onNavLinkClick(event)}
             >
               {host ? (
                 <SiteFavicon
@@ -1943,7 +2027,7 @@ export function Burger({
       return null;
     }
 
-    const { label, href, target } = resolveBurgerLink(item);
+    const { label, href, target } = resolveBurgerLink(item, pages);
     const textContent = (
       <span className={linkTextClassName} style={navLinkTextStyle}>
         {renderMultilineText(label)}
@@ -1955,11 +2039,6 @@ export function Burger({
       resolvedNavTextWidth,
       showClosedMenuControls,
       scaled,
-      {
-        showTextWidthControl: showClosedMenuControls,
-        textWidthMaxFraction: 1,
-        controlsKey: 'navTextWidth',
-      },
     );
 
     const linkNode = href ? (
@@ -1968,7 +2047,7 @@ export function Burger({
         target={target}
         rel={target === '_blank' ? 'noopener noreferrer' : undefined}
         className={`${P}-nav-link`}
-        onClick={(event) => handleLinkClick(event, closeMenu, isEditor, isPreviewMode)}
+        onClick={(event) => onNavLinkClick(event, item)}
       >
         {labelNode}
       </a>

@@ -584,6 +584,15 @@ const schema = {
       layout: [
         '__componentName__',
         'link',
+      ],
+    },
+    {
+      id: 'links',
+      icon: 'settings',
+      title: 'Links',
+      tooltip: 'Links Settings',
+      layout: [
+        '__componentName__',
         'socialLink',
       ],
     },
