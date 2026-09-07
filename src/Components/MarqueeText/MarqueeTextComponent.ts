@@ -279,7 +279,7 @@ export const MarqueeTextComponent = {
   element: MarqueeText,
   id: 'marquee-text',
   name: 'Marquee Text',
-  category: 'galleries',
+  category: 'typography',
   version: 1,
   defaultSize: {
     d: {
