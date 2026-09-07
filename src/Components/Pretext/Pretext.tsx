@@ -198,7 +198,7 @@ const PRESET_PATHS: Partial<Record<ShapeId, string>> = {
   // border-radius:50% in a square). Was previously a tall ~0.58-aspect ellipse,
   // so equal width/height still looked non-circular.
   circle: 'M50,0 C77.61,0 100,22.39 100,50 C100,77.61 77.61,100 50,100 C22.39,100 0,77.61 0,50 C0,22.39 22.39,0 50,0 Z',
-  shield: 'M0,0 L100,0 C100,0 100,50 100,50 L57.78,100 L42.19,100 L0,50 C0,50 0,0 0,0 Z',
+  shield: 'M0,0 L100,0 L100,50 L50,100 L0,50 Z',
   vase: 'M25.37,0 L91.55,0 C91.55,0 74.8,25.14 83.07,50.03 C91.34,74.92 74.61,100 74.61,100 L8.43,100 C8.43,100 32.3,75.08 23.9,50 C15.5,24.92 25.37,0 25.37,0 Z',
   parallelogram: 'M25.37,0 L91.55,0 L74.61,100 L8.43,100 Z',
   diamond: 'M50,0 L80,50 L50,100 L20,50 Z',

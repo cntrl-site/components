@@ -26,6 +26,7 @@ const schema: ComponentSchemaV1 = {
         scope: 'layout',
         display: {
           type: 'shape-select',
+          isFilled: true,
           enum: SHAPE_OPTIONS,
         },
         enum: SHAPE_OPTIONS,
@@ -222,6 +223,14 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'shapeMode', value: 'B', isNotEqual: true },
         then: { name: 'properties.image.display.visible', value: false },
+      },
+      {
+        if: { name: 'shapeMode', value: 'A' },
+        then: { name: 'properties.shape.display.isFilled', value: true },
+      },
+      {
+        if: { name: 'shapeMode', value: 'B' },
+        then: { name: 'properties.shape.display.isFilled', value: false },
       },
     ],
   },
