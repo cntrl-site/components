@@ -15,7 +15,7 @@ const MIN_FIT_SCALE = 0.25;
 const FIT_ITERATIONS = 10;
 const MAX_LINES = 4000;
 const DROP_CAP_GAP = 0.12;
-const DROP_CAP_SIZE_DEFAULT = 3;
+const DROP_CAP_SIZE_DEFAULT = 1;
 /**
  * The vector node editor is portaled straight to `document.body` so its
  * anchors can be grabbed even where a host app's own selection/resize
@@ -29,16 +29,12 @@ const DROP_CAP_SIZE_DEFAULT = 3;
 const EDITOR_PORTAL_Z_INDEX = 2;
 
 export const SHAPE_IDS = [
-  'rectangle',
-  'ellipse',
+  'bobbin',
   'circle',
-  'triangle-up',
-  'triangle-down',
+  'shield',
+  'vase',
+  'parallelogram',
   'diamond',
-  'hourglass',
-  'teardrop',
-  'leaf',
-  'wave',
   'custom',
 ] as const;
 
@@ -86,7 +82,6 @@ type PretextSettings = {
   shapeMode?: 'A' | 'B';
   overflowMode?: 'clip' | 'visible';
   fitText?: 'on' | 'off';
-  dropCap?: 'on' | 'off';
   dropCapLines?: number;
   dropCapSize?: number;
   image?: string | null;
@@ -167,14 +162,6 @@ function ringOf(pairs: [number, number][]): Ring {
   return pairs.map(([x, y]) => ({ x, y }));
 }
 
-function sampleClosed(fn: (t: number) => Pt, count: number = SHAPE_SAMPLES): Ring {
-  const ring: Ring = [];
-  for (let i = 0; i < count; i += 1) {
-    ring.push(fn(i / count));
-  }
-  return ring;
-}
-
 /** Stretches rings so their bounding box fills the unit box. */
 function normalizeRings(rings: Ring[]): Ring[] {
   let minX = Infinity;
@@ -198,69 +185,34 @@ function normalizeRings(rings: Ring[]): Ring[] {
   })));
 }
 
-function getPresetRings(shape: ShapeId, aspect: number): Ring[] {
-  switch (shape) {
-    case 'ellipse':
-      return [sampleClosed((t) => {
-        const a = t * Math.PI * 2;
-        return { x: 0.5 + Math.cos(a) * 0.5, y: 0.5 + Math.sin(a) * 0.5 };
-      })];
-    case 'circle': {
-      const rx = aspect >= 1 ? 0.5 / aspect : 0.5;
-      const ry = aspect >= 1 ? 0.5 : 0.5 * aspect;
-      return [sampleClosed((t) => {
-        const a = t * Math.PI * 2;
-        return { x: 0.5 + Math.cos(a) * rx, y: 0.5 + Math.sin(a) * ry };
-      })];
-    }
-    case 'triangle-up':
-      return [ringOf([[0.5, 0], [1, 1], [0, 1]])];
-    case 'triangle-down':
-      return [ringOf([[0, 0], [1, 0], [0.5, 1]])];
-    case 'diamond':
-      return [ringOf([[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]])];
-    case 'hourglass':
-      return [ringOf([[0, 0], [1, 0], [0.56, 0.5], [1, 1], [0, 1], [0.44, 0.5]])];
-    case 'teardrop':
-      return normalizeRings([sampleClosed((t) => {
-        const a = t * Math.PI * 2;
-        const along = Math.cos(a);
-        const across = Math.sin(a) * Math.pow(Math.sin(a / 2), 2);
-        return { x: 0.5 + across * 0.5, y: 0.5 - along * 0.5 };
-      })]);
-    case 'leaf': {
-      const half = Math.round(SHAPE_SAMPLES / 2);
-      const ring: Ring = [];
-      for (let i = 0; i <= half; i += 1) {
-        const t = i / half;
-        ring.push({ x: 0.5 + Math.sin(Math.PI * t) * 0.5, y: t });
-      }
-      for (let i = half; i >= 0; i -= 1) {
-        const t = i / half;
-        ring.push({ x: 0.5 - Math.sin(Math.PI * t) * 0.5, y: t });
-      }
-      return [ring];
-    }
-    case 'wave': {
-      const waves = 2;
-      const amplitude = 0.09;
-      const steps = SHAPE_SAMPLES;
-      const ring: Ring = [];
-      for (let i = 0; i <= steps; i += 1) {
-        const t = i / steps;
-        ring.push({ x: amplitude + Math.sin(Math.PI * 2 * waves * t) * amplitude, y: t });
-      }
-      for (let i = steps; i >= 0; i -= 1) {
-        const t = i / steps;
-        ring.push({ x: 1 - amplitude + Math.sin(Math.PI * 2 * waves * t + Math.PI / 3) * amplitude, y: t });
-      }
-      return [ring];
-    }
-    case 'rectangle':
-    case 'custom':
-    default:
-      return [ringOf([[0, 0], [1, 0], [1, 1], [0, 1]])];
+/**
+ * Preset drawings, in the same 0–100 path space the vector editor works in.
+ * All of these are authored in a 100x100 square and aren't aspect-corrected
+ * for the component's box — each renders true to its drawn proportions only
+ * when that box is roughly square, and stretches otherwise, same as any
+ * hand-drawn custom path would.
+ */
+const PRESET_PATHS: Partial<Record<ShapeId, string>> = {
+  bobbin: 'M57.63,0 L57.63,37.24 L74.66,37.24 L74.66,56.07 L57.63,100 L33.84,100 L16.81,56.07 L16.81,37.24 L33.84,37.24 L33.84,0 Z',
+  // True circle inscribed in the 100×100 path space (same construction as CSS
+  // border-radius:50% in a square). Was previously a tall ~0.58-aspect ellipse,
+  // so equal width/height still looked non-circular.
+  circle: 'M50,0 C77.61,0 100,22.39 100,50 C100,77.61 77.61,100 50,100 C22.39,100 0,77.61 0,50 C0,22.39 22.39,0 50,0 Z',
+  shield: 'M0,0 L100,0 C100,0 100,50 100,50 L57.78,100 L42.19,100 L0,50 C0,50 0,0 0,0 Z',
+  vase: 'M25.37,0 L91.55,0 C91.55,0 74.8,25.14 83.07,50.03 C91.34,74.92 74.61,100 74.61,100 L8.43,100 C8.43,100 32.3,75.08 23.9,50 C15.5,24.92 25.37,0 25.37,0 Z',
+  parallelogram: 'M25.37,0 L91.55,0 L74.61,100 L8.43,100 Z',
+  diamond: 'M50,0 L80,50 L50,100 L20,50 Z',
+};
+
+function getPresetRings(shape: ShapeId | 'rectangle'): Ring[] {
+  const presetPath = shape === 'rectangle' || shape === 'custom' ? undefined : PRESET_PATHS[shape];
+  if (presetPath) {
+    // Keep each preset at its authored size/position within the 100x100 path
+    // space (matching how these shapes render live with pathFit: 'viewbox'),
+    // rather than stretching its bbox to fill the unit box.
+    return mapToViewBox(flattenContours(parsePathNodes(presetPath)), DEFAULT_VIEW_BOX);
   }
+  return [ringOf([[0, 0], [1, 0], [1, 1], [0, 1]])];
 }
 
 type ViewBox = { x: number; y: number; width: number; height: number };
@@ -277,6 +229,25 @@ function mapToViewBox(rings: Ring[], viewBox: ViewBox): Ring[] {
   return rings.map(ring => ring.map(point => ({
     x: (point.x - viewBox.x) / viewBox.width,
     y: (point.y - viewBox.y) / viewBox.height,
+  })));
+}
+
+/**
+ * Keep a viewBox-space circle circular inside a non-square component box by
+ * letterboxing the unit square into the box (inscribed, centered). Oval and
+ * other presets stretch; circle does not.
+ */
+function letterboxUnitRings(
+  rings: Ring[],
+  box: { width: number; height: number },
+): Ring[] {
+  if (!(box.width > 0) || !(box.height > 0)) return rings;
+  const side = Math.min(box.width, box.height);
+  const ox = (box.width - side) / 2;
+  const oy = (box.height - side) / 2;
+  return rings.map(ring => ring.map(point => ({
+    x: (ox + point.x * side) / box.width,
+    y: (oy + point.y * side) / box.height,
   })));
 }
 
@@ -456,11 +427,13 @@ export function parsePathNodes(d: string): VecContour[] {
     closed = false;
   };
   const addNode = (point: Pt, inHandle?: Pt | null) => {
-    nodes.push({ p: point, in: inHandle ?? null, out: null });
+    nodes.push({ p: point, in: activeHandle(inHandle ?? null, point), out: null });
     current = point;
   };
   const setOut = (handle: Pt | null) => {
-    if (nodes.length) nodes[nodes.length - 1].out = handle;
+    if (!nodes.length) return;
+    const node = nodes[nodes.length - 1];
+    node.out = activeHandle(handle, node.p);
   };
 
   PATH_COMMANDS.lastIndex = 0;
@@ -568,16 +541,27 @@ function formatCoordinate(value: number): string {
   return `${Number(value.toFixed(2))}`;
 }
 
+/** A handle parked on its anchor is a no-op — treat it as absent. */
+function activeHandle(handle: Pt | null | undefined, anchor: Pt): Pt | null {
+  if (!handle) return null;
+  if (Math.abs(handle.x - anchor.x) < 1e-6 && Math.abs(handle.y - anchor.y) < 1e-6) return null;
+  return handle;
+}
+
+function nodeHasCurveHandles(node: VecNode): boolean {
+  return Boolean(activeHandle(node.in, node.p) || activeHandle(node.out, node.p));
+}
+
 function segmentIsStraight(from: VecNode, to: VecNode): boolean {
-  return !from.out && !to.in;
+  return !activeHandle(from.out, from.p) && !activeHandle(to.in, to.p);
 }
 
 function segmentCommand(from: VecNode, to: VecNode): string {
   if (segmentIsStraight(from, to)) {
     return `L${formatCoordinate(to.p.x)},${formatCoordinate(to.p.y)}`;
   }
-  const control1 = from.out ?? from.p;
-  const control2 = to.in ?? to.p;
+  const control1 = activeHandle(from.out, from.p) ?? from.p;
+  const control2 = activeHandle(to.in, to.p) ?? to.p;
   return `C${formatCoordinate(control1.x)},${formatCoordinate(control1.y)}`
     + ` ${formatCoordinate(control2.x)},${formatCoordinate(control2.y)}`
     + ` ${formatCoordinate(to.p.x)},${formatCoordinate(to.p.y)}`;
@@ -712,37 +696,6 @@ export function ringsToContours(rings: Ring[]): VecContour[] {
 }
 
 /**
- * Where a newly picked preset should sit in path coordinates.
- * Reuses the previous path's drawn bbox so switching forms keeps size/position
- * (including after a stretch commit rematerialized the path into pixels).
- * Falls back to the full edit viewBox when there is no usable previous path.
- */
-function editablePathTargetRect(previous?: {
-  customPath?: string;
-  pathFit?: string;
-  pathViewBox?: string;
-}): { x: number; y: number; width: number; height: number } {
-  const full = { x: 0, y: 0, width: EDIT_SPAN, height: EDIT_SPAN };
-  if (
-    !previous
-    || previous.pathFit !== 'viewbox'
-    || previous.pathViewBox !== EDIT_VIEW_BOX
-    || !previous.customPath
-  ) {
-    return full;
-  }
-  const contours = parsePathNodes(previous.customPath);
-  if (!contours.length) return full;
-  const bbox = contoursBBox(contours);
-  const width = bbox.maxX - bbox.minX;
-  const height = bbox.maxY - bbox.minY;
-  if (!isFinite(bbox.minX) || !isFinite(bbox.minY) || !(width > 0) || !(height > 0)) {
-    return full;
-  }
-  return { x: bbox.minX, y: bbox.minY, width, height };
-}
-
-/**
  * True when path coords look like legacy rematerialized pixels (hundreds of
  * units), not a 0–100 edit path whose bezier handles only poke slightly out.
  */
@@ -750,6 +703,14 @@ function pathExceedsEditViewBox(contours: VecContour[], viewBox: ViewBox, pad = 
   if (!contours.length) return false;
   const bbox = contoursBBox(contours);
   if (!isFinite(bbox.minX) || !isFinite(bbox.maxX)) return false;
+  const width = bbox.maxX - bbox.minX;
+  const height = bbox.maxY - bbox.minY;
+  // Letterboxed circle travel (and similar) can sit well outside 0–100 while
+  // still authored in edit units. Only treat as pixel-legacy when the span
+  // itself looks like component pixels (hundreds/thousands), not ~viewBox size.
+  if (width <= viewBox.width * 2.5 && height <= viewBox.height * 2.5) {
+    return false;
+  }
   // Curved presets (esp. wave) overshoot the edit viewBox by a few units via
   // smooth handles. Require ~half a viewBox of overflow so those aren't treated
   // as pixel-space paths and wrongly shrunk by boxWidth/viewBox.
@@ -759,6 +720,33 @@ function pathExceedsEditViewBox(contours: VecContour[], viewBox: ViewBox, pad = 
     || bbox.minY < viewBox.y - padY
     || bbox.maxX > viewBox.x + viewBox.width + padX
     || bbox.maxY > viewBox.y + viewBox.height + padY;
+}
+
+/**
+ * Rematerialize letterboxed (uniform-stretch) path coords into ordinary
+ * stretch-to-box viewBox coords so the same pixels land after uniformStretch
+ * is dropped (circle → custom on point edit).
+ */
+function bakeUniformStretchToBoxStretch(
+  contours: VecContour[],
+  viewBox: ViewBox,
+  box: { width: number; height: number },
+  stretchOffsetX: number,
+  stretchOffsetY: number,
+  stretchScaleX: number,
+  stretchScaleY: number,
+): VecContour[] {
+  const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
+  const scaleY = viewBox.height > 0 ? box.height / viewBox.height : 1;
+  if (!(stretchScaleX > 0) || !(stretchScaleY > 0) || !(scaleX > 0) || !(scaleY > 0)) return contours;
+  return mapContours(contours, point => {
+    const px = stretchOffsetX + (point.x - viewBox.x) * stretchScaleX;
+    const py = stretchOffsetY + (point.y - viewBox.y) * stretchScaleY;
+    return {
+      x: viewBox.x + px / scaleX,
+      y: viewBox.y + py / scaleY,
+    };
+  });
 }
 
 /** Scale contours so their drawn outline fits inside `rect` (uniform, centered). */
@@ -785,28 +773,42 @@ function fitContoursInRect(
   }));
 }
 
-/** Turns a preset into the editable viewBox path the editor persists after a shape pick. */
+/**
+ * Turns a preset into the editable viewBox path the editor persists after a
+ * shape pick. Always maps into the full 0–100 edit space — carrying the
+ * previous path's bbox compounded smaller on every switch (presets with
+ * natural margins, then circle letterboxing, then the next pick…).
+ */
 export function settingsForEditablePreset(
   shape: ShapeId,
-  aspect = 1,
-  previous?: { customPath?: string; pathFit?: string; pathViewBox?: string },
 ): {
   shape: ShapeId;
   customPath: string;
   pathFit: 'viewbox';
   pathViewBox: string;
 } {
-  const target = editablePathTargetRect(previous);
-  const rings = getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
-  // Fit after mapping so curved-preset handle overshoot stays inside the target
-  // (and the edit viewBox), avoiding false legacy-pixel migration.
-  const contours = fitContoursInRect(
-    mapContours(
-      ringsToContours(rings),
+  const target = { x: 0, y: 0, width: EDIT_SPAN, height: EDIT_SPAN };
+  const presetPath = shape !== 'custom' ? PRESET_PATHS[shape] : undefined;
+  // Fixed-path presets keep their authored bezier handles and sharp corners by
+  // mapping the parsed contours straight into the edit viewBox. Routing them
+  // through getPresetRings/ringsToContours instead would flatten curves into
+  // samples and re-derive smoothed handles from scratch — rounding corners
+  // that were meant to stay sharp and drifting curves off their drawn shape.
+  const mapped = presetPath
+    ? mapContours(
+      parsePathNodes(presetPath),
+      (point: Pt) => ({
+        x: (point.x / 100) * target.width + target.x,
+        y: (point.y / 100) * target.height + target.y,
+      }),
+    )
+    : mapContours(
+      // Only reached for `custom`, which has no authored path — seed it with
+      // a plain rectangle to edit from.
+      ringsToContours(getPresetRings('rectangle')),
       point => ({ x: point.x * target.width + target.x, y: point.y * target.height + target.y }),
-    ),
-    target,
-  );
+    );
+  const contours = fitContoursInRect(mapped, target);
   return {
     // Keep the preset id so the settings dropdown reflects the pick; point
     // edits later flip to `custom` via writePath (move/scale keep the id).
@@ -960,16 +962,25 @@ export function toggleNodeSmooth(contours: VecContour[], contourIndex: number, n
   const node = contour?.nodes[nodeIndex];
   if (!node) return contours;
   const next = cloneContours(contours);
-  const target = next[contourIndex].nodes[nodeIndex];
-  if (target.in || target.out) {
+  const nodes = next[contourIndex].nodes;
+  const target = nodes[nodeIndex];
+  const count = nodes.length;
+  const prevIndex = (nodeIndex - 1 + count) % count;
+  const nextIndex = (nodeIndex + 1) % count;
+  const prevOut = Boolean(activeHandle(nodes[prevIndex].out, nodes[prevIndex].p));
+  const nextIn = Boolean(activeHandle(nodes[nextIndex].in, nodes[nextIndex].p));
+  // Curve → corner: retract this node's handles *and* the neighbouring
+  // segment handles that still keep the edges curved. Otherwise serialize
+  // falls back to C-with-control-at-anchor, parse restores coincident
+  // handles, and the point stays a circle forever.
+  if (nodeHasCurveHandles(target) || prevOut || nextIn) {
     target.in = null;
     target.out = null;
+    nodes[prevIndex].out = null;
+    nodes[nextIndex].in = null;
     return next;
   }
-  const count = contour.nodes.length;
-  const previous = contour.nodes[(nodeIndex - 1 + count) % count].p;
-  const following = contour.nodes[(nodeIndex + 1) % count].p;
-  const handles = smoothHandles(previous, target.p, following);
+  const handles = smoothHandles(nodes[prevIndex].p, target.p, nodes[nextIndex].p);
   target.in = handles.in;
   target.out = handles.out;
   return next;
@@ -1630,7 +1641,6 @@ function getCSS(P: string): string {
   width: 100%;
   height: 100%;
   min-height: 1px;
-  background-color: var(--${P}-background-color, transparent);
   color: var(--${P}-text-color, #000000);
 }
 .${P}-column {
@@ -1639,13 +1649,16 @@ function getCSS(P: string): string {
   min-width: 0;
   height: 100%;
 }
-.${P}-shape-image {
+.${P}-shape-fill {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
   overflow: hidden;
+}
+.${P}-shape-fill-path {
+  fill: var(--${P}-background-color, transparent);
 }
 .${P}-flow {
   position: absolute;
@@ -2081,6 +2094,8 @@ type PathEditorProps = {
   snap: number;
   /** When true, map the edit viewBox across the full component box (presets). */
   stretchToBox: boolean;
+  /** With stretchToBox, letterbox uniformly so a circle stays round in a non-square box. */
+  uniformStretch?: boolean;
   /** Shape and image editing are mutually exclusive; the host (PretextColumn) owns the cycle. */
   stage: EditStage;
   onStageChange: (stage: EditStage) => void;
@@ -2090,7 +2105,7 @@ type PathEditorProps = {
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
-function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stage, onStageChange, onSelectionChange, onChange, onCommit }: PathEditorProps) {
+function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, uniformStretch = false, stage, onStageChange, onSelectionChange, onChange, onCommit }: PathEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const bodyPathRef = useRef<SVGPathElement | null>(null);
   const contoursRef = useRef(contours);
@@ -2136,32 +2151,42 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
 
   const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
   const scaleY = viewBox.height > 0 ? box.height / viewBox.height : 1;
+  const uniformScale = Math.min(scaleX, scaleY);
+  const stretchScaleX = stretchToBox && uniformStretch ? uniformScale : scaleX;
+  const stretchScaleY = stretchToBox && uniformStretch ? uniformScale : scaleY;
+  const stretchOffsetX = stretchToBox && uniformStretch
+    ? (box.width - viewBox.width * uniformScale) / 2
+    : 0;
+  const stretchOffsetY = stretchToBox && uniformStretch
+    ? (box.height - viewBox.height * uniformScale) / 2
+    : 0;
 
   // Pinned custom paths: 1 viewBox unit = 1 px. Presets stretch the edit
   // space across the full component so handles track the text shape.
+  // Circle uses uniform (letterboxed) stretch so the outline stays round.
   const toPx = useCallback((point: Pt): Pt => (
     stretchToBox
       ? {
-        x: (point.x - viewBox.x) * scaleX,
-        y: (point.y - viewBox.y) * scaleY,
+        x: stretchOffsetX + (point.x - viewBox.x) * stretchScaleX,
+        y: stretchOffsetY + (point.y - viewBox.y) * stretchScaleY,
       }
       : {
         x: point.x - viewBox.x,
         y: point.y - viewBox.y,
       }
-  ), [stretchToBox, viewBox, scaleX, scaleY]);
+  ), [stretchToBox, viewBox, stretchScaleX, stretchScaleY, stretchOffsetX, stretchOffsetY]);
 
   const fromPx = useCallback((point: Pt): Pt => (
     stretchToBox
       ? {
-        x: viewBox.x + (scaleX > 0 ? point.x / scaleX : 0),
-        y: viewBox.y + (scaleY > 0 ? point.y / scaleY : 0),
+        x: viewBox.x + (stretchScaleX > 0 ? (point.x - stretchOffsetX) / stretchScaleX : 0),
+        y: viewBox.y + (stretchScaleY > 0 ? (point.y - stretchOffsetY) / stretchScaleY : 0),
       }
       : {
         x: viewBox.x + point.x,
         y: viewBox.y + point.y,
       }
-  ), [stretchToBox, viewBox, scaleX, scaleY]);
+  ), [stretchToBox, viewBox, stretchScaleX, stretchScaleY, stretchOffsetX, stretchOffsetY]);
 
   const frameCenter = useMemo(() => fromPx({ x: box.width / 2, y: box.height / 2 }), [fromPx, box.width, box.height]);
 
@@ -2169,16 +2194,18 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
     if (stretchToBox) {
+      const localX = ((clientX - rect.left) / rect.width) * box.width;
+      const localY = ((clientY - rect.top) / rect.height) * box.height;
       return {
-        x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
-        y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
+        x: viewBox.x + (stretchScaleX > 0 ? (localX - stretchOffsetX) / stretchScaleX : 0),
+        y: viewBox.y + (stretchScaleY > 0 ? (localY - stretchOffsetY) / stretchScaleY : 0),
       };
     }
     return {
       x: viewBox.x + (clientX - rect.left),
       y: viewBox.y + (clientY - rect.top),
     };
-  }, [stretchToBox, viewBox]);
+  }, [stretchToBox, viewBox, box.width, box.height, stretchScaleX, stretchScaleY, stretchOffsetX, stretchOffsetY]);
 
   // Same as toPath, but into this editor's own pixel space (its viewBox is the
   // box's own width/height) — what the outline is drawn in and what the
@@ -2194,9 +2221,22 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
 
   // Keep path coords in viewBox space (0–100) so top/left stay proportional
   // when the component box scales with the article — never rematerialize to px.
+  // Point edits drop `circle` (and its letterboxed stretch); bake so the
+  // committed path keeps the same on-screen geometry under ordinary stretch.
   const commitContours = useCallback((next: VecContour[], options?: PathCommitOptions) => {
-    onCommit(next, options);
-  }, [onCommit]);
+    const payload = uniformStretch && !options?.preserveShape
+      ? bakeUniformStretchToBoxStretch(
+        next,
+        viewBox,
+        box,
+        stretchOffsetX,
+        stretchOffsetY,
+        stretchScaleX,
+        stretchScaleY,
+      )
+      : next;
+    onCommit(payload, options);
+  }, [onCommit, uniformStretch, viewBox, box, stretchOffsetX, stretchOffsetY, stretchScaleX, stretchScaleY]);
 
   // The pointer is captured by the overlay for the whole drag, so the move and
   // release land here whatever they pass over — and stay off the editor around
@@ -2242,10 +2282,28 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
       let dy = rawDy;
       if (isFinite(bboxWidth) && isFinite(bboxHeight)) {
         if (stretchToBox) {
-          const lowX = Math.min(viewBox.x, viewBox.x + viewBox.width - bboxWidth);
-          const highX = Math.max(viewBox.x, viewBox.x + viewBox.width - bboxWidth);
-          const lowY = Math.min(viewBox.y, viewBox.y + viewBox.height - bboxHeight);
-          const highY = Math.max(viewBox.y, viewBox.y + viewBox.height - bboxHeight);
+          // Uniform (letterboxed) stretch maps the viewBox onto the inscribed
+          // square only. Clamp against the full component in path space so the
+          // shape can travel into the letterbox margins — otherwise a circle
+          // stuck at the viewBox edge cannot reach the empty sides of a wide box.
+          let boundMinX = viewBox.x;
+          let boundMaxX = viewBox.x + viewBox.width;
+          let boundMinY = viewBox.y;
+          let boundMaxY = viewBox.y + viewBox.height;
+          if (uniformStretch) {
+            if (stretchScaleX > 0) {
+              boundMinX = viewBox.x + (0 - stretchOffsetX) / stretchScaleX;
+              boundMaxX = viewBox.x + (box.width - stretchOffsetX) / stretchScaleX;
+            }
+            if (stretchScaleY > 0) {
+              boundMinY = viewBox.y + (0 - stretchOffsetY) / stretchScaleY;
+              boundMaxY = viewBox.y + (box.height - stretchOffsetY) / stretchScaleY;
+            }
+          }
+          const lowX = Math.min(boundMinX, boundMaxX - bboxWidth);
+          const highX = Math.max(boundMinX, boundMaxX - bboxWidth);
+          const lowY = Math.min(boundMinY, boundMaxY - bboxHeight);
+          const highY = Math.max(boundMinY, boundMaxY - bboxHeight);
           const clampedMinX = Math.min(highX, Math.max(lowX, bbox.minX + rawDx));
           const clampedMinY = Math.min(highY, Math.max(lowY, bbox.minY + rawDy));
           dx = clampedMinX - bbox.minX;
@@ -2718,7 +2776,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, stag
               y={anchor.y - ANCHOR_SIZE / 2}
               width={ANCHOR_SIZE}
               height={ANCHOR_SIZE}
-              rx={node.in || node.out ? ANCHOR_SIZE / 2 : 0}
+              rx={nodeHasCurveHandles(node) ? ANCHOR_SIZE / 2 : 0}
             />
             <rect
               className={`${P}-editor-grab`}
@@ -3230,6 +3288,7 @@ type FrozenShapeImage = {
   focalY: number;
   scale: number;
   customPath: string;
+  shape: string;
 };
 
 function PretextColumn({
@@ -3292,23 +3351,25 @@ function PretextColumn({
   const blocks = useMemo(() => (Array.isArray(item?.text) ? item.text : []), [item]);
   const tokens = useMemo(() => tokenize(blocks), [blocks]);
   const plainParagraphs = useMemo(() => getPlainText(blocks), [blocks]);
-  const dropCapChar = dropCapLines > 0 ? (tokens[0]?.text?.charAt(0) ?? '') : '';
+  const dropCapChar = dropCapLines > 0 && dropCapSize > 1 ? (tokens[0]?.text?.charAt(0) ?? '') : '';
 
-  const aspect = box.height > 0 ? box.width / box.height : 1;
   const draftContours = pathEditor?.contours ?? null;
   const unitRings = useMemo(() => {
+    let result: Ring[] = [];
     if (draftContours) {
       const drawn = flattenContours(draftContours);
-      if (drawn.length) return mapToViewBox(drawn, viewBox);
+      if (drawn.length) result = mapToViewBox(drawn, viewBox);
     }
-    // Prefer a stored path whenever present (preset picks materialize into
-    // customPath while keeping the preset id on `shape` for the dropdown).
-    const spec = customPath.trim();
-    const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
-    if (parsed && parsed.length) return parsed;
-    return getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
-    // aspect only matters for the circle preset; round it to avoid churn
-  }, [draftContours, shape, customPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
+    if (!result.length) {
+      // Prefer a stored path whenever present (preset picks materialize into
+      // customPath while keeping the preset id on `shape` for the dropdown).
+      const spec = customPath.trim();
+      const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
+      if (parsed && parsed.length) result = parsed;
+      else result = getPresetRings(shape === 'custom' ? 'rectangle' : shape);
+    }
+    return shape === 'circle' ? letterboxUnitRings(result, box) : result;
+  }, [draftContours, shape, customPath, pathFit, viewBox, box.width, box.height]);
 
   // Layout treats rings as 0..1 fractions of the box. Paths stored in the
   // edit viewBox (0–100) map through mapToViewBox and scale with the box —
@@ -3321,10 +3382,14 @@ function PretextColumn({
   const onConvertPath = pathEditor?.onConvert;
   const needsConversion = pathEditor?.needsConversion ?? false;
   const exceedsEditViewBox = useMemo(() => {
+    // Circle keeps viewBox + letterbox mapping even when dragged into the
+    // component's letterbox margins (path coords outside 0–100). Treating that
+    // as a legacy pixel path would drop stretchToBox mid-drag.
+    if (shape === 'circle') return false;
     const contours = draftContours
       ?? (customPath.trim() ? parsePathNodes(customPath) : null);
     return Boolean(contours && pathExceedsEditViewBox(contours, viewBox));
-  }, [draftContours, customPath, viewBox]);
+  }, [draftContours, customPath, viewBox, shape]);
 
   const [legacyRefBox, setLegacyRefBox] = useState<{ width: number; height: number } | null>(null);
   useIsomorphicLayoutEffect(() => {
@@ -3350,10 +3415,11 @@ function PretextColumn({
   const committedUnitRings = useMemo(() => {
     const spec = imageCustomPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
-    if (parsed && parsed.length) return parsed;
-    return getPresetRings(shape === 'custom' ? 'rectangle' : shape, aspect);
-    // aspect only matters for the circle preset; round it to avoid churn
-  }, [shape, imageCustomPath, pathFit, viewBox, Math.round(aspect * 100) / 100]);
+    const base = parsed && parsed.length
+      ? parsed
+      : getPresetRings(shape === 'custom' ? 'rectangle' : shape);
+    return shape === 'circle' ? letterboxUnitRings(base, box) : base;
+  }, [shape, imageCustomPath, pathFit, viewBox, box.width, box.height]);
 
   const imageRings = useMemo(() => {
     if (!exceedsEditViewBox || box.width <= 0 || box.height <= 0) return committedUnitRings;
@@ -3599,6 +3665,13 @@ function PretextColumn({
     ) {
       return null;
     }
+    // Shape-select swaps replace the mask wholesale. World-pinning the photo
+    // across that jump reads as an image shift (and briefly flickers when the
+    // committed focals lag the preserve). Keep relative focal/scale instead;
+    // path-point edits (same shape id) still preserve absolute placement.
+    if (anchor.shape !== shape) {
+      return null;
+    }
     return preserveImageTransformAcrossBoundsChange(
       anchor.bounds,
       committedShapeImageBounds,
@@ -3627,11 +3700,13 @@ function PretextColumn({
       focalY: pathPreservedTransform?.focalY ?? imageFocalY,
       scale: pathPreservedTransform?.scale ?? imageScale,
       customPath: imageCustomPath,
+      shape,
     };
   }, [
     pathDragActive,
     pathCarryImage,
     imageCustomPath,
+    shape,
     imageRings,
     committedShapeImageBounds,
     imageEditor,
@@ -3670,6 +3745,10 @@ function PretextColumn({
   const activeImageFocalY = pathDragLiveTransform?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
   const activeImageScale = pathDragLiveTransform?.scale ?? pathPreservedTransform?.scale ?? imageScale;
 
+  const shapeFillPath = useMemo(
+    () => (box.width > 0 && box.height > 0 ? ringsToPathPx(rings, box) : ''),
+    [rings, box.width, box.height],
+  );
   const shapeImagePath = useMemo(
     () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(imageRings, box) : ''),
     [imageUrl, imageRings, box.width, box.height],
@@ -3692,27 +3771,32 @@ function PretextColumn({
 
   return (
     <div className={`${P}-column`} ref={setColumnEl}>
-      {imageUrl && shapeImagePath && shapeImageBounds && imageRect ? (
+      {shapeFillPath ? (
         <svg
-          className={`${P}-shape-image`}
+          className={`${P}-shape-fill`}
           viewBox={`0 0 ${box.width} ${box.height}`}
           preserveAspectRatio="none"
           aria-hidden
         >
-          <defs>
-            <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
-              <path d={shapeImagePath} fillRule="evenodd" />
-            </clipPath>
-          </defs>
-          <image
-            href={imageUrl}
-            x={shapeImageBounds.x + imageRect.x}
-            y={shapeImageBounds.y + imageRect.y}
-            width={imageRect.width}
-            height={imageRect.height}
-            preserveAspectRatio="none"
-            clipPath={`url(#${clipId})`}
-          />
+          <path className={`${P}-shape-fill-path`} d={shapeFillPath} fillRule="evenodd" />
+          {imageUrl && shapeImagePath && shapeImageBounds && imageRect ? (
+            <>
+              <defs>
+                <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+                  <path d={shapeImagePath} fillRule="evenodd" />
+                </clipPath>
+              </defs>
+              <image
+                href={imageUrl}
+                x={shapeImageBounds.x + imageRect.x}
+                y={shapeImageBounds.y + imageRect.y}
+                width={imageRect.width}
+                height={imageRect.height}
+                preserveAspectRatio="none"
+                clipPath={`url(#${clipId})`}
+              />
+            </>
+          ) : null}
         </svg>
       ) : null}
       <div
@@ -3796,6 +3880,7 @@ function PretextColumn({
               contours={draftContours}
               snap={pathEditor.snap}
               stretchToBox={!exceedsEditViewBox}
+              uniformStretch={shape === 'circle'}
               stage={editStage}
               onStageChange={setEditStage}
               onSelectionChange={onPathSelectionChange}
@@ -3841,7 +3926,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     [content],
   );
 
-  const shape = settings?.shape ?? 'rectangle';
+  const shape = settings?.shape ?? 'custom';
   const customPath = settings?.customPath ?? '';
   const pathFit = settings?.pathFit ?? 'stretch';
   const viewBox = useMemo(() => parseViewBox(settings?.pathViewBox), [settings?.pathViewBox]);
@@ -3849,8 +3934,8 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const align = settings?.textAlign ?? 'left';
   const allowOverflow = (settings?.overflowMode ?? 'clip') === 'visible';
   const fitEnabled = (settings?.fitText ?? 'off') === 'on';
-  const dropCapLines = (settings?.dropCap ?? 'off') === 'on' ? Math.max(2, Math.round(settings?.dropCapLines ?? 3)) : 0;
   const dropCapSize = settings?.dropCapSize ?? DROP_CAP_SIZE_DEFAULT;
+  const dropCapLines = Math.max(1, Math.round(settings?.dropCapLines ?? dropCapSize));
   const showGuides = editor && selected && !isPreviewMode;
 
   const [isItemTransforming, setIsItemTransforming] = useState(false);
@@ -3957,9 +4042,12 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     return parsed.length ? parsed : null;
   }, [pathEditing, draft, customPath]);
 
-  const isEditablePath = pathFit === 'viewbox'
+  const isEditablePath = Boolean(
+    pathFit === 'viewbox'
     && (settings?.pathViewBox ?? '') === EDIT_VIEW_BOX
-    && Boolean(editContours && !pathExceedsEditViewBox(editContours, viewBox));
+    && editContours
+    && (shape === 'circle' || !pathExceedsEditViewBox(editContours, viewBox)),
+  );
 
   const writePath = useCallback((next: VecContour[], commit: boolean, options?: PathCommitOptions) => {
     const serialized = serializeContours(next);

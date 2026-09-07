@@ -24,10 +24,8 @@ const schema: ComponentSchemaV1 = {
       shape: {
         type: 'string',
         scope: 'layout',
-        title: 'Shape',
         display: {
-          type: 'drop-down',
-          label: 'Shape',
+          type: 'shape-select',
           enum: SHAPE_OPTIONS,
         },
         enum: SHAPE_OPTIONS,
@@ -71,17 +69,11 @@ const schema: ComponentSchemaV1 = {
         tooltip: 'Scales the type down until all text fits the path.',
         display: { type: 'toggle-cycle', enum: ['off', 'on'] },
       },
-      dropCap: {
-        type: 'string',
-        scope: 'common',
-        title: 'Drop cap',
-        display: { type: 'toggle-cycle', enum: ['off', 'on'] },
-      },
       dropCapLines: {
         type: 'number',
         scope: 'common',
         title: 'Drop cap lines',
-        min: 2,
+        min: 1,
         max: 8,
         step: 1,
         display: { type: 'numeric-input' },
@@ -176,22 +168,21 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      ...settingsForEditablePreset('diamond'),
+      ...settingsForEditablePreset('circle'),
       pathSnap: 0,
       shapeMode: 'A',
       fitText: 'off',
-      dropCap: 'off',
-      dropCapLines: 3,
-      dropCapSize: 3,
-      image: null,
+      dropCapLines: 1,
+      dropCapSize: 1,
+      image: 'https://cdn.cntrl.site/component-assets/shapedType_img.jpg',
       backgroundColor: 'rgba(0, 0, 0, 0)',
-      textFontFamily: 'Goudy Bookletter 1911',
+      textFontFamily: 'Basteleur',
       textFontSettings: {
         fontWeight: 400,
         fontStyle: 'normal',
       },
       textAlign: 'center',
-      textTextAppearance: { textTransform: 'none', textDecoration: 'none', fontVariant: 'normal' },
+      textTextAppearance: { textTransform: 'uppercase', textDecoration: 'none', fontVariant: 'normal' },
       textColor: '#000000',
       linkColor: '#000000',
     },
@@ -209,9 +200,9 @@ const schema: ComponentSchemaV1 = {
         textWordSpacing: 0,
       },
       d: {
-        textFontSize: 0.011,
+        textFontSize: 0.032,
         textLineHeight: 0.0155,
-        textLetterSpacing: 0,
+        textLetterSpacing: -0.001,
         textWordSpacing: 0,
       },
     },
@@ -223,7 +214,6 @@ const schema: ComponentSchemaV1 = {
       'pathFit',
       'shapeMode',
       'fitText',
-      'dropCap',
       'dropCapLines',
       'dropCapSize',
       'image',
@@ -232,10 +222,6 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'shapeMode', value: 'B', isNotEqual: true },
         then: { name: 'properties.image.display.visible', value: false },
-      },
-      {
-        if: { name: 'dropCap', value: 'on', isNotEqual: true },
-        then: { name: 'properties.dropCapSize.display.visible', value: false },
       },
     ],
   },
@@ -248,9 +234,8 @@ const schema: ComponentSchemaV1 = {
       layout: [
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['shapeMode'] },
-        { type: 'row', items: ['shape'] },
-        { type: 'row', items: ['image', 'dropCap'] },
-        { type: 'row', items: ['dropCapSize'] },
+        { type: 'row', title: 'Shape', items: ['shape'] },
+        { type: 'row', items: ['dropCapSize', 'image'] },
       ],
     },
     {
@@ -308,7 +293,7 @@ const schema: ComponentSchemaV1 = {
           {
             type: 'paragraph',
             children: [
-              { text: 'Style is viewed by many as a shallow obsession with disembodied surfaces. However our activities as designers are based on style’s function as a cultural communicator. A vocabulary or set of formal characteristics constitutes a particular style, recognized most frequently in retrospect. Style itself is the visual language of a culture: in fashion, in consumer goods, in art, in literature, in all media. Style is ephemeral; it is timely. To be in style is to embody the influences and values of your time.' },
+              { text: "Le loro superficie, excelso Duca, fra loro similmente possiamo dire al medesimo modo esser proportionali commo de lor massa corporea s'è dicto, cioè irrationali per la malitia de la figura pentagona che in lo duodecedron se interpone. Ma de l'altre possano a le volte essere rationali, commo quelle del tetracedron, cubo, octocedron, per essere triangole e quadrate e note in proportione con lo diametro de la loro sphera in la quale si formano, commo s'è veduto di sopra." },
             ],
           },
         ],
@@ -323,28 +308,28 @@ export const PretextComponent = {
   name: 'Shaped Type',
   category: 'typography',
   version: 1,
-  normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, prevSettings: Record<string, any>) => {
+  normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, _prevSettings: Record<string, any>) => {
     const shape = nextSettings.shape;
     if (typeof shape !== 'string' || shape === 'custom' || (SHAPE_IDS as readonly string[]).indexOf(shape) === -1) {
       return nextSettings;
     }
     return {
       ...nextSettings,
-      ...settingsForEditablePreset(shape as typeof SHAPE_IDS[number], 1, prevSettings),
+      ...settingsForEditablePreset(shape as typeof SHAPE_IDS[number]),
     };
   },
   defaultSize: {
     d: {
-      width: 380,
-      height: 382,
+      width: 1420,
+      height: 640,
     },
     t: {
-      width: 380,
-      height: 382,
+      width: 710,
+      height: 320,
     },
     m: {
-      width: 334,
-      height: 336,
+      width: 355,
+      height: 160,
     },
   },
   preview: {
