@@ -83,6 +83,17 @@ type BurgerSettings = {
   wordSpacing?: number;
   textAlign?: TextStyles['textAlign'];
   textAppearance?: TextStyles['textAppearance'];
+  openFontFamily?: string;
+  openFontSettings?: {
+    fontWeight?: number;
+    fontStyle?: string;
+  };
+  openFontSize?: number;
+  openLineHeight?: number;
+  openLetterSpacing?: number;
+  openWordSpacing?: number;
+  openTextAlign?: TextStyles['textAlign'];
+  openTextAppearance?: TextStyles['textAppearance'];
   stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor', string>>>;
   navigationStateOverrides?: BurgerNavigationStateOverrides;
 };
@@ -293,6 +304,67 @@ function getTextLeadingVars(
   } as CSSProperties;
 }
 
+type BurgerTypeStyle = {
+  fontFamily?: string;
+  fontSettings?: {
+    fontWeight?: number;
+    fontStyle?: string;
+  };
+  fontSize?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  wordSpacing?: number;
+  textAlign?: TextStyles['textAlign'];
+  textAppearance?: TextStyles['textAppearance'];
+};
+
+function resolveBurgerTypeStyle(style: BurgerTypeStyle, fallback: BurgerTypeStyle = {}): BurgerTypeStyle {
+  return {
+    fontFamily: style.fontFamily ?? fallback.fontFamily,
+    fontSettings: style.fontSettings ?? fallback.fontSettings,
+    fontSize: style.fontSize ?? fallback.fontSize,
+    lineHeight: style.lineHeight ?? fallback.lineHeight,
+    letterSpacing: style.letterSpacing ?? fallback.letterSpacing ?? 0,
+    wordSpacing: style.wordSpacing ?? fallback.wordSpacing ?? 0,
+    textAlign: style.textAlign ?? fallback.textAlign ?? 'left',
+    textAppearance: style.textAppearance ?? fallback.textAppearance,
+  };
+}
+
+function burgerTypeStyleToCss(
+  P: string,
+  style: BurgerTypeStyle,
+  isEditor?: boolean,
+): { css: CSSProperties; className: string } {
+  const textStyle: TextStyles = {
+    fontSettings: {
+      fontFamily: style.fontFamily,
+      fontWeight: style.fontSettings?.fontWeight ?? 400,
+      fontStyle: style.fontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: style.fontSize ?? 0.01,
+    lineHeight: style.lineHeight,
+    letterSpacing: style.letterSpacing ?? 0,
+    wordSpacing: style.wordSpacing ?? 0,
+    textAlign: style.textAlign,
+    textAppearance: style.textAppearance,
+    color: '',
+  };
+
+  return {
+    css: {
+      ...omitTextColors(textStylesToCss(textStyle, isEditor)),
+      ...getTextLeadingVars(style.fontSize, style.lineHeight, P, isEditor),
+    },
+    className: getTextClassName(
+      style.fontSize,
+      style.lineHeight,
+      `${P}-link-text`,
+      `${P}-text-tight-leading`,
+    ),
+  };
+}
+
 function renderMultilineText(text: string) {
   const lines = text.split(/\r?\n/);
 
@@ -442,6 +514,35 @@ function hasBurgerPaddingChanges(left: BurgerSettings, right: BurgerSettings): b
     || left.textPaddingBottom !== right.textPaddingBottom;
 }
 
+function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
+  const updates: Partial<BurgerSettings> = {};
+  if (settings.openFontFamily === undefined && settings.fontFamily !== undefined) {
+    updates.openFontFamily = settings.fontFamily;
+  }
+  if (settings.openFontSettings === undefined && settings.fontSettings !== undefined) {
+    updates.openFontSettings = settings.fontSettings;
+  }
+  if (settings.openFontSize === undefined && settings.fontSize !== undefined) {
+    updates.openFontSize = settings.fontSize;
+  }
+  if (settings.openLineHeight === undefined && settings.lineHeight !== undefined) {
+    updates.openLineHeight = settings.lineHeight;
+  }
+  if (settings.openLetterSpacing === undefined && settings.letterSpacing !== undefined) {
+    updates.openLetterSpacing = settings.letterSpacing;
+  }
+  if (settings.openWordSpacing === undefined && settings.wordSpacing !== undefined) {
+    updates.openWordSpacing = settings.wordSpacing;
+  }
+  if (settings.openTextAlign === undefined && settings.textAlign !== undefined) {
+    updates.openTextAlign = settings.textAlign;
+  }
+  if (settings.openTextAppearance === undefined && settings.textAppearance !== undefined) {
+    updates.openTextAppearance = settings.textAppearance;
+  }
+  return Object.keys(updates).length === 0 ? settings : { ...settings, ...updates };
+}
+
 export function applyBurgerSettingsChange(
   nextSettings: BurgerSettings,
   prevSettings: BurgerSettings,
@@ -454,7 +555,7 @@ export function applyBurgerSettingsChange(
     textPaddingRight: nextSettings.textPaddingRight ?? 0,
     textPaddingTop: nextSettings.textPaddingTop ?? 0,
     textPaddingBottom: nextSettings.textPaddingBottom ?? 0,
-    fontSize: nextSettings.fontSize ?? prevSettings.fontSize,
+    fontSize: nextSettings.openFontSize ?? nextSettings.fontSize ?? prevSettings.openFontSize ?? prevSettings.fontSize,
   });
 
   const nextPanelSize = getBurgerPanelSize(nextSettings);
@@ -1071,6 +1172,7 @@ function getCSS(P: string): string {
   width: 100%;
   color: var(--${P}-link-color);
   text-decoration: none;
+  cursor: default;
   transition: color 200ms ease;
 }
 .${P}-link-text-box {
@@ -1107,15 +1209,19 @@ function getCSS(P: string): string {
   padding-top: var(--${P}-text-leading-gap, 0);
   padding-bottom: var(--${P}-text-leading-gap, 0);
 }
-.${P}-interactive .${P}-link:hover,
-.${P}-interactive .${P}-link:focus-visible,
-.${P}-lightbox.${P}-state-hover .${P}-link {
+.${P}-interactive .${P}-has-href,
+.${P}-interactive .${P}-social-link {
+  cursor: pointer;
+}
+.${P}-interactive .${P}-has-href:hover,
+.${P}-interactive .${P}-has-href:focus-visible,
+.${P}-lightbox.${P}-state-hover .${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
-.${P}-interactive .${P}-link:hover .${P}-link-text,
-.${P}-interactive .${P}-link:focus-visible .${P}-link-text,
-.${P}-lightbox.${P}-state-hover .${P}-link-text {
+.${P}-interactive .${P}-has-href:hover .${P}-link-text,
+.${P}-interactive .${P}-has-href:focus-visible .${P}-link-text,
+.${P}-lightbox.${P}-state-hover .${P}-has-href .${P}-link-text {
   color: inherit;
 }
 .${P}-editor .${P}-toggle {
@@ -1133,7 +1239,6 @@ function getCSS(P: string): string {
   padding-left: var(--${P}-nav-padding-x, 0);
   padding-right: var(--${P}-nav-padding-x, 0);
   gap: var(--${P}-nav-inner-gap, 0);
-  transition: background-color ${MENU_ANIM_MS}ms ease;
 }
 .${P}-nav-logo {
   position: absolute;
@@ -1194,11 +1299,12 @@ function getCSS(P: string): string {
   flex-shrink: 0;
   color: var(--${P}-link-color);
   text-decoration: none;
+  cursor: default;
   transition: color 200ms ease;
 }
-.${P}-interactive .${P}-nav-link:hover,
-.${P}-interactive .${P}-nav-link:focus-visible,
-.${P}-root.${P}-state-hover .${P}-nav-link {
+.${P}-interactive .${P}-nav-link.${P}-has-href:hover,
+.${P}-interactive .${P}-nav-link.${P}-has-href:focus-visible,
+.${P}-root.${P}-state-hover .${P}-nav-link.${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
@@ -1220,6 +1326,7 @@ function getCSS(P: string): string {
   pointer-events: auto;
   color: var(--${P}-social-icon-color);
   text-decoration: none;
+  cursor: default;
   transition: color 200ms ease, opacity 200ms ease;
 }
 .${P}-social-icon,
@@ -1274,12 +1381,10 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-onScroll .${P}-type-c-backdrop {
   background-color: var(--${P}-onScroll-overlay-color, var(--${P}-overlay-color));
 }
-.${P}-interactive .${P}-link:hover,
-.${P}-interactive .${P}-link:focus-visible,
-.${P}-lightbox.${P}-state-hover .${P}-link,
-.${P}-interactive .${P}-nav-link:hover,
-.${P}-interactive .${P}-nav-link:focus-visible,
-.${P}-root.${P}-state-hover .${P}-nav-link {
+.${P}-interactive .${P}-has-href:hover,
+.${P}-interactive .${P}-has-href:focus-visible,
+.${P}-lightbox.${P}-state-hover .${P}-has-href,
+.${P}-root.${P}-state-hover .${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
 }
 .${P}-interactive .${P}-social-link:hover,
@@ -1309,7 +1414,7 @@ function getCSS(P: string): string {
   line-height: 0;
   font-size: 0;
 }
-.${P}-interactive .${P}-nav-bar {
+.${P}-nav-state-anim .${P}-nav-bar {
   transition:
     background-color ${MENU_ANIM_MS}ms ease,
     height ${NAV_STATE_ANIM_MS}ms ease,
@@ -1317,15 +1422,15 @@ function getCSS(P: string): string {
     padding ${NAV_STATE_ANIM_MS}ms ease,
     gap ${NAV_STATE_ANIM_MS}ms ease;
 }
-.${P}-interactive .${P}-nav-logo-inner,
-.${P}-interactive .${P}-nav-padding-right,
-.${P}-interactive .${P}-nav-gap-control,
-.${P}-interactive .${P}-link-text-box {
+.${P}-nav-state-anim .${P}-nav-logo-inner,
+.${P}-nav-state-anim .${P}-nav-padding-right,
+.${P}-nav-state-anim .${P}-nav-gap-control,
+.${P}-nav-state-anim .${P}-link-text-box {
   transition:
     width ${NAV_STATE_ANIM_MS}ms ease,
     height ${NAV_STATE_ANIM_MS}ms ease;
 }
-.${P}-interactive .${P}-nav-toggle-wrap .${P}-root {
+.${P}-nav-state-anim .${P}-nav-toggle-wrap .${P}-root {
   transition:
     width ${NAV_STATE_ANIM_MS}ms ease,
     height ${NAV_STATE_ANIM_MS}ms ease,
@@ -1334,22 +1439,24 @@ function getCSS(P: string): string {
     max-width ${NAV_STATE_ANIM_MS}ms ease,
     max-height ${NAV_STATE_ANIM_MS}ms ease;
 }
-.${P}-interactive .${P}-icon-line {
+.${P}-nav-state-anim .${P}-icon-line {
   transition:
     transform ${MENU_ANIM_MS}ms ease,
     opacity ${MENU_ANIM_MS}ms ease,
     top ${MENU_ANIM_MS}ms ease,
     height ${NAV_STATE_ANIM_MS}ms ease;
 }
-.${P}-interactive .${P}-nav-link,
-.${P}-interactive .${P}-link,
-.${P}-interactive .${P}-link-text {
+.${P}-nav-state-anim .${P}-nav-link,
+.${P}-nav-state-anim .${P}-link,
+.${P}-nav-state-anim .${P}-link-text,
+.${P}-nav-state-anim .${P}-text-tight-leading {
   transition:
     color 200ms ease,
     font-size ${NAV_STATE_ANIM_MS}ms ease,
     line-height ${NAV_STATE_ANIM_MS}ms ease,
     letter-spacing ${NAV_STATE_ANIM_MS}ms ease,
-    word-spacing ${NAV_STATE_ANIM_MS}ms ease;
+    word-spacing ${NAV_STATE_ANIM_MS}ms ease,
+    padding ${NAV_STATE_ANIM_MS}ms ease;
 }
 `;
 }
@@ -1515,12 +1622,21 @@ export function Burger({
   const [isScrolled, setIsScrolled] = useState(false);
 
   const isControlled = controlledNavigationState !== undefined;
-  const previewState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
+  const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
+  const previewState = activeEvent && activeEvent !== 'default' && (activeEvent !== 'hover' || isHoverEnabled)
+    ? activeEvent
+    : undefined;
   const scrollState = isControlled
     ? controlledNavigationState
     : (!isEditor || isPreviewMode) && isScrolled ? 'onScroll' : 'default';
   const resolvedState = previewState ?? (scrollState === 'default' ? undefined : scrollState);
   const navigationState: BurgerNavigationState = resolvedState === 'onScroll' ? 'onScroll' : 'default';
+  const [prevNavigationState, setPrevNavigationState] = useState(navigationState);
+  const [isNavStateAnimating, setIsNavStateAnimating] = useState(false);
+  if (navigationState !== prevNavigationState) {
+    setPrevNavigationState(navigationState);
+    setIsNavStateAnimating(true);
+  }
   const settings = useMemo(
     () => resolveNavigationStateSettings(settingsProp, navigationState),
     [settingsProp, navigationState],
@@ -1563,6 +1679,14 @@ export function Burger({
     wordSpacing = 0,
     textAlign = 'left',
     textAppearance,
+    openFontFamily,
+    openFontSettings,
+    openFontSize,
+    openLineHeight,
+    openLetterSpacing,
+    openWordSpacing,
+    openTextAlign,
+    openTextAppearance,
     stateOverrides,
     link: linkItems,
     socialLink: socialLinkItems,
@@ -1590,34 +1714,34 @@ export function Burger({
   const isVerticalPanel = type === 'b';
   const isHorizontalPanel = type === 'c';
 
-  const resolvedTextStyle: TextStyles = {
-    fontSettings: {
-      fontFamily,
-      fontWeight: fontSettings?.fontWeight ?? 400,
-      fontStyle: fontSettings?.fontStyle ?? 'normal',
-    },
-    fontSize: fontSize ?? 0.01,
+  const closedTypeStyle = resolveBurgerTypeStyle({
+    fontFamily,
+    fontSettings,
+    fontSize,
     lineHeight,
     letterSpacing,
     wordSpacing,
     textAlign,
     textAppearance,
-    color: linkColor,
-  };
-
-  const linkTypographyCss = omitTextColors(textStylesToCss(resolvedTextStyle, isEditor));
-  const linkTextClassName = getTextClassName(
-    fontSize,
-    lineHeight,
-    `${P}-link-text`,
-    `${P}-text-tight-leading`,
-  );
+  });
+  const openTypeStyle = resolveBurgerTypeStyle({
+    fontFamily: openFontFamily,
+    fontSettings: openFontSettings,
+    fontSize: openFontSize,
+    lineHeight: openLineHeight,
+    letterSpacing: openLetterSpacing,
+    wordSpacing: openWordSpacing,
+    textAlign: openTextAlign,
+    textAppearance: openTextAppearance,
+  }, closedTypeStyle);
+  const closedTextCss = burgerTypeStyleToCss(P, closedTypeStyle, isEditor);
+  const openTextCss = burgerTypeStyleToCss(P, openTypeStyle, isEditor);
   const isHorizontalText = isHorizontalPanel && textOrientation === 'horizontal';
   const linkTextStyle: CSSProperties = {
-    ...linkTypographyCss,
-    ...getTextLeadingVars(fontSize, lineHeight, P, isEditor),
+    ...openTextCss.css,
     whiteSpace: 'pre-wrap',
   };
+  const linkTextClassName = openTextCss.className;
   const scaled = (value: number) => scalingValue(value, isEditor);
   const resolvedNavGap = navGap ?? gap;
   const navPaddingRightHandleSize = Math.max(navPaddingRight, PADDING_HANDLE_SIZE);
@@ -1636,7 +1760,7 @@ export function Burger({
       textPaddingRight,
       textPaddingTop,
       textPaddingBottom,
-      fontSize,
+      fontSize: openTypeStyle.fontSize,
     }),
     [
       type,
@@ -1645,7 +1769,7 @@ export function Burger({
       textPaddingRight,
       textPaddingTop,
       textPaddingBottom,
-      fontSize,
+      openTypeStyle.fontSize,
     ],
   );
 
@@ -1701,18 +1825,24 @@ export function Burger({
     if (prevLayoutIdRef.current !== layoutId) {
       prevSettingsRef.current = settingsProp;
       prevLayoutIdRef.current = layoutId;
+      const withTextDefaults = applyBurgerOpenTextDefaults(settingsProp);
+      if (withTextDefaults !== settingsProp) {
+        onUpdateSettings(withTextDefaults);
+      }
       return;
     }
 
+    const withTextDefaults = applyBurgerOpenTextDefaults(settingsProp);
     const prevSettings = prevSettingsRef.current;
-    if (prevSettings === settingsProp) {
-      return;
-    }
-
-    const updatedSettings = applyBurgerSettingsChange(settingsProp, prevSettings);
+    const settingsChanged = prevSettings !== settingsProp;
+    const updatedSettings = settingsChanged
+      ? applyBurgerSettingsChange(withTextDefaults, prevSettings)
+      : withTextDefaults;
     prevSettingsRef.current = settingsProp;
 
-    if (!hasBurgerPaddingChanges(settingsProp, updatedSettings)) {
+    const hasTextDefaults = withTextDefaults !== settingsProp;
+    const hasPadding = settingsChanged && hasBurgerPaddingChanges(withTextDefaults, updatedSettings);
+    if (!hasTextDefaults && !hasPadding) {
       return;
     }
 
@@ -1733,10 +1863,10 @@ export function Burger({
     [`--${P}-icon-line-gap`]: iconLineGap,
   };
   const navLinkTextStyle: CSSProperties = {
-    ...linkTypographyCss,
-    ...getTextLeadingVars(fontSize, lineHeight, P, isEditor),
+    ...closedTextCss.css,
     textDecoration: 'none',
   };
+  const navLinkTextClassName = closedTextCss.className;
   const showLogo = logo?.mode !== 'Off';
   const logoSrc = logo?.icon ?? '';
   const logoHeight = scalingValue(panelHeight * 0.75, isEditor);
@@ -1746,7 +1876,10 @@ export function Burger({
   const socialItems = normalizeSocialLinks(socialLinkItems);
   const stateClass = resolvedState ? `${P}-state-${resolvedState}` : '';
   const editorClass = isEditor && !isPreviewMode ? `${P}-editor` : '';
-  const interactiveClass = !isEditor || isPreviewMode ? `${P}-interactive` : '';
+  const interactiveClass = isHoverEnabled ? `${P}-interactive` : '';
+  const navStateAnimClass = navigationState !== prevNavigationState || isNavStateAnimating
+    ? `${P}-nav-state-anim`
+    : '';
   const openClass = isOpen ? `${P}-open` : '';
 
   const lightboxLayoutStyle = useMemo(
@@ -1780,6 +1913,14 @@ export function Burger({
       closeTimerRef.current = null;
     }
   };
+
+  useEffect(() => {
+    if (!isNavStateAnimating) return;
+    const timer = window.setTimeout(() => {
+      setIsNavStateAnimating(false);
+    }, NAV_STATE_ANIM_MS);
+    return () => window.clearTimeout(timer);
+  }, [isNavStateAnimating, navigationState]);
 
   useEffect(() => {
     if (!isHorizontalPanel) return;
@@ -1892,7 +2033,7 @@ export function Burger({
         href={href}
         target={target}
         rel={target === '_blank' ? 'noopener noreferrer' : undefined}
-        className={linkClassName}
+        className={`${linkClassName} ${P}-has-href`}
         onClick={(event) => onNavLinkClick(event, item)}
       >
         {renderOpenNavLinkLabel(label)}
@@ -1930,7 +2071,7 @@ export function Burger({
       return null;
     }
 
-    const socialIconSize = scaled(fontSize ?? 0.01);
+    const socialIconSize = scaled(openTypeStyle.fontSize ?? 0.01);
     const socialAtTop = verticalAlign === 'bottom';
 
     return (
@@ -1998,7 +2139,7 @@ export function Burger({
         aria-label="Close menu"
       />
       <nav className={`${P}-panel`} style={panelStyle} aria-label="Menu">
-        {showControls && renderTextPaddingControls(P, type, effectiveLayout, fontSize, scaled)}
+        {showControls && renderTextPaddingControls(P, type, effectiveLayout, openTypeStyle.fontSize, scaled)}
         {verticalAlign === 'bottom' ? renderSocialLinks() : null}
         {renderOpenNavItems(`${P}-link`, isHorizontalText ? 'x' : 'y')}
         {verticalAlign !== 'bottom' ? renderSocialLinks() : null}
@@ -2029,7 +2170,7 @@ export function Burger({
 
     const { label, href, target } = resolveBurgerLink(item, pages);
     const textContent = (
-      <span className={linkTextClassName} style={navLinkTextStyle}>
+      <span className={navLinkTextClassName} style={navLinkTextStyle}>
         {renderMultilineText(label)}
       </span>
     );
@@ -2046,7 +2187,7 @@ export function Burger({
         href={href}
         target={target}
         rel={target === '_blank' ? 'noopener noreferrer' : undefined}
-        className={`${P}-nav-link`}
+        className={`${P}-nav-link ${P}-has-href`}
         onClick={(event) => onNavLinkClick(event, item)}
       >
         {labelNode}
@@ -2102,7 +2243,7 @@ export function Burger({
   return (
     <div
       ref={containerRef}
-      className={`${P}-root ${typeCClass} ${openRootClass} ${stateClass} ${editorClass} ${interactiveClass}`.trim()}
+      className={`${P}-root ${typeCClass} ${openRootClass} ${stateClass} ${editorClass} ${interactiveClass} ${navStateAnimClass}`.trim()}
       style={{
         width: '100%',
         height: '100%',
@@ -2151,7 +2292,7 @@ export function Burger({
           aria-label={isHorizontalPanel && typeCNavPhase === 'open' ? 'Menu' : 'Navigation'}
         >
           <div className={`${P}-nav-links-inner ${isHorizontalPanel ? typeCNavInnerClass : ''}`.trim()} style={typeCNavInnerStyle}>
-            {showControls && isHorizontalPanel && typeCNavPhase === 'open' && renderTextPaddingControls(P, type, effectiveLayout, fontSize, scaled)}
+            {showControls && isHorizontalPanel && typeCNavPhase === 'open' && renderTextPaddingControls(P, type, effectiveLayout, openTypeStyle.fontSize, scaled)}
             {isHorizontalPanel && typeCNavPhase === 'open' && verticalAlign === 'bottom' ? renderSocialLinks() : null}
             {isHorizontalPanel && typeCNavPhase === 'open'
               ? renderOpenNavItems(`${P}-nav-link`, 'x', { useContainerGap: true })

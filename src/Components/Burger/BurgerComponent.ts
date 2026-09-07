@@ -16,7 +16,7 @@ function createRangeControlLayoutProperty(title: string) {
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
-    display: { type: 'font-settings-weight' },
+    display: { type: 'font-settings-weight', hideLabel: true, useTabDesign: true },
     properties: {
       fontWeight: { type: 'number' as const },
       fontStyle: { type: 'string' as const },
@@ -45,13 +45,99 @@ const textStyleProperties = {
   },
   textAppearance: {
     type: 'object' as const,
-    display: { type: 'text-appearance' },
+    display: { type: 'text-appearance', useTabDesign: true },
     properties: {
       textTransform: { type: 'string' as const, enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
       textDecoration: { type: 'string' as const, enum: ['none', 'underline'] },
       fontVariant: { type: 'string' as const, enum: ['normal', 'small-caps'] },
     },
   },
+};
+
+function prefixedTextStyleKey(prefix: 'open' | '', name: string) {
+  if (!prefix) return name;
+  return `${prefix}${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+}
+
+function createBurgerTextStyleProperties(prefix: 'open' | '') {
+  return {
+    [prefixedTextStyleKey(prefix, 'fontFamily')]: {
+      type: 'string' as const,
+      scope: 'common' as const,
+      title: '',
+      display: { type: 'font-family-select' as const, hideLabel: true, useTabDesign: true },
+    },
+    [prefixedTextStyleKey(prefix, 'fontSettings')]: {
+      ...textStyleProperties.fontSettings,
+      scope: 'common' as const,
+      title: '',
+    },
+    [prefixedTextStyleKey(prefix, 'fontSize')]: {
+      ...textStyleProperties.fontSize,
+      scope: 'layout' as const,
+      title: '',
+    },
+    [prefixedTextStyleKey(prefix, 'lineHeight')]: {
+      ...textStyleProperties.lineHeight,
+      scope: 'layout' as const,
+      title: '',
+    },
+    [prefixedTextStyleKey(prefix, 'letterSpacing')]: {
+      ...textStyleProperties.letterSpacing,
+      scope: 'layout' as const,
+      title: '',
+    },
+    [prefixedTextStyleKey(prefix, 'wordSpacing')]: {
+      ...textStyleProperties.wordSpacing,
+      scope: 'layout' as const,
+      title: '',
+    },
+    [prefixedTextStyleKey(prefix, 'textAlign')]: {
+      ...textStyleProperties.textAlign,
+      scope: 'layout' as const,
+      title: '',
+    },
+    [prefixedTextStyleKey(prefix, 'textAppearance')]: {
+      ...textStyleProperties.textAppearance,
+      scope: 'layout' as const,
+      title: '',
+    },
+  };
+}
+
+const closedTextStyleProperties = createBurgerTextStyleProperties('');
+const openTextStyleProperties = createBurgerTextStyleProperties('open');
+
+const burgerTextStylePanelTab = {
+  type: 'tab' as const,
+  id: 'burgerTextStyle',
+  tabs: {
+    Closed: [
+      'fontFamily',
+      'fontSettings',
+      { type: 'row' as const, items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'] },
+      'textAlign',
+      'textAppearance',
+    ],
+    Open: [
+      'openFontFamily',
+      'openFontSettings',
+      { type: 'row' as const, items: ['openFontSize', 'openLineHeight', 'openLetterSpacing', 'openWordSpacing'] },
+      'openTextAlign',
+      'openTextAppearance',
+    ],
+  },
+};
+
+const defaultTextAppearance = {
+  textTransform: 'none',
+  textDecoration: 'none',
+  fontVariant: 'normal',
+};
+
+const defaultFontSettings = {
+  fontWeight: 400,
+  fontStyle: 'normal',
 };
 
 const POSITION_VALUES = [
@@ -313,53 +399,8 @@ const schema = {
       textPaddingRight: createRangeControlLayoutProperty('Text padding right'),
       textPaddingTop: createRangeControlLayoutProperty('Text padding top'),
       textPaddingBottom: createRangeControlLayoutProperty('Text padding bottom'),
-      fontFamily: {
-        type: 'string',
-        scope: 'common',
-        title: 'Font family',
-        display: { type: 'font-family-select' },
-      },
-      fontSettings: {
-        ...textStyleProperties.fontSettings,
-        scope: 'common',
-        title: '',
-        display: { type: 'font-settings-weight' },
-      },
-      fontSize: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Font size',
-        display: { type: 'font-size' },
-      },
-      lineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Line height',
-        display: { type: 'line-height-input' },
-      },
-      letterSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Letter spacing',
-        display: { type: 'letter-spacing-input' },
-      },
-      wordSpacing: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Word spacing',
-        display: { type: 'word-spacing-input' },
-      },
-      textAlign: {
-        ...textStyleProperties.textAlign,
-        scope: 'layout',
-        title: 'Align',
-      },
-      textAppearance: {
-        type: 'object',
-        scope: 'layout',
-        title: 'Text appearance',
-        display: { type: 'text-appearance' },
-      },
+      ...closedTextStyleProperties,
+      ...openTextStyleProperties,
     },
     defaults: {
       link: [
@@ -385,11 +426,11 @@ const schema = {
       position: 'left-top',
       textOrientation: 'vertical',
       fontFamily: 'Goudy Bookletter 1911',
-      fontSettings: {
-        fontWeight: 400,
-        fontStyle: 'normal',
-      },
+      fontSettings: defaultFontSettings,
       textAlign: 'left',
+      openFontFamily: 'Goudy Bookletter 1911',
+      openFontSettings: defaultFontSettings,
+      openTextAlign: 'left',
       stateOverrides: {
         hover: {
           linkColor: '#666666',
@@ -464,11 +505,12 @@ const schema = {
         lineHeight: 20 / 375,
         letterSpacing: 0,
         wordSpacing: 0,
-        textAppearance: {
-          textTransform: 'none',
-          textDecoration: 'none',
-          fontVariant: 'normal',
-        },
+        textAppearance: defaultTextAppearance,
+        openFontSize: 16 / 375,
+        openLineHeight: 20 / 375,
+        openLetterSpacing: 0,
+        openWordSpacing: 0,
+        openTextAppearance: defaultTextAppearance,
       },
       t: {
         type: 'b',
@@ -490,11 +532,12 @@ const schema = {
         lineHeight: 20 / 768,
         letterSpacing: 0,
         wordSpacing: 0,
-        textAppearance: {
-          textTransform: 'none',
-          textDecoration: 'none',
-          fontVariant: 'normal',
-        },
+        textAppearance: defaultTextAppearance,
+        openFontSize: 16 / 768,
+        openLineHeight: 20 / 768,
+        openLetterSpacing: 0,
+        openWordSpacing: 0,
+        openTextAppearance: defaultTextAppearance,
       },
       d: {
         type: 'b',
@@ -516,12 +559,14 @@ const schema = {
         lineHeight: 16 / 1440,
         letterSpacing: 0,
         wordSpacing: 0,
-        textAppearance: {
-          textTransform: 'none',
-          textDecoration: 'none',
-          fontVariant: 'normal',
-        },
+        textAppearance: defaultTextAppearance,
         textAlign: 'center',
+        openFontSize: 16 / 1440,
+        openLineHeight: 16 / 1440,
+        openLetterSpacing: 0,
+        openWordSpacing: 0,
+        openTextAppearance: defaultTextAppearance,
+        openTextAlign: 'center',
       },
     },
     layout: [
@@ -556,6 +601,22 @@ const schema = {
       'textPaddingRight',
       'textPaddingTop',
       'textPaddingBottom',
+      'fontFamily',
+      'fontSettings',
+      'fontSize',
+      'lineHeight',
+      'letterSpacing',
+      'wordSpacing',
+      'textAlign',
+      'textAppearance',
+      'openFontFamily',
+      'openFontSettings',
+      'openFontSize',
+      'openLineHeight',
+      'openLetterSpacing',
+      'openWordSpacing',
+      'openTextAlign',
+      'openTextAppearance',
     ],
   },
   panels: [
@@ -603,11 +664,7 @@ const schema = {
       tooltip: 'Typography',
       layout: [
         '__componentName__',
-        'fontFamily',
-        'fontSettings',
-        { type: 'row', items: ['fontSize', 'lineHeight', 'letterSpacing', 'wordSpacing'] },
-        'textAlign',
-        'textAppearance',
+        burgerTextStylePanelTab,
       ],
     },
   ],
@@ -654,9 +711,10 @@ export const BurgerComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'fontFamily' }],
+    parameters: [{ path: 'fontFamily' }, { path: 'openFontFamily' }],
   },
   fontRelations: {
     fontSettings: 'fontFamily',
+    openFontSettings: 'openFontFamily',
   },
 };
