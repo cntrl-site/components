@@ -561,7 +561,7 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
   const pauseAutoOnHover = !isEditor;
   const isSlideTransition = transition === 'slide';
   const showClassicNav = nav === 'classic';
-  const showControls = controlsShow !== 'never';
+  const showControls = controlsShow !== 'never' && controlsMaxWidth > 0;
   const isControlsOnHover = controlsShow === 'on hover';
   const controlsMaxWidthScaled = scalingValue(controlsMaxWidth, isEditor);
   const controlsSizeStyle = {
