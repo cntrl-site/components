@@ -277,6 +277,7 @@ const schema: ComponentSchemaV1 = {
   },
   content: {
     type: 'array',
+    max: 1,
     settings: {
       addItemWithoutImage: true,
       addItemFromFileExplorer: false,

@@ -9,23 +9,12 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
 
 const SHAPE_SAMPLES = 120;
 const BAND_SAMPLES = 3;
-/** Vertical slack taken off a line box before probing the shape, in line-height units. */
 const BAND_SLACK = 0.12;
 const MIN_FIT_SCALE = 0.25;
 const FIT_ITERATIONS = 10;
 const MAX_LINES = 4000;
 const DROP_CAP_GAP = 0.12;
 const DROP_CAP_SIZE_DEFAULT = 1;
-/**
- * The vector node editor is portaled straight to `document.body` so its
- * anchors can be grabbed even where a host app's own selection/resize
- * chrome renders in a sibling stacking context above this component's own
- * box — no z-index set inside that box could ever reach past it.
- *
- * Keep this above the CMS article/editor stack (`.editor` is z-index 1,
- * `#component-portal` is 2) and below the layers list (3), toolbar (4), and
- * ItemParams SnapBar container (5) so the orange outline never paints over panels.
- */
 const EDITOR_PORTAL_Z_INDEX = 2;
 
 export const SHAPE_IDS = [
@@ -85,10 +74,8 @@ type PretextSettings = {
   dropCapLines?: number;
   dropCapSize?: number;
   image?: string | null;
-  /** Focal point of the image within the shape's mask, 0..1 (like object-position). Defaults to center. */
   imageFocalX?: number;
   imageFocalY?: number;
-  /** Extra zoom on top of the cover fit. 1 = just covers the mask. */
   imageScale?: number;
   backgroundColor?: string;
   textColor?: string;
@@ -112,10 +99,6 @@ type PretextProps = {
   isSelected?: boolean;
   onUpdateSettings?: (settings: PretextSettings) => void;
 } & CommonComponentProps;
-
-/* ------------------------------------------------------------------ *
- * Geometry — a shape is one or more normalized rings (0..1 of the box)
- * ------------------------------------------------------------------ */
 
 type Pt = { x: number; y: number };
 type Ring = Pt[];
@@ -162,7 +145,6 @@ function ringOf(pairs: [number, number][]): Ring {
   return pairs.map(([x, y]) => ({ x, y }));
 }
 
-/** Stretches rings so their bounding box fills the unit box. */
 function normalizeRings(rings: Ring[]): Ring[] {
   let minX = Infinity;
   let minY = Infinity;
@@ -185,18 +167,8 @@ function normalizeRings(rings: Ring[]): Ring[] {
   })));
 }
 
-/**
- * Preset drawings, in the same 0–100 path space the vector editor works in.
- * All of these are authored in a 100x100 square and aren't aspect-corrected
- * for the component's box — each renders true to its drawn proportions only
- * when that box is roughly square, and stretches otherwise, same as any
- * hand-drawn custom path would.
- */
 const PRESET_PATHS: Partial<Record<ShapeId, string>> = {
   bobbin: 'M57.63,0 L57.63,37.24 L74.66,37.24 L74.66,56.07 L57.63,100 L33.84,100 L16.81,56.07 L16.81,37.24 L33.84,37.24 L33.84,0 Z',
-  // True circle inscribed in the 100×100 path space (same construction as CSS
-  // border-radius:50% in a square). Was previously a tall ~0.58-aspect ellipse,
-  // so equal width/height still looked non-circular.
   circle: 'M50,0 C77.61,0 100,22.39 100,50 C100,77.61 77.61,100 50,100 C22.39,100 0,77.61 0,50 C0,22.39 22.39,0 50,0 Z',
   shield: 'M0,0 L100,0 L100,50 L50,100 L0,50 Z',
   vase: 'M25.37,0 L91.55,0 C91.55,0 74.8,25.14 83.07,50.03 C91.34,74.92 74.61,100 74.61,100 L8.43,100 C8.43,100 32.3,75.08 23.9,50 C15.5,24.92 25.37,0 25.37,0 Z',
@@ -207,9 +179,6 @@ const PRESET_PATHS: Partial<Record<ShapeId, string>> = {
 function getPresetRings(shape: ShapeId | 'rectangle'): Ring[] {
   const presetPath = shape === 'rectangle' || shape === 'custom' ? undefined : PRESET_PATHS[shape];
   if (presetPath) {
-    // Keep each preset at its authored size/position within the 100x100 path
-    // space (matching how these shapes render live with pathFit: 'viewbox'),
-    // rather than stretching its bbox to fill the unit box.
     return mapToViewBox(flattenContours(parsePathNodes(presetPath)), DEFAULT_VIEW_BOX);
   }
   return [ringOf([[0, 0], [1, 0], [1, 1], [0, 1]])];
@@ -232,11 +201,6 @@ function mapToViewBox(rings: Ring[], viewBox: ViewBox): Ring[] {
   })));
 }
 
-/**
- * Keep a viewBox-space circle circular inside a non-square component box by
- * letterboxing the unit square into the box (inscribed, centered). Oval and
- * other presets stretch; circle does not.
- */
 function letterboxUnitRings(
   rings: Ring[],
   box: { width: number; height: number },
@@ -251,7 +215,6 @@ function letterboxUnitRings(
   })));
 }
 
-/** Unit rectangle used when no path/preset is available. */
 function unitRectangleContours(): VecContour[] {
   return [{
     closed: true,
@@ -271,7 +234,6 @@ function mapContoursToViewBox(contours: VecContour[], viewBox: ViewBox): VecCont
   }));
 }
 
-/** Stretch contours so their drawn bbox fills the unit box (mirrors normalizeRings). */
 function normalizeContours(contours: VecContour[]): VecContour[] {
   const bbox = contoursBBox(contours);
   const width = bbox.maxX - bbox.minX;
@@ -297,10 +259,6 @@ function letterboxUnitContours(
   }));
 }
 
-/**
- * Same coordinate mapping as the polygon rings used for text layout, but keeps
- * cubic handles so fill/clip edges match the smooth editor outline.
- */
 function resolveUnitContours(
   spec: string,
   draft: VecContour[] | null | undefined,
@@ -345,11 +303,6 @@ function unitContoursToPathPx(
   })));
 }
 
-/* ------------------------------------------------------------------ *
- * Vector path — the editable nodes behind the `d` string
- * ------------------------------------------------------------------ */
-
-/** One anchor plus the two cubic handles meeting on it. `null` handle = straight. */
 export type VecNode = {
   p: Pt;
   in?: Pt | null;
@@ -364,11 +317,8 @@ export type VecContour = {
 type VecSegment = { from: VecNode; to: VecNode; index: number };
 
 const CURVE_SAMPLES = 16;
-/** Rings up to this many points keep every corner when they become nodes. */
 const CORNER_RING_LIMIT = 12;
-/** Nodes aimed for when a sampled preset is converted into an editable path. */
 const EDIT_NODE_TARGET = 16;
-/** Vector editing always happens in this coordinate space, so a drag is 1:1. */
 export const EDIT_VIEW_BOX = '0 0 100 100';
 const EDIT_SPAN = 100;
 
@@ -415,7 +365,6 @@ export function mapContours(contours: VecContour[], transform: (point: Pt) => Pt
   }));
 }
 
-/** Uniform (or axis-independent) scale about `origin` — keeps proportions when sx === sy. */
 export function scaleContours(contours: VecContour[], origin: Pt, scaleX: number, scaleY: number = scaleX): VecContour[] {
   return mapContours(contours, point => ({
     x: origin.x + (point.x - origin.x) * scaleX,
@@ -423,7 +372,6 @@ export function scaleContours(contours: VecContour[], origin: Pt, scaleX: number
   }));
 }
 
-/** Cubic arc → up to four cubic segments, so pasted SVGs keep their curves. */
 function arcToCubics(
   from: Pt,
   radiusX: number,
@@ -489,10 +437,6 @@ function arcToCubics(
   return cubics;
 }
 
-/**
- * SVG path string → editable contours. Every command is normalized to cubic
- * nodes, so what comes back can be dragged around and written out again.
- */
 export function parsePathNodes(d: string): VecContour[] {
   const source = (d ?? '').trim();
   if (!source) return [];
@@ -506,8 +450,6 @@ export function parsePathNodes(d: string): VecContour[] {
   let lastQuadControl: Pt | null = null;
 
   const flush = () => {
-    // A closed path that draws its way back to the start ends on a duplicate of
-    // the first anchor. Fold it in, keeping the handle it arrived with.
     if (closed && nodes.length > 2) {
       const first = nodes[0];
       const last = nodes[nodes.length - 1];
@@ -635,7 +577,6 @@ function formatCoordinate(value: number): string {
   return `${Number(value.toFixed(2))}`;
 }
 
-/** A handle parked on its anchor is a no-op — treat it as absent. */
 function activeHandle(handle: Pt | null | undefined, anchor: Pt): Pt | null {
   if (!handle) return null;
   if (Math.abs(handle.x - anchor.x) < 1e-6 && Math.abs(handle.y - anchor.y) < 1e-6) return null;
@@ -661,7 +602,6 @@ function segmentCommand(from: VecNode, to: VecNode): string {
     + ` ${formatCoordinate(to.p.x)},${formatCoordinate(to.p.y)}`;
 }
 
-/** Contours → an SVG path string, which is what the setting stores. */
 export function serializeContours(contours: VecContour[]): string {
   const parts: string[] = [];
   for (const contour of contours) {
@@ -709,7 +649,6 @@ function pointOnSegment(from: VecNode, to: VecNode, t: number): Pt {
   };
 }
 
-/** Contours → polygon rings, the form the text layout reads. */
 export function flattenContours(contours: VecContour[]): Ring[] {
   const rings: Ring[] = [];
   for (const contour of contours) {
@@ -730,7 +669,6 @@ export function flattenContours(contours: VecContour[]): Ring[] {
   return rings;
 }
 
-/** Bounding box of the drawn outline (curves included), in path/viewBox units. */
 function contoursBBox(contours: VecContour[]): { minX: number; minY: number; maxX: number; maxY: number } {
   let minX = Infinity;
   let minY = Infinity;
@@ -747,14 +685,12 @@ function contoursBBox(contours: VecContour[]): { minX: number; minY: number; max
   return { minX, minY, maxX, maxY };
 }
 
-/** Centre of the drawn shape — the bbox the editor already puts on screen. */
 function contoursCenter(contours: VecContour[]): Pt | null {
   const bbox = contoursBBox(contours);
   if (!isFinite(bbox.minX) || !isFinite(bbox.maxX) || !isFinite(bbox.minY) || !isFinite(bbox.maxY)) return null;
   return { x: (bbox.minX + bbox.maxX) / 2, y: (bbox.minY + bbox.maxY) / 2 };
 }
 
-/** Handles that make a point sit smoothly between its neighbours. */
 function smoothHandles(previous: Pt, point: Pt, next: Pt): { in: Pt; out: Pt } {
   const tangent = { x: (next.x - previous.x) / 6, y: (next.y - previous.y) / 6 };
   return {
@@ -763,11 +699,6 @@ function smoothHandles(previous: Pt, point: Pt, next: Pt): { in: Pt; out: Pt } {
   };
 }
 
-/**
- * Sampled rings → contours, so any preset can be picked up and dragged.
- * Few points means a polygon: its corners are kept. Many points means a curve:
- * it is thinned out and smoothed back, which lands within a hair of the original.
- */
 export function ringsToContours(rings: Ring[]): VecContour[] {
   return rings
     .filter(ring => ring.length > 2)
@@ -789,25 +720,15 @@ export function ringsToContours(rings: Ring[]): VecContour[] {
     });
 }
 
-/**
- * True when path coords look like legacy rematerialized pixels (hundreds of
- * units), not a 0–100 edit path whose bezier handles only poke slightly out.
- */
 function pathExceedsEditViewBox(contours: VecContour[], viewBox: ViewBox, pad = 1): boolean {
   if (!contours.length) return false;
   const bbox = contoursBBox(contours);
   if (!isFinite(bbox.minX) || !isFinite(bbox.maxX)) return false;
   const width = bbox.maxX - bbox.minX;
   const height = bbox.maxY - bbox.minY;
-  // Letterboxed circle travel (and similar) can sit well outside 0–100 while
-  // still authored in edit units. Only treat as pixel-legacy when the span
-  // itself looks like component pixels (hundreds/thousands), not ~viewBox size.
   if (width <= viewBox.width * 2.5 && height <= viewBox.height * 2.5) {
     return false;
   }
-  // Curved presets (esp. wave) overshoot the edit viewBox by a few units via
-  // smooth handles. Require ~half a viewBox of overflow so those aren't treated
-  // as pixel-space paths and wrongly shrunk by boxWidth/viewBox.
   const padX = Math.max(pad, viewBox.width * 0.5);
   const padY = Math.max(pad, viewBox.height * 0.5);
   return bbox.minX < viewBox.x - padX
@@ -816,11 +737,6 @@ function pathExceedsEditViewBox(contours: VecContour[], viewBox: ViewBox, pad = 
     || bbox.maxY > viewBox.y + viewBox.height + padY;
 }
 
-/**
- * Rematerialize letterboxed (uniform-stretch) path coords into ordinary
- * stretch-to-box viewBox coords so the same pixels land after uniformStretch
- * is dropped (circle → custom on point edit).
- */
 function bakeUniformStretchToBoxStretch(
   contours: VecContour[],
   viewBox: ViewBox,
@@ -843,7 +759,6 @@ function bakeUniformStretchToBoxStretch(
   });
 }
 
-/** Scale contours so their drawn outline fits inside `rect` (uniform, centered). */
 function fitContoursInRect(
   contours: VecContour[],
   rect: { x: number; y: number; width: number; height: number },
@@ -867,12 +782,6 @@ function fitContoursInRect(
   }));
 }
 
-/**
- * Turns a preset into the editable viewBox path the editor persists after a
- * shape pick. Always maps into the full 0–100 edit space — carrying the
- * previous path's bbox compounded smaller on every switch (presets with
- * natural margins, then circle letterboxing, then the next pick…).
- */
 export function settingsForEditablePreset(
   shape: ShapeId,
 ): {
@@ -883,11 +792,6 @@ export function settingsForEditablePreset(
 } {
   const target = { x: 0, y: 0, width: EDIT_SPAN, height: EDIT_SPAN };
   const presetPath = shape !== 'custom' ? PRESET_PATHS[shape] : undefined;
-  // Fixed-path presets keep their authored bezier handles and sharp corners by
-  // mapping the parsed contours straight into the edit viewBox. Routing them
-  // through getPresetRings/ringsToContours instead would flatten curves into
-  // samples and re-derive smoothed handles from scratch — rounding corners
-  // that were meant to stay sharp and drifting curves off their drawn shape.
   const mapped = presetPath
     ? mapContours(
       parsePathNodes(presetPath),
@@ -897,15 +801,11 @@ export function settingsForEditablePreset(
       }),
     )
     : mapContours(
-      // Only reached for `custom`, which has no authored path — seed it with
-      // a plain rectangle to edit from.
       ringsToContours(getPresetRings('rectangle')),
       point => ({ x: point.x * target.width + target.x, y: point.y * target.height + target.y }),
     );
   const contours = fitContoursInRect(mapped, target);
   return {
-    // Keep the preset id so the settings dropdown reflects the pick; point
-    // edits later flip to `custom` via writePath (move/scale keep the id).
     shape,
     customPath: serializeContours(contours),
     pathFit: 'viewbox',
@@ -930,7 +830,6 @@ export function moveNodeTo(contours: VecContour[], contourIndex: number, nodeInd
   return next;
 }
 
-/** Translates a set of selected anchors (and their handles) together, leaving the rest of the shape fixed. */
 export function moveSelectedNodesBy(
   contours: VecContour[],
   selection: { contour: number; node: number }[],
@@ -949,7 +848,6 @@ export function moveSelectedNodesBy(
   return next;
 }
 
-/** Removes several nodes at once — descending per contour so earlier removals don't shift later indices. */
 export function removeContourNodes(
   contours: VecContour[],
   selection: { contour: number; node: number }[],
@@ -990,7 +888,6 @@ export function setNodeHandle(
   return next;
 }
 
-/** Pulls a handle back into its anchor, straightening that side of the node. */
 export function clearNodeHandle(
   contours: VecContour[],
   contourIndex: number,
@@ -1004,7 +901,6 @@ export function clearNodeHandle(
   return next;
 }
 
-/** Splits a segment at `t` (de Casteljau), so the new node sits on the curve. */
 export function insertNodeOnSegment(
   contours: VecContour[],
   contourIndex: number,
@@ -1050,7 +946,6 @@ export function removeContourNode(contours: VecContour[], contourIndex: number, 
   return next;
 }
 
-/** Corner ⇄ smooth: drops both handles, or grows them from the neighbours. */
 export function toggleNodeSmooth(contours: VecContour[], contourIndex: number, nodeIndex: number): VecContour[] {
   const contour = contours[contourIndex];
   const node = contour?.nodes[nodeIndex];
@@ -1063,10 +958,6 @@ export function toggleNodeSmooth(contours: VecContour[], contourIndex: number, n
   const nextIndex = (nodeIndex + 1) % count;
   const prevOut = Boolean(activeHandle(nodes[prevIndex].out, nodes[prevIndex].p));
   const nextIn = Boolean(activeHandle(nodes[nextIndex].in, nodes[nextIndex].p));
-  // Curve → corner: retract this node's handles *and* the neighbouring
-  // segment handles that still keep the edges curved. Otherwise serialize
-  // falls back to C-with-control-at-anchor, parse restores coincident
-  // handles, and the point stays a circle forever.
   if (nodeHasCurveHandles(target) || prevOut || nextIn) {
     target.in = null;
     target.out = null;
@@ -1112,12 +1003,6 @@ export function nearestSegmentHit(contours: VecContour[], point: Pt): {
   return best;
 }
 
-/**
- * Every other anchor in the shape — what a dragged anchor can axis-align
- * with. Curve anchors count as targets and as draggers: an anchor carries its
- * handles with it, so lining one up on an axis slides the curve rather than
- * reshaping it. Handle tips stay out; those snap by angle, not by axis.
- */
 function collectSnapTargets(contours: VecContour[], exclude: { contour: number; node: number }): Pt[] {
   const points: Pt[] = [];
   contours.forEach((contour, contourIndex) => {
@@ -1129,22 +1014,12 @@ function collectSnapTargets(contours: VecContour[], exclude: { contour: number; 
   return points;
 }
 
-/** One coordinate a dragged point can land on, and what explains it. */
 type AxisSnap = {
   value: number;
-  /** Where the symmetry axis sits, when this candidate is about one. */
   axis: number | null;
-  /** The point it was borrowed from: an alignment partner, or the one mirrored. */
   from: Pt | null;
 };
 
-/**
- * Everything one axis can offer a dragged point, in the order ties break:
- * the symmetry axes themselves, then the shape's other points, then those
- * points reflected across the axes. The reflections are what turn "aligned"
- * into "symmetric" — the perpendicular axis lines the pair up at the same
- * time, so landing on both puts the point exactly opposite its counterpart.
- */
 function axisCandidates(points: Pt[], centers: number[], axis: 'x' | 'y'): AxisSnap[] {
   const axes = centers.filter((center, index) => (
     isFinite(center) && centers.findIndex(other => Math.abs(other - center) < 1e-6) === index
@@ -1157,23 +1032,14 @@ function axisCandidates(points: Pt[], centers: number[], axis: 'x' | 'y'): AxisS
   return candidates;
 }
 
-/**
- * Nearest candidate on one axis, independent of the other axis — so a point
- * can align its X with another point's X (or Y with Y) no matter how far
- * apart they sit on the other axis, the way alignment guides work. Compared
- * in pixel space via `toPx`. Null when nothing is within `reach`.
- */
 function nearestAxisSnap(candidates: AxisSnap[], target: Pt, axis: 'x' | 'y', toPx: (point: Pt) => Pt, reach: number): AxisSnap | null {
   const targetPx = toPx(target)[axis];
   let best: AxisSnap | null = null;
   let bestDistance = Infinity;
   for (const candidate of candidates) {
-    // `toPx` is separable, so the off-axis half of the probe is free to be
-    // the target's own — only the snapped axis is being measured.
     const probe = axis === 'x' ? { x: candidate.value, y: target.y } : { x: target.x, y: candidate.value };
     const distance = Math.abs(toPx(probe)[axis] - targetPx);
     if (distance > reach) continue;
-    // Ties go to whichever came first, which is why the list is ordered.
     if (best && distance >= bestDistance) continue;
     best = candidate;
     bestDistance = distance;
@@ -1181,32 +1047,12 @@ function nearestAxisSnap(candidates: AxisSnap[], target: Pt, axis: 'x' | 'y', to
   return best;
 }
 
-/* ------------------------------------------------------------------ *
- * Smart snapping for curve points
- *
- * An anchor snaps by axis (above) whether or not it carries handles. A
- * bezier handle can't: its X and Y mean nothing on their own, only the ray
- * it makes with its anchor does. So handles snap by direction and length
- * instead — the tangent that keeps the node smooth, the 45° family, and the
- * opposite handle's length.
- * ------------------------------------------------------------------ */
-
-/** Directions a dragged handle settles onto, on top of the smooth tangent. */
 const HANDLE_ANGLE_STEP = Math.PI / 4;
-/** How far off that ray a handle may sit and still snap onto it, in pixels. */
 const HANDLE_ANGLE_REACH = 8;
-/** ...and how far off in angle, so a short handle doesn't snap from anywhere. */
 const HANDLE_ANGLE_LIMIT = Math.PI / 18;
-/** Pixel gap that still reads as "the same length as the other handle". */
 const HANDLE_LENGTH_REACH = 8;
-/** How far past the points it explains a guide keeps drawing, in pixels. */
 const GUIDE_OVERSHOOT = 24;
 
-/**
- * A line painted while a snap is holding, in the editor's own pixel space.
- * Without it a snap that moved the point three pixels is indistinguishable
- * from a steady hand, and the user never learns the snaps are there.
- */
 type SnapGuide = { kind: 'align' | 'angle' | 'center'; a: Pt; b: Pt };
 
 const NO_GUIDES: SnapGuide[] = [];
@@ -1219,7 +1065,6 @@ function sameGuides(a: SnapGuide[], b: SnapGuide[]): boolean {
   ));
 }
 
-/** Wraps an angle into (-π, π], so two directions can be compared. */
 function normalizeAngle(angle: number): number {
   const turn = Math.PI * 2;
   return ((angle + Math.PI) % turn + turn) % turn - Math.PI;
@@ -1233,7 +1078,6 @@ function unitVector(from: Pt, to: Pt): Pt | null {
   return { x: dx / length, y: dy / length };
 }
 
-/** One alignment line, run past both ends so it reads as a guide, not a chord. */
 function alignmentGuide(from: Pt, to: Pt): SnapGuide {
   const direction = unitVector(from, to);
   if (!direction) return { kind: 'align', a: from, b: to };
@@ -1244,8 +1088,6 @@ function alignmentGuide(from: Pt, to: Pt): SnapGuide {
   };
 }
 
-/** A symmetry axis, drawn right across the frame — what it stands for is the
- *  mirror, not the pair of points that happened to suggest it. */
 function centreGuide(at: number, axis: 'x' | 'y', frame: { width: number; height: number }): SnapGuide {
   return axis === 'x'
     ? { kind: 'center', a: { x: at, y: 0 }, b: { x: at, y: frame.height } }
@@ -1258,11 +1100,6 @@ function axisGuide(snap: AxisSnap, axis: 'x' | 'y', landingPx: Pt, frame: { widt
   return centreGuide(toPx(probe)[axis], axis, frame);
 }
 
-/**
- * Lines for whichever axis snaps actually decided where the anchor landed.
- * Shift-locking an axis can override a snap, and a guide for an alignment
- * that isn't holding is worse than no guide at all.
- */
 function axisGuides(
   landing: Pt,
   snapX: AxisSnap | null,
@@ -1277,15 +1114,6 @@ function axisGuides(
   return guides;
 }
 
-/**
- * The direction that keeps a node smooth: the continuation, through the
- * anchor, of whatever enters it from the handle's other side — the opposite
- * handle if the node has one, else the neighbour's control point on that
- * segment, else the neighbouring anchor itself when the segment is straight.
- * Snapping onto it is what lets a curve leave a straight edge, or a corner
- * become properly smooth, without eyeballing the angle. Pixel space, so the
- * snap follows what the user sees even on a stretched preset.
- */
 function smoothTangent(
   contour: VecContour | undefined,
   nodeIndex: number,
@@ -1302,22 +1130,10 @@ function smoothTangent(
   if (!contour.closed && (neighbourIndex < 0 || neighbourIndex >= count)) return null;
   const neighbour = contour.nodes[(neighbourIndex + count) % count];
   if (!neighbour) return null;
-  // With our own handle missing, the segment's tangent at this anchor runs
-  // from the neighbour's control point — or from the neighbour itself when
-  // that side has no handles either, i.e. a plain straight edge.
   const control = (which === 'in' ? neighbour.in : neighbour.out) ?? neighbour.p;
   return unitVector(toPx(control), anchorPx);
 }
 
-/**
- * Settles a dragged handle onto whichever smart target it is already close
- * to: the smooth tangent first — a curve that doesn't kink beats a round
- * angle — then the 45° family, which is where the horizontal and vertical
- * tangents that make circles and rounded corners come out clean live. Length
- * is decided separately, so a curve can be made symmetric with its other
- * handle without measuring. `lock` (shift) takes the nearest 45° step no
- * matter how far off it is. Empty guides mean nothing snapped.
- */
 function snapHandlePoint(
   point: Pt,
   anchor: Pt,
@@ -1332,7 +1148,6 @@ function snapHandlePoint(
   const dx = pointPx.x - anchorPx.x;
   const dy = pointPx.y - anchorPx.y;
   const length = Math.hypot(dx, dy);
-  // A handle sitting on its anchor has no direction to snap.
   if (length < 1e-6) return { point, guides: NO_GUIDES };
   const angle = Math.atan2(dy, dx);
   const step = Math.round(angle / HANDLE_ANGLE_STEP) * HANDLE_ANGLE_STEP;
@@ -1346,8 +1161,6 @@ function snapHandlePoint(
     for (const candidate of candidates) {
       const delta = normalizeAngle(candidate.angle - angle);
       if (Math.abs(delta) > HANDLE_ANGLE_LIMIT) continue;
-      // Perpendicular distance, not raw angle: a long handle has to be held
-      // much straighter than a short one to read as "on the ray".
       if (Math.abs(Math.sin(delta)) * length > HANDLE_ANGLE_REACH) continue;
       snappedAngle = candidate.angle;
       smooth = candidate.smooth;
@@ -1363,8 +1176,6 @@ function snapHandlePoint(
   const finalAngle = snappedAngle ?? angle;
   const finalLength = matchLength ? oppositeLength as number : length;
   const direction = { x: Math.cos(finalAngle), y: Math.sin(finalAngle) };
-  // The guide runs past the handle, and back through the anchor whenever the
-  // far side is part of what snapped — a smooth ray, or a matched length.
   const forward = finalLength + (snappedAngle === null ? 0 : GUIDE_OVERSHOOT);
   const back = matchLength ? finalLength : (smooth ? GUIDE_OVERSHOOT : 0);
   return {
@@ -1377,13 +1188,6 @@ function snapHandlePoint(
   };
 }
 
-/**
- * Parses a user-authored path: either an SVG path (`M0,0 C…`, several subpaths
- * allowed — each becomes a ring, so overlaps read as holes) or a plain point
- * list (`0,0 100,0 50,100`). With `fit: 'stretch'` the drawing is stretched to
- * fill the text box; with `fit: 'viewbox'` it keeps its place inside the
- * declared coordinate space — which is what `avoid` mode needs.
- */
 function parsePathSpec(spec: string, fit: PathFit = 'stretch', viewBox: ViewBox = DEFAULT_VIEW_BOX): Ring[] | null {
   const trimmed = spec.trim();
   if (!trimmed) return null;
@@ -1429,7 +1233,6 @@ function parsePathSpec(spec: string, fit: PathFit = 'stretch', viewBox: ViewBox 
   return fit === 'viewbox' ? mapToViewBox([ring], viewBox) : normalizeRings([ring]);
 }
 
-/** Inside intervals of the shape at one scanline, even-odd rule. */
 function spansAtY(rings: Ring[], y: number): Span[] {
   const crossings: number[] = [];
   for (const ring of rings) {
@@ -1505,7 +1308,6 @@ function subtractSpan(spans: Span[], hole: Span): Span[] {
   return result;
 }
 
-/** Spans usable by a whole line box — conservative across the band. */
 function spansForBand(rings: Ring[], yTop: number, yBottom: number, mode: 'contain' | 'avoid'): Span[] {
   let accumulated: Span[] | null = null;
   for (let i = 0; i < BAND_SAMPLES; i += 1) {
@@ -1517,10 +1319,6 @@ function spansForBand(rings: Ring[], yTop: number, yBottom: number, mode: 'conta
   }
   return accumulated ?? [];
 }
-
-/* ------------------------------------------------------------------ *
- * Rich text
- * ------------------------------------------------------------------ */
 
 type Token = {
   text: string;
@@ -1534,13 +1332,22 @@ function isLinkNode(node: RichNode): node is RichLink {
   return !!node && typeof node === 'object' && (node as RichLink).type === 'link';
 }
 
+const SAFE_HREF_PROTOCOL = /^(?:https?:|mailto:|tel:)/i;
+
+function sanitizeHref(href?: string): string | undefined {
+  if (!href) return undefined;
+  const cleaned = href.replace(/\s+/g, '');
+  if (/^[a-z][a-z0-9+.-]*:/i.test(cleaned) && !SAFE_HREF_PROTOCOL.test(cleaned)) return undefined;
+  return cleaned;
+}
+
 function tokenize(blocks: RichBlock[]): Token[] {
   const tokens: Token[] = [];
   blocks.forEach((block, para) => {
     const walk = (nodes: RichNode[], href?: string, target?: string) => {
       for (const node of nodes) {
         if (isLinkNode(node)) {
-          walk(node.children ?? [], node.value, node.target);
+          walk(node.children ?? [], sanitizeHref(node.value), node.target);
           continue;
         }
         const leaf = node as RichLeaf;
@@ -1586,10 +1393,6 @@ function getPlainText(blocks: RichBlock[]): string[] {
   });
 }
 
-/* ------------------------------------------------------------------ *
- * Line breaking
- * ------------------------------------------------------------------ */
-
 type Segment = {
   top: number;
   left: number;
@@ -1603,7 +1406,6 @@ type LayoutResult = {
   segments: Segment[];
   placed: number;
   height: number;
-  /** Where the drop cap has to sit — the start of the first line that has room. */
   capLeft: number;
   capTop: number;
 };
@@ -1652,7 +1454,6 @@ function layoutText(params: LayoutParams): LayoutResult {
     if (beyondShape && !allowOverflow) break;
 
     const para = tokens[index].para;
-    // Empty paragraphs carry no tokens — keep them as blank lines.
     if (para > previousPara + 1) {
       y += lineHeight * (para - previousPara - 1);
       previousPara = para - 1;
@@ -1689,8 +1490,6 @@ function layoutText(params: LayoutParams): LayoutResult {
         const tokenWidth = widths[index] * scale;
         const advance = index === start ? tokenWidth : spaceWidth + tokenWidth;
         if (used + advance > available) {
-          // A word wider than the whole box can never fit — place it anyway so
-          // the loop always makes progress.
           const unbreakable = index === start && available >= widest - 0.5 && tokenWidth > width - 0.5;
           if (!unbreakable) break;
         }
@@ -1720,10 +1519,6 @@ function layoutText(params: LayoutParams): LayoutResult {
 
   return { segments, placed: index, height: segments.length ? y : 0, capLeft, capTop };
 }
-
-/* ------------------------------------------------------------------ *
- * Styles
- * ------------------------------------------------------------------ */
 
 function getCSS(P: string): string {
   return `
@@ -1815,11 +1610,8 @@ function getCSS(P: string): string {
   position: absolute;
   top: 0;
   left: 0;
-  /* Sits above the editor's own interaction blocker, which is z-index 1. */
   z-index: 10;
   overflow: visible;
-  /* Pass through to default item select/drag until a point is selected or
-     the shape is double-clicked into move mode. Scale/anchor grabs stay live. */
   pointer-events: none;
   touch-action: none;
   outline: none;
@@ -1894,8 +1686,6 @@ function getCSS(P: string): string {
 .${P}-editor-scale-grab-nesw {
   cursor: nesw-resize;
 }
-/* Snap feedback. Deliberately not the editor's orange: a guide has to be
-   readable *through* the outline and handles it is drawn across. */
 .${P}-editor-snap {
   stroke: #00B2FF;
   stroke-width: 1;
@@ -1904,8 +1694,6 @@ function getCSS(P: string): string {
 .${P}-editor-snap-angle {
   stroke-dasharray: 4 3;
 }
-/* A symmetry axis runs the whole frame, so it has to sit back further than
-   an alignment line that only spans the two points it explains. */
 .${P}-editor-snap-center {
   stroke-dasharray: 2 4;
   opacity: 0.8;
@@ -1931,9 +1719,6 @@ function getCSS(P: string): string {
 .${P}-editor-anchor-selected {
   fill: #FF5C02;
 }
-/* The part of the photo the mask crops away, shown while the image is armed.
-   Dimmed rather than desaturated on purpose: a filter would be re-rasterized
-   every frame of a pan drag, and dimming is what a crop UI reads as anyway. */
 .${P}-editor-ghost {
   opacity: 0.3;
   pointer-events: none;
@@ -1960,32 +1745,17 @@ function getCSS(P: string): string {
 `;
 }
 
-/* ------------------------------------------------------------------ *
- * Path editor — drag the vectors on the canvas
- * ------------------------------------------------------------------ */
-
 const ANCHOR_SIZE = 7;
 const HANDLE_RADIUS = 3.5;
-/** Invisible grab radius around a point, so it can be caught without aiming. */
 const GRAB_RADIUS = 9;
-/** Visible size of a uniform-scale corner handle. */
 const SCALE_HANDLE_SIZE = 8;
-/** Invisible grab around a scale corner, so it can be caught without aiming. */
 const SCALE_GRAB_SIZE = 14;
-/** Push scale handles outside the bbox so they don't cover corner anchors. */
 const SCALE_HANDLE_OUTSET = 10;
-/** How far from the outline a click still adds a point, in pixels. */
 const ADD_POINT_REACH = 24;
-/** Catch radius for snapping a dragged anchor/handle onto another node's anchor or handle, in pixels. */
 const NODE_SNAP_REACH = 14;
-/** Pointer travel below this (px) still counts as a click — used so ⌘/Ctrl+click can
- *  toggle node type without a sub-pixel jitter counting as a free-move drag. */
 const CLICK_SLOP_PX = 4;
-/** Nudge step for arrow keys, in path units. */
 const NUDGE_STEP = 1;
-/** Smallest allowed uniform scale while dragging a corner (avoids collapse). */
 const MIN_SHAPE_SCALE = 0.05;
-/** Keyboard +/- scale factor about the shape's center. */
 const KEYBOARD_SCALE_STEP = 1.08;
 
 type PathSelection = { contour: number; node: number };
@@ -1996,19 +1766,14 @@ type PathDrag = {
   node: number;
   pointerId: number;
   origin: Pt;
-  /** Screen position at pointer-down — click vs drag is decided in pixels, not path space. */
   clientOrigin: Pt;
   anchor: Pt;
-  /** The shape's centre when the drag began — its axis of symmetry, held still
-   *  so the point being dragged can't drag the axis along with it. */
   center: Pt | null;
   mirror: boolean;
-  /** ⌘/Ctrl was down at pointer-down: switch the node's type if it never moves. */
   toggleOnRelease: boolean;
   moved: boolean;
 };
 
-/** Dragging the shape's body translates every contour together, clamped to `box`. */
 type ShapeDrag = {
   pointerId: number;
   origin: Pt;
@@ -2017,7 +1782,6 @@ type ShapeDrag = {
   moved: boolean;
 };
 
-/** Dragging one anchor of a multi-point selection translates the whole selection together. */
 type GroupDrag = {
   pointerId: number;
   origin: Pt;
@@ -2028,12 +1792,10 @@ type GroupDrag = {
 
 type ScaleCorner = 'nw' | 'ne' | 'se' | 'sw';
 
-/** Dragging a bbox corner scales every contour about the opposite corner. */
 type ShapeScale = {
   pointerId: number;
   corner: ScaleCorner;
   origin: Pt;
-  /** Distance from origin to the dragged corner at pointer-down — scale = current / start. */
   startDistance: number;
   startContours: VecContour[];
   moved: boolean;
@@ -2060,7 +1822,6 @@ function oppositeScaleCorner(corner: ScaleCorner): ScaleCorner {
   }
 }
 
-/** Bbox corner pushed outward — keeps scale grabs clear of path anchors. */
 function scaleHandlePoint(
   bbox: { minX: number; minY: number; maxX: number; maxY: number },
   corner: ScaleCorner,
@@ -2075,49 +1836,24 @@ function scaleHandlePoint(
 }
 
 type PathChangeOptions = {
-  /**
-   * Set by the whole-shape body drag, which moves the mask and the photo as one
-   * piece. `focalX`/`focalY`/`scale` are relative to the mask bbox's *size*, so
-   * a pure translation already carries the photo along for free — this flag
-   * just tells the column to stand down the machinery that otherwise pins the
-   * photo in place while the mask slides over it.
-   *
-   * Left unset by the gestures that should still re-crop rather than move:
-   * node drags, whole-shape scale, and keyboard nudge/scale.
-   */
   carryImage?: boolean;
 };
 
 type PathCommitOptions = {
-  /** Whole-shape move/scale keeps the preset id; point edits diverge to `custom`. */
   preserveShape?: boolean;
 };
 
-/* ------------------------------------------------------------------ *
- * Shape-image geometry — an image panned/zoomed independently of the
- * mask it's clipped to, in the mask bbox's own pixel space.
- * ------------------------------------------------------------------ */
-
-/** Extra zoom on top of cover. 1 = just covers; below 1 letterboxes inside the mask. */
 const MIN_IMAGE_SCALE = 0.1;
 const MAX_IMAGE_SCALE = 8;
-/**
- * Below this much |slack| (px), an axis is pinned centered instead of panned.
- * At scale 1 one axis is *always* exactly flush with the mask (zero slack,
- * by construction of the cover fit) — dividing a pointer offset by a span
- * that thin amplifies ordinary sub-pixel pointer noise into 0↔1 swings.
- */
 const MIN_PANNABLE_SLACK = 4;
 
 type ImageTransform = { focalX: number; focalY: number; scale: number };
 
-/** Smallest uniform scale that makes the image cover `bounds` (like background-size: cover). */
 function coverScale(bounds: { width: number; height: number }, natural: { width: number; height: number }): number {
   if (!(natural.width > 0) || !(natural.height > 0) || !(bounds.width > 0) || !(bounds.height > 0)) return 1;
   return Math.max(bounds.width / natural.width, bounds.height / natural.height);
 }
 
-/** Rendered image size at a given zoom, before it's positioned. */
 function coveredImageSize(
   bounds: { width: number; height: number },
   natural: { width: number; height: number },
@@ -2127,12 +1863,6 @@ function coveredImageSize(
   return { width: natural.width * factor, height: natural.height * factor };
 }
 
-/**
- * Image's top-left in `bounds`-local px, from a focal point (0..1, like
- * `object-position`: 0 = image's edge flush with the mask's near edge, 1 =
- * flush with the far edge). Works for both cover (image larger) and contain
- * (image smaller) — `boundsSize - renderedSize` flips sign either way.
- */
 function imageOffsetFromFocal(
   boundsSize: number,
   renderedSize: number,
@@ -2141,18 +1871,12 @@ function imageOffsetFromFocal(
   return (boundsSize - renderedSize) * focal;
 }
 
-/** Inverse of `imageOffsetFromFocal`. */
 function focalFromImageOffset(boundsSize: number, renderedSize: number, offset: number): number {
   const span = boundsSize - renderedSize;
   if (Math.abs(span) < MIN_PANNABLE_SLACK) return 0.5;
   return clamp01(offset / span);
 }
 
-/**
- * Keep the image's box-absolute size and placement when the shape mask bbox
- * changes (path-point edits). `imageScale` is extra zoom on top of cover, so a
- * new cover fit would otherwise resize the photo with the mask.
- */
 function preserveImageTransformAcrossBoundsChange(
   prevBounds: { x: number; y: number; width: number; height: number },
   nextBounds: { x: number; y: number; width: number; height: number },
@@ -2186,14 +1910,10 @@ type PathEditorProps = {
   viewBox: ViewBox;
   contours: VecContour[];
   snap: number;
-  /** When true, map the edit viewBox across the full component box (presets). */
   stretchToBox: boolean;
-  /** With stretchToBox, letterbox uniformly so a circle stays round in a non-square box. */
   uniformStretch?: boolean;
-  /** Shape and image editing are mutually exclusive; the host (PretextColumn) owns the cycle. */
   stage: EditStage;
   onStageChange: (stage: EditStage) => void;
-  /** Lifts the node selection up to the column, which owns the double-click cycle. */
   onSelectionChange?: (hasSelection: boolean) => void;
   onChange: (contours: VecContour[], options?: PathChangeOptions) => void;
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
@@ -2208,30 +1928,17 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
   const shapeDragRef = useRef<ShapeDrag | null>(null);
   const shapeScaleRef = useRef<ShapeScale | null>(null);
   const groupDragRef = useRef<GroupDrag | null>(null);
-  /** Multiple nodes at once — shift-click adds/removes a node from this set. */
   const [selection, setSelection] = useState<PathSelection[]>([]);
-  /** Lines for the snap currently holding, in this editor's px space. */
   const [snapGuides, setSnapGuides] = useState<SnapGuide[]>(NO_GUIDES);
-  // Guides are recomputed on every pointer move but only change on the frames
-  // a snap starts or stops, so bail out of the identical ones.
   const showSnapGuides = useCallback((next: SnapGuide[]) => {
     setSnapGuides(current => (sameGuides(current, next) ? current : next));
   }, []);
   const shapeArmed = stage === 'shape';
 
-  // Move keyboard focus onto this editor whenever the host arms shape editing,
-  // so Escape/+-/arrow keys land here without a separate click.
   useEffect(() => {
     if (shapeArmed) svgRef.current?.focus({ preventScroll: true });
   }, [shapeArmed]);
 
-  // Handing the stage to the image editor (or dropping out entirely) has to
-  // drop the node selection too: `armed` ORs the selection in, so a point left
-  // selected from the shape pass would keep anchors, handles and the outline
-  // painted on top of the image the user just stepped into. Keyed on the
-  // transition only, so the selection `insertNode` sets from a near-outline
-  // click — which lands after the surface has already set the stage to 'none'
-  // — still re-arms the editor the way it does today.
   useEffect(() => {
     if (!shapeArmed) setSelection(current => (current.length ? [] : current));
   }, [shapeArmed]);
@@ -2240,7 +1947,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
   useEffect(() => {
     onSelectionChange?.(hasSelection);
   }, [hasSelection, onSelectionChange]);
-  // Unmounting with a point still selected would strand the column's flag on.
   useEffect(() => () => onSelectionChange?.(false), [onSelectionChange]);
 
   const scaleX = viewBox.width > 0 ? box.width / viewBox.width : 1;
@@ -2255,9 +1961,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     ? (box.height - viewBox.height * uniformScale) / 2
     : 0;
 
-  // Pinned custom paths: 1 viewBox unit = 1 px. Presets stretch the edit
-  // space across the full component so handles track the text shape.
-  // Circle uses uniform (letterboxed) stretch so the outline stays round.
   const toPx = useCallback((point: Pt): Pt => (
     stretchToBox
       ? {
@@ -2301,9 +2004,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     };
   }, [stretchToBox, viewBox, box.width, box.height, stretchScaleX, stretchScaleY, stretchOffsetX, stretchOffsetY]);
 
-  // Same as toPath, but into this editor's own pixel space (its viewBox is the
-  // box's own width/height) — what the outline is drawn in and what the
-  // pointer-distance check below needs, so it agrees with the `+` cursor.
   const toLocalPx = useCallback((clientX: number, clientY: number): Pt => {
     const rect = svgRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
@@ -2313,10 +2013,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     };
   }, [box.width, box.height]);
 
-  // Keep path coords in viewBox space (0–100) so top/left stay proportional
-  // when the component box scales with the article — never rematerialize to px.
-  // Point edits drop `circle` (and its letterboxed stretch); bake so the
-  // committed path keeps the same on-screen geometry under ordinary stretch.
   const commitContours = useCallback((next: VecContour[], options?: PathCommitOptions) => {
     const payload = uniformStretch && !options?.preserveShape
       ? bakeUniformStretchToBoxStretch(
@@ -2332,17 +2028,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     onCommit(payload, options);
   }, [onCommit, uniformStretch, viewBox, box, stretchOffsetX, stretchOffsetY, stretchScaleX, stretchScaleY]);
 
-  // The pointer is captured by the overlay for the whole drag, so the move and
-  // release land here whatever they pass over — and stay off the editor around
-  // us. Window listeners could not do both: swallowing the release to keep the
-  // canvas out of it also kept it from ever reaching the window.
   const onPointerMove = (event: React.PointerEvent) => {
-    // ⌘/Ctrl suspends snapping for as long as it's held — for the times a
-    // point belongs a hair off the alignment the editor keeps offering. It
-    // takes the grid with it: "free" has to mean free, or the user is still
-    // fighting something. Shift's constraints are asked for outright, so they
-    // go on working alongside it. Read live off the move rather than latched
-    // at pointer-down, so it can be pressed and released mid-drag.
     const freeDrag = event.metaKey || event.ctrlKey;
     const shapeScale = shapeScaleRef.current;
     if (shapeScale && event.pointerId === shapeScale.pointerId) {
@@ -2362,24 +2048,15 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
       event.stopPropagation();
       event.preventDefault();
       const point = toPath(event.clientX, event.clientY);
-      // Clamp so the shape's own bounding box never moves fully clear of
-      // `box` — smaller than the box, it's confined inside it; larger, it's
-      // confined to always keep the box covered (same formula either way).
       const { bbox } = shapeDrag;
       const bboxWidth = bbox.maxX - bbox.minX;
       const bboxHeight = bbox.maxY - bbox.minY;
       const rawDx = point.x - shapeDrag.origin.x;
       const rawDy = point.y - shapeDrag.origin.y;
-      // A too-thin contour (fewer than 3 drawn points) has no finite bbox to
-      // clamp against — move it unclamped rather than stick it at NaN.
       let dx = rawDx;
       let dy = rawDy;
       if (isFinite(bboxWidth) && isFinite(bboxHeight)) {
         if (stretchToBox) {
-          // Uniform (letterboxed) stretch maps the viewBox onto the inscribed
-          // square only. Clamp against the full component in path space so the
-          // shape can travel into the letterbox margins — otherwise a circle
-          // stuck at the viewBox edge cannot reach the empty sides of a wide box.
           let boundMinX = viewBox.x;
           let boundMaxX = viewBox.x + viewBox.width;
           let boundMinY = viewBox.y;
@@ -2415,13 +2092,8 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
           dy = clampedMinY - pxMinY;
         }
       }
-      // The same centre snap the points get, one level up: the shape's own
-      // middle settles onto the frame's, so it can be centred by eye without
-      // the result being off by a pixel. Per axis, so it can be centred
-      // horizontally while sitting wherever it likes vertically.
       const guides: SnapGuide[] = [];
       if (!freeDrag && isFinite(bboxWidth) && isFinite(bboxHeight)) {
-        // Where the shape's middle would land, against where the frame's is.
         const centerPx = toPx({ x: bbox.minX + bboxWidth / 2 + dx, y: bbox.minY + bboxHeight / 2 + dy });
         const framePx = { x: box.width / 2, y: box.height / 2 };
         if (Math.abs(centerPx.x - framePx.x) <= NODE_SNAP_REACH) {
@@ -2464,18 +2136,11 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     event.preventDefault();
     const point = toPath(event.clientX, event.clientY);
     if (drag.kind === 'anchor') {
-      // Snap where the *anchor* would land, not where the pointer is: the grab
-      // radius puts the two a few pixels apart, so aligning the pointer leaves
-      // the point itself that far out of line.
       const raw = {
         x: drag.anchor.x + (point.x - drag.origin.x),
         y: drag.anchor.y + (point.y - drag.origin.y),
       };
       const targets = freeDrag ? [] : collectSnapTargets(contoursRef.current, { contour: drag.contour, node: drag.node });
-      // Symmetry axis for a dragged point is the shape's own centre (latched at
-      // pointer-down so moving the point can't drag the axis with it). Frame
-      // centering is handled by whole-shape drag — offering both here draws
-      // identical centre guides at two places whenever the shape is off-centre.
       const centers = freeDrag || !drag.center ? [] : [drag.center];
       const snapX = nearestAxisSnap(axisCandidates(targets, centers.map(center => center.x), 'x'), raw, 'x', toPx, NODE_SNAP_REACH);
       const snapY = nearestAxisSnap(axisCandidates(targets, centers.map(center => center.y), 'y'), raw, 'y', toPx, NODE_SNAP_REACH);
@@ -2489,28 +2154,17 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
         if (Math.abs(landing.x - drag.anchor.x) > Math.abs(landing.y - drag.anchor.y)) landing.y = drag.anchor.y;
         else landing.x = drag.anchor.x;
       }
-      // A click that never travels selects and nothing more.
       if (!drag.moved && landing.x === drag.anchor.x && landing.y === drag.anchor.y) return;
       drag.moved = true;
       showSnapGuides(axisGuides(landing, snapX, snapY, box, toPx));
       onChange(moveNodeTo(contoursRef.current, drag.contour, drag.node, landing));
       return;
     }
-    // A handle's X and Y mean nothing on their own, so it snaps by the ray it
-    // makes with its anchor instead: the smooth tangent, the 45° family, and
-    // the opposite handle's length. Only when none of those catch does it fall
-    // back to the coordinate grid.
     const node = contoursRef.current[drag.contour]?.nodes[drag.node];
     const mirroring = drag.mirror && !event.altKey;
-    // A mirrored opposite is a reflection of the handle being dragged: it is
-    // collinear and equal-length by construction, so offering it as a target
-    // would only snap the handle onto where it already is.
     const opposite = mirroring || freeDrag ? null : (drag.kind === 'in' ? node?.out : node?.in);
     const anchorPx = node ? toPx(node.p) : null;
     const oppositePx = opposite ? toPx(opposite) : null;
-    // Under ⌘/Ctrl the only thing left is shift's outright 45° lock, so skip
-    // the search entirely unless shift is down — every target it could offer
-    // has just been withdrawn.
     const smart = node && (!freeDrag || event.shiftKey)
       ? snapHandlePoint(
         point,
@@ -2526,7 +2180,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
       ? smart.point
       : (freeDrag ? point : { x: snapValue(point.x, snap), y: snapValue(point.y, snap) });
     const current = drag.kind === 'in' ? node?.in : node?.out;
-    // A click that never travels leaves the handle alone, same as an anchor.
     if (!drag.moved && current && landing.x === current.x && landing.y === current.y) return;
     drag.moved = true;
     showSnapGuides(smart.guides);
@@ -2553,7 +2206,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
       if (shapeDrag.moved) {
         commitContours(contoursRef.current, { preserveShape: true });
       } else {
-        // A click that never travels deselects the point, same as the surface.
         setSelection([]);
       }
       return;
@@ -2574,9 +2226,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     const svg = svgRef.current;
     if (svg?.hasPointerCapture(drag.pointerId)) svg.releasePointerCapture(drag.pointerId);
     const clientTravel = Math.hypot(event.clientX - drag.clientOrigin.x, event.clientY - drag.clientOrigin.y);
-    // Path-space `moved` can stay false when Control+drag on macOS loses capture
-    // before any pointermove (context-menu gesture). Screen travel still means
-    // this was a drag — only a real unmoved pointerup may toggle type.
     const travelled = drag.moved || clientTravel > CLICK_SLOP_PX;
     if (travelled) {
       if (drag.moved) commitContours(contoursRef.current);
@@ -2589,8 +2238,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     commitContours(next);
   };
 
-
-  /** Grab affordances are editor-only: nothing outside should act on them. */
   const swallow = (event: React.SyntheticEvent) => {
     event.stopPropagation();
   };
@@ -2642,9 +2289,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     svgRef.current?.focus({ preventScroll: true });
     const node = contours[contourIndex]?.nodes[nodeIndex];
     if (!node) return;
-    // Alt removes whatever it lands on: a handle retracts into its anchor, an
-    // anchor leaves the path. Handles sit close to the anchor on tight curves,
-    // so without this an alt-click aimed at a point can quietly miss.
     if (event.altKey) {
       const next = kind === 'anchor'
         ? removeContourNode(contours, contourIndex, nodeIndex)
@@ -2655,16 +2299,7 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
       commitContours(next);
       return;
     }
-    // Cmd (ctrl off Mac) switches the node's type: a straight corner grows
-    // bezier handles from its neighbours, a curve point drops them. Handles
-    // crowd the anchor on tight curves, so a click that lands on one still
-    // targets the node it belongs to rather than missing. Held through a drag
-    // the same key means the opposite — leave the node as it is and let it
-    // move unsnapped — so the switch waits for a release that never travelled,
-    // and the branches below stand aside for it.
     const toggleOnRelease = event.metaKey || event.ctrlKey;
-    // Shift-click an anchor toggles it into/out of the multi-selection
-    // instead of dragging — mirrors the usual vector-editor convention.
     if (kind === 'anchor' && event.shiftKey && !toggleOnRelease) {
       setSelection(current => (
         current.some(entry => entry.contour === contourIndex && entry.node === nodeIndex)
@@ -2673,8 +2308,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
       ));
       return;
     }
-    // A plain click on an anchor that's already part of a multi-selection
-    // drags the whole group together; anything else replaces the selection.
     if (kind === 'anchor' && !toggleOnRelease && selection.length > 1
       && selection.some(entry => entry.contour === contourIndex && entry.node === nodeIndex)) {
       groupDragRef.current = {
@@ -2707,11 +2340,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
   const insertNode = (event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
-    // Hit-test against the outline in the same pixel space it's drawn in
-    // (via toPx) — matching path-space units here would skew distances
-    // whenever the box isn't square relative to the shape's viewBox, so the
-    // `+` cursor (an accurate pixel-space stroke hit) and this check could
-    // disagree and silently drop the click.
     const pixelContours = mapContours(contours, toPx);
     const hit = nearestSegmentHit(pixelContours, toLocalPx(event.clientX, event.clientY));
     if (!hit || hit.distance > ADD_POINT_REACH) return;
@@ -2723,8 +2351,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
   };
 
   const onKeyDown = (event: React.KeyboardEvent) => {
-    // +/- grow/shrink the whole shape about its center, keeping proportions.
-    // Works with or without a selected point — scaling is always about the bbox.
     if (event.key === '=' || event.key === '+' || event.key === '-' || event.key === '_') {
       event.preventDefault();
       event.stopPropagation();
@@ -2780,7 +2406,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
     && shapeBBox.maxX > shapeBBox.minX
     && shapeBBox.maxY > shapeBBox.minY;
   const armed = selection.length > 0 || shapeArmed;
-  /** Outline, anchors, and scale chrome — only after double-click. */
   const showControls = armed;
 
   return (
@@ -2798,16 +2423,11 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
       onContextMenu={(event) => {
-        // macOS treats Control+click as a context-menu gesture; without this,
-        // capture is lost mid-drag and a free-move is misread as a type toggle.
         event.preventDefault();
       }}
       data-pretext-path-editor
       data-selection="none"
     >
-      {/* Catches clicks that land near the outline rather than on it. It
-          never stops propagation, so the editor still selects the item.
-          Pointer events are off until double-click arms the shape. */}
       <rect
         className={`${P}-editor-surface`}
         width={box.width}
@@ -2830,7 +2450,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
           y2={guide.b.y}
         />
       ))}
-      {/* Body hit target for whole-shape drag while armed. */}
       <path
         ref={bodyPathRef}
         className={`${P}-editor-body`}
@@ -2844,7 +2463,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
         const anchor = toPx(node.p);
         return (
           <g key={`${contourIndex}-${nodeIndex}`}>
-            {/* Bezier handles are single-node controls — only surface them when exactly one node is selected. */}
             {isSelected && selection.length === 1 && (['in', 'out'] as const).map((which) => {
               const handle = node[which];
               if (!handle) return null;
@@ -2891,8 +2509,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
           </g>
         );
       }))}
-      {/* Uniform scale about the opposite corner. Shown after double-click
-          when no point is selected (transform mode). */}
       {showScaleHandles && (
         <g>
           <rect
@@ -2932,7 +2548,6 @@ function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, unif
   );
 }
 
-/** Dragging the image body pans it; the mask (`bounds`) never moves. */
 type ImagePan = {
   pointerId: number;
   origin: Pt;
@@ -2943,7 +2558,6 @@ type ImagePan = {
   moved: boolean;
 };
 
-/** Dragging a corner zooms about the opposite corner of `bounds`, same feel as the shape's own scale handles. */
 type ImageScaleDrag = {
   pointerId: number;
   anchor: Pt;
@@ -2957,12 +2571,9 @@ type ImageScaleDrag = {
 type ImageEditorProps = {
   P: string;
   box: { width: number; height: number };
-  /** The shape's own bbox, in the same px space as `box` — the mask the image is clipped to. */
   bounds: { x: number; y: number; width: number; height: number };
   natural: { width: number; height: number } | null;
-  /** Source of the ghost drawn outside the mask while cropping. */
   imageUrl?: string | null;
-  /** The mask itself, as a px path in the same space as `bounds`. */
   maskPath: string;
   stage: EditStage;
   onStageChange: (stage: EditStage) => void;
@@ -2973,12 +2584,6 @@ type ImageEditorProps = {
   onCommit: (next: ImageTransform) => void;
 };
 
-/**
- * Pan/zoom overlay for the image behind a shape mask — a sibling to
- * `PretextPathEditor`, armed by the same double-click cycle (owned by
- * `PretextColumn`) instead of shape editing, so the two never fight over
- * the pointer at once.
- */
 function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage, onStageChange, focalX, focalY, scale, onChange, onCommit }: ImageEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const ghostMaskId = `pretext-image-ghost-${useId().replace(/:/g, '')}`;
@@ -3028,9 +2633,6 @@ function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage
     const size = coveredImageSize(bounds, natural, scale);
     const startX = imageOffsetFromFocal(bounds.width, size.width, focalX);
     const startY = imageOffsetFromFocal(bounds.height, size.height, focalY);
-    // The photo's own rect, in the bounds-local space the drag math runs in.
-    // Anchoring on its opposite corner is what pins that corner while you drag
-    // — anchored on the mask's corner instead, the photo slid as it resized.
     const localBBox = { minX: startX, minY: startY, maxX: startX + size.width, maxY: startY + size.height };
     const anchor = bboxCorner(localBBox, oppositeScaleCorner(corner));
     const handle = bboxCorner(localBBox, corner);
@@ -3054,7 +2656,6 @@ function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage
     if (scaleDrag && event.pointerId === scaleDrag.pointerId) {
       event.stopPropagation();
       event.preventDefault();
-      // Anchor/start offsets live in bounds-local space; pointer is box-local.
       const pointBox = toLocalPx(event.clientX, event.clientY);
       const point = { x: pointBox.x - bounds.x, y: pointBox.y - bounds.y };
       const distance = Math.hypot(point.x - scaleDrag.anchor.x, point.y - scaleDrag.anchor.y);
@@ -3064,8 +2665,6 @@ function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage
       );
       if (!scaleDrag.moved && Math.abs(nextScale - scaleDrag.startScale) < 1e-4) return;
       scaleDrag.moved = true;
-      // Uniform scale about the opposite corner — same construction as
-      // `scaleContours`, just applied to the image's own translate/scale.
       const ratio = nextScale / scaleDrag.startScale;
       const nextX = scaleDrag.anchor.x + (scaleDrag.startX - scaleDrag.anchor.x) * ratio;
       const nextY = scaleDrag.anchor.y + (scaleDrag.startY - scaleDrag.anchor.y) * ratio;
@@ -3132,9 +2731,6 @@ function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage
   const corners: ScaleCorner[] = ['nw', 'ne', 'se', 'sw'];
   const boundsBBox = { minX: bounds.x, minY: bounds.y, maxX: bounds.x + bounds.width, maxY: bounds.y + bounds.height };
 
-  // The photo's full extent, in the same px space as `bounds` — the same
-  // construction the column uses to place the clipped <image>, so the ghost
-  // stays welded to the real thing through a pan or zoom.
   const imageRect = useMemo(() => {
     const source = natural ?? { width: bounds.width, height: bounds.height };
     const size = coveredImageSize(bounds, source, scale);
@@ -3147,9 +2743,6 @@ function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage
     };
   }, [natural, bounds.x, bounds.y, bounds.width, bounds.height, focalX, focalY, scale]);
 
-  // Scale handles sit on the photo, not on the mask — so the frame you grab is
-  // the size of the thing you're resizing. Falls back to the mask bbox for the
-  // moment before `natural` loads, when the two are the same rect anyway.
   const handleBBox = imageRect
     ? {
       minX: imageRect.x,
@@ -3182,9 +2775,6 @@ function PretextImageEditor({ P, box, bounds, natural, imageUrl, maskPath, stage
       />
       {armed && imageUrl && imageRect && maskPath && (
         <>
-          {/* Luminance mask: white over the whole photo, the shape punched out
-              in black. Only the cropped-away remainder gets painted, so the
-              live image inside the mask is never double-covered and dulled. */}
           <defs>
             <mask id={ghostMaskId} maskUnits="userSpaceOnUse" x={imageRect.x} y={imageRect.y} width={imageRect.width} height={imageRect.height}>
               <rect x={imageRect.x} y={imageRect.y} width={imageRect.width} height={imageRect.height} fill="#FFFFFF" />
@@ -3270,14 +2860,6 @@ function floatingRectsEqual(a: FloatingRect, b: FloatingRect): boolean {
     && Math.abs(a.height - b.height) < 0.5;
 }
 
-/**
- * Tracks `element`'s viewport rect for as long as `active` is true, by
- * polling every frame rather than via ResizeObserver/scroll listeners: a
- * host canvas can pan or zoom through a CSS transform with no accompanying
- * scroll/resize event, and that's the one signal a portaled overlay can't
- * afford to miss while it's glued to an anchor living in a different part
- * of the DOM.
- */
 function useFloatingRect(element: HTMLElement | null, active: boolean): FloatingRect | null {
   const [rect, setRect] = useState<FloatingRect | null>(null);
   useEffect(() => {
@@ -3301,19 +2883,9 @@ function useFloatingRect(element: HTMLElement | null, active: boolean): Floating
   return rect;
 }
 
-// Deliberately not the host's own `portalId` container: shared portal nodes
-// like the CMS's `#component-portal` set their own z-index and so form a
-// stacking context of their own — anything dropped inside is capped at that
-// z-index no matter what value it declares internally. document.body has no
-// such ceiling, which is the whole point of floating above the host's chrome
-// (e.g. resize handles) instead of just above sibling components.
 function resolveEditorPortalTarget(): HTMLElement | null {
   return typeof document === 'undefined' ? null : document.body;
 }
-
-/* ------------------------------------------------------------------ *
- * Column
- * ------------------------------------------------------------------ */
 
 type ColumnMetrics = {
   widths: number[];
@@ -3343,22 +2915,14 @@ type ColumnProps = {
   imageFocalX: number;
   imageFocalY: number;
   imageScale: number;
-  /** Path used for the image mask — may lead `customPath` while settings sync. */
   imageCustomPath: string;
   pathDragActive: boolean;
-  /** The live drag moves the whole shape: let the photo ride along with it. */
   pathCarryImage: boolean;
-  /** Fired once the carried placement has been adopted, to clear the flag. */
   onCarryImageConsumed?: () => void;
   pathEditor?: PathEditorBinding | null;
   imageEditor?: ImageEditorBinding | null;
 };
 
-/**
- * Vector editing runs on the column that owns the shared path. `contours` is
- * the live draft — while a handle is dragged the text reflows against it,
- * and only `onCommit` writes the path back into the settings.
- */
 type PathEditorBinding = {
   contours: VecContour[] | null;
   snap: number;
@@ -3368,13 +2932,11 @@ type PathEditorBinding = {
   onCommit: (contours: VecContour[], options?: PathCommitOptions) => void;
 };
 
-/** Same draft/commit split as `PathEditorBinding`, for the image's own pan/zoom. */
 type ImageEditorBinding = {
   onChange: (next: ImageTransform) => void;
   onCommit: (next: ImageTransform) => void;
 };
 
-/** Image mask/placement frozen for the duration of a path-edit session. */
 type FrozenShapeImage = {
   rings: Ring[];
   bounds: { x: number; y: number; width: number; height: number };
@@ -3419,7 +2981,6 @@ function PretextColumn({
   const [box, setBox] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [metrics, setMetrics] = useState<ColumnMetrics | null>(null);
   const [fontsReady, setFontsReady] = useState(0);
-  /** Shape and image editing share one arm/disarm cycle — never both at once. */
   const [editStage, setEditStage] = useState<EditStage>('none');
   useEffect(() => {
     if (!pathEditor && !imageEditor) setEditStage('none');
@@ -3455,8 +3016,6 @@ function PretextColumn({
       if (drawn.length) result = mapToViewBox(drawn, viewBox);
     }
     if (!result.length) {
-      // Prefer a stored path whenever present (preset picks materialize into
-      // customPath while keeping the preset id on `shape` for the dropdown).
       const spec = customPath.trim();
       const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
       if (parsed && parsed.length) result = parsed;
@@ -3465,20 +3024,9 @@ function PretextColumn({
     return shape === 'circle' ? letterboxUnitRings(result, box) : result;
   }, [draftContours, shape, customPath, pathFit, viewBox, box.width, box.height]);
 
-  // Layout treats rings as 0..1 fractions of the box. Paths stored in the
-  // edit viewBox (0–100) map through mapToViewBox and scale with the box —
-  // matching CMS article-width scaling for top/left.
-  //
-  // Legacy paths rematerialized into component pixels (while pathViewBox is
-  // still 0 0 100 100) must not pin to absolute px on every resize. Freeze the
-  // first measured box as a reference so pixel coords become stable fractions,
-  // and migrate to real viewBox coords when the editor can persist.
   const onConvertPath = pathEditor?.onConvert;
   const needsConversion = pathEditor?.needsConversion ?? false;
   const exceedsEditViewBox = useMemo(() => {
-    // Circle keeps viewBox + letterbox mapping even when dragged into the
-    // component's letterbox margins (path coords outside 0–100). Treating that
-    // as a legacy pixel path would drop stretchToBox mid-drag.
     if (shape === 'circle') return false;
     const contours = draftContours
       ?? (customPath.trim() ? parsePathNodes(customPath) : null);
@@ -3504,8 +3052,6 @@ function PretextColumn({
     return unitRings.map(ring => ring.map(point => ({ x: point.x * scaleX, y: point.y * scaleY })));
   }, [unitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
-  // Image mask tracks `imageCustomPath`, which includes the local path draft
-  // between commits so the clip updates live while handles are dragged.
   const committedUnitRings = useMemo(() => {
     const spec = imageCustomPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
@@ -3524,8 +3070,6 @@ function PretextColumn({
   }, [committedUnitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
   const migratedPathRef = useRef<string | null>(null);
-  // Auto-convert writes through onUpdateSettings (undoable). Run at most once
-  // per mount so undoing that migration is not immediately re-applied.
   const didAutoConvertRef = useRef(false);
   useEffect(() => {
     if (!onConvertPath || box.width <= 0 || box.height <= 0) return;
@@ -3617,7 +3161,6 @@ function PretextColumn({
     const fontSize = parseFloat(computed.fontSize) || 16;
     const parsedLineHeight = parseFloat(computed.lineHeight);
     const rawLineHeight = Number.isNaN(parsedLineHeight) ? fontSize * 1.2 : parsedLineHeight;
-    // Line boxes shorter than the glyphs overflow and get clipped by the flow container.
     const lineHeight = Math.max(rawLineHeight, fontSize);
 
     capSpan.style.fontSize = `${lineHeight * dropCapSize}px`;
@@ -3631,8 +3174,6 @@ function PretextColumn({
   }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width]);
 
   const capInset = metrics && dropCapChar ? metrics.capWidth + metrics.lineHeight * DROP_CAP_GAP : 0;
-  // A glyph taller than `dropCapLines` (e.g. a big dropCapSize) still needs that many
-  // wrapped lines cleared, or trailing text would overlap the cap's lower half.
   const capLineSpan = Math.max(dropCapLines, Math.ceil(dropCapSize));
 
   const naturalScale = useMemo(() => {
@@ -3701,16 +3242,11 @@ function PretextColumn({
   const editorRect = useFloatingRect(columnEl, showOverlayPortal);
   const portalTarget = showOverlayPortal && editorRect ? resolveEditorPortalTarget() : null;
 
-  // Read at event time rather than held in state: the cycle listener below
-  // should not rebind every time a point is selected or dropped.
   const pathHasSelectionRef = useRef(false);
   const onPathSelectionChange = useCallback((hasSelection: boolean) => {
     pathHasSelectionRef.current = hasSelection;
   }, []);
 
-  // Double-click anywhere over the column (capture, before the host item's own
-  // dblclick enters preview) cycles shape → image editing — the single place
-  // that decides which of the two overlays gets the pointer next.
   useEffect(() => {
     if (!showPathEditor && !canArmImage) return;
     const onDblClick = (event: MouseEvent) => {
@@ -3720,14 +3256,9 @@ function PretextColumn({
       const within = event.clientX >= rect.left && event.clientX <= rect.right
         && event.clientY >= rect.top && event.clientY <= rect.bottom;
       if (!within) return;
-      // Swallow so the host does not enter preview and unmount the editors.
       event.preventDefault();
       event.stopPropagation();
       setEditStage((current) => {
-        // Mid node-edit with a point selected, hold the stage. The anchor's own
-        // dblclick (toggle smooth) calls stopPropagation, but this listener is
-        // on document in the capture phase and runs first, so the guard has to
-        // be here — nothing downstream can prevent it.
         if (current === 'shape' && pathHasSelectionRef.current) return current;
         if (current === 'shape' && canArmImage) return 'image';
         return showPathEditor ? 'shape' : 'image';
@@ -3747,9 +3278,6 @@ function PretextColumn({
     const anchor = imagePathAnchorRef.current;
     if (
       pathDragActive
-      // Stays true through the commit and the re-anchor below, so the moved
-      // photo is adopted as the new resting state instead of being corrected
-      // back. The next drag's first onChange resets it.
       || pathCarryImage
       || !imageEditor
       || !naturalImageSize
@@ -3759,10 +3287,6 @@ function PretextColumn({
     ) {
       return null;
     }
-    // Shape-select swaps replace the mask wholesale. World-pinning the photo
-    // across that jump reads as an image shift (and briefly flickers when the
-    // committed focals lag the preserve). Keep relative focal/scale instead;
-    // path-point edits (same shape id) still preserve absolute placement.
     if (anchor.shape !== shape) {
       return null;
     }
@@ -3783,9 +3307,6 @@ function PretextColumn({
     if (pathChanged && pathPreservedTransform) {
       imageEditor.onCommit(pathPreservedTransform);
     }
-    // The carry has now been folded into the anchor below, so retire the flag —
-    // otherwise it would keep suppressing the correction for the *next* path
-    // change, whatever caused it (undo, the shape dropdown, the path field).
     if (pathChanged && pathCarryImage) onCarryImageConsumed?.();
     imagePathAnchorRef.current = {
       rings: imageRings,
@@ -3812,8 +3333,6 @@ function PretextColumn({
     onCarryImageConsumed,
   ]);
 
-  // While a handle is dragged (not a whole-shape carry), keep the photo pinned in
-  // column space as the live mask morphs around it.
   const pathDragLiveTransform = useMemo(() => {
     if (!pathDragActive || pathCarryImage || !naturalImageSize || !committedShapeImageBounds) return null;
     const anchor = imagePathAnchorRef.current;
@@ -3885,8 +3404,6 @@ function PretextColumn({
   ]);
   const shapeImageBounds = committedShapeImageBounds;
   const clipId = `${imageId}-clip`;
-  // Before the natural size loads, fall back to filling the mask bbox exactly
-  // (equivalent to the old xMidYMid-slice default) rather than a jump cut once it's known.
   const imageRect = useMemo(() => {
     if (!shapeImageBounds) return null;
     const natural = naturalImageSize ?? { width: shapeImageBounds.width, height: shapeImageBounds.height };
@@ -3954,7 +3471,7 @@ function PretextColumn({
                 const text = skipFirstChar ? token.text.slice(1) : token.text;
                 const leafStyle = getLeafCss(token.leaf);
                 const body = token.href
-                  ? <a className={`${P}-link`} href={token.href} target={token.target} style={leafStyle}>{text}</a>
+                  ? <a className={`${P}-link`} href={token.href} target={token.target} rel={token.target ? 'noopener noreferrer' : undefined} style={leafStyle}>{text}</a>
                   : <span style={leafStyle}>{text}</span>;
                 return (
                   <span key={tokenIndex}>
@@ -4094,17 +3611,12 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     };
   }, [editor, selected]);
 
-  /* -- vector editing ----------------------------------------------------- */
-
   const pathEditing = editor && selected && !isPreviewMode
     && typeof onUpdateSettings === 'function';
   const shapeOverlayVisible = !isItemTransforming;
   const pathSnap = Math.max(0, settings?.pathSnap ?? 0);
   const settingsRef = useRef(settings ?? {});
   const settingsPropsKeyRef = useRef('');
-  // Path/image fields are gated so in-flight local writes aren't clobbered by
-  // lagging props. Everything else (e.g. shapeMode from the panel) must still
-  // refresh — otherwise the next path commit spreads a stale value back.
   const settingsPropsKey = [
     settings?.customPath,
     settings?.shape,
@@ -4119,7 +3631,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     settingsPropsKeyRef.current = settingsPropsKey;
     settingsRef.current = settings ?? {};
   } else if (settings) {
-    // Same fields as settingsPropsKey — keep local path/image writes; refresh the rest.
     const {
       customPath: _customPath,
       shape: _shape,
@@ -4140,9 +3651,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   }
   const [draft, setDraft] = useState<{ base: string; serialized: string; contours: VecContour[] } | null>(null);
   const [pathDragActive, setPathDragActive] = useState(false);
-  // Latched by the drag that set it and deliberately *not* cleared on commit —
-  // the column reads it again after `pathDragActive` drops, to decide whether
-  // the photo's new spot is the intended one. Cleared by the next drag.
   const [pathCarryImage, setPathCarryImage] = useState(false);
   const onCarryImageConsumed = useCallback(() => setPathCarryImage(false), []);
 
@@ -4158,8 +3666,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
     }
   }, [pathEditing]);
 
-  // Drop the draft once props catch up. Leaving it around with
-  // `base === customPath` after undo would keep showing the edited path.
   useEffect(() => {
     if (!draft || pathDragActive) return;
     if (draft.serialized === customPath) setDraft(null);
@@ -4226,8 +3732,6 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
       },
     };
   }, [pathEditing, isEditablePath, editContours, pathSnap, onUpdateSettings, writePath]);
-
-  /* -- shape-image pan/zoom ------------------------------------------------ */
 
   const hasShapeImage = mode === 'avoid' && Boolean(settings?.image);
   const committedImageTransform = useMemo<ImageTransform>(() => ({
