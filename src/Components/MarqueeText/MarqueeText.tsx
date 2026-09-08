@@ -666,7 +666,9 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
 
   useLayoutEffect(() => {
     waveKickRef.current?.();
-  }, [waveShouldLoop]);
+    // The paused track rests at a different translateX per direction, which brings
+    // previously culled glyphs into view; they need a frame to get their transform.
+  }, [waveShouldLoop, direction]);
 
   const onTrackEnter = () => {
     if (hoverPauseEnabled) setIsHovering(true);
