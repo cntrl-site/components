@@ -140,9 +140,24 @@ function resolveNavigationStateSettings(
   return resolved;
 }
 
-function isOpenOnlyLink(item: BurgerLink): boolean {
-  const showIn = (item.showIn ?? 'always').trim().toLowerCase();
-  return showIn === 'open only' || showIn === 'open-only' || showIn === 'openonly';
+type BurgerShowIn = 'always' | 'open only' | 'open and compact';
+
+function resolveShowIn(value?: string): BurgerShowIn {
+  const showIn = (value ?? 'always').trim().toLowerCase().replace(/[_-]+/g, ' ');
+  if (showIn === 'open only' || showIn === 'openonly') return 'open only';
+  if (showIn === 'open and compact' || showIn === 'openandcompact') return 'open and compact';
+  return 'always';
+}
+
+function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigationState): boolean {
+  switch (resolveShowIn(item.showIn)) {
+    case 'open only':
+      return false;
+    case 'open and compact':
+      return navigationState === 'onScroll';
+    default:
+      return true;
+  }
 }
 
 type BurgerPageRef = {
@@ -208,6 +223,49 @@ function FallbackSocialIcon({ className }: { className: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
       <path fill="currentColor" d={GLOBE_ICON_PATH} />
+    </svg>
+  );
+}
+
+const BURGER_ICON_VIEWBOX = 24;
+const BURGER_ICON_LINE_HEIGHT = BURGER_ICON_VIEWBOX * 0.125;
+const BURGER_ICON_LINE_GAP = BURGER_ICON_VIEWBOX * 0.125;
+const BURGER_ICON_LINE_OFFSET = (
+  BURGER_ICON_VIEWBOX - (3 * BURGER_ICON_LINE_HEIGHT + 2 * BURGER_ICON_LINE_GAP)
+) / 2;
+const BURGER_ICON_LINE_SHIFT = BURGER_ICON_LINE_HEIGHT + BURGER_ICON_LINE_GAP;
+
+function BurgerIcon({ className, lineClassName }: { className: string; lineClassName: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox={`0 0 ${BURGER_ICON_VIEWBOX} ${BURGER_ICON_VIEWBOX}`}
+      aria-hidden="true"
+    >
+      <rect
+        className={`${lineClassName} ${lineClassName}-top`}
+        x="0"
+        y={BURGER_ICON_LINE_OFFSET}
+        width={BURGER_ICON_VIEWBOX}
+        height={BURGER_ICON_LINE_HEIGHT}
+        rx={BURGER_ICON_LINE_HEIGHT / 2}
+      />
+      <rect
+        className={`${lineClassName} ${lineClassName}-mid`}
+        x="0"
+        y={BURGER_ICON_LINE_OFFSET + BURGER_ICON_LINE_SHIFT}
+        width={BURGER_ICON_VIEWBOX}
+        height={BURGER_ICON_LINE_HEIGHT}
+        rx={BURGER_ICON_LINE_HEIGHT / 2}
+      />
+      <rect
+        className={`${lineClassName} ${lineClassName}-bot`}
+        x="0"
+        y={BURGER_ICON_LINE_OFFSET + 2 * BURGER_ICON_LINE_SHIFT}
+        width={BURGER_ICON_VIEWBOX}
+        height={BURGER_ICON_LINE_HEIGHT}
+        rx={BURGER_ICON_LINE_HEIGHT / 2}
+      />
     </svg>
   );
 }
@@ -919,47 +977,25 @@ function getCSS(P: string): string {
   outline: none;
 }
 .${P}-icon {
-  position: relative;
   display: block;
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
+  overflow: visible;
 }
 .${P}-icon-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: var(--${P}-icon-line-height, 2px);
-  border-radius: 999px;
-  background-color: currentColor;
-  transition: transform ${MENU_ANIM_MS}ms ease, opacity ${MENU_ANIM_MS}ms ease, top ${MENU_ANIM_MS}ms ease;
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform ${MENU_ANIM_MS}ms ease, opacity ${MENU_ANIM_MS}ms ease;
 }
-.${P}-icon-line:nth-child(1) {
-  top: calc((100% - (3 * var(--${P}-icon-line-height, 2px) + 2 * var(--${P}-icon-line-gap, 2px))) / 2);
+.${P}-root.${P}-open .${P}-icon-line-top {
+  transform: translateY(200%) rotate(45deg);
 }
-.${P}-icon-line:nth-child(2) {
-  top: calc(
-    ((100% - (3 * var(--${P}-icon-line-height, 2px) + 2 * var(--${P}-icon-line-gap, 2px))) / 2)
-    + var(--${P}-icon-line-height, 2px)
-    + var(--${P}-icon-line-gap, 2px)
-  );
-}
-.${P}-icon-line:nth-child(3) {
-  top: calc(
-    ((100% - (3 * var(--${P}-icon-line-height, 2px) + 2 * var(--${P}-icon-line-gap, 2px))) / 2)
-    + 2 * (var(--${P}-icon-line-height, 2px) + var(--${P}-icon-line-gap, 2px))
-  );
-}
-.${P}-root.${P}-open .${P}-icon-line:nth-child(1) {
-  top: 50%;
-  transform: translateY(-50%) rotate(45deg);
-}
-.${P}-root.${P}-open .${P}-icon-line:nth-child(2) {
+.${P}-root.${P}-open .${P}-icon-line-mid {
   opacity: 0;
 }
-.${P}-root.${P}-open .${P}-icon-line:nth-child(3) {
-  top: 50%;
-  transform: translateY(-50%) rotate(-45deg);
+.${P}-root.${P}-open .${P}-icon-line-bot {
+  transform: translateY(-200%) rotate(-45deg);
 }
 .${P}-root.${P}-open .${P}-toggle {
   color: var(--${P}-close-button-color);
@@ -1453,9 +1489,7 @@ function getCSS(P: string): string {
 .${P}-nav-state-anim .${P}-icon-line {
   transition:
     transform ${MENU_ANIM_MS}ms ease,
-    opacity ${MENU_ANIM_MS}ms ease,
-    top ${MENU_ANIM_MS}ms ease,
-    height ${NAV_STATE_ANIM_MS}ms ease;
+    opacity ${MENU_ANIM_MS}ms ease;
 }
 .${P}-nav-state-anim .${P}-nav-link,
 .${P}-nav-state-anim .${P}-link,
@@ -1857,8 +1891,6 @@ export function Burger({
   }, [settingsProp, onUpdateSettings, isEditor, layoutId]);
 
   const resolvedIconSize = scalingValue(iconSize, isEditor);
-  const iconLineHeight = scalingValue(iconSize * 0.125, isEditor);
-  const iconLineGap = scalingValue(iconSize * 0.125, isEditor);
   const iconRootStyle: CSSProperties = {
     width: resolvedIconSize,
     height: resolvedIconSize,
@@ -1866,8 +1898,6 @@ export function Burger({
     minHeight: resolvedIconSize,
     maxWidth: resolvedIconSize,
     maxHeight: resolvedIconSize,
-    [`--${P}-icon-line-height`]: iconLineHeight,
-    [`--${P}-icon-line-gap`]: iconLineGap,
   };
   const navLinkTextStyle: CSSProperties = {
     ...closedTextCss.css,
@@ -2165,11 +2195,7 @@ export function Burger({
       aria-expanded={isOpen}
       aria-label={isOpen ? 'Close menu' : 'Open menu'}
     >
-      <span className={`${P}-icon`} aria-hidden="true">
-        <span className={`${P}-icon-line`} />
-        <span className={`${P}-icon-line`} />
-        <span className={`${P}-icon-line`} />
-      </span>
+      <BurgerIcon className={`${P}-icon`} lineClassName={`${P}-icon-line`} />
     </button>
   );
 
@@ -2306,7 +2332,7 @@ export function Burger({
             {isHorizontalPanel && typeCNavPhase === 'open' && verticalAlign === 'bottom' ? renderSocialLinks() : null}
             {isHorizontalPanel && typeCNavPhase === 'open'
               ? renderOpenNavItems(`${P}-nav-link`, 'x', { useContainerGap: true })
-              : items.filter((item) => !isOpenOnlyLink(item)).map((item, index) => renderNavLink(item, index))}
+              : items.filter((item) => isVisibleInClosedNav(item, navigationState)).map((item, index) => renderNavLink(item, index))}
             {isHorizontalPanel && typeCNavPhase === 'open' && verticalAlign !== 'bottom' ? renderSocialLinks() : null}
           </div>
         </nav>
