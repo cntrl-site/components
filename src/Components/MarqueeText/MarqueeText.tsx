@@ -5,8 +5,8 @@ import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { textStylesToCss } from '../utils/textStylesToCss';
 
-function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
-  const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
+function getCSS(P: string, isCurve: boolean): string {
+  const distance = `calc(-1 * var(--${P}-distance, 0px))`;
   const curveCss = isCurve ? `
 .${P}-item-image-wrap {
   display: flex;
@@ -62,11 +62,11 @@ function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
 
 @keyframes ${P}-marquee-left {
   from { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
-  to { -webkit-transform: translate3d(-${distance}, 0, 0); transform: translate3d(-${distance}, 0, 0); }
+  to { -webkit-transform: translate3d(${distance}, 0, 0); transform: translate3d(${distance}, 0, 0); }
 }
 
 @keyframes ${P}-marquee-right {
-  from { -webkit-transform: translate3d(-${distance}, 0, 0); transform: translate3d(-${distance}, 0, 0); }
+  from { -webkit-transform: translate3d(${distance}, 0, 0); transform: translate3d(${distance}, 0, 0); }
   to { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
 }
 
@@ -151,12 +151,12 @@ const CURVE_FREQUENCY_SCALE = 10;
 const normalizeCurveAmplitude = (value: number): number => Math.max(0, value) / CURVE_AMPLITUDE_SCALE;
 const normalizeCurveFrequency = (value: number): number => Math.max(0, value) / CURVE_FREQUENCY_SCALE;
 
-const restartTrackAnimation = (track: HTMLElement) => {
-  track.style.setProperty('animation-name', 'none');
-  track.style.setProperty('-webkit-animation-name', 'none');
-  void track.offsetHeight;
-  track.style.removeProperty('animation-name');
-  track.style.removeProperty('-webkit-animation-name');
+const syncTrackAnimationPhase = (track: HTMLElement, prevDurationMs: number, nextDurationMs: number) => {
+  const anim = track.getAnimations()[0];
+  if (!anim || prevDurationMs <= 0 || nextDurationMs <= 0) return;
+  const elapsedMs = Number(anim.currentTime ?? 0) || 0;
+  const progress = (elapsedMs % prevDurationMs) / prevDurationMs;
+  anim.currentTime = progress * nextDurationMs;
 };
 
 const expandSetContent = (items: MarqueeTextItem[], repeat: number): MarqueeTextItem[] => (
@@ -360,7 +360,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const isCurveLayout = layoutType === 'curve';
   const amplitudeRatio = normalizeCurveAmplitude(curveAmplitude);
   const curvePeriods = normalizeCurveFrequency(curveFrequency);
-  const scopedCss = useMemo(() => getCSS(P, animationDistance, isCurveLayout), [P, animationDistance, isCurveLayout]);
+  const scopedCss = useMemo(() => getCSS(P, isCurveLayout), [P, isCurveLayout]);
 
   const textCss = useMemo<CSSProperties>(() => textStylesToCss({
     fontSettings: {
@@ -389,6 +389,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       ? (isHovering ? 'paused' : 'running')
       : 'running';
   const waveShouldLoop = playState === 'running' && pxPerSec > 0 && animationDistance > 0;
+  const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const bandRef = useRef<HTMLDivElement | null>(null);
@@ -398,7 +399,13 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const capRefEl = useRef<HTMLSpanElement | null>(null);
   const waveShouldLoopRef = useRef(waveShouldLoop);
   const waveKickRef = useRef<(() => void) | null>(null);
+  const waveInvalidateRef = useRef<(() => void) | null>(null);
+  const prevDurationMsRef = useRef(0);
+  const amplitudeRatioRef = useRef(amplitudeRatio);
+  const curvePeriodsRef = useRef(curvePeriods);
   waveShouldLoopRef.current = waveShouldLoop;
+  amplitudeRatioRef.current = amplitudeRatio;
+  curvePeriodsRef.current = curvePeriods;
   const [capHeightPx, setCapHeightPx] = useState(0);
   const [opticalOffsetY, setOpticalOffsetY] = useState(0);
   const [curveBandHeightPx, setCurveBandHeightPx] = useState(0);
@@ -406,7 +413,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const [ribbonHeightPx, setRibbonHeightPx] = useState(0);
 
   const contentKey = useMemo(
-    () => (content ?? []).map((i) => `${i.text}\0${i.image?.url ?? ''}`).join('\0'),
+    () => (content ?? []).map((i) => `${i.text}\0${i.image?.url ?? ''}\0${i.link ?? ''}`).join('\0'),
     [content],
   );
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
@@ -549,8 +556,9 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     if (!useMarqueeTrack || animationDistance <= 0) return;
     const track = trackRef.current;
     if (!track) return;
-    restartTrackAnimation(track);
-  }, [useMarqueeTrack, animationDistance, direction, pxPerSec]);
+    syncTrackAnimationPhase(track, prevDurationMsRef.current, durationMs);
+    prevDurationMsRef.current = durationMs;
+  }, [useMarqueeTrack, animationDistance, direction, pxPerSec, durationMs]);
 
   useLayoutEffect(() => {
     if (!isCurveLayout || !hasContent) return;
@@ -596,8 +604,9 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       if (wave.cacheDirty) rebuildCache();
       const band = bandRef.current ?? wrapper;
       const width = band.offsetWidth || 1;
-      const amplitude = width * amplitudeRatio;
-      const k = (2 * Math.PI * curvePeriods) / width;
+      const amplitude = width * amplitudeRatioRef.current;
+      const periods = curvePeriodsRef.current;
+      const k = (2 * Math.PI * periods) / width;
       const nextLutKey = `${width}|${amplitude}|${k}`;
       if (nextLutKey !== wave.lutKey) {
         wave.lutKey = nextLutKey;
@@ -642,27 +651,50 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       wave.raf = requestAnimationFrame(tick);
     };
 
-    waveKickRef.current = kick;
-    kick();
+    const invalidate = () => {
+      wave.cacheDirty = true;
+      applyWave();
+      kick();
+    };
 
+    waveKickRef.current = kick;
+    waveInvalidateRef.current = invalidate;
+    applyWave();
+    kick();
     const onVisibility = () => {
       if (document.hidden) {
         cancelAnimationFrame(wave.raf);
         wave.raf = 0;
         return;
       }
-      kick();
+      cancelAnimationFrame(wave.raf);
+      wave.raf = 0;
+      invalidate();
     };
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', onVisibility);
+    window.addEventListener('focus', onVisibility);
 
     return () => {
       wave.cancelled = true;
       waveKickRef.current = null;
+      waveInvalidateRef.current = null;
       cancelAnimationFrame(wave.raf);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', onVisibility);
+      window.removeEventListener('focus', onVisibility);
       clearWaveTransforms();
     };
-  }, [isCurveLayout, amplitudeRatio, curvePeriods, hasContent, setWidth, contentKey, contentSequenceRepeat, capHeightPx]);
+  }, [isCurveLayout, hasContent]);
+
+  useLayoutEffect(() => {
+    if (!isCurveLayout || !hasContent) return;
+    waveInvalidateRef.current?.();
+    // curveWidthPx mirrors the band's live offsetWidth (see the ResizeObserver
+    // above). Outside preview, the wave loop isn't ticking, so a width-resize
+    // drag needs this to force a recompute — otherwise only the SVG ribbon
+    // (driven straight from render) tracks the drag and the glyphs stay stale.
+  }, [isCurveLayout, hasContent, setWidth, contentKey, contentSequenceRepeat, capHeightPx, amplitudeRatio, curvePeriods, curveWidthPx]);
 
   useLayoutEffect(() => {
     waveKickRef.current?.();
@@ -746,7 +778,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     <span ref={capRefEl} aria-hidden className={`${P}-cap-ref`} style={textCss}>H</span>
   );
 
-  const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
   const durationS = `${Math.max(0, durationMs) / 1000}s`;
 
   const inner = useMarqueeTrack ? (
@@ -757,6 +788,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       onMouseEnter={onTrackEnter}
       onMouseLeave={onTrackLeave}
       style={{
+        [`--${P}-distance`]: `${animationDistance}px`,
         WebkitAnimationDuration: durationS,
         animationDuration: durationS,
         WebkitAnimationPlayState: playState,
