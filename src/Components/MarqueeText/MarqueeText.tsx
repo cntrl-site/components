@@ -5,8 +5,8 @@ import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { textStylesToCss } from '../utils/textStylesToCss';
 
-function getCSS(P: string, isCurve: boolean): string {
-  const distance = `calc(-1 * var(--${P}-distance, 0px))`;
+function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
+  const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
   const curveCss = isCurve ? `
 .${P}-item-image-wrap {
   display: flex;
@@ -62,11 +62,11 @@ function getCSS(P: string, isCurve: boolean): string {
 
 @keyframes ${P}-marquee-left {
   from { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
-  to { -webkit-transform: translate3d(${distance}, 0, 0); transform: translate3d(${distance}, 0, 0); }
+  to { -webkit-transform: translate3d(-${distance}, 0, 0); transform: translate3d(-${distance}, 0, 0); }
 }
 
 @keyframes ${P}-marquee-right {
-  from { -webkit-transform: translate3d(${distance}, 0, 0); transform: translate3d(${distance}, 0, 0); }
+  from { -webkit-transform: translate3d(-${distance}, 0, 0); transform: translate3d(-${distance}, 0, 0); }
   to { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
 }
 
@@ -151,12 +151,12 @@ const CURVE_FREQUENCY_SCALE = 10;
 const normalizeCurveAmplitude = (value: number): number => Math.max(0, value) / CURVE_AMPLITUDE_SCALE;
 const normalizeCurveFrequency = (value: number): number => Math.max(0, value) / CURVE_FREQUENCY_SCALE;
 
-const syncTrackAnimationPhase = (track: HTMLElement, prevDurationMs: number, nextDurationMs: number) => {
-  const anim = track.getAnimations()[0];
-  if (!anim || prevDurationMs <= 0 || nextDurationMs <= 0) return;
-  const elapsedMs = Number(anim.currentTime ?? 0) || 0;
-  const progress = (elapsedMs % prevDurationMs) / prevDurationMs;
-  anim.currentTime = progress * nextDurationMs;
+const restartTrackAnimation = (track: HTMLElement) => {
+  track.style.setProperty('animation-name', 'none');
+  track.style.setProperty('-webkit-animation-name', 'none');
+  void track.offsetHeight;
+  track.style.removeProperty('animation-name');
+  track.style.removeProperty('-webkit-animation-name');
 };
 
 const expandSetContent = (items: MarqueeTextItem[], repeat: number): MarqueeTextItem[] => (
@@ -360,7 +360,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const isCurveLayout = layoutType === 'curve';
   const amplitudeRatio = normalizeCurveAmplitude(curveAmplitude);
   const curvePeriods = normalizeCurveFrequency(curveFrequency);
-  const scopedCss = useMemo(() => getCSS(P, isCurveLayout), [P, isCurveLayout]);
+  const scopedCss = useMemo(() => getCSS(P, animationDistance, isCurveLayout), [P, animationDistance, isCurveLayout]);
 
   const textCss = useMemo<CSSProperties>(() => textStylesToCss({
     fontSettings: {
@@ -400,7 +400,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const waveShouldLoopRef = useRef(waveShouldLoop);
   const waveKickRef = useRef<(() => void) | null>(null);
   const waveInvalidateRef = useRef<(() => void) | null>(null);
-  const prevDurationMsRef = useRef(0);
   const amplitudeRatioRef = useRef(amplitudeRatio);
   const curvePeriodsRef = useRef(curvePeriods);
   waveShouldLoopRef.current = waveShouldLoop;
@@ -490,16 +489,32 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       }
       if (rawSetWidth > 0) setSetWidth(rawSetWidth);
     };
-    raf.id = requestAnimationFrame(measure);
-    const ro = new ResizeObserver(() => {
+    const scheduleMeasure = () => {
       cancelAnimationFrame(raf.id);
       raf.id = requestAnimationFrame(measure);
-    });
+    };
+    scheduleMeasure();
+    const ro = new ResizeObserver(scheduleMeasure);
     ro.observe(wrapper);
     ro.observe(set);
+    // A rAF queued while the tab is hidden can go stale on mobile (background-tab
+    // throttling may never fire it), leaving setWidth/animationDistance stuck at
+    // whatever they were and the CSS scroll animation frozen. Force a fresh
+    // measurement whenever visibility/focus returns instead of trusting that
+    // queued frame to fire on its own.
+    const onVisible = () => {
+      if (document.hidden) return;
+      scheduleMeasure();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onVisible);
+    window.addEventListener('focus', onVisible);
     return () => {
       cancelAnimationFrame(raf.id);
       ro.disconnect();
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onVisible);
+      window.removeEventListener('focus', onVisible);
     };
   }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx]);
 
@@ -556,9 +571,8 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     if (!useMarqueeTrack || animationDistance <= 0) return;
     const track = trackRef.current;
     if (!track) return;
-    syncTrackAnimationPhase(track, prevDurationMsRef.current, durationMs);
-    prevDurationMsRef.current = durationMs;
-  }, [useMarqueeTrack, animationDistance, direction, pxPerSec, durationMs]);
+    restartTrackAnimation(track);
+  }, [useMarqueeTrack, animationDistance, direction, pxPerSec]);
 
   useLayoutEffect(() => {
     if (!isCurveLayout || !hasContent) return;
@@ -788,7 +802,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       onMouseEnter={onTrackEnter}
       onMouseLeave={onTrackLeave}
       style={{
-        [`--${P}-distance`]: `${animationDistance}px`,
         WebkitAnimationDuration: durationS,
         animationDuration: durationS,
         WebkitAnimationPlayState: playState,
