@@ -18,12 +18,12 @@ const DROP_CAP_SIZE_DEFAULT = 1;
 const EDITOR_PORTAL_Z_INDEX = 2;
 
 export const SHAPE_IDS = [
-  'bobbin',
+  'diamond',
+  'parallelogram',
+  'vase',
   'circle',
   'shield',
-  'vase',
-  'parallelogram',
-  'diamond',
+  'bobbin',
   'custom',
 ] as const;
 
