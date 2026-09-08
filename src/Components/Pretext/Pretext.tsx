@@ -251,6 +251,100 @@ function letterboxUnitRings(
   })));
 }
 
+/** Unit rectangle used when no path/preset is available. */
+function unitRectangleContours(): VecContour[] {
+  return [{
+    closed: true,
+    nodes: [
+      { p: { x: 0, y: 0 }, in: null, out: null },
+      { p: { x: 1, y: 0 }, in: null, out: null },
+      { p: { x: 1, y: 1 }, in: null, out: null },
+      { p: { x: 0, y: 1 }, in: null, out: null },
+    ],
+  }];
+}
+
+function mapContoursToViewBox(contours: VecContour[], viewBox: ViewBox): VecContour[] {
+  return mapContours(contours, point => ({
+    x: (point.x - viewBox.x) / viewBox.width,
+    y: (point.y - viewBox.y) / viewBox.height,
+  }));
+}
+
+/** Stretch contours so their drawn bbox fills the unit box (mirrors normalizeRings). */
+function normalizeContours(contours: VecContour[]): VecContour[] {
+  const bbox = contoursBBox(contours);
+  const width = bbox.maxX - bbox.minX;
+  const height = bbox.maxY - bbox.minY;
+  if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) return contours;
+  return mapContours(contours, point => ({
+    x: (point.x - bbox.minX) / width,
+    y: (point.y - bbox.minY) / height,
+  }));
+}
+
+function letterboxUnitContours(
+  contours: VecContour[],
+  box: { width: number; height: number },
+): VecContour[] {
+  if (!(box.width > 0) || !(box.height > 0)) return contours;
+  const side = Math.min(box.width, box.height);
+  const ox = (box.width - side) / 2;
+  const oy = (box.height - side) / 2;
+  return mapContours(contours, point => ({
+    x: (ox + point.x * side) / box.width,
+    y: (oy + point.y * side) / box.height,
+  }));
+}
+
+/**
+ * Same coordinate mapping as the polygon rings used for text layout, but keeps
+ * cubic handles so fill/clip edges match the smooth editor outline.
+ */
+function resolveUnitContours(
+  spec: string,
+  draft: VecContour[] | null | undefined,
+  pathFit: PathFit,
+  viewBox: ViewBox,
+  shape: ShapeId,
+  box: { width: number; height: number },
+): VecContour[] {
+  let contours: VecContour[] = [];
+  if (draft && draft.length) {
+    contours = mapContoursToViewBox(draft, viewBox);
+  } else {
+    const trimmed = spec.trim();
+    if (trimmed && /^[Mm]/.test(trimmed)) {
+      const parsed = parsePathNodes(trimmed);
+      if (parsed.length) {
+        contours = pathFit === 'viewbox'
+          ? mapContoursToViewBox(parsed, viewBox)
+          : normalizeContours(parsed);
+      }
+    }
+    if (!contours.length) {
+      const presetPath = shape !== 'custom' ? PRESET_PATHS[shape] : undefined;
+      if (presetPath) {
+        contours = mapContoursToViewBox(parsePathNodes(presetPath), DEFAULT_VIEW_BOX);
+      } else {
+        contours = unitRectangleContours();
+      }
+    }
+  }
+  return shape === 'circle' ? letterboxUnitContours(contours, box) : contours;
+}
+
+function unitContoursToPathPx(
+  contours: VecContour[],
+  box: { width: number; height: number },
+): string {
+  if (!(box.width > 0) || !(box.height > 0) || !contours.length) return '';
+  return serializeContours(mapContours(contours, point => ({
+    x: point.x * box.width,
+    y: point.y * box.height,
+  })));
+}
+
 /* ------------------------------------------------------------------ *
  * Vector path — the editable nodes behind the `d` string
  * ------------------------------------------------------------------ */
@@ -3745,14 +3839,50 @@ function PretextColumn({
   const activeImageFocalY = pathDragLiveTransform?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
   const activeImageScale = pathDragLiveTransform?.scale ?? pathPreservedTransform?.scale ?? imageScale;
 
-  const shapeFillPath = useMemo(
-    () => (box.width > 0 && box.height > 0 ? ringsToPathPx(rings, box) : ''),
-    [rings, box.width, box.height],
-  );
-  const shapeImagePath = useMemo(
-    () => (imageUrl && box.width > 0 && box.height > 0 ? ringsToPathPx(imageRings, box) : ''),
-    [imageUrl, imageRings, box.width, box.height],
-  );
+  const shapeFillPath = useMemo(() => {
+    if (!(box.width > 0) || !(box.height > 0)) return '';
+    let unit = resolveUnitContours(customPath, draftContours, pathFit, viewBox, shape, box);
+    if (exceedsEditViewBox) {
+      const ref = legacyRefBox ?? box;
+      const scaleX = viewBox.width / ref.width;
+      const scaleY = viewBox.height / ref.height;
+      unit = mapContours(unit, point => ({ x: point.x * scaleX, y: point.y * scaleY }));
+    }
+    return unitContoursToPathPx(unit, box) || ringsToPathPx(rings, box);
+  }, [
+    customPath,
+    draftContours,
+    pathFit,
+    viewBox,
+    shape,
+    box.width,
+    box.height,
+    exceedsEditViewBox,
+    legacyRefBox,
+    rings,
+  ]);
+  const shapeImagePath = useMemo(() => {
+    if (!imageUrl || !(box.width > 0) || !(box.height > 0)) return '';
+    let unit = resolveUnitContours(imageCustomPath, null, pathFit, viewBox, shape, box);
+    if (exceedsEditViewBox) {
+      const ref = legacyRefBox ?? box;
+      const scaleX = viewBox.width / ref.width;
+      const scaleY = viewBox.height / ref.height;
+      unit = mapContours(unit, point => ({ x: point.x * scaleX, y: point.y * scaleY }));
+    }
+    return unitContoursToPathPx(unit, box) || ringsToPathPx(imageRings, box);
+  }, [
+    imageUrl,
+    imageCustomPath,
+    pathFit,
+    viewBox,
+    shape,
+    box.width,
+    box.height,
+    exceedsEditViewBox,
+    legacyRefBox,
+    imageRings,
+  ]);
   const shapeImageBounds = committedShapeImageBounds;
   const clipId = `${imageId}-clip`;
   // Before the natural size loads, fall back to filling the mask bbox exactly

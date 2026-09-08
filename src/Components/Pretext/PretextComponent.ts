@@ -317,9 +317,15 @@ export const PretextComponent = {
   name: 'Shaped Type',
   category: 'typography',
   version: 1,
-  normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, _prevSettings: Record<string, any>) => {
+  normalizeLayoutSettingsUpdate: (nextSettings: Record<string, any>, prevSettings: Record<string, any>) => {
     const shape = nextSettings.shape;
     if (typeof shape !== 'string' || shape === 'custom' || (SHAPE_IDS as readonly string[]).indexOf(shape) === -1) {
+      return nextSettings;
+    }
+    // Only rematerialize on an actual shape pick. Move/scale keep the preset id
+    // via preserveShape; re-applying the preset here would wipe those edits
+    // whenever any other setting (e.g. image) is changed in the panel.
+    if (prevSettings?.shape === shape) {
       return nextSettings;
     }
     return {
