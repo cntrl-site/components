@@ -98,7 +98,7 @@ const schema: ComponentSchemaV1 = {
       backgroundColor: {
         type: 'string',
         scope: 'common',
-        title: 'Background',
+        title: 'BG Shape',
         display: { type: 'settings-color-picker' },
       },
       textFontFamily: {
@@ -164,7 +164,7 @@ const schema: ComponentSchemaV1 = {
       linkColor: {
         type: 'string',
         scope: 'common',
-        title: 'Link',
+        title: 'Link Default',
         display: { type: 'style-panel-color-picker' },
       },
     },
