@@ -1308,6 +1308,9 @@ function getCSS(P: string): string {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
+.${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-nav-link.${P}-has-href {
+  color: var(--${P}-hover-link-color, var(--${P}-onScroll-link-color, var(--${P}-link-color)));
+}
 .${P}-social-links {
   position: absolute;
   display: flex;
@@ -1387,11 +1390,19 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-hover .${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
 }
+.${P}-lightbox.${P}-state-onScroll.${P}-state-hover .${P}-has-href,
+.${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-has-href {
+  color: var(--${P}-hover-link-color, var(--${P}-onScroll-link-color, var(--${P}-link-color)));
+}
 .${P}-interactive .${P}-social-link:hover,
 .${P}-interactive .${P}-social-link:focus-visible,
 .${P}-lightbox.${P}-state-hover .${P}-social-link,
 .${P}-root.${P}-state-hover .${P}-social-link {
   color: var(--${P}-hover-social-icon-color, var(--${P}-social-icon-color));
+}
+.${P}-lightbox.${P}-state-onScroll.${P}-state-hover .${P}-social-link,
+.${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-social-link {
+  color: var(--${P}-hover-social-icon-color, var(--${P}-onScroll-social-icon-color, var(--${P}-social-icon-color)));
 }
 .${P}-nav-toggle-wrap {
   position: absolute;
@@ -1623,14 +1634,10 @@ export function Burger({
 
   const isControlled = controlledNavigationState !== undefined;
   const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
-  const previewState = activeEvent && activeEvent !== 'default' && (activeEvent !== 'hover' || isHoverEnabled)
-    ? activeEvent
-    : undefined;
-  const scrollState = isControlled
-    ? controlledNavigationState
+  const interactionState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
+  const navigationState: BurgerNavigationState = isControlled
+    ? (controlledNavigationState === 'onScroll' ? 'onScroll' : 'default')
     : (!isEditor || isPreviewMode) && isScrolled ? 'onScroll' : 'default';
-  const resolvedState = previewState ?? (scrollState === 'default' ? undefined : scrollState);
-  const navigationState: BurgerNavigationState = resolvedState === 'onScroll' ? 'onScroll' : 'default';
   const [prevNavigationState, setPrevNavigationState] = useState(navigationState);
   const [isNavStateAnimating, setIsNavStateAnimating] = useState(false);
   if (navigationState !== prevNavigationState) {
@@ -1874,7 +1881,10 @@ export function Burger({
 
   const items = Array.isArray(linkItems) ? linkItems : [];
   const socialItems = normalizeSocialLinks(socialLinkItems);
-  const stateClass = resolvedState ? `${P}-state-${resolvedState}` : '';
+  const stateClass = [
+    navigationState !== 'default' ? `${P}-state-${navigationState}` : '',
+    interactionState && interactionState !== navigationState ? `${P}-state-${interactionState}` : '',
+  ].filter(Boolean).join(' ');
   const editorClass = isEditor && !isPreviewMode ? `${P}-editor` : '';
   const interactiveClass = isHoverEnabled ? `${P}-interactive` : '';
   const navStateAnimClass = navigationState !== prevNavigationState || isNavStateAnimating
