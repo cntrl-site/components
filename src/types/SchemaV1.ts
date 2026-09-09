@@ -114,6 +114,10 @@ export type ComponentSchemaV1 = {
   fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
-  navigationStates?: string[];
-  navigationStateProperties?: string[];
+  /**
+   * Panel ids that represent a visual component state.
+   * `null` or omitted means the component has no state panels.
+   * Opening one of these panels sets `currentState` to that panel id.
+   */
+  statePanels?: string[] | null;
 };

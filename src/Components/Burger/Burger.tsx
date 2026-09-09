@@ -47,6 +47,7 @@ type BurgerSettings = {
   socialLink?: string[];
   logo?: BurgerLogo | null;
   logoMaxWidth?: number;
+  logoMaxHeight?: number;
   panelHeight?: number;
   panelColor?: string;
   position?: BurgerPosition;
@@ -57,6 +58,31 @@ type BurgerSettings = {
   iconSize?: number;
   iconAnimation?: 'a';
   linkColor?: string;
+  openLinkColor?: string;
+  onScrollIconColor?: string;
+  onScrollCloseButtonColor?: string;
+  onScrollLinkColor?: string;
+  onScrollPanelColor?: string;
+  onScrollLogoMaxWidth?: number;
+  onScrollLogoMaxHeight?: number;
+  onScrollPanelHeight?: number;
+  onScrollIconSize?: number;
+  onScrollIconAnimation?: 'a';
+  onScrollNavTextWidth?: number;
+  onScrollNavGap?: number;
+  onScrollNavPaddingLeft?: number;
+  onScrollNavPaddingRight?: number;
+  onScrollFontFamily?: string;
+  onScrollFontSettings?: {
+    fontWeight?: number;
+    fontStyle?: string;
+  };
+  onScrollFontSize?: number;
+  onScrollLineHeight?: number;
+  onScrollLetterSpacing?: number;
+  onScrollWordSpacing?: number;
+  onScrollTextAlign?: TextStyles['textAlign'];
+  onScrollTextAppearance?: TextStyles['textAppearance'];
   socialIconColor?: string;
   menuBackgroundColor?: string;
   overlayColor?: string;
@@ -67,6 +93,7 @@ type BurgerSettings = {
   navTextWidth?: number;
   gap?: number;
   navGap?: number;
+  navPaddingLeft?: number;
   navPaddingRight?: number;
   textPaddingLeft?: number;
   textPaddingRight?: number;
@@ -94,50 +121,16 @@ type BurgerSettings = {
   openWordSpacing?: number;
   openTextAlign?: TextStyles['textAlign'];
   openTextAppearance?: TextStyles['textAppearance'];
-  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor', string>>>;
-  navigationStateOverrides?: BurgerNavigationStateOverrides;
+  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'onScrollIconColor' | 'onScrollCloseButtonColor' | 'onScrollLinkColor' | 'onScrollPanelColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor', string>>>;
 };
 
+type BurgerVisualState = 'compact' | 'onScroll' | 'open';
 type BurgerNavigationState = 'default' | 'onScroll';
 
-const NAVIGATION_STATE_PROPERTIES = [
-  'panelHeight',
-  'logoMaxWidth',
-  'iconSize',
-  'navGap',
-  'navPaddingRight',
-  'navTextWidth',
-  'fontSize',
-  'lineHeight',
-  'letterSpacing',
-  'wordSpacing',
-  'textAppearance',
-] as const;
-
-type BurgerNavigationStateProperty = typeof NAVIGATION_STATE_PROPERTIES[number];
-
-type BurgerNavigationStateOverrides = Partial<
-  Record<Exclude<BurgerNavigationState, 'default'>, Pick<BurgerSettings, BurgerNavigationStateProperty>>
->;
-
-// Colors stay in `stateOverrides` and are applied through the `-state-<name>` CSS
-// variables, so a navigation state only merges the remaining parameters.
-function resolveNavigationStateSettings(
-  settings: BurgerSettings,
-  state: BurgerNavigationState,
-): BurgerSettings {
-  const overrides = state === 'default' ? undefined : settings.navigationStateOverrides?.[state];
-  if (!overrides) return settings;
-
-  const resolved: BurgerSettings = { ...settings };
-  for (const key of NAVIGATION_STATE_PROPERTIES) {
-    const value = overrides[key];
-    if (value !== undefined) {
-      Object.assign(resolved, { [key]: value });
-    }
-  }
-
-  return resolved;
+function resolveCurrentState(value?: string | null): BurgerVisualState | undefined {
+  if (value === 'compact' || value === 'onScroll' || value === 'open') return value;
+  if (value === 'default') return 'compact';
+  return undefined;
 }
 
 type BurgerShowIn = 'always' | 'open only' | 'open and compact';
@@ -598,6 +591,62 @@ function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
   if (settings.openTextAppearance === undefined && settings.textAppearance !== undefined) {
     updates.openTextAppearance = settings.textAppearance;
   }
+  if (settings.openLinkColor === undefined) {
+    const inheritedOpenLinkColor = settings.stateOverrides?.open?.openLinkColor
+      ?? settings.stateOverrides?.open?.linkColor
+      ?? settings.linkColor;
+    if (inheritedOpenLinkColor !== undefined) {
+      updates.openLinkColor = inheritedOpenLinkColor;
+    }
+  }
+  if (settings.onScrollIconColor === undefined) {
+    const inherited = settings.stateOverrides?.onScroll?.iconColor ?? settings.iconColor;
+    if (inherited !== undefined) updates.onScrollIconColor = inherited;
+  }
+  if (settings.onScrollCloseButtonColor === undefined) {
+    const inherited = settings.stateOverrides?.onScroll?.closeButtonColor ?? settings.closeButtonColor;
+    if (inherited !== undefined) updates.onScrollCloseButtonColor = inherited;
+  }
+  if (settings.onScrollLinkColor === undefined) {
+    const inherited = settings.stateOverrides?.onScroll?.linkColor ?? settings.linkColor;
+    if (inherited !== undefined) updates.onScrollLinkColor = inherited;
+  }
+  if (settings.onScrollPanelColor === undefined) {
+    const inherited = settings.stateOverrides?.onScroll?.panelColor ?? settings.panelColor;
+    if (inherited !== undefined) updates.onScrollPanelColor = inherited;
+  }
+  if (settings.logoMaxHeight === undefined && settings.logoMaxWidth !== undefined) {
+    updates.logoMaxHeight = settings.logoMaxWidth;
+  }
+  if (settings.onScrollLogoMaxHeight === undefined && settings.onScrollLogoMaxWidth !== undefined) {
+    updates.onScrollLogoMaxHeight = settings.onScrollLogoMaxWidth;
+  }
+  const inheritScrollParam = <K extends keyof BurgerSettings>(
+    key: K,
+    compactKey: keyof BurgerSettings,
+  ) => {
+    if (settings[key] !== undefined) return;
+    const inherited = settings[compactKey];
+    if (inherited !== undefined) {
+      updates[key] = inherited as BurgerSettings[K];
+    }
+  };
+  inheritScrollParam('onScrollLogoMaxHeight', 'logoMaxHeight');
+  inheritScrollParam('onScrollPanelHeight', 'panelHeight');
+  inheritScrollParam('onScrollIconSize', 'iconSize');
+  inheritScrollParam('onScrollIconAnimation', 'iconAnimation');
+  inheritScrollParam('onScrollNavTextWidth', 'navTextWidth');
+  inheritScrollParam('onScrollNavGap', 'navGap');
+  inheritScrollParam('onScrollNavPaddingLeft', 'navPaddingLeft');
+  inheritScrollParam('onScrollNavPaddingRight', 'navPaddingRight');
+  inheritScrollParam('onScrollFontFamily', 'fontFamily');
+  inheritScrollParam('onScrollFontSettings', 'fontSettings');
+  inheritScrollParam('onScrollFontSize', 'fontSize');
+  inheritScrollParam('onScrollLineHeight', 'lineHeight');
+  inheritScrollParam('onScrollLetterSpacing', 'letterSpacing');
+  inheritScrollParam('onScrollWordSpacing', 'wordSpacing');
+  inheritScrollParam('onScrollTextAlign', 'textAlign');
+  inheritScrollParam('onScrollTextAppearance', 'textAppearance');
   return Object.keys(updates).length === 0 ? settings : { ...settings, ...updates };
 }
 
@@ -777,7 +826,7 @@ function renderTextPaddingControls(
   );
 }
 
-type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor';
+type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'onScrollIconColor' | 'onScrollCloseButtonColor' | 'onScrollLinkColor' | 'onScrollPanelColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor';
 
 type TypeCNavPhase = 'closed' | 'open';
 
@@ -798,29 +847,36 @@ type BurgerProps = {
   isPreviewMode?: boolean;
   activeEvent?: string;
   /**
-   * Set by a navigation wrapper that decides when the bar counts as scrolled, e.g. the
-   * `switch` position, which only flips once the page is scrolled past the whole bar.
-   * When it is omitted the component watches the page scroll itself.
+   * Editor-controlled visual state (`compact` | `onScroll` | `open`), matching a
+   * `statePanels` id. On the published site a navigation wrapper may pin `compact`
+   * or `onScroll` (e.g. the `switch` position). When omitted the component
+   * watches scroll and click itself.
    */
-  navigationState?: BurgerNavigationState;
+  currentState?: string | null;
   portalId?: string;
   layoutId?: string;
   pages?: BurgerPageRef[];
   onLinkNavigate?: (event: BurgerLinkNavigateEvent) => void;
   onUpdateSettings?: (settings: BurgerSettings) => void;
+  onOpenChange?: (isOpen: boolean) => void;
 } & CommonComponentProps;
 
 const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   iconColor: 'icon-color',
   closeButtonColor: 'close-button-color',
   linkColor: 'link-color',
+  openLinkColor: 'menu-link-color',
+  onScrollIconColor: 'scroll-icon-color',
+  onScrollCloseButtonColor: 'scroll-close-button-color',
+  onScrollLinkColor: 'scroll-link-color',
+  onScrollPanelColor: 'scroll-panel-color',
   socialIconColor: 'social-icon-color',
   menuBackgroundColor: 'menu-background-color',
   overlayColor: 'overlay-color',
   panelColor: 'panel-color',
 };
 
-const STATE_KEYS = ['hover', 'onScroll'] as const;
+const STATE_KEYS = ['hover', 'open'] as const;
 
 const VERTICAL_ALIGN_MAP: Record<VerticalAlign, CSSProperties['justifyContent']> = {
   top: 'flex-start',
@@ -1206,7 +1262,7 @@ function getCSS(P: string): string {
 .${P}-link {
   display: block;
   width: 100%;
-  color: var(--${P}-link-color);
+  color: var(--${P}-menu-link-color);
   text-decoration: none;
   cursor: default;
   transition: color 200ms ease;
@@ -1255,6 +1311,15 @@ function getCSS(P: string): string {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
+.${P}-interactive .${P}-lightbox .${P}-has-href:hover,
+.${P}-interactive .${P}-lightbox .${P}-has-href:focus-visible,
+.${P}-lightbox.${P}-state-hover .${P}-link.${P}-has-href,
+.${P}-interactive.${P}-type-c.${P}-open .${P}-nav-link.${P}-has-href:hover,
+.${P}-interactive.${P}-type-c.${P}-open .${P}-nav-link.${P}-has-href:focus-visible,
+.${P}-root.${P}-type-c.${P}-open.${P}-state-hover .${P}-nav-link.${P}-has-href {
+  color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
+  outline: none;
+}
 .${P}-interactive .${P}-has-href:hover .${P}-link-text,
 .${P}-interactive .${P}-has-href:focus-visible .${P}-link-text,
 .${P}-lightbox.${P}-state-hover .${P}-has-href .${P}-link-text {
@@ -1291,11 +1356,14 @@ function getCSS(P: string): string {
 .${P}-nav-logo-inner {
   position: relative;
   flex-shrink: 0;
+  width: auto;
+  max-height: 100%;
 }
 .${P}-nav-logo-img {
   display: block;
-  width: 100%;
+  width: auto;
   height: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 .${P}-nav-links {
@@ -1344,8 +1412,13 @@ function getCSS(P: string): string {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
+.${P}-interactive.${P}-state-onScroll .${P}-nav-link.${P}-has-href:hover,
+.${P}-interactive.${P}-state-onScroll .${P}-nav-link.${P}-has-href:focus-visible,
 .${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-nav-link.${P}-has-href {
-  color: var(--${P}-hover-link-color, var(--${P}-onScroll-link-color, var(--${P}-link-color)));
+  color: var(--${P}-onScroll-hover-scroll-link-color, var(--${P}-scroll-link-color));
+}
+.${P}-root.${P}-type-c.${P}-open.${P}-state-onScroll.${P}-state-hover .${P}-nav-link.${P}-has-href {
+  color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
 }
 .${P}-social-links {
   position: absolute;
@@ -1394,20 +1467,19 @@ function getCSS(P: string): string {
   opacity: 0.7;
 }
 .${P}-root.${P}-state-onScroll .${P}-nav-bar {
-  background-color: var(--${P}-onScroll-panel-color, var(--${P}-panel-color));
+  background-color: var(--${P}-scroll-panel-color);
 }
 .${P}-root.${P}-type-c.${P}-open.${P}-state-onScroll .${P}-nav-bar {
   background-color: var(--${P}-onScroll-menu-background-color, var(--${P}-menu-background-color));
 }
 .${P}-root.${P}-state-onScroll .${P}-toggle {
-  color: var(--${P}-onScroll-icon-color, var(--${P}-icon-color));
+  color: var(--${P}-scroll-icon-color);
 }
 .${P}-root.${P}-state-onScroll .${P}-open .${P}-toggle {
-  color: var(--${P}-onScroll-close-button-color, var(--${P}-close-button-color));
+  color: var(--${P}-scroll-close-button-color);
 }
-.${P}-root.${P}-state-onScroll .${P}-nav-link,
-.${P}-lightbox.${P}-state-onScroll .${P}-link {
-  color: var(--${P}-onScroll-link-color, var(--${P}-link-color));
+.${P}-root.${P}-state-onScroll .${P}-nav-link {
+  color: var(--${P}-scroll-link-color);
 }
 .${P}-root.${P}-state-onScroll .${P}-social-link,
 .${P}-lightbox.${P}-state-onScroll .${P}-social-link {
@@ -1426,9 +1498,8 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-hover .${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
 }
-.${P}-lightbox.${P}-state-onScroll.${P}-state-hover .${P}-has-href,
 .${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-has-href {
-  color: var(--${P}-hover-link-color, var(--${P}-onScroll-link-color, var(--${P}-link-color)));
+  color: var(--${P}-onScroll-hover-scroll-link-color, var(--${P}-scroll-link-color));
 }
 .${P}-interactive .${P}-social-link:hover,
 .${P}-interactive .${P}-social-link:focus-visible,
@@ -1439,6 +1510,36 @@ function getCSS(P: string): string {
 .${P}-lightbox.${P}-state-onScroll.${P}-state-hover .${P}-social-link,
 .${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-social-link {
   color: var(--${P}-hover-social-icon-color, var(--${P}-onScroll-social-icon-color, var(--${P}-social-icon-color)));
+}
+.${P}-root.${P}-state-open .${P}-toggle {
+  color: var(--${P}-open-close-button-color, var(--${P}-close-button-color));
+}
+.${P}-root.${P}-type-c.${P}-open.${P}-state-open .${P}-nav-bar {
+  background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
+}
+.${P}-lightbox .${P}-link,
+.${P}-root.${P}-type-c.${P}-open .${P}-nav-link,
+.${P}-root.${P}-type-c.${P}-open.${P}-state-onScroll .${P}-nav-link {
+  color: var(--${P}-menu-link-color);
+}
+.${P}-root.${P}-state-open .${P}-social-link,
+.${P}-lightbox.${P}-state-open .${P}-social-link {
+  color: var(--${P}-open-social-icon-color, var(--${P}-social-icon-color));
+}
+.${P}-lightbox.${P}-state-open .${P}-panel {
+  background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
+}
+.${P}-lightbox.${P}-state-open .${P}-backdrop,
+.${P}-root.${P}-state-open .${P}-type-c-backdrop {
+  background-color: var(--${P}-open-overlay-color, var(--${P}-overlay-color));
+}
+.${P}-lightbox.${P}-state-open.${P}-state-hover .${P}-has-href,
+.${P}-root.${P}-state-open.${P}-state-hover .${P}-has-href {
+  color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
+}
+.${P}-lightbox.${P}-state-open.${P}-state-hover .${P}-social-link,
+.${P}-root.${P}-state-open.${P}-state-hover .${P}-social-link {
+  color: var(--${P}-hover-social-icon-color, var(--${P}-open-social-icon-color, var(--${P}-social-icon-color)));
 }
 .${P}-nav-toggle-wrap {
   position: absolute;
@@ -1452,6 +1553,7 @@ function getCSS(P: string): string {
   z-index: 3;
   pointer-events: auto;
 }
+.${P}-nav-padding-left,
 .${P}-nav-padding-right {
   position: relative;
   flex-shrink: 0;
@@ -1470,6 +1572,7 @@ function getCSS(P: string): string {
     gap ${NAV_STATE_ANIM_MS}ms ease;
 }
 .${P}-nav-state-anim .${P}-nav-logo-inner,
+.${P}-nav-state-anim .${P}-nav-padding-left,
 .${P}-nav-state-anim .${P}-nav-padding-right,
 .${P}-nav-state-anim .${P}-nav-gap-control,
 .${P}-nav-state-anim .${P}-link-text-box {
@@ -1647,11 +1750,12 @@ export function Burger({
   isEditMode,
   isPreviewMode,
   activeEvent,
-  navigationState: controlledNavigationState,
+  currentState: currentStateProp,
   layoutId,
   pages,
   onLinkNavigate,
   onUpdateSettings,
+  onOpenChange,
 }: BurgerProps) {
   const { prefix: P } = useScopedStyles();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1660,33 +1764,35 @@ export function Burger({
   const closeTimerRef = useRef<number | null>(null);
   const prevLayoutIdForOverlayRef = useRef(layoutId);
   const scopedCss = useMemo(() => getCSS(P), [P]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpenUser, setIsOpen] = useState(false);
   const [isOverlayMounted, setIsOverlayMounted] = useState(false);
   const [isOverlayActive, setIsOverlayActive] = useState(false);
   const [typeCNavPhase, setTypeCNavPhase] = useState<TypeCNavPhase>('closed');
   const [isScrolled, setIsScrolled] = useState(false);
 
-  const isControlled = controlledNavigationState !== undefined;
+  const pinnedState = resolveCurrentState(currentStateProp);
+  const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open');
+  const isOpen = isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser);
+  const isScrollPinned = pinnedState === 'compact' || pinnedState === 'onScroll';
   const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
   const interactionState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
-  const navigationState: BurgerNavigationState = isControlled
-    ? (controlledNavigationState === 'onScroll' ? 'onScroll' : 'default')
-    : (!isEditor || isPreviewMode) && isScrolled ? 'onScroll' : 'default';
+  const navigationState: BurgerNavigationState = pinnedState === 'onScroll'
+    ? 'onScroll'
+    : isScrollPinned
+      ? 'default'
+      : (!isEditor || isPreviewMode) && isScrolled ? 'onScroll' : 'default';
   const [prevNavigationState, setPrevNavigationState] = useState(navigationState);
   const [isNavStateAnimating, setIsNavStateAnimating] = useState(false);
   if (navigationState !== prevNavigationState) {
     setPrevNavigationState(navigationState);
     setIsNavStateAnimating(true);
   }
-  const settings = useMemo(
-    () => resolveNavigationStateSettings(settingsProp, navigationState),
-    [settingsProp, navigationState],
-  );
+  const settings = settingsProp;
 
   const {
     type = 'b',
     logo,
-    logoMaxWidth = 120 / 1440,
+    logoMaxHeight = 120 / 1440,
     panelHeight = 60 / 1440,
     panelColor = '#b3b3b3',
     position,
@@ -1697,6 +1803,27 @@ export function Burger({
     iconSize = 16 / 1440,
     iconAnimation = 'a',
     linkColor = '#000000',
+    openLinkColor = '#000000',
+    onScrollIconColor = '#000000',
+    onScrollCloseButtonColor = '#000000',
+    onScrollLinkColor = '#000000',
+    onScrollPanelColor = '#ffffff',
+    onScrollLogoMaxHeight = 120 / 1440,
+    onScrollPanelHeight = 60 / 1440,
+    onScrollIconSize = 16 / 1440,
+    onScrollIconAnimation = 'a',
+    onScrollNavTextWidth,
+    onScrollNavGap,
+    onScrollNavPaddingLeft = 10 / 1440,
+    onScrollNavPaddingRight = 10 / 1440,
+    onScrollFontFamily,
+    onScrollFontSettings,
+    onScrollFontSize,
+    onScrollLineHeight,
+    onScrollLetterSpacing = 0,
+    onScrollWordSpacing = 0,
+    onScrollTextAlign = 'left',
+    onScrollTextAppearance,
     socialIconColor = '#000000',
     menuBackgroundColor = '#ffffff',
     overlayColor = 'rgba(0, 0, 0, 0.45)',
@@ -1707,6 +1834,7 @@ export function Burger({
     navTextWidth,
     gap = 0,
     navGap,
+    navPaddingLeft = 10 / 1440,
     navPaddingRight = 10 / 1440,
     textPaddingLeft = 10 / 1440,
     textPaddingRight = 10 / 1440,
@@ -1739,12 +1867,27 @@ export function Burger({
     verticalAlign: verticalAlignSetting,
   });
 
-  const resolvedNavTextWidth = navTextWidth ?? textWidth;
+  const isOnScrollNav = navigationState === 'onScroll';
+  const closedLogoMaxHeight = isOnScrollNav ? onScrollLogoMaxHeight : logoMaxHeight;
+  const closedPanelHeight = isOnScrollNav ? onScrollPanelHeight : panelHeight;
+  const closedIconSize = isOnScrollNav ? onScrollIconSize : iconSize;
+  const closedIconAnimation = isOnScrollNav ? onScrollIconAnimation : iconAnimation;
+  const closedNavTextWidth = isOnScrollNav ? onScrollNavTextWidth : navTextWidth;
+  const closedNavGap = isOnScrollNav ? onScrollNavGap : navGap;
+  const closedNavPaddingLeft = isOnScrollNav ? onScrollNavPaddingLeft : navPaddingLeft;
+  const closedNavPaddingRight = isOnScrollNav ? onScrollNavPaddingRight : navPaddingRight;
+
+  const resolvedNavTextWidth = closedNavTextWidth ?? textWidth;
 
   const colorVars = buildColorVars(P, {
     iconColor,
     closeButtonColor,
     linkColor,
+    openLinkColor,
+    onScrollIconColor,
+    onScrollCloseButtonColor,
+    onScrollLinkColor,
+    onScrollPanelColor,
     socialIconColor,
     menuBackgroundColor,
     overlayColor,
@@ -1755,16 +1898,27 @@ export function Burger({
   const isVerticalPanel = type === 'b';
   const isHorizontalPanel = type === 'c';
 
-  const closedTypeStyle = resolveBurgerTypeStyle({
-    fontFamily,
-    fontSettings,
-    fontSize,
-    lineHeight,
-    letterSpacing,
-    wordSpacing,
-    textAlign,
-    textAppearance,
-  });
+  const closedTypeStyle = resolveBurgerTypeStyle(isOnScrollNav
+    ? {
+      fontFamily: onScrollFontFamily,
+      fontSettings: onScrollFontSettings,
+      fontSize: onScrollFontSize,
+      lineHeight: onScrollLineHeight,
+      letterSpacing: onScrollLetterSpacing,
+      wordSpacing: onScrollWordSpacing,
+      textAlign: onScrollTextAlign,
+      textAppearance: onScrollTextAppearance,
+    }
+    : {
+      fontFamily,
+      fontSettings,
+      fontSize,
+      lineHeight,
+      letterSpacing,
+      wordSpacing,
+      textAlign,
+      textAppearance,
+    });
   const openTypeStyle = resolveBurgerTypeStyle({
     fontFamily: openFontFamily,
     fontSettings: openFontSettings,
@@ -1784,9 +1938,11 @@ export function Burger({
   };
   const linkTextClassName = openTextCss.className;
   const scaled = (value: number) => scalingValue(value, isEditor);
-  const resolvedNavGap = navGap ?? gap;
-  const navPaddingRightHandleSize = Math.max(navPaddingRight, PADDING_HANDLE_SIZE);
-  const navPaddingRightMaxFraction = Math.max(0, 1 - iconSize);
+  const resolvedNavGap = closedNavGap ?? gap;
+  const navPaddingLeftHandleSize = Math.max(closedNavPaddingLeft, PADDING_HANDLE_SIZE);
+  const navPaddingRightHandleSize = Math.max(closedNavPaddingRight, PADDING_HANDLE_SIZE);
+  const navPaddingLeftMaxFraction = Math.max(0, 1 - closedIconSize);
+  const navPaddingRightMaxFraction = Math.max(0, 1 - closedIconSize);
   const showControls = isEditMode ?? false;
   const showClosedMenuControls = showControls && !isOpen;
   const usesOverlayLightbox = !isHorizontalPanel;
@@ -1890,7 +2046,7 @@ export function Burger({
     onUpdateSettings(updatedSettings);
   }, [settingsProp, onUpdateSettings, isEditor, layoutId]);
 
-  const resolvedIconSize = scalingValue(iconSize, isEditor);
+  const resolvedIconSize = scalingValue(closedIconSize, isEditor);
   const iconRootStyle: CSSProperties = {
     width: resolvedIconSize,
     height: resolvedIconSize,
@@ -1906,14 +2062,16 @@ export function Burger({
   const navLinkTextClassName = closedTextCss.className;
   const showLogo = logo?.mode !== 'Off';
   const logoSrc = logo?.icon ?? '';
-  const logoHeight = scalingValue(panelHeight * 0.75, isEditor);
-  const logoWidth = scaled(logoMaxWidth);
+  const logoHeight = scaled(Math.min(closedLogoMaxHeight, closedPanelHeight));
 
   const items = Array.isArray(linkItems) ? linkItems : [];
   const socialItems = normalizeSocialLinks(socialLinkItems);
   const stateClass = [
     navigationState !== 'default' ? `${P}-state-${navigationState}` : '',
-    interactionState && interactionState !== navigationState ? `${P}-state-${interactionState}` : '',
+    pinnedState === 'open' ? `${P}-state-open` : '',
+    interactionState && interactionState !== navigationState && interactionState !== pinnedState
+      ? `${P}-state-${interactionState}`
+      : '',
   ].filter(Boolean).join(' ');
   const editorClass = isEditor && !isPreviewMode ? `${P}-editor` : '';
   const interactiveClass = isHoverEnabled ? `${P}-interactive` : '';
@@ -2025,26 +2183,38 @@ export function Burger({
   }, [isOverlayMounted, isOpen, usesOverlayLightbox]);
 
   useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeMenu();
-      }
+      if (event.key !== 'Escape') return;
+      if (isEditor && isPreviewMode) return;
+      closeMenu();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, isEditor, isPreviewMode]);
 
   useEffect(() => {
-    if (!isEditor || isEditMode || isPreviewMode) return;
-    setIsOpen(false);
-    setTypeCNavPhase('closed');
-  }, [isEditor, isEditMode, isPreviewMode]);
+    if (isEditor && !isPreviewMode && pinnedState !== 'open') {
+      setIsOpen(false);
+      setTypeCNavPhase('closed');
+    }
+  }, [isEditor, isPreviewMode, pinnedState]);
 
   useEffect(() => {
-    if (isControlled || (isEditor && !isPreviewMode)) {
+    if (isPreviewMode) {
+      setIsOpen(false);
+      setTypeCNavPhase('closed');
+    }
+  }, [isPreviewMode]);
+
+  useEffect(() => {
+    if (isScrollPinned || (isEditor && !isPreviewMode)) {
       setIsScrolled(false);
       return;
     }
@@ -2056,7 +2226,7 @@ export function Burger({
     updateScrolled();
     window.addEventListener('scroll', updateScrolled, { passive: true });
     return () => window.removeEventListener('scroll', updateScrolled);
-  }, [isControlled, isEditor, isPreviewMode]);
+  }, [isScrollPinned, isEditor, isPreviewMode]);
 
   const showOpenNavControls = showControls && (
     usesOverlayLightbox ? isOpen : (isHorizontalPanel && typeCNavPhase === 'open')
@@ -2238,7 +2408,7 @@ export function Burger({
       <Fragment key={index}>
         {index > 0 && (
           <div
-            data-controls={showClosedMenuControls ? 'navGap' : undefined}
+            data-controls={showClosedMenuControls ? (isOnScrollNav ? 'onScrollNavGap' : 'navGap') : undefined}
             data-controls-axis="x"
             className={showClosedMenuControls ? `${P}-gap-control ${P}-nav-gap-control` : `${P}-nav-gap-control}`}
             style={{ width: scaled(resolvedNavGap), flexShrink: 0 }}
@@ -2251,9 +2421,9 @@ export function Burger({
 
   const navBarStyle: CSSProperties = {
     ...colorVars,
-    height: scalingValue(panelHeight, isEditor),
-    minHeight: scalingValue(panelHeight, isEditor),
-    [`--${P}-panel-height`]: scalingValue(panelHeight, isEditor),
+    height: scalingValue(closedPanelHeight, isEditor),
+    minHeight: scalingValue(closedPanelHeight, isEditor),
+    [`--${P}-panel-height`]: scalingValue(closedPanelHeight, isEditor),
     [`--${P}-menu-width`]: scaled(menuWidth),
   };
 
@@ -2288,7 +2458,7 @@ export function Burger({
         ...colorVars,
         ...(isHorizontalPanel ? {
           ...lightboxLayoutStyle,
-          [`--${P}-panel-height`]: scalingValue(panelHeight, isEditor),
+          [`--${P}-panel-height`]: scalingValue(closedPanelHeight, isEditor),
         } : {}),
       }}
     >
@@ -2309,9 +2479,29 @@ export function Burger({
         {showLogo && logoSrc ? (
           <div className={`${P}-nav-logo`}>
             <div
+              className={`${P}-nav-padding-left`}
+              style={{ width: scaled(closedNavPaddingLeft), flexShrink: 0 }}
+            >
+              {showClosedMenuControls ? (
+                <div
+                  data-controls={isOnScrollNav ? 'onScrollNavPaddingLeft' : 'navPaddingLeft'}
+                  data-controls-axis="x"
+                  data-controls-variant="column-padding"
+                  data-controls-min="0"
+                  data-controls-max-fraction={String(navPaddingLeftMaxFraction)}
+                  className={`${P}-control-anchor`}
+                  style={{
+                    top: 0,
+                    left: 0,
+                    width: scaled(navPaddingLeftHandleSize),
+                    height: '100%',
+                  }}
+                />
+              ) : null}
+            </div>
+            <div
               className={`${P}-nav-logo-inner`}
               style={{
-                width: logoWidth,
                 height: logoHeight,
               }}
             >
@@ -2340,18 +2530,18 @@ export function Burger({
       {overlay}
       <div className={`${P}-nav-toggle-wrap`}>
         <div
-          className={`${P}-root ${openClass} ${P}-icon-animation-${iconAnimation}`.trim()}
+          className={`${P}-root ${openClass} ${P}-icon-animation-${closedIconAnimation}`.trim()}
           style={iconRootStyle}
         >
           {renderBurgerToggle()}
         </div>
         <div
           className={`${P}-nav-padding-right`}
-          style={{ width: scaled(navPaddingRight), flexShrink: 0 }}
+          style={{ width: scaled(closedNavPaddingRight), flexShrink: 0 }}
         >
           {showClosedMenuControls ? (
             <div
-              data-controls="navPaddingRight"
+              data-controls={isOnScrollNav ? 'onScrollNavPaddingRight' : 'navPaddingRight'}
               data-controls-axis="x"
               data-controls-variant="column-padding"
               data-controls-reverse=""
