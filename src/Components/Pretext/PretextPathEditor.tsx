@@ -44,7 +44,8 @@ import type {
 } from './Pretext';
 import { bboxCorner, oppositeScaleCorner, scaleHandlePoint } from './imageUtils';
 
-const ADD_POINT_REACH = 36;
+const ADD_POINT_REACH = 10;
+const ADD_POINT_HIT_STROKE = ADD_POINT_REACH * 2;
 const ANCHOR_SIZE = 7;
 const CLICK_SLOP_PX = 4;
 const GRAB_RADIUS = 9;
@@ -575,7 +576,6 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
         }}
         onClick={insertNode}
       />
-      {showControls && <path className={`${P}-editor-hit`} d={outline} onClick={insertNode} />}
       {showControls && <path className={`${P}-editor-outline`} d={outline} />}
       {showControls && snapGuides.map((guide, index) => (
         <line
@@ -595,6 +595,14 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
         onPointerDown={startShapeDrag}
         onClick={insertNode}
       />
+      {showControls && (
+        <path
+          className={`${P}-editor-hit`}
+          d={outline}
+          style={{ strokeWidth: ADD_POINT_HIT_STROKE }}
+          onClick={insertNode}
+        />
+      )}
       {showControls && contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
         const isSelected = selection.some(entry => entry.contour === contourIndex && entry.node === nodeIndex);
         const anchor = toPx(node.p);

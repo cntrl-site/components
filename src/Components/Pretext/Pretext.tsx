@@ -376,7 +376,6 @@ const getCSS = (P: string): string => `
 .${P}-editor-hit {
   fill: none;
   stroke: transparent;
-  stroke-width: 28;
   pointer-events: none;
   cursor: copy;
 }
