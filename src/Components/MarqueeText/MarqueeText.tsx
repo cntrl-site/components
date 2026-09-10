@@ -143,6 +143,7 @@ ${curveCss}
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
 const MIN_CONTENT_SEQUENCE_REPEAT = 3;
 const MAX_CONTENT_SEQUENCE_REPEAT = 12;
+const MAX_CURVE_CONTENT_SEQUENCE_REPEAT = 96;
 const OUTER_SET_COPIES = 3;
 const DEFAULT_CAP_HEIGHT_RATIO = 0.72;
 const CURVE_AMPLITUDE_SCALE = 100;
@@ -253,6 +254,12 @@ const buildWaveArcLut = (amplitude: number, k: number, samples: number): WaveArc
   return { wavelength, periodArc: s[samples], x, s };
 };
 
+const getWaveArcRatio = (amplitude: number, k: number): number => {
+  const lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
+  if (!lut || lut.wavelength <= 0) return 1;
+  return lut.periodArc / lut.wavelength;
+};
+
 const xFromArcLength = (lut: WaveArcLut, targetS: number): number => {
   if (lut.periodArc <= 0) return targetS;
   const sign = targetS < 0 ? -1 : 1;
@@ -276,15 +283,19 @@ const buildCurveBackgroundPath = (
   amplitude: number,
   frequency: number,
   centerY: number,
+  extendX = 0,
 ): string => {
   const periods = Math.max(0, frequency);
   const k = width > 0 ? (2 * Math.PI * periods) / width : 0;
   const yAt = (x: number) => centerY + amplitude * Math.sin(k * x);
   const dyAt = (x: number) => amplitude * k * Math.cos(k * x);
-  const segments = Math.max(4, Math.ceil(periods * 4));
+  const startX = -extendX;
+  const endX = width + extendX;
+  const span = endX - startX;
+  const segments = Math.max(4, Math.ceil(periods * 4 * (span / Math.max(width, 1))));
   const curveParts = Array.from({ length: segments }, (_, i) => {
-    const x0 = (i / segments) * width;
-    const x1 = ((i + 1) / segments) * width;
+    const x0 = startX + (i / segments) * span;
+    const x1 = startX + ((i + 1) / segments) * span;
     const dx = x1 - x0;
     const y0 = yAt(x0);
     const y1 = yAt(x1);
@@ -294,7 +305,7 @@ const buildCurveBackgroundPath = (
     const c2y = y1 - (dyAt(x1) * dx) / 3;
     return `C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
   });
-  return [`M0 ${yAt(0).toFixed(2)}`, ...curveParts].join(' ');
+  return [`M${startX.toFixed(2)} ${yAt(startX).toFixed(2)}`, ...curveParts].join(' ');
 };
 
 const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOffsetY, imageGapPx, isCurve }: MarqueeTextItemViewProps) => {
@@ -479,9 +490,19 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       if (hasContent && containerWidth > 0 && rawSetWidth > 0) {
         const singleCycleWidth = rawSetWidth / contentSequenceRepeat;
         if (singleCycleWidth > 0) {
+          let coverageWidth = containerWidth;
+          let maxRepeat = MAX_CONTENT_SEQUENCE_REPEAT;
+          if (isCurveLayout) {
+            const amplitude = containerWidth * amplitudeRatioRef.current;
+            const periods = curvePeriodsRef.current;
+            const k = periods > 0 ? (2 * Math.PI * periods) / containerWidth : 0;
+            const arcRatio = getWaveArcRatio(amplitude, k);
+            coverageWidth = Math.max(containerWidth, (arcRatio * containerWidth) / (OUTER_SET_COPIES - 1));
+            maxRepeat = MAX_CURVE_CONTENT_SEQUENCE_REPEAT;
+          }
           const targetRepeat = Math.min(
-            MAX_CONTENT_SEQUENCE_REPEAT,
-            Math.max(MIN_CONTENT_SEQUENCE_REPEAT, Math.ceil(containerWidth / singleCycleWidth) + 1),
+            maxRepeat,
+            Math.max(MIN_CONTENT_SEQUENCE_REPEAT, Math.ceil(coverageWidth / singleCycleWidth) + 1),
           );
           if (targetRepeat !== contentSequenceRepeat) {
             setContentSequenceRepeat(targetRepeat);
@@ -518,7 +539,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       window.removeEventListener('pageshow', onVisible);
       window.removeEventListener('focus', onVisible);
     };
-  }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx]);
+  }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx, isCurveLayout, amplitudeRatio, curvePeriods]);
 
   useLayoutEffect(() => {
     const ribbon = ribbonRef.current;
@@ -763,12 +784,15 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const curveContentBandPx = Math.max(curveBandHeightPx, curveStrokeWidth);
   // Center with |amplitude| so a negative (inverted) wave still fits in the viewBox.
   const curveCenterY = curveAmplitudeAbsPx + curveContentBandPx / 2;
+  // Past-edge path so caps sit outside the clipped band (see buildCurveBackgroundPath).
+  const curvePathExtendX = Math.max(curveStrokeWidth, 1);
   const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveContentBandPx > 0
     ? buildCurveBackgroundPath(
       curveWidthPx,
       curveAmplitudePx,
       curvePeriods,
       curveCenterY,
+      curvePathExtendX,
     )
     : '';
   const curveViewBoxH = curveAmplitudeAbsPx * 2 + curveContentBandPx;
@@ -784,7 +808,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
         fill="none"
         stroke={backgroundColor}
         strokeWidth={curveStrokeWidth}
-        strokeLinecap="round"
+        strokeLinecap="butt"
         strokeLinejoin="round"
       />
     </svg>
