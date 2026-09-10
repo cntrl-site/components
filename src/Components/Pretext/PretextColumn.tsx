@@ -434,8 +434,7 @@ export function PretextColumn({
   const pathPreservedTransform = (() => {
     const anchor = imagePathAnchorRef.current;
     if (
-      pathDragActive
-      || pathCarryImage
+      pathCarryImage
       || !imageEditor
       || !naturalImageSize
       || !committedShapeImageBounds
@@ -444,7 +443,7 @@ export function PretextColumn({
     ) {
       return null;
     }
-    if (anchor.shape !== shape && !(anchor.shape === 'circle' && shape === 'custom')) {
+    if (anchor.shape !== shape && shape !== 'custom') {
       return null;
     }
     return preserveImageTransformAcrossBoundsChange(
@@ -491,7 +490,7 @@ export function PretextColumn({
   ]);
 
   const imageAnchor = imagePathAnchorRef.current;
-  const freezeImage = Boolean(pathDragActive && !pathCarryImage && imageAnchor);
+  const freezeImage = Boolean(pathDragActive && !pathCarryImage && imageAnchor && !pathPreservedTransform);
   const activeImageFocalX = freezeImage && imageAnchor
     ? imageAnchor.focalX
     : (pathPreservedTransform?.focalX ?? imageFocalX);
