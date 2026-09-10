@@ -604,6 +604,15 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
   }, [isEditor, isEditMode, isPreviewMode]);
 
   useEffect(() => {
+    if (!shouldSyncUrl || typeof window === 'undefined') return;
+    const originalScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => {
+      window.history.scrollRestoration = originalScrollRestoration;
+    };
+  }, [shouldSyncUrl]);
+
+  useEffect(() => {
     if (!shouldSyncUrl || didApplyInitialUrlRef.current) return;
     didApplyInitialUrlRef.current = true;
     const slideNumber = findJournalUrlSlideNumber(itemId);
