@@ -203,13 +203,20 @@ export function PretextColumn({
   }, [unitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
   const committedUnitRings = useMemo(() => {
+    if (draftContours) {
+      const drawn = flattenContours(draftContours);
+      if (drawn.length) {
+        const mapped = mapToViewBox(drawn, viewBox);
+        return shape === 'circle' ? letterboxUnitRings(mapped, box) : mapped;
+      }
+    }
     const spec = imageCustomPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
     const base = parsed && parsed.length
       ? parsed
       : getPresetRings(shape === 'custom' ? 'rectangle' : shape);
     return shape === 'circle' ? letterboxUnitRings(base, box) : base;
-  }, [shape, imageCustomPath, pathFit, viewBox, box.width, box.height]);
+  }, [draftContours, shape, imageCustomPath, pathFit, viewBox, box.width, box.height]);
 
   const imageRings = useMemo(() => {
     if (!exceedsEditViewBox || box.width <= 0 || box.height <= 0) return committedUnitRings;
@@ -437,7 +444,7 @@ export function PretextColumn({
     ) {
       return null;
     }
-    if (anchor.shape !== shape) {
+    if (anchor.shape !== shape && !(anchor.shape === 'circle' && shape === 'custom')) {
       return null;
     }
     return preserveImageTransformAcrossBoundsChange(
@@ -483,30 +490,18 @@ export function PretextColumn({
     onCarryImageConsumed,
   ]);
 
-  const pathDragLiveTransform = useMemo(() => {
-    if (!pathDragActive || pathCarryImage || !naturalImageSize || !committedShapeImageBounds) return null;
-    const anchor = imagePathAnchorRef.current;
-    if (!anchor) return null;
-    return preserveImageTransformAcrossBoundsChange(
-      anchor.bounds,
-      committedShapeImageBounds,
-      naturalImageSize,
-      anchor.focalX,
-      anchor.focalY,
-      anchor.scale,
-    );
-  }, [
-    pathDragActive,
-    pathCarryImage,
-    naturalImageSize,
-    committedShapeImageBounds,
-    imageCustomPath,
-    imageRings,
-  ]);
-
-  const activeImageFocalX = pathDragLiveTransform?.focalX ?? pathPreservedTransform?.focalX ?? imageFocalX;
-  const activeImageFocalY = pathDragLiveTransform?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
-  const activeImageScale = pathDragLiveTransform?.scale ?? pathPreservedTransform?.scale ?? imageScale;
+  const imageAnchor = imagePathAnchorRef.current;
+  const freezeImage = Boolean(pathDragActive && !pathCarryImage && imageAnchor);
+  const activeImageFocalX = freezeImage && imageAnchor
+    ? imageAnchor.focalX
+    : (pathPreservedTransform?.focalX ?? imageFocalX);
+  const activeImageFocalY = freezeImage && imageAnchor
+    ? imageAnchor.focalY
+    : (pathPreservedTransform?.focalY ?? imageFocalY);
+  const activeImageScale = freezeImage && imageAnchor
+    ? imageAnchor.scale
+    : (pathPreservedTransform?.scale ?? imageScale);
+  const placementBounds = freezeImage && imageAnchor ? imageAnchor.bounds : committedShapeImageBounds;
 
   const shapeFillPath = useMemo(() => {
     if (!(box.width > 0) || !(box.height > 0)) return '';
@@ -532,7 +527,7 @@ export function PretextColumn({
   ]);
   const shapeImagePath = useMemo(() => {
     if (!imageUrl || !(box.width > 0) || !(box.height > 0)) return '';
-    let unit = resolveUnitContours(imageCustomPath, null, pathFit, viewBox, shape, box);
+    let unit = resolveUnitContours(imageCustomPath, draftContours, pathFit, viewBox, shape, box);
     if (exceedsEditViewBox) {
       const ref = legacyRefBox ?? box;
       const scaleX = viewBox.width / ref.width;
@@ -543,6 +538,7 @@ export function PretextColumn({
   }, [
     imageUrl,
     imageCustomPath,
+    draftContours,
     pathFit,
     viewBox,
     shape,
@@ -552,19 +548,18 @@ export function PretextColumn({
     legacyRefBox,
     imageRings,
   ]);
-  const shapeImageBounds = committedShapeImageBounds;
   const clipId = `${imageId}-clip`;
   const imageRect = useMemo(() => {
-    if (!shapeImageBounds) return null;
-    const natural = naturalImageSize ?? { width: shapeImageBounds.width, height: shapeImageBounds.height };
-    const size = coveredImageSize(shapeImageBounds, natural, activeImageScale);
+    if (!placementBounds) return null;
+    const natural = naturalImageSize ?? { width: placementBounds.width, height: placementBounds.height };
+    const size = coveredImageSize(placementBounds, natural, activeImageScale);
     return {
-      x: imageOffsetFromFocal(shapeImageBounds.width, size.width, activeImageFocalX),
-      y: imageOffsetFromFocal(shapeImageBounds.height, size.height, activeImageFocalY),
+      x: imageOffsetFromFocal(placementBounds.width, size.width, activeImageFocalX),
+      y: imageOffsetFromFocal(placementBounds.height, size.height, activeImageFocalY),
       width: size.width,
       height: size.height,
     };
-  }, [shapeImageBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
+  }, [placementBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
 
   return (
     <div className={`${P}-column`} ref={setColumnEl}>
@@ -576,7 +571,7 @@ export function PretextColumn({
           aria-hidden
         >
           <path className={`${P}-shape-fill-path`} d={shapeFillPath} fillRule="evenodd" />
-          {imageUrl && shapeImagePath && shapeImageBounds && imageRect ? (
+          {imageUrl && shapeImagePath && placementBounds && imageRect ? (
             <>
               <defs>
                 <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
@@ -585,8 +580,8 @@ export function PretextColumn({
               </defs>
               <image
                 href={imageUrl}
-                x={shapeImageBounds.x + imageRect.x}
-                y={shapeImageBounds.y + imageRect.y}
+                x={placementBounds.x + imageRect.x}
+                y={placementBounds.y + imageRect.y}
                 width={imageRect.width}
                 height={imageRect.height}
                 preserveAspectRatio="none"
@@ -685,11 +680,11 @@ export function PretextColumn({
               onCommit={pathEditor.onCommit}
             />
           )}
-          {imageEditor && shapeImageBounds && (
+          {imageEditor && placementBounds && (
             <PretextImageEditor
               P={P}
               box={{ width: editorRect.width, height: editorRect.height }}
-              bounds={shapeImageBounds}
+              bounds={placementBounds}
               natural={naturalImageSize}
               imageUrl={imageUrl}
               maskPath={shapeImagePath}

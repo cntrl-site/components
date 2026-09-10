@@ -44,7 +44,7 @@ import type {
 } from './Pretext';
 import { bboxCorner, oppositeScaleCorner, scaleHandlePoint } from './imageUtils';
 
-const ADD_POINT_REACH = 24;
+const ADD_POINT_REACH = 36;
 const ANCHOR_SIZE = 7;
 const CLICK_SLOP_PX = 4;
 const GRAB_RADIUS = 9;

@@ -148,7 +148,7 @@ const DEFAULT_CAP_HEIGHT_RATIO = 0.72;
 const CURVE_AMPLITUDE_SCALE = 100;
 const CURVE_FREQUENCY_SCALE = 10;
 
-const normalizeCurveAmplitude = (value: number): number => Math.max(0, value) / CURVE_AMPLITUDE_SCALE;
+const normalizeCurveAmplitude = (value: number): number => value / CURVE_AMPLITUDE_SCALE;
 const normalizeCurveFrequency = (value: number): number => Math.max(0, value) / CURVE_FREQUENCY_SCALE;
 
 const restartTrackAnimation = (track: HTMLElement) => {
@@ -235,7 +235,9 @@ type WaveArcLut = {
 // Invert s(x) = ∫ sqrt(1 + (A k cos(k t))²) dt so glyphs keep their layout
 // advance along the curve instead of along horizontal x.
 const buildWaveArcLut = (amplitude: number, k: number, samples: number): WaveArcLut | null => {
-  if (k <= 0 || amplitude <= 0 || samples < 2) return null;
+  // Arc length depends on |slope|; keep sign out of the zero-guard so negative
+  // amplitude still gets a LUT (and inverts the wave via signed y/slope later).
+  if (k <= 0 || Math.abs(amplitude) <= 0 || samples < 2) return null;
   const wavelength = (2 * Math.PI) / k;
   const x = new Float64Array(samples + 1);
   const s = new Float64Array(samples + 1);
@@ -627,6 +629,14 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
         wave.lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
       }
 
+      // Flat path: drop every leftover wave transform. Viewport culling alone
+      // would skip off-screen glyphs and leave their previous dx/dy visible as
+      // artifacts once padding collapses (amplitude 30 → 0).
+      if (Math.abs(amplitude) <= 0 || k <= 0) {
+        clearWaveTransforms();
+        return;
+      }
+
       const track = trackRef.current;
       const trackTx = track ? readTranslateX(getComputedStyle(track).transform) : 0;
       const wrapperRect = wrapper.getBoundingClientRect();
@@ -638,7 +648,12 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
 
       for (const { item, glyphs } of wave.itemsCache) {
         const itemRect = item.getBoundingClientRect();
-        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) continue;
+        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) {
+          // Clear so arc-length remaps from a prior higher amplitude cannot
+          // keep pulling culled glyphs into the visible band.
+          for (const glyph of glyphs) clearWaveTransform(glyph.inner);
+          continue;
+        }
         for (const glyph of glyphs) {
           const localX = glyph.layoutLocalX + trackTx;
           const xPath = wave.lut ? xFromArcLength(wave.lut, localX) : localX;
@@ -724,7 +739,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   };
 
   const curvePaddingPercent = isCurveLayout
-    ? amplitudeRatio * 100
+    ? Math.abs(amplitudeRatio) * 100
     : 0;
   const ribbonHeightCss = scaled(ribbonWidth);
   const bandStyle: CSSProperties = {
@@ -742,18 +757,21 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     minHeight: ribbonHeightCss,
   };
   const curveAmplitudePx = curveWidthPx * amplitudeRatio;
+  const curveAmplitudeAbsPx = Math.abs(curveAmplitudePx);
   const curveStrokeWidth = ribbonHeightPx > 0 ? ribbonHeightPx : curveBandHeightPx;
   // Keep content band >= stroke so overflow:hidden does not clip sine peaks.
   const curveContentBandPx = Math.max(curveBandHeightPx, curveStrokeWidth);
+  // Center with |amplitude| so a negative (inverted) wave still fits in the viewBox.
+  const curveCenterY = curveAmplitudeAbsPx + curveContentBandPx / 2;
   const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveContentBandPx > 0
     ? buildCurveBackgroundPath(
       curveWidthPx,
       curveAmplitudePx,
       curvePeriods,
-      curveAmplitudePx + curveContentBandPx / 2,
+      curveCenterY,
     )
     : '';
-  const curveViewBoxH = curveAmplitudePx * 2 + curveContentBandPx;
+  const curveViewBoxH = curveAmplitudeAbsPx * 2 + curveContentBandPx;
   const curveBgSvg = curveBgPath ? (
     <svg
       className={`${P}-curve-bg`}

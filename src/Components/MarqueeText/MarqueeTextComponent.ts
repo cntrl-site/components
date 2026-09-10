@@ -65,7 +65,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Amplitude',
-        min: 0,
+        min: -30,
         max: 30,
         step: 1,
         display: { type: 'common-numeric-input', visible: false },

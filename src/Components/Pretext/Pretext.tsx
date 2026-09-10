@@ -376,7 +376,7 @@ const getCSS = (P: string): string => `
 .${P}-editor-hit {
   fill: none;
   stroke: transparent;
-  stroke-width: 16;
+  stroke-width: 28;
   pointer-events: none;
   cursor: copy;
 }
@@ -604,6 +604,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const [pathCarryImage, setPathCarryImage] = useState(false);
   const onCarryImageConsumed = useCallback(() => setPathCarryImage(false), []);
 
+  const liveShape = settingsRef.current.shape ?? shape;
   const imageCustomPath = useMemo(() => {
     if (!draft || draft.serialized === customPath) return customPath;
     return draft.serialized;
@@ -772,7 +773,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
         <PretextColumn
           P={P}
           item={item}
-          shape={shape}
+          shape={liveShape}
           customPath={customPath}
           pathFit={pathFit}
           viewBox={viewBox}
