@@ -389,6 +389,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       ? (isHovering ? 'paused' : 'running')
       : 'running';
   const waveShouldLoop = playState === 'running' && pxPerSec > 0 && animationDistance > 0;
+  const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const bandRef = useRef<HTMLDivElement | null>(null);
@@ -398,7 +399,12 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const capRefEl = useRef<HTMLSpanElement | null>(null);
   const waveShouldLoopRef = useRef(waveShouldLoop);
   const waveKickRef = useRef<(() => void) | null>(null);
+  const waveInvalidateRef = useRef<(() => void) | null>(null);
+  const amplitudeRatioRef = useRef(amplitudeRatio);
+  const curvePeriodsRef = useRef(curvePeriods);
   waveShouldLoopRef.current = waveShouldLoop;
+  amplitudeRatioRef.current = amplitudeRatio;
+  curvePeriodsRef.current = curvePeriods;
   const [capHeightPx, setCapHeightPx] = useState(0);
   const [opticalOffsetY, setOpticalOffsetY] = useState(0);
   const [curveBandHeightPx, setCurveBandHeightPx] = useState(0);
@@ -406,7 +412,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const [ribbonHeightPx, setRibbonHeightPx] = useState(0);
 
   const contentKey = useMemo(
-    () => (content ?? []).map((i) => `${i.text}\0${i.image?.url ?? ''}`).join('\0'),
+    () => (content ?? []).map((i) => `${i.text}\0${i.image?.url ?? ''}\0${i.link ?? ''}`).join('\0'),
     [content],
   );
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
@@ -483,16 +489,32 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       }
       if (rawSetWidth > 0) setSetWidth(rawSetWidth);
     };
-    raf.id = requestAnimationFrame(measure);
-    const ro = new ResizeObserver(() => {
+    const scheduleMeasure = () => {
       cancelAnimationFrame(raf.id);
       raf.id = requestAnimationFrame(measure);
-    });
+    };
+    scheduleMeasure();
+    const ro = new ResizeObserver(scheduleMeasure);
     ro.observe(wrapper);
     ro.observe(set);
+    // A rAF queued while the tab is hidden can go stale on mobile (background-tab
+    // throttling may never fire it), leaving setWidth/animationDistance stuck at
+    // whatever they were and the CSS scroll animation frozen. Force a fresh
+    // measurement whenever visibility/focus returns instead of trusting that
+    // queued frame to fire on its own.
+    const onVisible = () => {
+      if (document.hidden) return;
+      scheduleMeasure();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onVisible);
+    window.addEventListener('focus', onVisible);
     return () => {
       cancelAnimationFrame(raf.id);
       ro.disconnect();
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onVisible);
+      window.removeEventListener('focus', onVisible);
     };
   }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx]);
 
@@ -596,8 +618,9 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       if (wave.cacheDirty) rebuildCache();
       const band = bandRef.current ?? wrapper;
       const width = band.offsetWidth || 1;
-      const amplitude = width * amplitudeRatio;
-      const k = (2 * Math.PI * curvePeriods) / width;
+      const amplitude = width * amplitudeRatioRef.current;
+      const periods = curvePeriodsRef.current;
+      const k = (2 * Math.PI * periods) / width;
       const nextLutKey = `${width}|${amplitude}|${k}`;
       if (nextLutKey !== wave.lutKey) {
         wave.lutKey = nextLutKey;
@@ -642,31 +665,56 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       wave.raf = requestAnimationFrame(tick);
     };
 
-    waveKickRef.current = kick;
-    kick();
+    const invalidate = () => {
+      wave.cacheDirty = true;
+      applyWave();
+      kick();
+    };
 
+    waveKickRef.current = kick;
+    waveInvalidateRef.current = invalidate;
+    applyWave();
+    kick();
     const onVisibility = () => {
       if (document.hidden) {
         cancelAnimationFrame(wave.raf);
         wave.raf = 0;
         return;
       }
-      kick();
+      cancelAnimationFrame(wave.raf);
+      wave.raf = 0;
+      invalidate();
     };
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', onVisibility);
+    window.addEventListener('focus', onVisibility);
 
     return () => {
       wave.cancelled = true;
       waveKickRef.current = null;
+      waveInvalidateRef.current = null;
       cancelAnimationFrame(wave.raf);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', onVisibility);
+      window.removeEventListener('focus', onVisibility);
       clearWaveTransforms();
     };
-  }, [isCurveLayout, amplitudeRatio, curvePeriods, hasContent, setWidth, contentKey, contentSequenceRepeat, capHeightPx]);
+  }, [isCurveLayout, hasContent]);
+
+  useLayoutEffect(() => {
+    if (!isCurveLayout || !hasContent) return;
+    waveInvalidateRef.current?.();
+    // curveWidthPx mirrors the band's live offsetWidth (see the ResizeObserver
+    // above). Outside preview, the wave loop isn't ticking, so a width-resize
+    // drag needs this to force a recompute — otherwise only the SVG ribbon
+    // (driven straight from render) tracks the drag and the glyphs stay stale.
+  }, [isCurveLayout, hasContent, setWidth, contentKey, contentSequenceRepeat, capHeightPx, amplitudeRatio, curvePeriods, curveWidthPx]);
 
   useLayoutEffect(() => {
     waveKickRef.current?.();
-  }, [waveShouldLoop]);
+    // The paused track rests at a different translateX per direction, which brings
+    // previously culled glyphs into view; they need a frame to get their transform.
+  }, [waveShouldLoop, direction]);
 
   const onTrackEnter = () => {
     if (hoverPauseEnabled) setIsHovering(true);
@@ -744,7 +792,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     <span ref={capRefEl} aria-hidden className={`${P}-cap-ref`} style={textCss}>H</span>
   );
 
-  const durationMs = animationDistance > 0 && pxPerSec > 0 ? (animationDistance / pxPerSec) * 1000 : 0;
   const durationS = `${Math.max(0, durationMs) / 1000}s`;
 
   const inner = useMarqueeTrack ? (
