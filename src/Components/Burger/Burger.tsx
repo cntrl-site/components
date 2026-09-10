@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, scalingValue, useScopedStyles } from '../utils';
+import { buildColorVars, getColorAlpha, scalingValue, useScopedStyles } from '../utils';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 const MENU_ANIM_MS = 300;
@@ -10,14 +10,14 @@ const MIN_TEXT_WIDTH_PX = 50;
 const ARTICLE_DESIGN_WIDTH = 1440;
 const MIN_TEXT_WIDTH = MIN_TEXT_WIDTH_PX / ARTICLE_DESIGN_WIDTH;
 
-type BurgerDirection = 'left' | 'top' | 'right' | 'bottom';
 type BurgerEffect = 'fade' | 'left' | 'top' | 'right' | 'bottom';
-type BurgerType = 'a' | 'b' | 'c';
 
 type BurgerLogo = {
   mode?: 'On' | 'Off';
   icon?: string | null;
 };
+
+type BurgerLogoPosition = 'left' | 'center' | 'right';
 
 type BurgerLink = {
   mode?: 'page' | 'url';
@@ -29,7 +29,6 @@ type BurgerLink = {
   showIn?: string;
 };
 
-type BurgerTextOrientation = 'vertical' | 'horizontal';
 type BurgerPosition =
   | 'left-top'
   | 'center-top'
@@ -42,53 +41,55 @@ type BurgerPosition =
   | 'right-bottom';
 
 type BurgerSettings = {
-  type?: BurgerType;
   link?: BurgerLink[];
   socialLink?: string[];
   logo?: BurgerLogo | null;
   logoMaxWidth?: number;
   logoMaxHeight?: number;
+  logoPosition?: BurgerLogoPosition;
+  logoColor?: string;
   panelHeight?: number;
-  panelColor?: string;
+  backgroundColor?: string;
   position?: BurgerPosition;
   horizontalAlign?: 'left' | 'center' | 'right';
   verticalAlign?: 'top' | 'center' | 'bottom';
-  textOrientation?: BurgerTextOrientation;
   iconColor?: string;
   iconSize?: number;
   iconAnimation?: 'a';
   linkColor?: string;
   openLinkColor?: string;
-  onScrollIconColor?: string;
-  onScrollCloseButtonColor?: string;
-  onScrollLinkColor?: string;
-  onScrollPanelColor?: string;
-  onScrollLogoMaxWidth?: number;
-  onScrollLogoMaxHeight?: number;
-  onScrollPanelHeight?: number;
-  onScrollIconSize?: number;
-  onScrollIconAnimation?: 'a';
-  onScrollNavTextWidth?: number;
-  onScrollNavGap?: number;
-  onScrollNavPaddingLeft?: number;
-  onScrollNavPaddingRight?: number;
-  onScrollFontFamily?: string;
-  onScrollFontSettings?: {
+  compactIconColor?: string;
+  compactCloseButtonColor?: string;
+  compactLinkColor?: string;
+  compactLogoColor?: string;
+  compactBackgroundColor?: string;
+  compactLogoMaxWidth?: number;
+  compactLogoMaxHeight?: number;
+  compactLogoPosition?: BurgerLogoPosition;
+  compactPanelHeight?: number;
+  compactIconSize?: number;
+  compactIconAnimation?: 'a';
+  compactNavTextWidth?: number;
+  compactNavGap?: number;
+  compactNavPaddingLeft?: number;
+  compactNavPaddingRight?: number;
+  compactFontFamily?: string;
+  compactFontSettings?: {
     fontWeight?: number;
     fontStyle?: string;
   };
-  onScrollFontSize?: number;
-  onScrollLineHeight?: number;
-  onScrollLetterSpacing?: number;
-  onScrollWordSpacing?: number;
-  onScrollTextAlign?: TextStyles['textAlign'];
-  onScrollTextAppearance?: TextStyles['textAppearance'];
+  compactFontSize?: number;
+  compactLineHeight?: number;
+  compactLetterSpacing?: number;
+  compactWordSpacing?: number;
+  compactTextAlign?: TextStyles['textAlign'];
+  compactTextAppearance?: TextStyles['textAppearance'];
   socialIconColor?: string;
+  openLogoColor?: string;
   menuBackgroundColor?: string;
   overlayColor?: string;
   closeButtonColor?: string;
   effect?: BurgerEffect;
-  menuWidth?: number;
   textWidth?: number;
   navTextWidth?: number;
   gap?: number;
@@ -121,24 +122,30 @@ type BurgerSettings = {
   openWordSpacing?: number;
   openTextAlign?: TextStyles['textAlign'];
   openTextAppearance?: TextStyles['textAppearance'];
-  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'onScrollIconColor' | 'onScrollCloseButtonColor' | 'onScrollLinkColor' | 'onScrollPanelColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor', string>>>;
+  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'socialIconColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor', string>>>;
 };
 
-type BurgerVisualState = 'compact' | 'onScroll' | 'open';
-type BurgerNavigationState = 'default' | 'onScroll';
+type BurgerVisualState = 'default' | 'compact' | 'open';
+type BurgerNavigationState = 'default' | 'compact';
 
 function resolveCurrentState(value?: string | null): BurgerVisualState | undefined {
-  if (value === 'compact' || value === 'onScroll' || value === 'open') return value;
-  if (value === 'default') return 'compact';
+  if (value === 'default' || value === 'compact' || value === 'open') return value;
+  if (value === 'onScroll') return 'compact';
   return undefined;
 }
 
-type BurgerShowIn = 'always' | 'open only' | 'open and compact';
+type BurgerShowIn = 'always' | 'open only' | 'open and compact' | 'default and open';
+
+function resolveLogoPosition(value?: string): BurgerLogoPosition {
+  if (value === 'center' || value === 'right') return value;
+  return 'left';
+}
 
 function resolveShowIn(value?: string): BurgerShowIn {
   const showIn = (value ?? 'always').trim().toLowerCase().replace(/[_-]+/g, ' ');
   if (showIn === 'open only' || showIn === 'openonly') return 'open only';
   if (showIn === 'open and compact' || showIn === 'openandcompact') return 'open and compact';
+  if (showIn === 'default and open' || showIn === 'defaultandopen') return 'default and open';
   return 'always';
 }
 
@@ -147,7 +154,9 @@ function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigatio
     case 'open only':
       return false;
     case 'open and compact':
-      return navigationState === 'onScroll';
+      return navigationState === 'compact';
+    case 'default and open':
+      return navigationState === 'default';
     default:
       return true;
   }
@@ -461,8 +470,6 @@ type EffectiveBurgerLayout = {
 
 function getEffectiveBurgerLayout(
   options: {
-    type: BurgerType;
-    menuWidth: number;
     textPaddingLeft: number;
     textPaddingRight: number;
     textPaddingTop: number;
@@ -470,34 +477,8 @@ function getEffectiveBurgerLayout(
     fontSize?: number;
   },
 ): EffectiveBurgerLayout {
-  const panelSize = options.type === 'a' ? 1 : options.menuWidth;
-  const isVerticalPanel = options.type === 'b';
-  const verticalPanelHeight = 1;
-  const horizontalPanelWidth = 1;
+  const panelSize = 1;
   const minContentHeight = Math.max(MIN_TEXT_WIDTH, options.fontSize ?? MIN_TEXT_WIDTH);
-
-  if (isVerticalPanel) {
-    const { start: effectivePaddingLeft, end: effectivePaddingRight } = scalePaddingsToFit(
-      options.textPaddingLeft,
-      options.textPaddingRight,
-      panelSize,
-      MIN_TEXT_WIDTH,
-    );
-    const { start: effectivePaddingTop, end: effectivePaddingBottom } = scalePaddingsToFit(
-      options.textPaddingTop,
-      options.textPaddingBottom,
-      verticalPanelHeight,
-      minContentHeight,
-    );
-
-    return {
-      effectivePaddingLeft,
-      effectivePaddingRight,
-      effectivePaddingTop,
-      effectivePaddingBottom,
-      panelSize,
-    };
-  }
 
   const { start: effectivePaddingTop, end: effectivePaddingBottom } = scalePaddingsToFit(
     options.textPaddingTop,
@@ -508,7 +489,7 @@ function getEffectiveBurgerLayout(
   const { start: effectivePaddingLeft, end: effectivePaddingRight } = scalePaddingsToFit(
     options.textPaddingLeft,
     options.textPaddingRight,
-    horizontalPanelWidth,
+    panelSize,
     MIN_TEXT_WIDTH,
   );
 
@@ -546,18 +527,6 @@ function resolveBurgerAlignment(settings: Pick<BurgerSettings, 'position' | 'hor
   };
 }
 
-function getLightboxDirection(type: BurgerType): BurgerDirection {
-  if (type === 'c') return 'top';
-  if (type === 'b') return 'right';
-  return 'left';
-}
-
-function getBurgerPanelSize(settings: BurgerSettings): number {
-  const type = settings.type ?? 'b';
-  const menuWidth = settings.menuWidth ?? 320 / 1440;
-  return type === 'a' ? 1 : menuWidth;
-}
-
 function hasBurgerPaddingChanges(left: BurgerSettings, right: BurgerSettings): boolean {
   return left.textPaddingLeft !== right.textPaddingLeft
     || left.textPaddingRight !== right.textPaddingRight
@@ -565,8 +534,64 @@ function hasBurgerPaddingChanges(left: BurgerSettings, right: BurgerSettings): b
     || left.textPaddingBottom !== right.textPaddingBottom;
 }
 
-function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
+const LEGACY_COMPACT_SETTING_KEYS = [
+  ['onScrollIconColor', 'compactIconColor'],
+  ['onScrollCloseButtonColor', 'compactCloseButtonColor'],
+  ['onScrollLinkColor', 'compactLinkColor'],
+  ['onScrollLogoColor', 'compactLogoColor'],
+  ['onScrollBackgroundColor', 'compactBackgroundColor'],
+  ['onScrollPanelColor', 'compactBackgroundColor'],
+  ['onScrollLogoMaxWidth', 'compactLogoMaxWidth'],
+  ['onScrollLogoMaxHeight', 'compactLogoMaxHeight'],
+  ['onScrollLogoPosition', 'compactLogoPosition'],
+  ['onScrollPanelHeight', 'compactPanelHeight'],
+  ['onScrollIconSize', 'compactIconSize'],
+  ['onScrollIconAnimation', 'compactIconAnimation'],
+  ['onScrollNavTextWidth', 'compactNavTextWidth'],
+  ['onScrollNavGap', 'compactNavGap'],
+  ['onScrollNavPaddingLeft', 'compactNavPaddingLeft'],
+  ['onScrollNavPaddingRight', 'compactNavPaddingRight'],
+  ['onScrollFontFamily', 'compactFontFamily'],
+  ['onScrollFontSettings', 'compactFontSettings'],
+  ['onScrollFontSize', 'compactFontSize'],
+  ['onScrollLineHeight', 'compactLineHeight'],
+  ['onScrollLetterSpacing', 'compactLetterSpacing'],
+  ['onScrollWordSpacing', 'compactWordSpacing'],
+  ['onScrollTextAlign', 'compactTextAlign'],
+  ['onScrollTextAppearance', 'compactTextAppearance'],
+] as const;
+
+function migrateLegacyBurgerSettings(settings: BurgerSettings): BurgerSettings {
+  const raw = settings as BurgerSettings & Record<string, unknown>;
   const updates: Partial<BurgerSettings> = {};
+  for (const [oldKey, newKey] of LEGACY_COMPACT_SETTING_KEYS) {
+    if (settings[newKey] !== undefined || raw[oldKey] === undefined) continue;
+    (updates as Record<string, unknown>)[newKey] = raw[oldKey];
+  }
+  const legacyOverrides = raw.stateOverrides as Record<string, unknown> | undefined;
+  if (legacyOverrides && (legacyOverrides.onScroll !== undefined || legacyOverrides['onScroll-hover'] !== undefined)) {
+    updates.stateOverrides = { ...settings.stateOverrides };
+    if (legacyOverrides.onScroll !== undefined && settings.stateOverrides?.compact === undefined) {
+      updates.stateOverrides.compact = legacyOverrides.onScroll as NonNullable<BurgerSettings['stateOverrides']>[string];
+    }
+    if (legacyOverrides['onScroll-hover'] !== undefined && settings.stateOverrides?.['compact-hover'] === undefined) {
+      updates.stateOverrides['compact-hover'] = legacyOverrides['onScroll-hover'] as NonNullable<BurgerSettings['stateOverrides']>[string];
+    }
+  }
+  return Object.keys(updates).length === 0 ? settings : { ...settings, ...updates };
+}
+
+function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
+  settings = migrateLegacyBurgerSettings(settings);
+  const legacy = settings as BurgerSettings & {
+    panelColor?: string;
+    compactPanelColor?: string;
+    onScrollPanelColor?: string;
+  };
+  const updates: Partial<BurgerSettings> = {};
+  if (settings.backgroundColor === undefined && legacy.panelColor !== undefined) {
+    updates.backgroundColor = legacy.panelColor;
+  }
   if (settings.openFontFamily === undefined && settings.fontFamily !== undefined) {
     updates.openFontFamily = settings.fontFamily;
   }
@@ -599,54 +624,68 @@ function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
       updates.openLinkColor = inheritedOpenLinkColor;
     }
   }
-  if (settings.onScrollIconColor === undefined) {
-    const inherited = settings.stateOverrides?.onScroll?.iconColor ?? settings.iconColor;
-    if (inherited !== undefined) updates.onScrollIconColor = inherited;
+  if (settings.compactIconColor === undefined) {
+    const inherited = settings.stateOverrides?.compact?.iconColor ?? settings.iconColor;
+    if (inherited !== undefined) updates.compactIconColor = inherited;
   }
-  if (settings.onScrollCloseButtonColor === undefined) {
-    const inherited = settings.stateOverrides?.onScroll?.closeButtonColor ?? settings.closeButtonColor;
-    if (inherited !== undefined) updates.onScrollCloseButtonColor = inherited;
+  if (settings.compactCloseButtonColor === undefined) {
+    const inherited = settings.stateOverrides?.compact?.closeButtonColor ?? settings.closeButtonColor;
+    if (inherited !== undefined) updates.compactCloseButtonColor = inherited;
   }
-  if (settings.onScrollLinkColor === undefined) {
-    const inherited = settings.stateOverrides?.onScroll?.linkColor ?? settings.linkColor;
-    if (inherited !== undefined) updates.onScrollLinkColor = inherited;
+  if (settings.compactLinkColor === undefined) {
+    const inherited = settings.stateOverrides?.compact?.linkColor ?? settings.linkColor;
+    if (inherited !== undefined) updates.compactLinkColor = inherited;
   }
-  if (settings.onScrollPanelColor === undefined) {
-    const inherited = settings.stateOverrides?.onScroll?.panelColor ?? settings.panelColor;
-    if (inherited !== undefined) updates.onScrollPanelColor = inherited;
+  if (settings.compactLogoColor === undefined) {
+    const inherited = settings.stateOverrides?.compact?.logoColor ?? settings.logoColor;
+    if (inherited !== undefined) updates.compactLogoColor = inherited;
+  }
+  if (settings.openLogoColor === undefined) {
+    const inherited = settings.stateOverrides?.open?.logoColor ?? settings.logoColor;
+    if (inherited !== undefined) updates.openLogoColor = inherited;
+  }
+  if (settings.compactBackgroundColor === undefined) {
+    const inherited = settings.stateOverrides?.compact?.backgroundColor
+      ?? (legacy.stateOverrides?.compact as { panelColor?: string } | undefined)?.panelColor
+      ?? legacy.compactPanelColor
+      ?? legacy.onScrollPanelColor
+      ?? settings.backgroundColor
+      ?? updates.backgroundColor;
+    if (inherited !== undefined) updates.compactBackgroundColor = inherited;
   }
   if (settings.logoMaxHeight === undefined && settings.logoMaxWidth !== undefined) {
     updates.logoMaxHeight = settings.logoMaxWidth;
   }
-  if (settings.onScrollLogoMaxHeight === undefined && settings.onScrollLogoMaxWidth !== undefined) {
-    updates.onScrollLogoMaxHeight = settings.onScrollLogoMaxWidth;
+  if (settings.compactLogoMaxHeight === undefined && settings.compactLogoMaxWidth !== undefined) {
+    updates.compactLogoMaxHeight = settings.compactLogoMaxWidth;
   }
   const inheritScrollParam = <K extends keyof BurgerSettings>(
     key: K,
-    compactKey: keyof BurgerSettings,
+    defaultKey: keyof BurgerSettings,
   ) => {
     if (settings[key] !== undefined) return;
-    const inherited = settings[compactKey];
+    const inherited = settings[defaultKey];
     if (inherited !== undefined) {
       updates[key] = inherited as BurgerSettings[K];
     }
   };
-  inheritScrollParam('onScrollLogoMaxHeight', 'logoMaxHeight');
-  inheritScrollParam('onScrollPanelHeight', 'panelHeight');
-  inheritScrollParam('onScrollIconSize', 'iconSize');
-  inheritScrollParam('onScrollIconAnimation', 'iconAnimation');
-  inheritScrollParam('onScrollNavTextWidth', 'navTextWidth');
-  inheritScrollParam('onScrollNavGap', 'navGap');
-  inheritScrollParam('onScrollNavPaddingLeft', 'navPaddingLeft');
-  inheritScrollParam('onScrollNavPaddingRight', 'navPaddingRight');
-  inheritScrollParam('onScrollFontFamily', 'fontFamily');
-  inheritScrollParam('onScrollFontSettings', 'fontSettings');
-  inheritScrollParam('onScrollFontSize', 'fontSize');
-  inheritScrollParam('onScrollLineHeight', 'lineHeight');
-  inheritScrollParam('onScrollLetterSpacing', 'letterSpacing');
-  inheritScrollParam('onScrollWordSpacing', 'wordSpacing');
-  inheritScrollParam('onScrollTextAlign', 'textAlign');
-  inheritScrollParam('onScrollTextAppearance', 'textAppearance');
+  inheritScrollParam('compactLogoMaxHeight', 'logoMaxHeight');
+  inheritScrollParam('compactLogoPosition', 'logoPosition');
+  inheritScrollParam('compactPanelHeight', 'panelHeight');
+  inheritScrollParam('compactIconSize', 'iconSize');
+  inheritScrollParam('compactIconAnimation', 'iconAnimation');
+  inheritScrollParam('compactNavTextWidth', 'navTextWidth');
+  inheritScrollParam('compactNavGap', 'navGap');
+  inheritScrollParam('compactNavPaddingLeft', 'navPaddingLeft');
+  inheritScrollParam('compactNavPaddingRight', 'navPaddingRight');
+  inheritScrollParam('compactFontFamily', 'fontFamily');
+  inheritScrollParam('compactFontSettings', 'fontSettings');
+  inheritScrollParam('compactFontSize', 'fontSize');
+  inheritScrollParam('compactLineHeight', 'lineHeight');
+  inheritScrollParam('compactLetterSpacing', 'letterSpacing');
+  inheritScrollParam('compactWordSpacing', 'wordSpacing');
+  inheritScrollParam('compactTextAlign', 'textAlign');
+  inheritScrollParam('compactTextAppearance', 'textAppearance');
   return Object.keys(updates).length === 0 ? settings : { ...settings, ...updates };
 }
 
@@ -654,10 +693,7 @@ export function applyBurgerSettingsChange(
   nextSettings: BurgerSettings,
   prevSettings: BurgerSettings,
 ): BurgerSettings {
-  const type = nextSettings.type ?? prevSettings.type ?? 'b';
   const layout = getEffectiveBurgerLayout({
-    type,
-    menuWidth: nextSettings.menuWidth ?? prevSettings.menuWidth ?? 320 / 1440,
     textPaddingLeft: nextSettings.textPaddingLeft ?? 0,
     textPaddingRight: nextSettings.textPaddingRight ?? 0,
     textPaddingTop: nextSettings.textPaddingTop ?? 0,
@@ -665,8 +701,6 @@ export function applyBurgerSettingsChange(
     fontSize: nextSettings.openFontSize ?? nextSettings.fontSize ?? prevSettings.openFontSize ?? prevSettings.fontSize,
   });
 
-  const nextPanelSize = getBurgerPanelSize(nextSettings);
-  const prevPanelSize = getBurgerPanelSize(prevSettings);
   const updates: Partial<BurgerSettings> = {};
 
   if ((nextSettings.textPaddingLeft ?? 0) !== layout.effectivePaddingLeft) {
@@ -680,10 +714,6 @@ export function applyBurgerSettingsChange(
   }
   if ((nextSettings.textPaddingBottom ?? 0) !== layout.effectivePaddingBottom) {
     updates.textPaddingBottom = layout.effectivePaddingBottom;
-  }
-
-  if (Object.keys(updates).length === 0 && nextPanelSize >= prevPanelSize) {
-    return nextSettings;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -707,80 +737,20 @@ function getPanelPaddingStyle(
 
 function renderTextPaddingControls(
   P: string,
-  type: BurgerType,
   layout: EffectiveBurgerLayout,
   fontSize: number | undefined,
   scaled: (value: number) => string,
 ) {
-  const isVerticalPanel = type === 'b';
-  const minContentSize = isVerticalPanel
-    ? MIN_TEXT_WIDTH
-    : Math.max(MIN_TEXT_WIDTH, fontSize ?? MIN_TEXT_WIDTH);
-  const verticalPanelSize = 1;
-
-  if (isVerticalPanel) {
-    const leftHandleSize = Math.max(layout.effectivePaddingLeft, PADDING_HANDLE_SIZE);
-    const rightHandleSize = Math.max(layout.effectivePaddingRight, PADDING_HANDLE_SIZE);
-    const leftMaxFraction = Math.max(0, layout.panelSize - layout.effectivePaddingRight - minContentSize);
-    const rightMaxFraction = Math.max(0, layout.panelSize - layout.effectivePaddingLeft - minContentSize);
-    const topHandleSize = Math.max(layout.effectivePaddingTop, PADDING_HANDLE_SIZE);
-    const bottomHandleSize = Math.max(layout.effectivePaddingBottom, PADDING_HANDLE_SIZE);
-    const topMaxFraction = Math.max(0, verticalPanelSize - layout.effectivePaddingBottom - minContentSize);
-    const bottomMaxFraction = Math.max(0, verticalPanelSize - layout.effectivePaddingTop - minContentSize);
-
-    return (
-      <>
-        <div
-          data-controls="textPaddingLeft"
-          data-controls-axis="x"
-          data-controls-variant="column-padding"
-          data-controls-min="0"
-          data-controls-max-fraction={String(leftMaxFraction)}
-          className={`${P}-control-anchor`}
-          style={{ top: 0, left: 0, width: scaled(leftHandleSize), height: '100%' }}
-        />
-        <div
-          data-controls="textPaddingRight"
-          data-controls-axis="x"
-          data-controls-variant="column-padding"
-          data-controls-reverse=""
-          data-controls-min="0"
-          data-controls-max-fraction={String(rightMaxFraction)}
-          className={`${P}-control-anchor`}
-          style={{ top: 0, right: 0, width: scaled(rightHandleSize), height: '100%' }}
-        />
-        <div
-          data-controls="textPaddingTop"
-          data-controls-axis="y"
-          data-controls-variant="row-padding"
-          data-controls-min="0"
-          data-controls-max-fraction={String(topMaxFraction)}
-          className={`${P}-control-anchor`}
-          style={{ top: 0, left: 0, width: '100%', height: scaled(topHandleSize) }}
-        />
-        <div
-          data-controls="textPaddingBottom"
-          data-controls-axis="y"
-          data-controls-variant="row-padding"
-          data-controls-reverse=""
-          data-controls-min="0"
-          data-controls-max-fraction={String(bottomMaxFraction)}
-          className={`${P}-control-anchor`}
-          style={{ bottom: 0, left: 0, width: '100%', height: scaled(bottomHandleSize) }}
-        />
-      </>
-    );
-  }
+  const minContentSize = Math.max(MIN_TEXT_WIDTH, fontSize ?? MIN_TEXT_WIDTH);
 
   const topHandleSize = Math.max(layout.effectivePaddingTop, PADDING_HANDLE_SIZE);
   const bottomHandleSize = Math.max(layout.effectivePaddingBottom, PADDING_HANDLE_SIZE);
   const topMaxFraction = Math.max(0, layout.panelSize - layout.effectivePaddingBottom - minContentSize);
   const bottomMaxFraction = Math.max(0, layout.panelSize - layout.effectivePaddingTop - minContentSize);
-  const horizontalPanelWidth = 1;
   const leftHandleSize = Math.max(layout.effectivePaddingLeft, PADDING_HANDLE_SIZE);
   const rightHandleSize = Math.max(layout.effectivePaddingRight, PADDING_HANDLE_SIZE);
-  const leftMaxFraction = Math.max(0, horizontalPanelWidth - layout.effectivePaddingRight - MIN_TEXT_WIDTH);
-  const rightMaxFraction = Math.max(0, horizontalPanelWidth - layout.effectivePaddingLeft - MIN_TEXT_WIDTH);
+  const leftMaxFraction = Math.max(0, layout.panelSize - layout.effectivePaddingRight - MIN_TEXT_WIDTH);
+  const rightMaxFraction = Math.max(0, layout.panelSize - layout.effectivePaddingLeft - MIN_TEXT_WIDTH);
 
   return (
     <>
@@ -826,9 +796,7 @@ function renderTextPaddingControls(
   );
 }
 
-type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'onScrollIconColor' | 'onScrollCloseButtonColor' | 'onScrollLinkColor' | 'onScrollPanelColor' | 'socialIconColor' | 'menuBackgroundColor' | 'overlayColor' | 'panelColor';
-
-type TypeCNavPhase = 'closed' | 'open';
+type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'socialIconColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor';
 
 export type BurgerLinkNavigateEvent = {
   mode: 'page' | 'url';
@@ -847,9 +815,9 @@ type BurgerProps = {
   isPreviewMode?: boolean;
   activeEvent?: string;
   /**
-   * Editor-controlled visual state (`compact` | `onScroll` | `open`), matching a
-   * `statePanels` id. On the published site a navigation wrapper may pin `compact`
-   * or `onScroll` (e.g. the `switch` position). When omitted the component
+   * Editor-controlled visual state (`default` | `compact` | `open`), matching a
+   * `statePanels` id. On the published site a navigation wrapper may pin `default`
+   * or `compact` (e.g. the `switch` position). When omitted the component
    * watches scroll and click itself.
    */
   currentState?: string | null;
@@ -866,14 +834,17 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   closeButtonColor: 'close-button-color',
   linkColor: 'link-color',
   openLinkColor: 'menu-link-color',
-  onScrollIconColor: 'scroll-icon-color',
-  onScrollCloseButtonColor: 'scroll-close-button-color',
-  onScrollLinkColor: 'scroll-link-color',
-  onScrollPanelColor: 'scroll-panel-color',
+  compactIconColor: 'compact-icon-color',
+  compactCloseButtonColor: 'compact-close-button-color',
+  compactLinkColor: 'compact-link-color',
+  compactLogoColor: 'compact-logo-color',
+  compactBackgroundColor: 'compact-background-color',
   socialIconColor: 'social-icon-color',
+  openLogoColor: 'open-logo-color',
   menuBackgroundColor: 'menu-background-color',
   overlayColor: 'overlay-color',
-  panelColor: 'panel-color',
+  backgroundColor: 'background-color',
+  logoColor: 'logo-color',
 };
 
 const STATE_KEYS = ['hover', 'open'] as const;
@@ -901,113 +872,8 @@ function getCSS(P: string): string {
   line-height: 0;
   font-size: 0;
 }
-.${P}-type-c.${P}-open {
-  overflow: visible;
-  z-index: 2;
-}
-.${P}-type-c-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  border: none;
-  padding: 0;
-  margin: 0;
-  background-color: var(--${P}-overlay-color);
-  opacity: 0;
-  cursor: pointer;
-  pointer-events: none;
-  transition: opacity ${MENU_ANIM_MS}ms ease, background-color ${MENU_ANIM_MS}ms ease;
-}
-.${P}-type-c-backdrop-editor {
-  inset: auto;
-  top: var(--cntrl-article-top, 0);
-  left: var(--cntrl-article-left, 0);
-  width: var(--cntrl-article-width, 100vw) !important;
-  height: var(--cntrl-viewport-height, 100vh) !important;
-}
-.${P}-type-c.${P}-open .${P}-type-c-backdrop {
-  opacity: 1;
-  pointer-events: auto;
-}
-.${P}-type-c .${P}-nav-bar {
-  position: relative;
-  z-index: 2;
-  overflow: hidden;
-  transition: height ${MENU_ANIM_MS}ms cubic-bezier(0.4, 0, 0.2, 1), min-height ${MENU_ANIM_MS}ms cubic-bezier(0.4, 0, 0.2, 1), background-color ${MENU_ANIM_MS}ms ease;
-}
-.${P}-type-c.${P}-open .${P}-nav-bar {
-  height: var(--${P}-menu-width) !important;
-  min-height: var(--${P}-menu-width) !important;
-  background-color: var(--${P}-menu-background-color);
-}
-.${P}-type-c .${P}-nav-logo {
-  height: var(--${P}-panel-height);
-}
-.${P}-type-c .${P}-nav-toggle-wrap {
-  height: var(--${P}-panel-height);
-}
-.${P}-type-c .${P}-nav-links {
-  overflow: hidden;
-}
 .${P}-nav-links-inner {
   display: contents;
-}
-.${P}-type-c .${P}-nav-links-inner {
-  display: flex;
-  position: relative;
-  box-sizing: border-box;
-  width: 100%;
-}
-.${P}-type-c .${P}-nav-links-inner-closed {
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  height: var(--${P}-panel-height);
-}
-.${P}-type-c .${P}-nav-links-inner-open {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  align-items: flex-start;
-  justify-content: flex-start;
-  height: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  pointer-events: auto;
-  will-change: transform, opacity;
-  animation: ${P}-type-c-nav-enter ${MENU_ANIM_MS}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-@keyframes ${P}-type-c-nav-enter {
-  from {
-    opacity: 0;
-    transform: translate3d(0, calc(-1 * var(--${P}-panel-height)), 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-.${P}-type-c .${P}-nav-links-inner-open .${P}-nav-link {
-  display: block;
-  width: fit-content;
-  max-width: 100%;
-  flex-shrink: 0;
-}
-.${P}-type-c .${P}-nav-links-inner-open .${P}-social-links {
-  pointer-events: none;
-}
-.${P}-type-c .${P}-nav-links-inner-open .${P}-nav-gap-control {
-  width: auto;
-  height: auto;
-  align-self: stretch;
-  flex-shrink: 0;
-}
-.${P}-type-c .${P}-nav-links-inner-open .${P}-nav-gap-control::before {
-  width: 100%;
-  height: 100%;
-  min-width: 20px;
-  min-height: 20px;
 }
 .${P}-toggle {
   display: block;
@@ -1055,6 +921,16 @@ function getCSS(P: string): string {
 }
 .${P}-root.${P}-open .${P}-toggle {
   color: var(--${P}-close-button-color);
+}
+.${P}-interactive .${P}-toggle:hover,
+.${P}-interactive .${P}-toggle:focus-visible,
+.${P}-root.${P}-state-hover .${P}-toggle {
+  color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
+}
+.${P}-interactive .${P}-open .${P}-toggle:hover,
+.${P}-interactive .${P}-open .${P}-toggle:focus-visible,
+.${P}-root.${P}-state-hover .${P}-open .${P}-toggle {
+  color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
 }
 .${P}-lightbox {
   position: fixed;
@@ -1183,82 +1059,6 @@ function getCSS(P: string): string {
   pointer-events: auto;
   z-index: 10;
 }
-.${P}-direction-left .${P}-panel {
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: var(--${P}-menu-width);
-  max-width: 100%;
-  transform: translateX(-100%);
-}
-.${P}-direction-left.${P}-lightbox-active .${P}-panel {
-  transform: translateX(0);
-}
-.${P}-direction-right .${P}-panel {
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: var(--${P}-menu-width);
-  max-width: 100%;
-  transform: translateX(100%);
-}
-.${P}-direction-right.${P}-lightbox-active .${P}-panel {
-  transform: translateX(0);
-}
-.${P}-direction-top .${P}-panel {
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: var(--${P}-menu-width);
-  max-height: 100%;
-  transform: translateY(-100%);
-}
-.${P}-direction-top.${P}-lightbox-active .${P}-panel {
-  transform: translateY(0);
-}
-.${P}-direction-bottom .${P}-panel {
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: var(--${P}-menu-width);
-  max-height: 100%;
-  transform: translateY(100%);
-}
-.${P}-direction-bottom.${P}-lightbox-active .${P}-panel {
-  transform: translateY(0);
-}
-.${P}-direction-left .${P}-link,
-.${P}-direction-right .${P}-link {
-  width: fit-content;
-  max-width: 100%;
-}
-.${P}-direction-top .${P}-link,
-.${P}-direction-bottom .${P}-link {
-  width: fit-content;
-  max-width: 100%;
-}
-.${P}-type-c-text-horizontal .${P}-panel {
-  flex-direction: row;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-.${P}-type-c-text-horizontal .${P}-link {
-  width: auto;
-  flex-shrink: 0;
-}
-.${P}-type-c-text-horizontal .${P}-gap-control {
-  width: auto;
-  height: 100%;
-  min-height: 20px;
-  flex-shrink: 0;
-}
-.${P}-type-c-text-horizontal .${P}-gap-control::before {
-  width: 100%;
-  height: 100%;
-  min-width: 20px;
-  min-height: 20px;
-}
 .${P}-link {
   display: block;
   width: 100%;
@@ -1313,10 +1113,7 @@ function getCSS(P: string): string {
 }
 .${P}-interactive .${P}-lightbox .${P}-has-href:hover,
 .${P}-interactive .${P}-lightbox .${P}-has-href:focus-visible,
-.${P}-lightbox.${P}-state-hover .${P}-link.${P}-has-href,
-.${P}-interactive.${P}-type-c.${P}-open .${P}-nav-link.${P}-has-href:hover,
-.${P}-interactive.${P}-type-c.${P}-open .${P}-nav-link.${P}-has-href:focus-visible,
-.${P}-root.${P}-type-c.${P}-open.${P}-state-hover .${P}-nav-link.${P}-has-href {
+.${P}-lightbox.${P}-state-hover .${P}-link.${P}-has-href {
   color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
   outline: none;
 }
@@ -1336,7 +1133,7 @@ function getCSS(P: string): string {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  background-color: var(--${P}-panel-color);
+  background-color: var(--${P}-background-color);
   padding-left: var(--${P}-nav-padding-x, 0);
   padding-right: var(--${P}-nav-padding-x, 0);
   gap: var(--${P}-nav-inner-gap, 0);
@@ -1344,7 +1141,6 @@ function getCSS(P: string): string {
 .${P}-nav-logo {
   position: absolute;
   top: 0;
-  left: 0;
   z-index: 1;
   display: flex;
   flex-shrink: 0;
@@ -1352,6 +1148,21 @@ function getCSS(P: string): string {
   height: 100%;
   min-width: 0;
   pointer-events: auto;
+}
+.${P}-nav-logo-left {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+.${P}-nav-logo-center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+.${P}-nav-logo-right {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 .${P}-nav-logo-inner {
   position: relative;
@@ -1365,6 +1176,42 @@ function getCSS(P: string): string {
   height: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+.${P}-nav-logo-tinted .${P}-nav-logo-img {
+  opacity: 0;
+}
+.${P}-nav-logo-tint {
+  display: none;
+}
+.${P}-nav-logo-tinted .${P}-nav-logo-tint {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background-color: var(--${P}-logo-color);
+  -webkit-mask: var(--${P}-logo-image) no-repeat center / contain;
+  mask: var(--${P}-logo-image) no-repeat center / contain;
+  -webkit-mask-source-type: alpha;
+  mask-mode: alpha;
+  pointer-events: none;
+  transition: background-color 200ms ease;
+}
+.${P}-root.${P}-state-compact .${P}-nav-logo-tinted .${P}-nav-logo-tint {
+  background-color: var(--${P}-compact-logo-color);
+}
+.${P}-root.${P}-state-open .${P}-nav-logo-tinted .${P}-nav-logo-tint {
+  background-color: var(--${P}-open-logo-color, var(--${P}-logo-color));
+}
+.${P}-interactive .${P}-nav-logo:hover .${P}-nav-logo-tint,
+.${P}-root.${P}-state-hover .${P}-nav-logo-tinted .${P}-nav-logo-tint {
+  background-color: var(--${P}-hover-logo-color, var(--${P}-logo-color));
+}
+.${P}-interactive.${P}-state-compact .${P}-nav-logo:hover .${P}-nav-logo-tint,
+.${P}-root.${P}-state-compact.${P}-state-hover .${P}-nav-logo-tinted .${P}-nav-logo-tint {
+  background-color: var(--${P}-compact-hover-compact-logo-color, var(--${P}-compact-logo-color));
+}
+.${P}-interactive.${P}-state-open .${P}-nav-logo:hover .${P}-nav-logo-tint,
+.${P}-root.${P}-state-open.${P}-state-hover .${P}-nav-logo-tinted .${P}-nav-logo-tint {
+  background-color: var(--${P}-open-hover-open-logo-color, var(--${P}-open-logo-color, var(--${P}-logo-color)));
 }
 .${P}-nav-links {
   position: absolute;
@@ -1412,13 +1259,10 @@ function getCSS(P: string): string {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
-.${P}-interactive.${P}-state-onScroll .${P}-nav-link.${P}-has-href:hover,
-.${P}-interactive.${P}-state-onScroll .${P}-nav-link.${P}-has-href:focus-visible,
-.${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-nav-link.${P}-has-href {
-  color: var(--${P}-onScroll-hover-scroll-link-color, var(--${P}-scroll-link-color));
-}
-.${P}-root.${P}-type-c.${P}-open.${P}-state-onScroll.${P}-state-hover .${P}-nav-link.${P}-has-href {
-  color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
+.${P}-interactive.${P}-state-compact .${P}-nav-link.${P}-has-href:hover,
+.${P}-interactive.${P}-state-compact .${P}-nav-link.${P}-has-href:focus-visible,
+.${P}-root.${P}-state-compact.${P}-state-hover .${P}-nav-link.${P}-has-href {
+  color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
 }
 .${P}-social-links {
   position: absolute;
@@ -1466,31 +1310,37 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-hover .${P}-social-favicon {
   opacity: 0.7;
 }
-.${P}-root.${P}-state-onScroll .${P}-nav-bar {
-  background-color: var(--${P}-scroll-panel-color);
+.${P}-root.${P}-state-compact .${P}-nav-bar {
+  background-color: var(--${P}-compact-background-color);
 }
-.${P}-root.${P}-type-c.${P}-open.${P}-state-onScroll .${P}-nav-bar {
-  background-color: var(--${P}-onScroll-menu-background-color, var(--${P}-menu-background-color));
+.${P}-root.${P}-state-compact .${P}-toggle {
+  color: var(--${P}-compact-icon-color);
 }
-.${P}-root.${P}-state-onScroll .${P}-toggle {
-  color: var(--${P}-scroll-icon-color);
+.${P}-root.${P}-state-compact .${P}-open .${P}-toggle {
+  color: var(--${P}-compact-close-button-color);
 }
-.${P}-root.${P}-state-onScroll .${P}-open .${P}-toggle {
-  color: var(--${P}-scroll-close-button-color);
+.${P}-interactive.${P}-state-compact .${P}-toggle:hover,
+.${P}-interactive.${P}-state-compact .${P}-toggle:focus-visible,
+.${P}-root.${P}-state-compact.${P}-state-hover .${P}-toggle {
+  color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
 }
-.${P}-root.${P}-state-onScroll .${P}-nav-link {
-  color: var(--${P}-scroll-link-color);
+.${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:hover,
+.${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:focus-visible,
+.${P}-root.${P}-state-compact.${P}-state-hover .${P}-open .${P}-toggle {
+  color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
 }
-.${P}-root.${P}-state-onScroll .${P}-social-link,
-.${P}-lightbox.${P}-state-onScroll .${P}-social-link {
-  color: var(--${P}-onScroll-social-icon-color, var(--${P}-social-icon-color));
+.${P}-root.${P}-state-compact .${P}-nav-link {
+  color: var(--${P}-compact-link-color);
 }
-.${P}-lightbox.${P}-state-onScroll .${P}-panel {
-  background-color: var(--${P}-onScroll-menu-background-color, var(--${P}-menu-background-color));
+.${P}-root.${P}-state-compact .${P}-social-link,
+.${P}-lightbox.${P}-state-compact .${P}-social-link {
+  color: var(--${P}-compact-social-icon-color, var(--${P}-social-icon-color));
 }
-.${P}-lightbox.${P}-state-onScroll .${P}-backdrop,
-.${P}-root.${P}-state-onScroll .${P}-type-c-backdrop {
-  background-color: var(--${P}-onScroll-overlay-color, var(--${P}-overlay-color));
+.${P}-lightbox.${P}-state-compact .${P}-panel {
+  background-color: var(--${P}-compact-menu-background-color, var(--${P}-menu-background-color));
+}
+.${P}-lightbox.${P}-state-compact .${P}-backdrop {
+  background-color: var(--${P}-compact-overlay-color, var(--${P}-overlay-color));
 }
 .${P}-interactive .${P}-has-href:hover,
 .${P}-interactive .${P}-has-href:focus-visible,
@@ -1498,8 +1348,8 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-hover .${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
 }
-.${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-has-href {
-  color: var(--${P}-onScroll-hover-scroll-link-color, var(--${P}-scroll-link-color));
+.${P}-root.${P}-state-compact.${P}-state-hover .${P}-has-href {
+  color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
 }
 .${P}-interactive .${P}-social-link:hover,
 .${P}-interactive .${P}-social-link:focus-visible,
@@ -1507,19 +1357,19 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-hover .${P}-social-link {
   color: var(--${P}-hover-social-icon-color, var(--${P}-social-icon-color));
 }
-.${P}-lightbox.${P}-state-onScroll.${P}-state-hover .${P}-social-link,
-.${P}-root.${P}-state-onScroll.${P}-state-hover .${P}-social-link {
-  color: var(--${P}-hover-social-icon-color, var(--${P}-onScroll-social-icon-color, var(--${P}-social-icon-color)));
+.${P}-lightbox.${P}-state-compact.${P}-state-hover .${P}-social-link,
+.${P}-root.${P}-state-compact.${P}-state-hover .${P}-social-link {
+  color: var(--${P}-hover-social-icon-color, var(--${P}-compact-social-icon-color, var(--${P}-social-icon-color)));
 }
 .${P}-root.${P}-state-open .${P}-toggle {
   color: var(--${P}-open-close-button-color, var(--${P}-close-button-color));
 }
-.${P}-root.${P}-type-c.${P}-open.${P}-state-open .${P}-nav-bar {
-  background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
+.${P}-interactive.${P}-state-open .${P}-toggle:hover,
+.${P}-interactive.${P}-state-open .${P}-toggle:focus-visible,
+.${P}-root.${P}-state-open.${P}-state-hover .${P}-toggle {
+  color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
 }
-.${P}-lightbox .${P}-link,
-.${P}-root.${P}-type-c.${P}-open .${P}-nav-link,
-.${P}-root.${P}-type-c.${P}-open.${P}-state-onScroll .${P}-nav-link {
+.${P}-lightbox .${P}-link {
   color: var(--${P}-menu-link-color);
 }
 .${P}-root.${P}-state-open .${P}-social-link,
@@ -1529,8 +1379,7 @@ function getCSS(P: string): string {
 .${P}-lightbox.${P}-state-open .${P}-panel {
   background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
 }
-.${P}-lightbox.${P}-state-open .${P}-backdrop,
-.${P}-root.${P}-state-open .${P}-type-c-backdrop {
+.${P}-lightbox.${P}-state-open .${P}-backdrop {
   background-color: var(--${P}-open-overlay-color, var(--${P}-overlay-color));
 }
 .${P}-lightbox.${P}-state-open.${P}-state-hover .${P}-has-href,
@@ -1544,7 +1393,6 @@ function getCSS(P: string): string {
 .${P}-nav-toggle-wrap {
   position: absolute;
   top: 0;
-  right: 0;
   height: 100%;
   display: flex;
   flex-direction: row;
@@ -1552,6 +1400,14 @@ function getCSS(P: string): string {
   align-items: center;
   z-index: 3;
   pointer-events: auto;
+}
+.${P}-nav-toggle-wrap-right {
+  right: 0;
+  left: auto;
+}
+.${P}-nav-toggle-wrap-left {
+  left: 0;
+  right: auto;
 }
 .${P}-nav-padding-left,
 .${P}-nav-padding-right {
@@ -1571,6 +1427,13 @@ function getCSS(P: string): string {
     padding ${NAV_STATE_ANIM_MS}ms ease,
     gap ${NAV_STATE_ANIM_MS}ms ease;
 }
+.${P}-nav-state-anim .${P}-nav-logo,
+.${P}-nav-state-anim .${P}-nav-toggle-wrap {
+  transition:
+    left ${NAV_STATE_ANIM_MS}ms ease,
+    right ${NAV_STATE_ANIM_MS}ms ease,
+    transform ${NAV_STATE_ANIM_MS}ms ease;
+}
 .${P}-nav-state-anim .${P}-nav-logo-inner,
 .${P}-nav-state-anim .${P}-nav-padding-left,
 .${P}-nav-state-anim .${P}-nav-padding-right,
@@ -1579,6 +1442,10 @@ function getCSS(P: string): string {
   transition:
     width ${NAV_STATE_ANIM_MS}ms ease,
     height ${NAV_STATE_ANIM_MS}ms ease;
+}
+.${P}-nav-state-anim .${P}-nav-logo-tint {
+  transition:
+    background-color ${NAV_STATE_ANIM_MS}ms ease;
 }
 .${P}-nav-state-anim .${P}-nav-toggle-wrap .${P}-root {
   transition:
@@ -1607,6 +1474,58 @@ function getCSS(P: string): string {
     padding ${NAV_STATE_ANIM_MS}ms ease;
 }
 `;
+}
+
+function cssMaskImageUrl(href: string): string {
+  const escaped = href.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `url("${escaped}")`;
+}
+
+function isSvgLogoUrl(url: string): boolean {
+  const lower = url.trim().toLowerCase();
+  if (lower.startsWith('data:image/svg+xml')) return true;
+  if (lower.includes('image/svg+xml')) return true;
+  return lower.includes('.svg');
+}
+
+function useIsSvgLogo(url: string): boolean {
+  const knownSvg = isSvgLogoUrl(url);
+  const [blobIsSvg, setBlobIsSvg] = useState(false);
+
+  useEffect(() => {
+    if (knownSvg || !url.startsWith('blob:')) {
+      setBlobIsSvg(false);
+      return;
+    }
+
+    let cancelled = false;
+    fetch(url)
+      .then((response) => response.blob())
+      .then(async (blob) => {
+        if (cancelled) return;
+        if (blob.type.includes('svg')) {
+          setBlobIsSvg(true);
+          return;
+        }
+        if (blob.type.startsWith('image/') && !blob.type.includes('svg')) {
+          setBlobIsSvg(false);
+          return;
+        }
+        const text = await blob.text();
+        if (!cancelled) {
+          setBlobIsSvg(/<svg[\s>]/i.test(text.trim()));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBlobIsSvg(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [knownSvg, url]);
+
+  return knownSvg || blobIsSvg;
 }
 
 function getLinkHash(href: string): string {
@@ -1751,6 +1670,7 @@ export function Burger({
   isPreviewMode,
   activeEvent,
   currentState: currentStateProp,
+  unavailableStates = [],
   layoutId,
   pages,
   onLinkNavigate,
@@ -1767,69 +1687,76 @@ export function Burger({
   const [isOpenUser, setIsOpen] = useState(false);
   const [isOverlayMounted, setIsOverlayMounted] = useState(false);
   const [isOverlayActive, setIsOverlayActive] = useState(false);
-  const [typeCNavPhase, setTypeCNavPhase] = useState<TypeCNavPhase>('closed');
   const [isScrolled, setIsScrolled] = useState(false);
 
   const pinnedState = resolveCurrentState(currentStateProp);
-  const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open');
+  const unavailableStateSet = useMemo(() => new Set(unavailableStates), [unavailableStates]);
+  const isStateUnavailable = (state?: string | null) => Boolean(state && unavailableStateSet.has(state));
+  const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open' && !isStateUnavailable('open'));
   const isOpen = isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser);
-  const isScrollPinned = pinnedState === 'compact' || pinnedState === 'onScroll';
+  const canUseCompact = !isStateUnavailable('compact') && !isStateUnavailable('onScroll');
+  const isScrollPinned = pinnedState === 'default' || (canUseCompact && pinnedState === 'compact');
   const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
   const interactionState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
-  const navigationState: BurgerNavigationState = pinnedState === 'onScroll'
-    ? 'onScroll'
+  const navigationState: BurgerNavigationState = canUseCompact && pinnedState === 'compact'
+    ? 'compact'
     : isScrollPinned
       ? 'default'
-      : (!isEditor || isPreviewMode) && isScrolled ? 'onScroll' : 'default';
+      : (!isEditor || isPreviewMode) && isScrolled && canUseCompact ? 'compact' : 'default';
   const [prevNavigationState, setPrevNavigationState] = useState(navigationState);
   const [isNavStateAnimating, setIsNavStateAnimating] = useState(false);
+  const shouldAnimateNavState = !isEditMode;
   if (navigationState !== prevNavigationState) {
     setPrevNavigationState(navigationState);
-    setIsNavStateAnimating(true);
+    if (shouldAnimateNavState) {
+      setIsNavStateAnimating(true);
+    }
   }
-  const settings = settingsProp;
+  const settings = migrateLegacyBurgerSettings(settingsProp);
 
   const {
-    type = 'b',
     logo,
     logoMaxHeight = 120 / 1440,
+    logoPosition = 'left',
     panelHeight = 60 / 1440,
-    panelColor = '#b3b3b3',
+    backgroundColor = '#b3b3b3',
+    logoColor = '#000000',
     position,
     horizontalAlign: horizontalAlignSetting,
     verticalAlign: verticalAlignSetting,
-    textOrientation = 'vertical',
     iconColor = '#000000',
     iconSize = 16 / 1440,
     iconAnimation = 'a',
     linkColor = '#000000',
     openLinkColor = '#000000',
-    onScrollIconColor = '#000000',
-    onScrollCloseButtonColor = '#000000',
-    onScrollLinkColor = '#000000',
-    onScrollPanelColor = '#ffffff',
-    onScrollLogoMaxHeight = 120 / 1440,
-    onScrollPanelHeight = 60 / 1440,
-    onScrollIconSize = 16 / 1440,
-    onScrollIconAnimation = 'a',
-    onScrollNavTextWidth,
-    onScrollNavGap,
-    onScrollNavPaddingLeft = 10 / 1440,
-    onScrollNavPaddingRight = 10 / 1440,
-    onScrollFontFamily,
-    onScrollFontSettings,
-    onScrollFontSize,
-    onScrollLineHeight,
-    onScrollLetterSpacing = 0,
-    onScrollWordSpacing = 0,
-    onScrollTextAlign = 'left',
-    onScrollTextAppearance,
+    compactIconColor = '#000000',
+    compactCloseButtonColor = '#000000',
+    compactLinkColor = '#000000',
+    compactLogoColor = '#000000',
+    compactBackgroundColor = '#ffffff',
+    compactLogoMaxHeight = 120 / 1440,
+    compactLogoPosition,
+    compactPanelHeight = 60 / 1440,
+    compactIconSize = 16 / 1440,
+    compactIconAnimation = 'a',
+    compactNavTextWidth,
+    compactNavGap,
+    compactNavPaddingLeft = 10 / 1440,
+    compactNavPaddingRight = 10 / 1440,
+    compactFontFamily,
+    compactFontSettings,
+    compactFontSize,
+    compactLineHeight,
+    compactLetterSpacing = 0,
+    compactWordSpacing = 0,
+    compactTextAlign = 'left',
+    compactTextAppearance,
     socialIconColor = '#000000',
+    openLogoColor = '#000000',
     menuBackgroundColor = '#ffffff',
     overlayColor = 'rgba(0, 0, 0, 0.45)',
     closeButtonColor = '#000000',
     effect = 'fade',
-    menuWidth = 320 / 1440,
     textWidth = 280 / 1440,
     navTextWidth,
     gap = 0,
@@ -1867,47 +1794,51 @@ export function Burger({
     verticalAlign: verticalAlignSetting,
   });
 
-  const isOnScrollNav = navigationState === 'onScroll';
-  const closedLogoMaxHeight = isOnScrollNav ? onScrollLogoMaxHeight : logoMaxHeight;
-  const closedPanelHeight = isOnScrollNav ? onScrollPanelHeight : panelHeight;
-  const closedIconSize = isOnScrollNav ? onScrollIconSize : iconSize;
-  const closedIconAnimation = isOnScrollNav ? onScrollIconAnimation : iconAnimation;
-  const closedNavTextWidth = isOnScrollNav ? onScrollNavTextWidth : navTextWidth;
-  const closedNavGap = isOnScrollNav ? onScrollNavGap : navGap;
-  const closedNavPaddingLeft = isOnScrollNav ? onScrollNavPaddingLeft : navPaddingLeft;
-  const closedNavPaddingRight = isOnScrollNav ? onScrollNavPaddingRight : navPaddingRight;
+  const isCompactNav = navigationState === 'compact';
+  const closedLogoMaxHeight = isCompactNav ? compactLogoMaxHeight : logoMaxHeight;
+  const closedLogoPosition = resolveLogoPosition(isCompactNav ? compactLogoPosition : logoPosition);
+  const closedPanelHeight = isCompactNav ? compactPanelHeight : panelHeight;
+  const closedIconSize = isCompactNav ? compactIconSize : iconSize;
+  const closedIconAnimation = isCompactNav ? compactIconAnimation : iconAnimation;
+  const closedNavTextWidth = isCompactNav ? compactNavTextWidth : navTextWidth;
+  const closedNavGap = isCompactNav ? compactNavGap : navGap;
+  const closedNavPaddingLeft = isCompactNav ? compactNavPaddingLeft : navPaddingLeft;
+  const closedNavPaddingRight = isCompactNav ? compactNavPaddingRight : navPaddingRight;
 
   const resolvedNavTextWidth = closedNavTextWidth ?? textWidth;
+  const burgerButtonColor = isOpen
+    ? (isCompactNav ? compactCloseButtonColor : closeButtonColor)
+    : (isCompactNav ? compactIconColor : iconColor);
+  const showBurgerButton = getColorAlpha(burgerButtonColor) > 0;
 
   const colorVars = buildColorVars(P, {
     iconColor,
     closeButtonColor,
     linkColor,
     openLinkColor,
-    onScrollIconColor,
-    onScrollCloseButtonColor,
-    onScrollLinkColor,
-    onScrollPanelColor,
+    compactIconColor,
+    compactCloseButtonColor,
+    compactLinkColor,
+    compactLogoColor,
+    compactBackgroundColor,
     socialIconColor,
+    openLogoColor,
     menuBackgroundColor,
     overlayColor,
-    panelColor,
+    backgroundColor,
+    logoColor,
   }, COLOR_VAR_MAP, STATE_KEYS, stateOverrides);
 
-  const isFullLightbox = type === 'a';
-  const isVerticalPanel = type === 'b';
-  const isHorizontalPanel = type === 'c';
-
-  const closedTypeStyle = resolveBurgerTypeStyle(isOnScrollNav
+  const closedTypeStyle = resolveBurgerTypeStyle(isCompactNav
     ? {
-      fontFamily: onScrollFontFamily,
-      fontSettings: onScrollFontSettings,
-      fontSize: onScrollFontSize,
-      lineHeight: onScrollLineHeight,
-      letterSpacing: onScrollLetterSpacing,
-      wordSpacing: onScrollWordSpacing,
-      textAlign: onScrollTextAlign,
-      textAppearance: onScrollTextAppearance,
+      fontFamily: compactFontFamily,
+      fontSettings: compactFontSettings,
+      fontSize: compactFontSize,
+      lineHeight: compactLineHeight,
+      letterSpacing: compactLetterSpacing,
+      wordSpacing: compactWordSpacing,
+      textAlign: compactTextAlign,
+      textAppearance: compactTextAppearance,
     }
     : {
       fontFamily,
@@ -1931,7 +1862,6 @@ export function Burger({
   }, closedTypeStyle);
   const closedTextCss = burgerTypeStyleToCss(P, closedTypeStyle, isEditor);
   const openTextCss = burgerTypeStyleToCss(P, openTypeStyle, isEditor);
-  const isHorizontalText = isHorizontalPanel && textOrientation === 'horizontal';
   const linkTextStyle: CSSProperties = {
     ...openTextCss.css,
     whiteSpace: 'pre-wrap',
@@ -1945,14 +1875,9 @@ export function Burger({
   const navPaddingRightMaxFraction = Math.max(0, 1 - closedIconSize);
   const showControls = isEditMode ?? false;
   const showClosedMenuControls = showControls && !isOpen;
-  const usesOverlayLightbox = !isHorizontalPanel;
-
-  const lightboxDirection = getLightboxDirection(type);
 
   const effectiveLayout = useMemo(
     () => getEffectiveBurgerLayout({
-      type,
-      menuWidth,
       textPaddingLeft,
       textPaddingRight,
       textPaddingTop,
@@ -1960,8 +1885,6 @@ export function Burger({
       fontSize: openTypeStyle.fontSize,
     }),
     [
-      type,
-      menuWidth,
       textPaddingLeft,
       textPaddingRight,
       textPaddingTop,
@@ -1986,28 +1909,11 @@ export function Burger({
     );
   };
 
-  const useLayoutBoundLightbox = isEditor || isFullLightbox;
-
-  const panelStyle = isFullLightbox
-    ? {
-      ...getPanelPaddingStyle(effectiveLayout, isEditor),
-      alignItems: HORIZONTAL_ALIGN_MAP[horizontalAlign],
-      justifyContent: VERTICAL_ALIGN_MAP[verticalAlign],
-    }
-    : {
-      ...getPanelPaddingStyle(effectiveLayout, isEditor),
-      [`--${P}-menu-width`]: scaled(menuWidth),
-      ...(isHorizontalText
-        ? {
-          flexDirection: 'row' as const,
-          justifyContent: HORIZONTAL_ALIGN_MAP[horizontalAlign],
-          alignItems: 'center' as const,
-        }
-        : {
-          alignItems: HORIZONTAL_ALIGN_MAP[horizontalAlign],
-          justifyContent: isVerticalPanel ? VERTICAL_ALIGN_MAP[verticalAlign] : undefined,
-        }),
-    };
+  const panelStyle = {
+    ...getPanelPaddingStyle(effectiveLayout, isEditor),
+    alignItems: HORIZONTAL_ALIGN_MAP[horizontalAlign],
+    justifyContent: VERTICAL_ALIGN_MAP[verticalAlign],
+  };
 
   const prevSettingsRef = useRef(settingsProp);
   const prevLayoutIdRef = useRef(layoutId);
@@ -2062,7 +1968,10 @@ export function Burger({
   const navLinkTextClassName = closedTextCss.className;
   const showLogo = logo?.mode !== 'Off';
   const logoSrc = logo?.icon ?? '';
+  const isSvgLogo = useIsSvgLogo(logoSrc);
   const logoHeight = scaled(Math.min(closedLogoMaxHeight, closedPanelHeight));
+  const isLogoOnRight = Boolean(showLogo && logoSrc && closedLogoPosition === 'right');
+  const toggleSide = isLogoOnRight ? 'left' : 'right';
 
   const items = Array.isArray(linkItems) ? linkItems : [];
   const socialItems = normalizeSocialLinks(socialLinkItems);
@@ -2075,14 +1984,14 @@ export function Burger({
   ].filter(Boolean).join(' ');
   const editorClass = isEditor && !isPreviewMode ? `${P}-editor` : '';
   const interactiveClass = isHoverEnabled ? `${P}-interactive` : '';
-  const navStateAnimClass = navigationState !== prevNavigationState || isNavStateAnimating
+  const navStateAnimClass = shouldAnimateNavState && (navigationState !== prevNavigationState || isNavStateAnimating)
     ? `${P}-nav-state-anim`
     : '';
   const openClass = isOpen ? `${P}-open` : '';
 
   const lightboxLayoutStyle = useMemo(
     () => getLightboxLayoutStyle(containerRef.current),
-    [isOverlayMounted, isOpen, layoutId, isHorizontalPanel],
+    [isOverlayMounted, isOpen, layoutId],
   );
 
   const closeMenu = () => {
@@ -2121,13 +2030,6 @@ export function Burger({
   }, [isNavStateAnimating, navigationState]);
 
   useEffect(() => {
-    if (!isHorizontalPanel) return;
-    setTypeCNavPhase(isOpen ? 'open' : 'closed');
-  }, [isOpen, isHorizontalPanel]);
-
-  useEffect(() => {
-    if (!usesOverlayLightbox) return;
-
     if (isOpen) {
       clearCloseTimer();
       setIsOverlayMounted(true);
@@ -2143,7 +2045,7 @@ export function Burger({
     }, MENU_ANIM_MS);
 
     return clearCloseTimer;
-  }, [isOpen, usesOverlayLightbox]);
+  }, [isOpen]);
 
   useLayoutEffect(() => {
     if (prevLayoutIdForOverlayRef.current === layoutId) {
@@ -2156,11 +2058,10 @@ export function Burger({
     setIsOpen(false);
     setIsOverlayActive(false);
     setIsOverlayMounted(false);
-    setTypeCNavPhase('closed');
   }, [layoutId]);
 
   useLayoutEffect(() => {
-    if (!usesOverlayLightbox || !isOverlayMounted || !isOpen) {
+    if (!isOverlayMounted || !isOpen) {
       return;
     }
 
@@ -2180,7 +2081,7 @@ export function Burger({
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [isOverlayMounted, isOpen, usesOverlayLightbox]);
+  }, [isOverlayMounted, isOpen]);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -2202,19 +2103,17 @@ export function Burger({
   useEffect(() => {
     if (isEditor && !isPreviewMode && pinnedState !== 'open') {
       setIsOpen(false);
-      setTypeCNavPhase('closed');
     }
   }, [isEditor, isPreviewMode, pinnedState]);
 
   useEffect(() => {
     if (isPreviewMode) {
       setIsOpen(false);
-      setTypeCNavPhase('closed');
     }
   }, [isPreviewMode]);
 
   useEffect(() => {
-    if (isScrollPinned || (isEditor && !isPreviewMode)) {
+    if (!canUseCompact || isScrollPinned || (isEditor && !isPreviewMode)) {
       setIsScrolled(false);
       return;
     }
@@ -2226,17 +2125,11 @@ export function Burger({
     updateScrolled();
     window.addEventListener('scroll', updateScrolled, { passive: true });
     return () => window.removeEventListener('scroll', updateScrolled);
-  }, [isScrollPinned, isEditor, isPreviewMode]);
+  }, [canUseCompact, isScrollPinned, isEditor, isPreviewMode]);
 
-  const showOpenNavControls = showControls && (
-    usesOverlayLightbox ? isOpen : (isHorizontalPanel && typeCNavPhase === 'open')
-  );
+  const showOpenNavControls = showControls && isOpen;
 
-  const renderOpenNavItems = (
-    linkClassName: string,
-    gapAxis: 'x' | 'y',
-    options?: { useContainerGap?: boolean },
-  ) => items.map((item, index) => {
+  const renderOpenNavItems = (linkClassName: string) => items.map((item, index) => {
     const { label, href, target } = resolveBurgerLink(item, pages);
     const linkNode = href ? (
       <a
@@ -2254,21 +2147,14 @@ export function Burger({
       </span>
     );
 
-    const isHorizontalGap = gapAxis === 'x';
-    const showGapSpacer = index > 0 && !options?.useContainerGap;
-
     return (
       <Fragment key={index}>
-        {showGapSpacer && (
+        {index > 0 && (
           <div
             data-controls={showOpenNavControls ? 'gap' : undefined}
-            data-controls-axis={gapAxis}
-            className={showOpenNavControls
-              ? `${P}-gap-control${isHorizontalGap && isHorizontalPanel ? ` ${P}-nav-gap-control` : ''}`.trim()
-              : (isHorizontalGap && isHorizontalPanel ? `${P}-nav-gap-control` : undefined)}
-            style={isHorizontalGap
-              ? { width: scaled(gap), flexShrink: 0 }
-              : { height: scaled(gap) }}
+            data-controls-axis="y"
+            className={showOpenNavControls ? `${P}-gap-control` : undefined}
+            style={{ height: scaled(gap) }}
           />
         )}
         {linkNode}
@@ -2326,15 +2212,15 @@ export function Burger({
     );
   };
 
-  const overlay = usesOverlayLightbox && isOverlayMounted ? (
+  const overlay = isOverlayMounted ? (
     <div
       ref={overlayRef}
       data-selection="none"
       className={[
         `${P}-lightbox`,
-        isFullLightbox ? `${P}-full-lightbox ${P}-effect-${effect}` : `${P}-direction-${lightboxDirection}`,
+        `${P}-full-lightbox ${P}-effect-${effect}`,
         isOverlayActive ? `${P}-lightbox-active` : '',
-        useLayoutBoundLightbox ? `${P}-lightbox-editor` : '',
+        `${P}-lightbox-editor`,
         isEditMode ? `${P}-lightbox-edit-mode` : '',
         interactiveClass,
         stateClass,
@@ -2349,9 +2235,9 @@ export function Burger({
         aria-label="Close menu"
       />
       <nav className={`${P}-panel`} style={panelStyle} aria-label="Menu">
-        {showControls && renderTextPaddingControls(P, type, effectiveLayout, openTypeStyle.fontSize, scaled)}
+        {showControls && renderTextPaddingControls(P, effectiveLayout, openTypeStyle.fontSize, scaled)}
         {verticalAlign === 'bottom' ? renderSocialLinks() : null}
-        {renderOpenNavItems(`${P}-link`, isHorizontalText ? 'x' : 'y')}
+        {renderOpenNavItems(`${P}-link`)}
         {verticalAlign !== 'bottom' ? renderSocialLinks() : null}
       </nav>
     </div>
@@ -2369,11 +2255,42 @@ export function Burger({
     </button>
   );
 
-  const renderNavLink = (item: BurgerLink, index: number) => {
-    if (isHorizontalPanel && typeCNavPhase === 'open') {
-      return null;
-    }
+  const renderNavEdgePadding = (side: 'left' | 'right') => {
+    const isLeft = side === 'left';
+    const width = isLeft ? closedNavPaddingLeft : closedNavPaddingRight;
+    const handleSize = isLeft ? navPaddingLeftHandleSize : navPaddingRightHandleSize;
+    const maxFraction = isLeft ? navPaddingLeftMaxFraction : navPaddingRightMaxFraction;
+    const control = isCompactNav
+      ? (isLeft ? 'compactNavPaddingLeft' : 'compactNavPaddingRight')
+      : (isLeft ? 'navPaddingLeft' : 'navPaddingRight');
 
+    return (
+      <div
+        className={isLeft ? `${P}-nav-padding-left` : `${P}-nav-padding-right`}
+        style={{ width: scaled(width), flexShrink: 0 }}
+      >
+        {showClosedMenuControls ? (
+          <div
+            data-controls={control}
+            data-controls-axis="x"
+            data-controls-variant="column-padding"
+            {...(isLeft ? {} : { 'data-controls-reverse': '' })}
+            data-controls-min="0"
+            data-controls-max-fraction={String(maxFraction)}
+            className={`${P}-control-anchor`}
+            style={{
+              top: 0,
+              [isLeft ? 'left' : 'right']: 0,
+              width: scaled(handleSize),
+              height: '100%',
+            }}
+          />
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderNavLink = (item: BurgerLink, index: number) => {
     const { label, href, target } = resolveBurgerLink(item, pages);
     const textContent = (
       <span className={navLinkTextClassName} style={navLinkTextStyle}>
@@ -2408,7 +2325,7 @@ export function Burger({
       <Fragment key={index}>
         {index > 0 && (
           <div
-            data-controls={showClosedMenuControls ? (isOnScrollNav ? 'onScrollNavGap' : 'navGap') : undefined}
+            data-controls={showClosedMenuControls ? (isCompactNav ? 'compactNavGap' : 'navGap') : undefined}
             data-controls-axis="x"
             className={showClosedMenuControls ? `${P}-gap-control ${P}-nav-gap-control` : `${P}-nav-gap-control}`}
             style={{ width: scaled(resolvedNavGap), flexShrink: 0 }}
@@ -2424,139 +2341,63 @@ export function Burger({
     height: scalingValue(closedPanelHeight, isEditor),
     minHeight: scalingValue(closedPanelHeight, isEditor),
     [`--${P}-panel-height`]: scalingValue(closedPanelHeight, isEditor),
-    [`--${P}-menu-width`]: scaled(menuWidth),
   };
-
-  const typeCClass = isHorizontalPanel ? `${P}-type-c ${P}-type-c-text-${textOrientation}` : '';
-  const openRootClass = isHorizontalPanel && isOpen ? `${P}-open` : '';
-
-  const typeCNavInnerClass = typeCNavPhase === 'open'
-    ? `${P}-nav-links-inner-open`
-    : `${P}-nav-links-inner-closed`;
-
-  const typeCNavInnerStyle: CSSProperties | undefined = isHorizontalPanel && typeCNavPhase === 'open'
-    ? {
-      ...getPanelPaddingStyle(effectiveLayout, isEditor),
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: HORIZONTAL_ALIGN_MAP[horizontalAlign],
-      alignItems: VERTICAL_ALIGN_MAP[verticalAlign],
-      alignContent: VERTICAL_ALIGN_MAP[verticalAlign],
-      gap: scaled(gap),
-    }
-    : undefined;
 
   return (
     <div
       ref={containerRef}
-      className={`${P}-root ${typeCClass} ${openRootClass} ${stateClass} ${editorClass} ${interactiveClass} ${navStateAnimClass}`.trim()}
+      className={`${P}-root ${stateClass} ${editorClass} ${interactiveClass} ${navStateAnimClass}`.trim()}
       style={{
         width: '100%',
         height: '100%',
         lineHeight: 0,
         fontSize: 0,
         ...colorVars,
-        ...(isHorizontalPanel ? {
-          ...lightboxLayoutStyle,
-          [`--${P}-panel-height`]: scalingValue(closedPanelHeight, isEditor),
-        } : {}),
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
-      {isHorizontalPanel && isOpen ? (
-        <button
-          type="button"
-          data-selection="none"
-          className={[
-            `${P}-type-c-backdrop`,
-            isEditor ? `${P}-type-c-backdrop-editor` : '',
-          ].filter(Boolean).join(' ')}
-          onClick={closeMenu}
-          aria-label="Close menu"
-        />
-      ) : null}
       <div className={`${P}-nav-bar`} style={navBarStyle}>
         {showLogo && logoSrc ? (
-          <div className={`${P}-nav-logo`}>
+          <div className={`${P}-nav-logo ${P}-nav-logo-${closedLogoPosition}`}>
+            {closedLogoPosition === 'left' ? renderNavEdgePadding('left') : null}
             <div
-              className={`${P}-nav-padding-left`}
-              style={{ width: scaled(closedNavPaddingLeft), flexShrink: 0 }}
-            >
-              {showClosedMenuControls ? (
-                <div
-                  data-controls={isOnScrollNav ? 'onScrollNavPaddingLeft' : 'navPaddingLeft'}
-                  data-controls-axis="x"
-                  data-controls-variant="column-padding"
-                  data-controls-min="0"
-                  data-controls-max-fraction={String(navPaddingLeftMaxFraction)}
-                  className={`${P}-control-anchor`}
-                  style={{
-                    top: 0,
-                    left: 0,
-                    width: scaled(navPaddingLeftHandleSize),
-                    height: '100%',
-                  }}
-                />
-              ) : null}
-            </div>
-            <div
-              className={`${P}-nav-logo-inner`}
+              className={`${P}-nav-logo-inner${isSvgLogo ? ` ${P}-nav-logo-tinted` : ''}`}
               style={{
                 height: logoHeight,
-              }}
+                ...(isSvgLogo ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoSrc) } : {}),
+              } as CSSProperties}
             >
               <img
                 src={logoSrc}
                 alt=""
                 className={`${P}-nav-logo-img`}
               />
+              {isSvgLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
             </div>
+            {closedLogoPosition === 'right' ? renderNavEdgePadding('right') : null}
           </div>
         ) : null}
         <nav
           className={`${P}-nav-links`}
-          aria-label={isHorizontalPanel && typeCNavPhase === 'open' ? 'Menu' : 'Navigation'}
+          aria-label="Navigation"
         >
-          <div className={`${P}-nav-links-inner ${isHorizontalPanel ? typeCNavInnerClass : ''}`.trim()} style={typeCNavInnerStyle}>
-            {showControls && isHorizontalPanel && typeCNavPhase === 'open' && renderTextPaddingControls(P, type, effectiveLayout, openTypeStyle.fontSize, scaled)}
-            {isHorizontalPanel && typeCNavPhase === 'open' && verticalAlign === 'bottom' ? renderSocialLinks() : null}
-            {isHorizontalPanel && typeCNavPhase === 'open'
-              ? renderOpenNavItems(`${P}-nav-link`, 'x', { useContainerGap: true })
-              : items.filter((item) => isVisibleInClosedNav(item, navigationState)).map((item, index) => renderNavLink(item, index))}
-            {isHorizontalPanel && typeCNavPhase === 'open' && verticalAlign !== 'bottom' ? renderSocialLinks() : null}
+          <div className={`${P}-nav-links-inner`}>
+            {items.filter((item) => isVisibleInClosedNav(item, navigationState)).map((item, index) => renderNavLink(item, index))}
           </div>
         </nav>
       </div>
       {overlay}
-      <div className={`${P}-nav-toggle-wrap`}>
-        <div
-          className={`${P}-root ${openClass} ${P}-icon-animation-${closedIconAnimation}`.trim()}
-          style={iconRootStyle}
-        >
-          {renderBurgerToggle()}
-        </div>
-        <div
-          className={`${P}-nav-padding-right`}
-          style={{ width: scaled(closedNavPaddingRight), flexShrink: 0 }}
-        >
-          {showClosedMenuControls ? (
-            <div
-              data-controls={isOnScrollNav ? 'onScrollNavPaddingRight' : 'navPaddingRight'}
-              data-controls-axis="x"
-              data-controls-variant="column-padding"
-              data-controls-reverse=""
-              data-controls-min="0"
-              data-controls-max-fraction={String(navPaddingRightMaxFraction)}
-              className={`${P}-control-anchor`}
-              style={{
-                top: 0,
-                right: 0,
-                width: scaled(navPaddingRightHandleSize),
-                height: '100%',
-              }}
-            />
-          ) : null}
-        </div>
+      <div className={`${P}-nav-toggle-wrap ${P}-nav-toggle-wrap-${toggleSide}`}>
+        {toggleSide === 'left' ? renderNavEdgePadding('left') : null}
+        {showBurgerButton ? (
+          <div
+            className={`${P}-root ${openClass} ${P}-icon-animation-${closedIconAnimation}`.trim()}
+            style={iconRootStyle}
+          >
+            {renderBurgerToggle()}
+          </div>
+        ) : null}
+        {toggleSide === 'right' ? renderNavEdgePadding('right') : null}
       </div>
     </div>
   );
