@@ -101,7 +101,7 @@ export type SchemaPanel = {
   /**
    * When set, the panel is available only if every listed context key
    * is either missing or matches one of the allowed values.
-   * Example: `{ navigationPosition: ['default', 'switch'] }`.
+   * Example: `{ navigationPosition: ['switch'] }`.
    */
   availableWhen?: SchemaPanelAvailability;
 };

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, getColorAlpha, scalingValue, useScopedStyles } from '../utils';
+import { buildColorVars, scalingValue, useScopedStyles } from '../utils';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 const MENU_ANIM_MS = 300;
@@ -34,6 +34,7 @@ type BurgerPosition =
   | 'center-top'
   | 'right-top'
   | 'left-center'
+  | 'center'
   | 'center-center'
   | 'right-center'
   | 'left-bottom'
@@ -42,7 +43,6 @@ type BurgerPosition =
 
 type BurgerSettings = {
   link?: BurgerLink[];
-  socialLink?: string[];
   logo?: BurgerLogo | null;
   logoMaxWidth?: number;
   logoMaxHeight?: number;
@@ -54,8 +54,8 @@ type BurgerSettings = {
   horizontalAlign?: 'left' | 'center' | 'right';
   verticalAlign?: 'top' | 'center' | 'bottom';
   iconColor?: string;
+  showIcon?: 'on' | 'off';
   iconSize?: number;
-  iconAnimation?: 'a';
   linkColor?: string;
   openLinkColor?: string;
   compactIconColor?: string;
@@ -67,8 +67,8 @@ type BurgerSettings = {
   compactLogoMaxHeight?: number;
   compactLogoPosition?: BurgerLogoPosition;
   compactPanelHeight?: number;
+  compactShowIcon?: 'on' | 'off';
   compactIconSize?: number;
-  compactIconAnimation?: 'a';
   compactNavTextWidth?: number;
   compactNavGap?: number;
   compactNavPaddingLeft?: number;
@@ -84,7 +84,6 @@ type BurgerSettings = {
   compactWordSpacing?: number;
   compactTextAlign?: TextStyles['textAlign'];
   compactTextAppearance?: TextStyles['textAppearance'];
-  socialIconColor?: string;
   openLogoColor?: string;
   menuBackgroundColor?: string;
   overlayColor?: string;
@@ -122,7 +121,7 @@ type BurgerSettings = {
   openWordSpacing?: number;
   openTextAlign?: TextStyles['textAlign'];
   openTextAppearance?: TextStyles['textAppearance'];
-  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'socialIconColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor', string>>>;
+  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor', string>>>;
 };
 
 type BurgerVisualState = 'default' | 'compact' | 'open';
@@ -201,34 +200,6 @@ function resolveBurgerLink(item: BurgerLink, pages?: BurgerPageRef[]): {
   return { label, href, target };
 }
 
-const GLOBE_ICON_PATH = 'M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm6.93 6h-3.11a15.7 15.7 0 00-1.18-3.22A8.03 8.03 0 0118.93 8zM12 4.06c.84 1.11 1.5 2.46 1.91 3.94h-3.82C10.5 6.52 11.16 5.17 12 4.06zM4.07 14a8.03 8.03 0 010-4h3.11a17.4 17.4 0 00-.13 2c0 .68.04 1.35.13 2H4.07zm1.11 2h3.11c.3 1.15.7 2.23 1.18 3.22A8.03 8.03 0 015.18 16zM8.18 8H5.07A8.03 8.03 0 018.29 4.78 15.7 15.7 0 008.18 8zM12 19.94c-.84-1.11-1.5-2.46-1.91-3.94h3.82c-.41 1.48-1.07 2.83-1.91 3.94zM15.71 16h3.11a8.03 8.03 0 01-3.22 3.22c.48-.99.88-2.07 1.18-3.22zm.16-2H8.13A15.5 15.5 0 018 12c0-.68.04-1.35.13-2h7.74c.09.65.13 1.32.13 2s-.04 1.35-.13 2zm.95-6c.3-1.15.7-2.23 1.18-3.22A8.03 8.03 0 0118.93 8h-3.11z';
-
-function parseSocialLinkHost(url: string): { origin: string; hostname: string; label: string } | null {
-  try {
-    const href = /^[a-z][a-z\d+\-.]*:/i.test(url) ? url : `https://${url}`;
-    const parsed = new URL(href);
-    if (!parsed.hostname || parsed.protocol === 'mailto:') {
-      return null;
-    }
-    const hostname = parsed.hostname.replace(/^www\./, '').toLowerCase();
-    return {
-      origin: parsed.origin,
-      hostname,
-      label: hostname,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function FallbackSocialIcon({ className }: { className: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d={GLOBE_ICON_PATH} />
-    </svg>
-  );
-}
-
 const BURGER_ICON_VIEWBOX = 24;
 const BURGER_ICON_LINE_HEIGHT = BURGER_ICON_VIEWBOX * 0.125;
 const BURGER_ICON_LINE_GAP = BURGER_ICON_VIEWBOX * 0.125;
@@ -270,67 +241,6 @@ function BurgerIcon({ className, lineClassName }: { className: string; lineClass
       />
     </svg>
   );
-}
-
-function getSiteFaviconSources(origin: string, hostname: string): string[] {
-  return [
-    new URL('/favicon.ico', `${origin}/`).href,
-    `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
-  ];
-}
-
-function SiteFavicon({
-  origin,
-  hostname,
-  imageClassName,
-  fallbackClassName,
-}: {
-  origin: string;
-  hostname: string;
-  imageClassName: string;
-  fallbackClassName: string;
-}) {
-  const sources = useMemo(() => getSiteFaviconSources(origin, hostname), [origin, hostname]);
-  const [sourceIndex, setSourceIndex] = useState(0);
-
-  useEffect(() => {
-    setSourceIndex(0);
-  }, [origin, hostname]);
-
-  if (sourceIndex >= sources.length) {
-    return <FallbackSocialIcon className={fallbackClassName} />;
-  }
-
-  return (
-    <img
-      className={imageClassName}
-      src={sources[sourceIndex]}
-      alt=""
-      onError={() => setSourceIndex((index) => index + 1)}
-    />
-  );
-}
-
-function normalizeSocialLinks(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    if (typeof value === 'string' && value.trim()) {
-      return [value.trim()];
-    }
-    return [];
-  }
-
-  return value
-    .map((item) => {
-      if (typeof item === 'string') {
-        return item.trim();
-      }
-      if (item && typeof item === 'object' && 'url' in item) {
-        const url = (item as { url?: unknown }).url;
-        return typeof url === 'string' ? url.trim() : '';
-      }
-      return '';
-    })
-    .filter(Boolean);
 }
 
 function getTextClassName(
@@ -509,6 +419,9 @@ function parseBurgerPosition(position: BurgerPosition): {
   horizontalAlign: HorizontalAlign;
   verticalAlign: VerticalAlign;
 } {
+  if (position === 'center' || position === 'center-center') {
+    return { horizontalAlign: 'center', verticalAlign: 'center' };
+  }
   const [horizontalAlign, verticalAlign] = position.split('-') as [HorizontalAlign, VerticalAlign];
   return { horizontalAlign, verticalAlign };
 }
@@ -546,7 +459,6 @@ const LEGACY_COMPACT_SETTING_KEYS = [
   ['onScrollLogoPosition', 'compactLogoPosition'],
   ['onScrollPanelHeight', 'compactPanelHeight'],
   ['onScrollIconSize', 'compactIconSize'],
-  ['onScrollIconAnimation', 'compactIconAnimation'],
   ['onScrollNavTextWidth', 'compactNavTextWidth'],
   ['onScrollNavGap', 'compactNavGap'],
   ['onScrollNavPaddingLeft', 'compactNavPaddingLeft'],
@@ -672,8 +584,8 @@ function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
   inheritScrollParam('compactLogoMaxHeight', 'logoMaxHeight');
   inheritScrollParam('compactLogoPosition', 'logoPosition');
   inheritScrollParam('compactPanelHeight', 'panelHeight');
+  inheritScrollParam('compactShowIcon', 'showIcon');
   inheritScrollParam('compactIconSize', 'iconSize');
-  inheritScrollParam('compactIconAnimation', 'iconAnimation');
   inheritScrollParam('compactNavTextWidth', 'navTextWidth');
   inheritScrollParam('compactNavGap', 'navGap');
   inheritScrollParam('compactNavPaddingLeft', 'navPaddingLeft');
@@ -796,7 +708,7 @@ function renderTextPaddingControls(
   );
 }
 
-type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'socialIconColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor';
+type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor';
 
 export type BurgerLinkNavigateEvent = {
   mode: 'page' | 'url';
@@ -816,9 +728,8 @@ type BurgerProps = {
   activeEvent?: string;
   /**
    * Editor-controlled visual state (`default` | `compact` | `open`), matching a
-   * `statePanels` id. On the published site a navigation wrapper may pin `default`
-   * or `compact` (e.g. the `switch` position). When omitted the component
-   * watches scroll and click itself.
+   * `statePanels` id. Compact is only used when a wrapper pins it (the
+   * `switch` / sticky compact clone). When omitted the closed bar stays default.
    */
   currentState?: string | null;
   portalId?: string;
@@ -839,7 +750,6 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   compactLinkColor: 'compact-link-color',
   compactLogoColor: 'compact-logo-color',
   compactBackgroundColor: 'compact-background-color',
-  socialIconColor: 'social-icon-color',
   openLogoColor: 'open-logo-color',
   menuBackgroundColor: 'menu-background-color',
   overlayColor: 'overlay-color',
@@ -982,7 +892,6 @@ function getCSS(P: string): string {
   box-shadow: none;
 }
 .${P}-full-lightbox .${P}-link,
-.${P}-full-lightbox .${P}-social-link,
 .${P}-full-lightbox .${P}-gap-control {
   pointer-events: auto;
 }
@@ -1101,8 +1010,7 @@ function getCSS(P: string): string {
   padding-top: var(--${P}-text-leading-gap, 0);
   padding-bottom: var(--${P}-text-leading-gap, 0);
 }
-.${P}-interactive .${P}-has-href,
-.${P}-interactive .${P}-social-link {
+.${P}-interactive .${P}-has-href {
   cursor: pointer;
 }
 .${P}-interactive .${P}-has-href:hover,
@@ -1224,7 +1132,6 @@ function getCSS(P: string): string {
   z-index: 0;
 }
 .${P}-nav-links .${P}-nav-link,
-.${P}-nav-links .${P}-social-link,
 .${P}-nav-links .${P}-gap-control {
   pointer-events: auto;
 }
@@ -1264,52 +1171,6 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-nav-link.${P}-has-href {
   color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
 }
-.${P}-social-links {
-  position: absolute;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  z-index: 2;
-  pointer-events: none;
-}
-.${P}-social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  pointer-events: auto;
-  color: var(--${P}-social-icon-color);
-  text-decoration: none;
-  cursor: default;
-  transition: color 200ms ease, opacity 200ms ease;
-}
-.${P}-social-icon,
-.${P}-social-favicon {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.${P}-social-icon {
-  fill: currentColor;
-}
-.${P}-social-favicon {
-  object-fit: contain;
-}
-.${P}-interactive .${P}-social-link:hover,
-.${P}-interactive .${P}-social-link:focus-visible,
-.${P}-lightbox.${P}-state-hover .${P}-social-link,
-.${P}-root.${P}-state-hover .${P}-social-link {
-  color: var(--${P}-hover-social-icon-color, var(--${P}-social-icon-color));
-  outline: none;
-}
-.${P}-interactive .${P}-social-link:hover .${P}-social-favicon,
-.${P}-interactive .${P}-social-link:focus-visible .${P}-social-favicon,
-.${P}-lightbox.${P}-state-hover .${P}-social-favicon,
-.${P}-root.${P}-state-hover .${P}-social-favicon {
-  opacity: 0.7;
-}
 .${P}-root.${P}-state-compact .${P}-nav-bar {
   background-color: var(--${P}-compact-background-color);
 }
@@ -1332,10 +1193,6 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-compact .${P}-nav-link {
   color: var(--${P}-compact-link-color);
 }
-.${P}-root.${P}-state-compact .${P}-social-link,
-.${P}-lightbox.${P}-state-compact .${P}-social-link {
-  color: var(--${P}-compact-social-icon-color, var(--${P}-social-icon-color));
-}
 .${P}-lightbox.${P}-state-compact .${P}-panel {
   background-color: var(--${P}-compact-menu-background-color, var(--${P}-menu-background-color));
 }
@@ -1351,16 +1208,6 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-has-href {
   color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
 }
-.${P}-interactive .${P}-social-link:hover,
-.${P}-interactive .${P}-social-link:focus-visible,
-.${P}-lightbox.${P}-state-hover .${P}-social-link,
-.${P}-root.${P}-state-hover .${P}-social-link {
-  color: var(--${P}-hover-social-icon-color, var(--${P}-social-icon-color));
-}
-.${P}-lightbox.${P}-state-compact.${P}-state-hover .${P}-social-link,
-.${P}-root.${P}-state-compact.${P}-state-hover .${P}-social-link {
-  color: var(--${P}-hover-social-icon-color, var(--${P}-compact-social-icon-color, var(--${P}-social-icon-color)));
-}
 .${P}-root.${P}-state-open .${P}-toggle {
   color: var(--${P}-open-close-button-color, var(--${P}-close-button-color));
 }
@@ -1372,10 +1219,6 @@ function getCSS(P: string): string {
 .${P}-lightbox .${P}-link {
   color: var(--${P}-menu-link-color);
 }
-.${P}-root.${P}-state-open .${P}-social-link,
-.${P}-lightbox.${P}-state-open .${P}-social-link {
-  color: var(--${P}-open-social-icon-color, var(--${P}-social-icon-color));
-}
 .${P}-lightbox.${P}-state-open .${P}-panel {
   background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
 }
@@ -1385,10 +1228,6 @@ function getCSS(P: string): string {
 .${P}-lightbox.${P}-state-open.${P}-state-hover .${P}-has-href,
 .${P}-root.${P}-state-open.${P}-state-hover .${P}-has-href {
   color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
-}
-.${P}-lightbox.${P}-state-open.${P}-state-hover .${P}-social-link,
-.${P}-root.${P}-state-open.${P}-state-hover .${P}-social-link {
-  color: var(--${P}-hover-social-icon-color, var(--${P}-open-social-icon-color, var(--${P}-social-icon-color)));
 }
 .${P}-nav-toggle-wrap {
   position: absolute;
@@ -1687,7 +1526,6 @@ export function Burger({
   const [isOpenUser, setIsOpen] = useState(false);
   const [isOverlayMounted, setIsOverlayMounted] = useState(false);
   const [isOverlayActive, setIsOverlayActive] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   const pinnedState = resolveCurrentState(currentStateProp);
   const unavailableStateSet = useMemo(() => new Set(unavailableStates), [unavailableStates]);
@@ -1695,14 +1533,11 @@ export function Burger({
   const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open' && !isStateUnavailable('open'));
   const isOpen = isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser);
   const canUseCompact = !isStateUnavailable('compact') && !isStateUnavailable('onScroll');
-  const isScrollPinned = pinnedState === 'default' || (canUseCompact && pinnedState === 'compact');
   const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
   const interactionState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
   const navigationState: BurgerNavigationState = canUseCompact && pinnedState === 'compact'
     ? 'compact'
-    : isScrollPinned
-      ? 'default'
-      : (!isEditor || isPreviewMode) && isScrolled && canUseCompact ? 'compact' : 'default';
+    : 'default';
   const [prevNavigationState, setPrevNavigationState] = useState(navigationState);
   const [isNavStateAnimating, setIsNavStateAnimating] = useState(false);
   const shouldAnimateNavState = !isEditMode;
@@ -1725,8 +1560,8 @@ export function Burger({
     horizontalAlign: horizontalAlignSetting,
     verticalAlign: verticalAlignSetting,
     iconColor = '#000000',
+    showIcon = 'on',
     iconSize = 16 / 1440,
-    iconAnimation = 'a',
     linkColor = '#000000',
     openLinkColor = '#000000',
     compactIconColor = '#000000',
@@ -1737,8 +1572,8 @@ export function Burger({
     compactLogoMaxHeight = 120 / 1440,
     compactLogoPosition,
     compactPanelHeight = 60 / 1440,
+    compactShowIcon = 'on',
     compactIconSize = 16 / 1440,
-    compactIconAnimation = 'a',
     compactNavTextWidth,
     compactNavGap,
     compactNavPaddingLeft = 10 / 1440,
@@ -1751,7 +1586,6 @@ export function Burger({
     compactWordSpacing = 0,
     compactTextAlign = 'left',
     compactTextAppearance,
-    socialIconColor = '#000000',
     openLogoColor = '#000000',
     menuBackgroundColor = '#ffffff',
     overlayColor = 'rgba(0, 0, 0, 0.45)',
@@ -1785,7 +1619,6 @@ export function Burger({
     openTextAppearance,
     stateOverrides,
     link: linkItems,
-    socialLink: socialLinkItems,
   } = settings;
 
   const { horizontalAlign, verticalAlign } = resolveBurgerAlignment({
@@ -1799,17 +1632,13 @@ export function Burger({
   const closedLogoPosition = resolveLogoPosition(isCompactNav ? compactLogoPosition : logoPosition);
   const closedPanelHeight = isCompactNav ? compactPanelHeight : panelHeight;
   const closedIconSize = isCompactNav ? compactIconSize : iconSize;
-  const closedIconAnimation = isCompactNav ? compactIconAnimation : iconAnimation;
   const closedNavTextWidth = isCompactNav ? compactNavTextWidth : navTextWidth;
   const closedNavGap = isCompactNav ? compactNavGap : navGap;
   const closedNavPaddingLeft = isCompactNav ? compactNavPaddingLeft : navPaddingLeft;
   const closedNavPaddingRight = isCompactNav ? compactNavPaddingRight : navPaddingRight;
 
   const resolvedNavTextWidth = closedNavTextWidth ?? textWidth;
-  const burgerButtonColor = isOpen
-    ? (isCompactNav ? compactCloseButtonColor : closeButtonColor)
-    : (isCompactNav ? compactIconColor : iconColor);
-  const showBurgerButton = getColorAlpha(burgerButtonColor) > 0;
+  const showBurgerButton = isOpen || (isCompactNav ? compactShowIcon : showIcon) !== 'off';
 
   const colorVars = buildColorVars(P, {
     iconColor,
@@ -1821,7 +1650,6 @@ export function Burger({
     compactLinkColor,
     compactLogoColor,
     compactBackgroundColor,
-    socialIconColor,
     openLogoColor,
     menuBackgroundColor,
     overlayColor,
@@ -1974,7 +1802,6 @@ export function Burger({
   const toggleSide = isLogoOnRight ? 'left' : 'right';
 
   const items = Array.isArray(linkItems) ? linkItems : [];
-  const socialItems = normalizeSocialLinks(socialLinkItems);
   const stateClass = [
     navigationState !== 'default' ? `${P}-state-${navigationState}` : '',
     pinnedState === 'open' ? `${P}-state-open` : '',
@@ -2112,21 +1939,6 @@ export function Burger({
     }
   }, [isPreviewMode]);
 
-  useEffect(() => {
-    if (!canUseCompact || isScrollPinned || (isEditor && !isPreviewMode)) {
-      setIsScrolled(false);
-      return;
-    }
-
-    const updateScrolled = () => {
-      setIsScrolled(window.scrollY > 0);
-    };
-
-    updateScrolled();
-    window.addEventListener('scroll', updateScrolled, { passive: true });
-    return () => window.removeEventListener('scroll', updateScrolled);
-  }, [canUseCompact, isScrollPinned, isEditor, isPreviewMode]);
-
   const showOpenNavControls = showControls && isOpen;
 
   const renderOpenNavItems = (linkClassName: string) => items.map((item, index) => {
@@ -2162,56 +1974,6 @@ export function Burger({
     );
   });
 
-  const renderSocialLinks = () => {
-    if (socialItems.length === 0) {
-      return null;
-    }
-
-    const socialIconSize = scaled(openTypeStyle.fontSize ?? 0.01);
-    const socialAtTop = verticalAlign === 'bottom';
-
-    return (
-      <div
-        className={`${P}-social-links`}
-        style={{
-          gap: scaled(gap),
-          left: scaled(effectiveLayout.effectivePaddingLeft),
-          right: scaled(effectiveLayout.effectivePaddingRight),
-          ...(socialAtTop
-            ? { top: scaled(effectiveLayout.effectivePaddingTop) }
-            : { bottom: scaled(effectiveLayout.effectivePaddingBottom) }),
-        }}
-      >
-        {socialItems.map((href, index) => {
-          const host = parseSocialLinkHost(href);
-          return (
-            <a
-              key={`${href}-${index}`}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${P}-social-link`}
-              aria-label={host?.label ?? 'Link'}
-              style={{ width: socialIconSize, height: socialIconSize }}
-              onClick={(event) => onNavLinkClick(event)}
-            >
-              {host ? (
-                <SiteFavicon
-                  origin={host.origin}
-                  hostname={host.hostname}
-                  imageClassName={`${P}-social-favicon`}
-                  fallbackClassName={`${P}-social-icon`}
-                />
-              ) : (
-                <FallbackSocialIcon className={`${P}-social-icon`} />
-              )}
-            </a>
-          );
-        })}
-      </div>
-    );
-  };
-
   const overlay = isOverlayMounted ? (
     <div
       ref={overlayRef}
@@ -2236,9 +1998,7 @@ export function Burger({
       />
       <nav className={`${P}-panel`} style={panelStyle} aria-label="Menu">
         {showControls && renderTextPaddingControls(P, effectiveLayout, openTypeStyle.fontSize, scaled)}
-        {verticalAlign === 'bottom' ? renderSocialLinks() : null}
         {renderOpenNavItems(`${P}-link`)}
-        {verticalAlign !== 'bottom' ? renderSocialLinks() : null}
       </nav>
     </div>
   ) : null;
@@ -2391,7 +2151,7 @@ export function Burger({
         {toggleSide === 'left' ? renderNavEdgePadding('left') : null}
         {showBurgerButton ? (
           <div
-            className={`${P}-root ${openClass} ${P}-icon-animation-${closedIconAnimation}`.trim()}
+            className={`${P}-root ${openClass}`.trim()}
             style={iconRootStyle}
           >
             {renderBurgerToggle()}
