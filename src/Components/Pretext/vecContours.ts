@@ -401,7 +401,7 @@ export function nodeHasCurveHandles(node: VecNode): boolean {
   return Boolean(activeHandle(node.in, node.p) || activeHandle(node.out, node.p));
 }
 
-function segmentIsStraight(from: VecNode, to: VecNode): boolean {
+export function segmentIsStraight(from: VecNode, to: VecNode): boolean {
   return !activeHandle(from.out, from.p) && !activeHandle(to.in, to.p);
 }
 
@@ -785,13 +785,13 @@ export function toggleNodeSmooth(contours: VecContour[], contourIndex: number, n
   return next;
 }
 
-function projectOnLine(point: Pt, a: Pt, b: Pt): { t: number; distance: number } {
+function projectOnLine(point: Pt, a: Pt, b: Pt): { t: number; distance: number; point: Pt } {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const lengthSquared = dx * dx + dy * dy;
   const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared));
   const closest = { x: a.x + dx * t, y: a.y + dy * t };
-  return { t, distance: Math.hypot(point.x - closest.x, point.y - closest.y) };
+  return { t, distance: Math.hypot(point.x - closest.x, point.y - closest.y), point: closest };
 }
 
 export function nearestSegmentHit(contours: VecContour[], point: Pt): {
@@ -799,8 +799,9 @@ export function nearestSegmentHit(contours: VecContour[], point: Pt): {
   segment: number;
   t: number;
   distance: number;
+  point: Pt;
 } | null {
-  let best: { contour: number; segment: number; t: number; distance: number } | null = null;
+  let best: { contour: number; segment: number; t: number; distance: number; point: Pt } | null = null;
   contours.forEach((contour, contourIndex) => {
     for (const segment of contourSegments(contour)) {
       const steps = segmentIsStraight(segment.from, segment.to) ? 1 : CURVE_SAMPLES;
@@ -809,7 +810,13 @@ export function nearestSegmentHit(contours: VecContour[], point: Pt): {
         const t1 = (i + 1) / steps;
         const hit = projectOnLine(point, pointOnSegment(segment.from, segment.to, t0), pointOnSegment(segment.from, segment.to, t1));
         if (!best || hit.distance < best.distance) {
-          best = { contour: contourIndex, segment: segment.index, t: t0 + (t1 - t0) * hit.t, distance: hit.distance };
+          best = {
+            contour: contourIndex,
+            segment: segment.index,
+            t: t0 + (t1 - t0) * hit.t,
+            distance: hit.distance,
+            point: hit.point,
+          };
         }
       }
     }

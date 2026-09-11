@@ -181,6 +181,8 @@ export type ColumnMetrics = {
   spaceWidth: number;
   lineHeight: number;
   capWidth: number;
+  dropCapFontSize: number;
+  dropCapTopAdjust: number;
 };
 
 export type ColumnProps = {
@@ -376,12 +378,17 @@ const getCSS = (P: string): string => `
 .${P}-editor-hit {
   fill: none;
   stroke: transparent;
-  stroke-width: 16;
   pointer-events: none;
-  cursor: copy;
 }
 .${P}-editor-armed .${P}-editor-hit {
   pointer-events: stroke;
+}
+.${P}-editor-add-preview {
+  fill: #FFFFFF;
+  stroke: #FF5C02;
+  stroke-width: 1.5;
+  pointer-events: none;
+  opacity: 0.85;
 }
 .${P}-editor-grab {
   fill: transparent;
@@ -604,6 +611,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const [pathCarryImage, setPathCarryImage] = useState(false);
   const onCarryImageConsumed = useCallback(() => setPathCarryImage(false), []);
 
+  const liveShape = settingsRef.current.shape ?? shape;
   const imageCustomPath = useMemo(() => {
     if (!draft || draft.serialized === customPath) return customPath;
     return draft.serialized;
@@ -772,7 +780,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
         <PretextColumn
           P={P}
           item={item}
-          shape={shape}
+          shape={liveShape}
           customPath={customPath}
           pathFit={pathFit}
           viewBox={viewBox}

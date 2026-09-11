@@ -143,12 +143,13 @@ ${curveCss}
 const PX_PER_SEC_PER_SPEED_UNIT = 30;
 const MIN_CONTENT_SEQUENCE_REPEAT = 3;
 const MAX_CONTENT_SEQUENCE_REPEAT = 12;
+const MAX_CURVE_CONTENT_SEQUENCE_REPEAT = 96;
 const OUTER_SET_COPIES = 3;
 const DEFAULT_CAP_HEIGHT_RATIO = 0.72;
 const CURVE_AMPLITUDE_SCALE = 100;
 const CURVE_FREQUENCY_SCALE = 10;
 
-const normalizeCurveAmplitude = (value: number): number => Math.max(0, value) / CURVE_AMPLITUDE_SCALE;
+const normalizeCurveAmplitude = (value: number): number => value / CURVE_AMPLITUDE_SCALE;
 const normalizeCurveFrequency = (value: number): number => Math.max(0, value) / CURVE_FREQUENCY_SCALE;
 
 const restartTrackAnimation = (track: HTMLElement) => {
@@ -235,7 +236,9 @@ type WaveArcLut = {
 // Invert s(x) = ∫ sqrt(1 + (A k cos(k t))²) dt so glyphs keep their layout
 // advance along the curve instead of along horizontal x.
 const buildWaveArcLut = (amplitude: number, k: number, samples: number): WaveArcLut | null => {
-  if (k <= 0 || amplitude <= 0 || samples < 2) return null;
+  // Arc length depends on |slope|; keep sign out of the zero-guard so negative
+  // amplitude still gets a LUT (and inverts the wave via signed y/slope later).
+  if (k <= 0 || Math.abs(amplitude) <= 0 || samples < 2) return null;
   const wavelength = (2 * Math.PI) / k;
   const x = new Float64Array(samples + 1);
   const s = new Float64Array(samples + 1);
@@ -249,6 +252,12 @@ const buildWaveArcLut = (amplitude: number, k: number, samples: number): WaveArc
     s[i + 1] = s[i] + (ds(t0) + ds(t1)) * 0.5 * dx;
   });
   return { wavelength, periodArc: s[samples], x, s };
+};
+
+const getWaveArcRatio = (amplitude: number, k: number): number => {
+  const lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
+  if (!lut || lut.wavelength <= 0) return 1;
+  return lut.periodArc / lut.wavelength;
 };
 
 const xFromArcLength = (lut: WaveArcLut, targetS: number): number => {
@@ -274,15 +283,19 @@ const buildCurveBackgroundPath = (
   amplitude: number,
   frequency: number,
   centerY: number,
+  extendX = 0,
 ): string => {
   const periods = Math.max(0, frequency);
   const k = width > 0 ? (2 * Math.PI * periods) / width : 0;
   const yAt = (x: number) => centerY + amplitude * Math.sin(k * x);
   const dyAt = (x: number) => amplitude * k * Math.cos(k * x);
-  const segments = Math.max(4, Math.ceil(periods * 4));
+  const startX = -extendX;
+  const endX = width + extendX;
+  const span = endX - startX;
+  const segments = Math.max(4, Math.ceil(periods * 4 * (span / Math.max(width, 1))));
   const curveParts = Array.from({ length: segments }, (_, i) => {
-    const x0 = (i / segments) * width;
-    const x1 = ((i + 1) / segments) * width;
+    const x0 = startX + (i / segments) * span;
+    const x1 = startX + ((i + 1) / segments) * span;
     const dx = x1 - x0;
     const y0 = yAt(x0);
     const y1 = yAt(x1);
@@ -292,7 +305,7 @@ const buildCurveBackgroundPath = (
     const c2y = y1 - (dyAt(x1) * dx) / 3;
     return `C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${x1.toFixed(2)} ${y1.toFixed(2)}`;
   });
-  return [`M0 ${yAt(0).toFixed(2)}`, ...curveParts].join(' ');
+  return [`M${startX.toFixed(2)} ${yAt(startX).toFixed(2)}`, ...curveParts].join(' ');
 };
 
 const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOffsetY, imageGapPx, isCurve }: MarqueeTextItemViewProps) => {
@@ -477,9 +490,19 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       if (hasContent && containerWidth > 0 && rawSetWidth > 0) {
         const singleCycleWidth = rawSetWidth / contentSequenceRepeat;
         if (singleCycleWidth > 0) {
+          let coverageWidth = containerWidth;
+          let maxRepeat = MAX_CONTENT_SEQUENCE_REPEAT;
+          if (isCurveLayout) {
+            const amplitude = containerWidth * amplitudeRatioRef.current;
+            const periods = curvePeriodsRef.current;
+            const k = periods > 0 ? (2 * Math.PI * periods) / containerWidth : 0;
+            const arcRatio = getWaveArcRatio(amplitude, k);
+            coverageWidth = Math.max(containerWidth, (arcRatio * containerWidth) / (OUTER_SET_COPIES - 1));
+            maxRepeat = MAX_CURVE_CONTENT_SEQUENCE_REPEAT;
+          }
           const targetRepeat = Math.min(
-            MAX_CONTENT_SEQUENCE_REPEAT,
-            Math.max(MIN_CONTENT_SEQUENCE_REPEAT, Math.ceil(containerWidth / singleCycleWidth) + 1),
+            maxRepeat,
+            Math.max(MIN_CONTENT_SEQUENCE_REPEAT, Math.ceil(coverageWidth / singleCycleWidth) + 1),
           );
           if (targetRepeat !== contentSequenceRepeat) {
             setContentSequenceRepeat(targetRepeat);
@@ -516,7 +539,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       window.removeEventListener('pageshow', onVisible);
       window.removeEventListener('focus', onVisible);
     };
-  }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx]);
+  }, [useMarqueeTrack, contentKey, contentSequenceRepeat, hasContent, capHeightPx, isCurveLayout, amplitudeRatio, curvePeriods]);
 
   useLayoutEffect(() => {
     const ribbon = ribbonRef.current;
@@ -627,6 +650,14 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
         wave.lut = buildWaveArcLut(amplitude, k, WAVE_ARC_LUT_SAMPLES);
       }
 
+      // Flat path: drop every leftover wave transform. Viewport culling alone
+      // would skip off-screen glyphs and leave their previous dx/dy visible as
+      // artifacts once padding collapses (amplitude 30 → 0).
+      if (Math.abs(amplitude) <= 0 || k <= 0) {
+        clearWaveTransforms();
+        return;
+      }
+
       const track = trackRef.current;
       const trackTx = track ? readTranslateX(getComputedStyle(track).transform) : 0;
       const wrapperRect = wrapper.getBoundingClientRect();
@@ -638,7 +669,12 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
 
       for (const { item, glyphs } of wave.itemsCache) {
         const itemRect = item.getBoundingClientRect();
-        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) continue;
+        if (itemRect.right < viewLeft || itemRect.left > viewRight + extraRight) {
+          // Clear so arc-length remaps from a prior higher amplitude cannot
+          // keep pulling culled glyphs into the visible band.
+          for (const glyph of glyphs) clearWaveTransform(glyph.inner);
+          continue;
+        }
         for (const glyph of glyphs) {
           const localX = glyph.layoutLocalX + trackTx;
           const xPath = wave.lut ? xFromArcLength(wave.lut, localX) : localX;
@@ -724,7 +760,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   };
 
   const curvePaddingPercent = isCurveLayout
-    ? amplitudeRatio * 100
+    ? Math.abs(amplitudeRatio) * 100
     : 0;
   const ribbonHeightCss = scaled(ribbonWidth);
   const bandStyle: CSSProperties = {
@@ -742,18 +778,24 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     minHeight: ribbonHeightCss,
   };
   const curveAmplitudePx = curveWidthPx * amplitudeRatio;
+  const curveAmplitudeAbsPx = Math.abs(curveAmplitudePx);
   const curveStrokeWidth = ribbonHeightPx > 0 ? ribbonHeightPx : curveBandHeightPx;
   // Keep content band >= stroke so overflow:hidden does not clip sine peaks.
   const curveContentBandPx = Math.max(curveBandHeightPx, curveStrokeWidth);
+  // Center with |amplitude| so a negative (inverted) wave still fits in the viewBox.
+  const curveCenterY = curveAmplitudeAbsPx + curveContentBandPx / 2;
+  // Past-edge path so caps sit outside the clipped band (see buildCurveBackgroundPath).
+  const curvePathExtendX = Math.max(curveStrokeWidth, 1);
   const curveBgPath = isCurveLayout && curveWidthPx > 0 && curveContentBandPx > 0
     ? buildCurveBackgroundPath(
       curveWidthPx,
       curveAmplitudePx,
       curvePeriods,
-      curveAmplitudePx + curveContentBandPx / 2,
+      curveCenterY,
+      curvePathExtendX,
     )
     : '';
-  const curveViewBoxH = curveAmplitudePx * 2 + curveContentBandPx;
+  const curveViewBoxH = curveAmplitudeAbsPx * 2 + curveContentBandPx;
   const curveBgSvg = curveBgPath ? (
     <svg
       className={`${P}-curve-bg`}
@@ -766,7 +808,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
         fill="none"
         stroke={backgroundColor}
         strokeWidth={curveStrokeWidth}
-        strokeLinecap="round"
+        strokeLinecap="butt"
         strokeLinejoin="round"
       />
     </svg>

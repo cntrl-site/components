@@ -203,13 +203,20 @@ export function PretextColumn({
   }, [unitRings, exceedsEditViewBox, legacyRefBox, viewBox.width, viewBox.height, box.width, box.height]);
 
   const committedUnitRings = useMemo(() => {
+    if (draftContours) {
+      const drawn = flattenContours(draftContours);
+      if (drawn.length) {
+        const mapped = mapToViewBox(drawn, viewBox);
+        return shape === 'circle' ? letterboxUnitRings(mapped, box) : mapped;
+      }
+    }
     const spec = imageCustomPath.trim();
     const parsed = spec ? parsePathSpec(spec, pathFit, viewBox) : null;
     const base = parsed && parsed.length
       ? parsed
       : getPresetRings(shape === 'custom' ? 'rectangle' : shape);
     return shape === 'circle' ? letterboxUnitRings(base, box) : base;
-  }, [shape, imageCustomPath, pathFit, viewBox, box.width, box.height]);
+  }, [draftContours, shape, imageCustomPath, pathFit, viewBox, box.width, box.height]);
 
   const imageRings = useMemo(() => {
     if (!exceedsEditViewBox || box.width <= 0 || box.height <= 0) return committedUnitRings;
@@ -300,8 +307,9 @@ export function PretextColumn({
     spaceSpan.textContent = ' ';
     fragment.appendChild(spaceSpan);
 
+    const capProbeChar = dropCapChar || 'H';
     const capSpan = document.createElement('span');
-    capSpan.textContent = dropCapChar || 'H';
+    capSpan.textContent = capProbeChar;
     capSpan.style.lineHeight = '1';
     fragment.appendChild(capSpan);
 
@@ -313,14 +321,70 @@ export function PretextColumn({
     const rawLineHeight = Number.isNaN(parsedLineHeight) ? fontSize * 1.2 : parsedLineHeight;
     const lineHeight = Math.max(rawLineHeight, fontSize);
 
-    capSpan.style.fontSize = `${lineHeight * dropCapSize}px`;
+    const ascentProbe = document.createElement('span');
+    ascentProbe.textContent = capProbeChar;
+    ascentProbe.style.lineHeight = `${lineHeight}px`;
+    const ascentMarker = document.createElement('span');
+    ascentMarker.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    ascentProbe.appendChild(ascentMarker);
+    element.appendChild(ascentProbe);
+
+    const probeTop = ascentProbe.getBoundingClientRect().top;
+    const markerTop = ascentMarker.getBoundingClientRect().top;
+    const ascent = Math.max(1, markerTop - probeTop);
+    ascentProbe.remove();
+
+    // Tight capital ink height (cap-height). Sizing by line-box ascent makes the
+    // visible letter short of N lines — same model as CSS initial-letter.
+    let capHeight = ascent * 0.8;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const fontShorthand = (size: number) => (
+      `${computed.fontStyle} ${computed.fontWeight} ${size}px ${computed.fontFamily}`
+    );
+    if (ctx) {
+      ctx.font = fontShorthand(fontSize);
+      const bodyInk = ctx.measureText(capProbeChar).actualBoundingBoxAscent;
+      if (bodyInk > 0) capHeight = bodyInk;
+    }
+
+    const targetCapHeight = dropCapSize > 1
+      ? (dropCapSize - 1) * lineHeight + capHeight
+      : capHeight;
+    let dropCapFontSize = fontSize * (targetCapHeight / capHeight);
+
+    // Remeasure ink at the trial size — ratio is not perfectly linear.
+    if (ctx) {
+      ctx.font = fontShorthand(dropCapFontSize);
+      const trialInk = ctx.measureText(capProbeChar).actualBoundingBoxAscent;
+      if (trialInk > 0) dropCapFontSize = dropCapFontSize * (targetCapHeight / trialInk);
+    }
+
+    capSpan.style.fontSize = `${dropCapFontSize}px`;
+    capSpan.style.lineHeight = `${dropCapFontSize}px`;
+    const capMarker = document.createElement('span');
+    capMarker.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    capSpan.appendChild(capMarker);
+    const dropAscent = Math.max(1, capMarker.getBoundingClientRect().top - capSpan.getBoundingClientRect().top);
+    capMarker.remove();
+
+    // `ascent` is measured with the body line-height, so it already includes half-leading.
+    const nthBaselineFromTop = (dropCapSize - 1) * lineHeight + ascent;
+    const dropCapTopAdjust = nthBaselineFromTop - dropAscent;
 
     const widths = spans.map(span => span.getBoundingClientRect().width);
     const spaceWidth = spaceSpan.getBoundingClientRect().width;
     const capWidth = dropCapChar ? capSpan.getBoundingClientRect().width : 0;
 
     element.replaceChildren();
-    setMetrics({ widths, spaceWidth, lineHeight, capWidth });
+    setMetrics({
+      widths,
+      spaceWidth,
+      lineHeight,
+      capWidth,
+      dropCapFontSize,
+      dropCapTopAdjust,
+    });
   }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width]);
 
   const capInset = metrics && dropCapChar ? metrics.capWidth + metrics.lineHeight * DROP_CAP_GAP : 0;
@@ -383,7 +447,8 @@ export function PretextColumn({
     });
   }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan]);
 
-  const lineHeightPx = metrics ? metrics.lineHeight * appliedScale : 0;
+  const dropCapFontSizePx = metrics ? metrics.dropCapFontSize * appliedScale : 0;
+  const dropCapTopAdjustPx = metrics ? metrics.dropCapTopAdjust * appliedScale : 0;
   const textAlign: React.CSSProperties['textAlign'] = align === 'justify' ? 'left' : align;
 
   const showPathEditor = Boolean(pathEditor && draftContours && box.width > 0 && box.height > 0);
@@ -427,8 +492,7 @@ export function PretextColumn({
   const pathPreservedTransform = (() => {
     const anchor = imagePathAnchorRef.current;
     if (
-      pathDragActive
-      || pathCarryImage
+      pathCarryImage
       || !imageEditor
       || !naturalImageSize
       || !committedShapeImageBounds
@@ -437,7 +501,7 @@ export function PretextColumn({
     ) {
       return null;
     }
-    if (anchor.shape !== shape) {
+    if (anchor.shape !== shape && shape !== 'custom') {
       return null;
     }
     return preserveImageTransformAcrossBoundsChange(
@@ -483,30 +547,18 @@ export function PretextColumn({
     onCarryImageConsumed,
   ]);
 
-  const pathDragLiveTransform = useMemo(() => {
-    if (!pathDragActive || pathCarryImage || !naturalImageSize || !committedShapeImageBounds) return null;
-    const anchor = imagePathAnchorRef.current;
-    if (!anchor) return null;
-    return preserveImageTransformAcrossBoundsChange(
-      anchor.bounds,
-      committedShapeImageBounds,
-      naturalImageSize,
-      anchor.focalX,
-      anchor.focalY,
-      anchor.scale,
-    );
-  }, [
-    pathDragActive,
-    pathCarryImage,
-    naturalImageSize,
-    committedShapeImageBounds,
-    imageCustomPath,
-    imageRings,
-  ]);
-
-  const activeImageFocalX = pathDragLiveTransform?.focalX ?? pathPreservedTransform?.focalX ?? imageFocalX;
-  const activeImageFocalY = pathDragLiveTransform?.focalY ?? pathPreservedTransform?.focalY ?? imageFocalY;
-  const activeImageScale = pathDragLiveTransform?.scale ?? pathPreservedTransform?.scale ?? imageScale;
+  const imageAnchor = imagePathAnchorRef.current;
+  const freezeImage = Boolean(pathDragActive && !pathCarryImage && imageAnchor && !pathPreservedTransform);
+  const activeImageFocalX = freezeImage && imageAnchor
+    ? imageAnchor.focalX
+    : (pathPreservedTransform?.focalX ?? imageFocalX);
+  const activeImageFocalY = freezeImage && imageAnchor
+    ? imageAnchor.focalY
+    : (pathPreservedTransform?.focalY ?? imageFocalY);
+  const activeImageScale = freezeImage && imageAnchor
+    ? imageAnchor.scale
+    : (pathPreservedTransform?.scale ?? imageScale);
+  const placementBounds = freezeImage && imageAnchor ? imageAnchor.bounds : committedShapeImageBounds;
 
   const shapeFillPath = useMemo(() => {
     if (!(box.width > 0) || !(box.height > 0)) return '';
@@ -532,7 +584,7 @@ export function PretextColumn({
   ]);
   const shapeImagePath = useMemo(() => {
     if (!imageUrl || !(box.width > 0) || !(box.height > 0)) return '';
-    let unit = resolveUnitContours(imageCustomPath, null, pathFit, viewBox, shape, box);
+    let unit = resolveUnitContours(imageCustomPath, draftContours, pathFit, viewBox, shape, box);
     if (exceedsEditViewBox) {
       const ref = legacyRefBox ?? box;
       const scaleX = viewBox.width / ref.width;
@@ -543,6 +595,7 @@ export function PretextColumn({
   }, [
     imageUrl,
     imageCustomPath,
+    draftContours,
     pathFit,
     viewBox,
     shape,
@@ -552,19 +605,18 @@ export function PretextColumn({
     legacyRefBox,
     imageRings,
   ]);
-  const shapeImageBounds = committedShapeImageBounds;
   const clipId = `${imageId}-clip`;
   const imageRect = useMemo(() => {
-    if (!shapeImageBounds) return null;
-    const natural = naturalImageSize ?? { width: shapeImageBounds.width, height: shapeImageBounds.height };
-    const size = coveredImageSize(shapeImageBounds, natural, activeImageScale);
+    if (!placementBounds) return null;
+    const natural = naturalImageSize ?? { width: placementBounds.width, height: placementBounds.height };
+    const size = coveredImageSize(placementBounds, natural, activeImageScale);
     return {
-      x: imageOffsetFromFocal(shapeImageBounds.width, size.width, activeImageFocalX),
-      y: imageOffsetFromFocal(shapeImageBounds.height, size.height, activeImageFocalY),
+      x: imageOffsetFromFocal(placementBounds.width, size.width, activeImageFocalX),
+      y: imageOffsetFromFocal(placementBounds.height, size.height, activeImageFocalY),
       width: size.width,
       height: size.height,
     };
-  }, [shapeImageBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
+  }, [placementBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
 
   return (
     <div className={`${P}-column`} ref={setColumnEl}>
@@ -576,7 +628,7 @@ export function PretextColumn({
           aria-hidden
         >
           <path className={`${P}-shape-fill-path`} d={shapeFillPath} fillRule="evenodd" />
-          {imageUrl && shapeImagePath && shapeImageBounds && imageRect ? (
+          {imageUrl && shapeImagePath && placementBounds && imageRect ? (
             <>
               <defs>
                 <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
@@ -585,8 +637,8 @@ export function PretextColumn({
               </defs>
               <image
                 href={imageUrl}
-                x={shapeImageBounds.x + imageRect.x}
-                y={shapeImageBounds.y + imageRect.y}
+                x={placementBounds.x + imageRect.x}
+                y={placementBounds.y + imageRect.y}
                 width={imageRect.width}
                 height={imageRect.height}
                 preserveAspectRatio="none"
@@ -647,10 +699,10 @@ export function PretextColumn({
           aria-hidden
           style={{
             ...typography,
-            top: `${result.capTop}px`,
+            top: `${result.capTop + dropCapTopAdjustPx}px`,
             left: `${result.capLeft}px`,
-            fontSize: `${lineHeightPx * dropCapSize}px`,
-            lineHeight: `${lineHeightPx * dropCapSize}px`,
+            fontSize: `${dropCapFontSizePx}px`,
+            lineHeight: `${dropCapFontSizePx}px`,
           }}
         >
           {dropCapChar}
@@ -685,11 +737,11 @@ export function PretextColumn({
               onCommit={pathEditor.onCommit}
             />
           )}
-          {imageEditor && shapeImageBounds && (
+          {imageEditor && placementBounds && (
             <PretextImageEditor
               P={P}
               box={{ width: editorRect.width, height: editorRect.height }}
-              bounds={shapeImageBounds}
+              bounds={placementBounds}
               natural={naturalImageSize}
               imageUrl={imageUrl}
               maskPath={shapeImagePath}

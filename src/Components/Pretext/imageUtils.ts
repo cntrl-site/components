@@ -65,10 +65,18 @@ export const imageOffsetFromFocal = (
   focal: number,
 ): number => (boundsSize - renderedSize) * focal;
 
-export const focalFromImageOffset = (boundsSize: number, renderedSize: number, offset: number): number => {
+export const focalFromImageOffset = (
+  boundsSize: number,
+  renderedSize: number,
+  offset: number,
+  options?: { clamp?: boolean },
+): number => {
   const span = boundsSize - renderedSize;
+  if (Math.abs(span) < 1e-6) return 0.5;
+  const focal = offset / span;
+  if (options?.clamp === false) return focal;
   if (Math.abs(span) < MIN_PANNABLE_SLACK) return 0.5;
-  return clamp01(offset / span);
+  return clamp01(focal);
 };
 
 export const preserveImageTransformAcrossBoundsChange = (
@@ -90,8 +98,8 @@ export const preserveImageTransformAcrossBoundsChange = (
   );
   const newSize = coveredImageSize(nextBounds, natural, nextScale);
   return {
-    focalX: focalFromImageOffset(nextBounds.width, newSize.width, absX - nextBounds.x),
-    focalY: focalFromImageOffset(nextBounds.height, newSize.height, absY - nextBounds.y),
+    focalX: focalFromImageOffset(nextBounds.width, newSize.width, absX - nextBounds.x, { clamp: false }),
+    focalY: focalFromImageOffset(nextBounds.height, newSize.height, absY - nextBounds.y, { clamp: false }),
     scale: nextScale,
   };
 };

@@ -27,6 +27,7 @@ import {
   snapHandlePoint,
   snapValue,
   smoothTangent,
+  segmentIsStraight,
   toggleNodeSmooth,
 } from './vecContours';
 import type {
@@ -44,7 +45,8 @@ import type {
 } from './Pretext';
 import { bboxCorner, oppositeScaleCorner, scaleHandlePoint } from './imageUtils';
 
-const ADD_POINT_REACH = 24;
+const ADD_POINT_REACH = 10;
+const ADD_POINT_HIT_STROKE = ADD_POINT_REACH * 2;
 const ANCHOR_SIZE = 7;
 const CLICK_SLOP_PX = 4;
 const GRAB_RADIUS = 9;
@@ -55,6 +57,8 @@ const NODE_SNAP_REACH = 14;
 const NUDGE_STEP = 1;
 const SCALE_GRAB_SIZE = 14;
 const SCALE_HANDLE_SIZE = 8;
+
+type AddPointPreview = { point: Pt; curved: boolean };
 
 export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBox, uniformStretch = false, stage, onStageChange, onSelectionChange, onChange, onCommit }: PathEditorProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -67,6 +71,7 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
   const groupDragRef = useRef<GroupDrag | null>(null);
   const [selection, setSelection] = useState<PathSelection[]>([]);
   const [snapGuides, setSnapGuides] = useState<SnapGuide[]>(NO_GUIDES);
+  const [addPointPreview, setAddPointPreview] = useState<AddPointPreview | null>(null);
   const showSnapGuides = useCallback((next: SnapGuide[]) => {
     setSnapGuides(current => (sameGuides(current, next) ? current : next));
   }, []);
@@ -164,6 +169,47 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
       : next;
     onCommit(payload, options);
   }, [onCommit, uniformStretch, viewBox, box, stretchOffsetX, stretchOffsetY, stretchScaleX, stretchScaleY]);
+
+  const clearAddPointPreview = useCallback(() => {
+    setAddPointPreview(null);
+  }, []);
+
+  const updateAddPointPreview = useCallback((clientX: number, clientY: number, controlsVisible: boolean) => {
+    if (!controlsVisible
+      || dragRef.current
+      || shapeDragRef.current
+      || shapeScaleRef.current
+      || groupDragRef.current) {
+      clearAddPointPreview();
+      return;
+    }
+    const local = toLocalPx(clientX, clientY);
+    const pixelContours = mapContours(contoursRef.current, toPx);
+    for (const contour of pixelContours) {
+      for (const node of contour.nodes) {
+        if (Math.hypot(node.p.x - local.x, node.p.y - local.y) <= GRAB_RADIUS) {
+          clearAddPointPreview();
+          return;
+        }
+      }
+    }
+    const hit = nearestSegmentHit(pixelContours, local);
+    if (!hit || hit.distance > ADD_POINT_REACH) {
+      clearAddPointPreview();
+      return;
+    }
+    const contour = pixelContours[hit.contour];
+    const from = contour?.nodes[hit.segment];
+    const to = contour?.nodes[(hit.segment + 1) % (contour?.nodes.length ?? 1)];
+    const curved = Boolean(from && to && !segmentIsStraight(from, to));
+    setAddPointPreview(current => (
+      current
+      && current.curved === curved
+      && Math.hypot(current.point.x - hit.point.x, current.point.y - hit.point.y) < 0.25
+        ? current
+        : { point: hit.point, curved }
+    ));
+  }, [toLocalPx, toPx, clearAddPointPreview]);
 
   const onPointerMove = (event: React.PointerEvent) => {
     const freeDrag = event.metaKey || event.ctrlKey;
@@ -268,7 +314,11 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
       return;
     }
     const drag = dragRef.current;
-    if (!drag || event.pointerId !== drag.pointerId) return;
+    if (!drag || event.pointerId !== drag.pointerId) {
+      updateAddPointPreview(event.clientX, event.clientY, selection.length > 0 || shapeArmed);
+      return;
+    }
+    clearAddPointPreview();
     event.stopPropagation();
     event.preventDefault();
     const point = toPath(event.clientX, event.clientY);
@@ -382,6 +432,7 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
   const startShapeDrag = (event: React.PointerEvent) => {
     event.stopPropagation();
     event.preventDefault();
+    clearAddPointPreview();
     svgRef.current?.focus({ preventScroll: true });
     shapeDragRef.current = {
       pointerId: event.pointerId,
@@ -396,6 +447,7 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
   const startShapeScale = (event: React.PointerEvent, corner: ScaleCorner) => {
     event.stopPropagation();
     event.preventDefault();
+    clearAddPointPreview();
     svgRef.current?.focus({ preventScroll: true });
     setSelection([]);
     onStageChange('shape');
@@ -423,6 +475,7 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
   ) => {
     event.stopPropagation();
     event.preventDefault();
+    clearAddPointPreview();
     svgRef.current?.focus({ preventScroll: true });
     const node = contours[contourIndex]?.nodes[nodeIndex];
     if (!node) return;
@@ -477,6 +530,7 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
   const insertNode = (event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
+    clearAddPointPreview();
     const pixelContours = mapContours(contours, toPx);
     const hit = nearestSegmentHit(pixelContours, toLocalPx(event.clientX, event.clientY));
     if (!hit || hit.distance > ADD_POINT_REACH) return;
@@ -556,6 +610,7 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
       onKeyDown={onKeyDown}
       onPointerDown={() => svgRef.current?.focus({ preventScroll: true })}
       onPointerMove={onPointerMove}
+      onPointerLeave={clearAddPointPreview}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
@@ -575,7 +630,6 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
         }}
         onClick={insertNode}
       />
-      {showControls && <path className={`${P}-editor-hit`} d={outline} onClick={insertNode} />}
       {showControls && <path className={`${P}-editor-outline`} d={outline} />}
       {showControls && snapGuides.map((guide, index) => (
         <line
@@ -595,6 +649,24 @@ export function PretextPathEditor({ P, box, viewBox, contours, snap, stretchToBo
         onPointerDown={startShapeDrag}
         onClick={insertNode}
       />
+      {showControls && (
+        <path
+          className={`${P}-editor-hit`}
+          d={outline}
+          style={{ strokeWidth: ADD_POINT_HIT_STROKE }}
+          onClick={insertNode}
+        />
+      )}
+      {showControls && addPointPreview && (
+        <rect
+          className={`${P}-editor-add-preview`}
+          x={addPointPreview.point.x - ANCHOR_SIZE / 2}
+          y={addPointPreview.point.y - ANCHOR_SIZE / 2}
+          width={ANCHOR_SIZE}
+          height={ANCHOR_SIZE}
+          rx={addPointPreview.curved ? ANCHOR_SIZE / 2 : 0}
+        />
+      )}
       {showControls && contours.map((contour, contourIndex) => contour.nodes.map((node, nodeIndex) => {
         const isSelected = selection.some(entry => entry.contour === contourIndex && entry.node === nodeIndex);
         const anchor = toPx(node.p);
