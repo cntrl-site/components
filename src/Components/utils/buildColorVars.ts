@@ -13,19 +13,23 @@ export const buildColorVars = <K extends string>(
     vars[`--${P}-${varSuffix}`] = defaults[key as K];
   }
 
+  const states = new Set(stateKeys);
   if (stateOverrides) {
-    for (const state of stateKeys) {
-      const overrides = stateOverrides[state];
-      if (!overrides) continue;
-      for (const [key, varSuffix] of Object.entries(colorVarMap)) {
-        const val = overrides[key as K];
-        if (val !== undefined) {
-          vars[`--${P}-${state}-${varSuffix}`] = val;
-        }
+    for (const state of Object.keys(stateOverrides)) {
+      states.add(state);
+    }
+  }
+
+  for (const state of states) {
+    const overrides = stateOverrides?.[state];
+    if (!overrides) continue;
+    for (const [key, varSuffix] of Object.entries(colorVarMap)) {
+      const val = overrides[key as K];
+      if (val !== undefined) {
+        vars[`--${P}-${state}-${varSuffix}`] = val;
       }
     }
   }
 
   return vars as CSSProperties;
 };
-
