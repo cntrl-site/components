@@ -86,7 +86,7 @@ const schema: ComponentSchemaV1 = {
         tooltip: 'Height of the drop cap, in lines of body text.',
         min: 1,
         max: 8,
-        step: 0.5,
+        step: 1,
         display: { type: 'common-numeric-input' },
       },
       image: {

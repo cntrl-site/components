@@ -181,6 +181,8 @@ export type ColumnMetrics = {
   spaceWidth: number;
   lineHeight: number;
   capWidth: number;
+  dropCapFontSize: number;
+  dropCapTopAdjust: number;
 };
 
 export type ColumnProps = {
@@ -377,10 +379,16 @@ const getCSS = (P: string): string => `
   fill: none;
   stroke: transparent;
   pointer-events: none;
-  cursor: copy;
 }
 .${P}-editor-armed .${P}-editor-hit {
   pointer-events: stroke;
+}
+.${P}-editor-add-preview {
+  fill: #FFFFFF;
+  stroke: #FF5C02;
+  stroke-width: 1.5;
+  pointer-events: none;
+  opacity: 0.85;
 }
 .${P}-editor-grab {
   fill: transparent;
