@@ -5,6 +5,7 @@ import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textS
 
 const MENU_ANIM_MS = 300;
 const NAV_STATE_ANIM_MS = 300;
+const NAV_SWITCH_ENTER_EXTRA = 8 / 1440;
 const PADDING_HANDLE_SIZE = 0.004;
 const MIN_TEXT_WIDTH_PX = 50;
 const ARTICLE_DESIGN_WIDTH = 1440;
@@ -726,12 +727,8 @@ type BurgerProps = {
   isEditMode?: boolean;
   isPreviewMode?: boolean;
   activeEvent?: string;
-  /**
-   * Editor-controlled visual state (`default` | `compact` | `open`), matching a
-   * `statePanels` id. Compact is only used when a wrapper pins it (the
-   * `switch` / sticky compact clone). When omitted the closed bar stays default.
-   */
   currentState?: string | null;
+  isSwitchClone?: boolean;
   portalId?: string;
   layoutId?: string;
   pages?: BurgerPageRef[];
@@ -1258,6 +1255,9 @@ function getCSS(P: string): string {
   line-height: 0;
   font-size: 0;
 }
+.${P}-nav-state-anim {
+  transition: margin-top ${NAV_STATE_ANIM_MS}ms ease;
+}
 .${P}-nav-state-anim .${P}-nav-bar {
   transition:
     background-color ${MENU_ANIM_MS}ms ease,
@@ -1509,6 +1509,7 @@ export function Burger({
   isPreviewMode,
   activeEvent,
   currentState: currentStateProp,
+  isSwitchClone = false,
   unavailableStates = [],
   layoutId,
   pages,
@@ -2102,6 +2103,12 @@ export function Burger({
     minHeight: scalingValue(closedPanelHeight, isEditor),
     [`--${P}-panel-height`]: scalingValue(closedPanelHeight, isEditor),
   };
+  const switchCloneEnterOffset = isSwitchClone
+    && navigationState === 'default'
+    && pinnedState !== 'open'
+    && !isPreviewMode
+    ? scaled(panelHeight + NAV_SWITCH_ENTER_EXTRA)
+    : '0px';
 
   return (
     <div
@@ -2112,6 +2119,7 @@ export function Burger({
         height: '100%',
         lineHeight: 0,
         fontSize: 0,
+        marginTop: switchCloneEnterOffset,
         ...colorVars,
       }}
     >

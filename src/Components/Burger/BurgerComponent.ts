@@ -878,7 +878,7 @@ export const BurgerComponent = {
   element: Burger,
   id: 'basic-burger',
   name: 'Basic Burger',
-  category: 'dev',
+  category: 'navigation',
   version: 1,
   layoutMode: 'navigation' as const,
   defaultSize: {
