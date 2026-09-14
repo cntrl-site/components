@@ -880,6 +880,10 @@ export const BurgerComponent = {
   name: 'Basic Burger',
   category: 'navigation',
   version: 1,
+  preview: {
+    type: 'image' as const,
+    url: 'https://cdn.cntrl.site/component-assets/Simple Burger.png',
+  },
   layoutMode: 'navigation' as const,
   defaultSize: {
     d: {
