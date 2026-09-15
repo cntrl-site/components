@@ -200,7 +200,7 @@ const schema = {
             label: { type: 'string' },
             anchor: { type: 'string' },
             openIn: { type: 'string' },
-            showIn: { type: 'string', enum: ['always', 'open only', 'open and compact', 'default and open'] },
+            showIn: { type: 'string', enum: ['Always', 'Open Only', 'Open and Compact', 'Default and Open', 'Default and Compact'] },
           },
         },
       },
@@ -224,7 +224,7 @@ const schema = {
       logoMaxHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Height',
+        title: 'Max Height',
         display: { type: 'numeric-input' },
         min: 0,
         max: 9999,
@@ -459,7 +459,7 @@ const schema = {
       compactLogoMaxHeight: {
         type: 'number',
         scope: 'layout',
-        title: 'Height',
+        title: 'Max Height',
         display: { type: 'numeric-input' },
         min: 0,
         max: 9999,
@@ -518,14 +518,14 @@ const schema = {
     },
     defaults: {
       link: [
-        { mode: 'page', page: '', url: '', label: 'Home', anchor: '', openIn: 'Same Tab', showIn: 'always' },
-        { mode: 'page', page: '', url: '', label: 'Works', anchor: '', openIn: 'Same Tab', showIn: 'always' },
-        { mode: 'page', page: '', url: '', label: 'About', anchor: '', openIn: 'Same Tab', showIn: 'always' },
-        { mode: 'page', page: '', url: '', label: 'Contact', anchor: '', openIn: 'Same Tab', showIn: 'always' },
+        { mode: 'page', page: '', url: '', label: 'Home', anchor: '', openIn: 'Same Tab', showIn: 'Always' },
+        { mode: 'page', page: '', url: '', label: 'Works', anchor: '', openIn: 'Same Tab', showIn: 'Always' },
+        { mode: 'page', page: '', url: '', label: 'About', anchor: '', openIn: 'Same Tab', showIn: 'Always' },
+        { mode: 'page', page: '', url: '', label: 'Contact', anchor: '', openIn: 'Same Tab', showIn: 'Always' },
       ],
       logo: {
         mode: 'On',
-        icon: null,
+        icon: 'https://cdn.cntrl.site/component-assets/hamburger-logo.svg',
       },
       backgroundColor: '#ffffff',
       logoColor: '#000000',
@@ -903,7 +903,7 @@ export const BurgerComponent = {
   sourceCode: burgerSourceRaw,
   assetsPaths: {
     content: [],
-    parameters: [{ path: 'logo.icon' }],
+    parameters: [{ path: 'logo.icon', placeholderEnabled: true }],
   },
   fontSettingsPaths: {
     content: [],

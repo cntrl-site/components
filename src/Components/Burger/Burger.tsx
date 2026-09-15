@@ -134,7 +134,7 @@ function resolveCurrentState(value?: string | null): BurgerVisualState | undefin
   return undefined;
 }
 
-type BurgerShowIn = 'always' | 'open only' | 'open and compact' | 'default and open';
+type BurgerShowIn = 'always' | 'open only' | 'open and compact' | 'default and open' | 'default and compact';
 
 function resolveLogoPosition(value?: string): BurgerLogoPosition {
   if (value === 'center' || value === 'right') return value;
@@ -146,6 +146,7 @@ function resolveShowIn(value?: string): BurgerShowIn {
   if (showIn === 'open only' || showIn === 'openonly') return 'open only';
   if (showIn === 'open and compact' || showIn === 'openandcompact') return 'open and compact';
   if (showIn === 'default and open' || showIn === 'defaultandopen') return 'default and open';
+  if (showIn === 'default and compact' || showIn === 'defaultandcompact') return 'default and compact';
   return 'always';
 }
 
@@ -155,8 +156,19 @@ function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigatio
       return false;
     case 'open and compact':
       return navigationState === 'compact';
+    case 'default and compact':
+      return true;
     case 'default and open':
       return navigationState === 'default';
+    default:
+      return true;
+  }
+}
+
+function isVisibleInOpenNav(item: BurgerLink): boolean {
+  switch (resolveShowIn(item.showIn)) {
+    case 'default and compact':
+      return false;
     default:
       return true;
   }
@@ -1031,6 +1043,11 @@ function getCSS(P: string): string {
   cursor: default;
   pointer-events: none;
 }
+.${P}-nav-slide {
+  position: relative;
+  transform: translateY(var(--cntrl-nav-slide, 0%));
+  transition: transform 320ms ease;
+}
 .${P}-nav-bar {
   position: relative;
   display: flex;
@@ -1236,6 +1253,8 @@ function getCSS(P: string): string {
   align-items: center;
   z-index: 3;
   pointer-events: auto;
+  transform: translateY(var(--cntrl-nav-slide, 0%));
+  transition: transform 320ms ease;
 }
 .${P}-nav-toggle-wrap-right {
   right: 0;
@@ -1942,7 +1961,7 @@ export function Burger({
 
   const showOpenNavControls = showControls && isOpen;
 
-  const renderOpenNavItems = (linkClassName: string) => items.map((item, index) => {
+  const renderOpenNavItems = (linkClassName: string) => items.filter(isVisibleInOpenNav).map((item, index) => {
     const { label, href, target } = resolveBurgerLink(item, pages);
     const linkNode = href ? (
       <a
@@ -2124,35 +2143,37 @@ export function Burger({
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
-      <div className={`${P}-nav-bar`} style={navBarStyle}>
-        {showLogo && logoSrc ? (
-          <div className={`${P}-nav-logo ${P}-nav-logo-${closedLogoPosition}`}>
-            {closedLogoPosition === 'left' ? renderNavEdgePadding('left') : null}
-            <div
-              className={`${P}-nav-logo-inner${isSvgLogo ? ` ${P}-nav-logo-tinted` : ''}`}
-              style={{
-                height: logoHeight,
-                ...(isSvgLogo ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoSrc) } : {}),
-              } as CSSProperties}
-            >
-              <img
-                src={logoSrc}
-                alt=""
-                className={`${P}-nav-logo-img`}
-              />
-              {isSvgLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
+      <div className={`${P}-nav-slide`}>
+        <div className={`${P}-nav-bar`} style={navBarStyle}>
+          {showLogo && logoSrc ? (
+            <div className={`${P}-nav-logo ${P}-nav-logo-${closedLogoPosition}`}>
+              {closedLogoPosition === 'left' ? renderNavEdgePadding('left') : null}
+              <div
+                className={`${P}-nav-logo-inner${isSvgLogo ? ` ${P}-nav-logo-tinted` : ''}`}
+                style={{
+                  height: logoHeight,
+                  ...(isSvgLogo ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoSrc) } : {}),
+                } as CSSProperties}
+              >
+                <img
+                  src={logoSrc}
+                  alt=""
+                  className={`${P}-nav-logo-img`}
+                />
+                {isSvgLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
+              </div>
+              {closedLogoPosition === 'right' ? renderNavEdgePadding('right') : null}
             </div>
-            {closedLogoPosition === 'right' ? renderNavEdgePadding('right') : null}
-          </div>
-        ) : null}
-        <nav
-          className={`${P}-nav-links`}
-          aria-label="Navigation"
-        >
-          <div className={`${P}-nav-links-inner`}>
-            {items.filter((item) => isVisibleInClosedNav(item, navigationState)).map((item, index) => renderNavLink(item, index))}
-          </div>
-        </nav>
+          ) : null}
+          <nav
+            className={`${P}-nav-links`}
+            aria-label="Navigation"
+          >
+            <div className={`${P}-nav-links-inner`}>
+              {items.filter((item) => isVisibleInClosedNav(item, navigationState)).map((item, index) => renderNavLink(item, index))}
+            </div>
+          </nav>
+        </div>
       </div>
       {overlay}
       <div className={`${P}-nav-toggle-wrap ${P}-nav-toggle-wrap-${toggleSide}`}>
