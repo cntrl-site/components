@@ -20,6 +20,8 @@ type BurgerLogo = {
 
 type BurgerLogoPosition = 'left' | 'center' | 'right';
 
+type BurgerShowInValue = string | Record<string, string>;
+
 type BurgerLink = {
   mode?: 'page' | 'url';
   page?: string;
@@ -27,7 +29,7 @@ type BurgerLink = {
   label?: string;
   anchor?: string;
   openIn?: string;
-  showIn?: string;
+  showIn?: BurgerShowInValue;
 };
 
 type BurgerPosition =
@@ -141,8 +143,19 @@ function resolveLogoPosition(value?: string): BurgerLogoPosition {
   return 'left';
 }
 
-function resolveShowIn(value?: string): BurgerShowIn {
-  const showIn = (value ?? 'always').trim().toLowerCase().replace(/[_-]+/g, ' ');
+function pickShowIn(value?: BurgerShowInValue, layoutId?: string): string | undefined {
+  if (value && typeof value === 'object') {
+    if (layoutId && typeof value[layoutId] === 'string') return value[layoutId];
+    for (const key in value) {
+      if (typeof value[key] === 'string') return value[key];
+    }
+    return undefined;
+  }
+  return value;
+}
+
+function resolveShowIn(value?: BurgerShowInValue, layoutId?: string): BurgerShowIn {
+  const showIn = (pickShowIn(value, layoutId) ?? 'always').trim().toLowerCase().replace(/[_-]+/g, ' ');
   if (showIn === 'open only' || showIn === 'openonly') return 'open only';
   if (showIn === 'open and compact' || showIn === 'openandcompact') return 'open and compact';
   if (showIn === 'default and open' || showIn === 'defaultandopen') return 'default and open';
@@ -150,8 +163,8 @@ function resolveShowIn(value?: string): BurgerShowIn {
   return 'always';
 }
 
-function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigationState): boolean {
-  switch (resolveShowIn(item.showIn)) {
+function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigationState, layoutId?: string): boolean {
+  switch (resolveShowIn(item.showIn, layoutId)) {
     case 'open only':
       return false;
     case 'open and compact':
@@ -165,8 +178,8 @@ function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigatio
   }
 }
 
-function isVisibleInOpenNav(item: BurgerLink): boolean {
-  switch (resolveShowIn(item.showIn)) {
+function isVisibleInOpenNav(item: BurgerLink, layoutId?: string): boolean {
+  switch (resolveShowIn(item.showIn, layoutId)) {
     case 'default and compact':
       return false;
     default:
@@ -1961,7 +1974,7 @@ export function Burger({
 
   const showOpenNavControls = showControls && isOpen;
 
-  const renderOpenNavItems = (linkClassName: string) => items.filter(isVisibleInOpenNav).map((item, index) => {
+  const renderOpenNavItems = (linkClassName: string) => items.filter((item) => isVisibleInOpenNav(item, layoutId)).map((item, index) => {
     const { label, href, target } = resolveBurgerLink(item, pages);
     const linkNode = href ? (
       <a
@@ -2170,7 +2183,7 @@ export function Burger({
             aria-label="Navigation"
           >
             <div className={`${P}-nav-links-inner`}>
-              {items.filter((item) => isVisibleInClosedNav(item, navigationState)).map((item, index) => renderNavLink(item, index))}
+              {items.filter((item) => isVisibleInClosedNav(item, navigationState, layoutId)).map((item, index) => renderNavLink(item, index))}
             </div>
           </nav>
         </div>

@@ -200,7 +200,7 @@ const schema = {
             label: { type: 'string' },
             anchor: { type: 'string' },
             openIn: { type: 'string' },
-            showIn: { type: 'string', enum: ['Always', 'Open Only', 'Open and Compact', 'Default and Open', 'Default and Compact'] },
+            showIn: { type: 'string', scope: 'layout', enum: ['Always', 'Open Only', 'Open and Compact', 'Default and Open', 'Default and Compact'] },
           },
         },
       },
