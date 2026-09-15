@@ -23,6 +23,13 @@ type BurgerLogoPosition = 'left' | 'center' | 'right';
 type BurgerShowInValue = string | Record<string, string>;
 
 type BurgerLink = {
+  link?: {
+    type?: 'url' | 'page' | 'anchor';
+    value?: string;
+    target?: string;
+    anchor?: string;
+    url?: string;
+  };
   mode?: 'page' | 'url';
   page?: string;
   url?: string;
@@ -204,26 +211,60 @@ function resolvePagePath(page: string, pages?: BurgerPageRef[]): string {
   return pages ? `/${page}` : page;
 }
 
+function isBlankTarget(target?: string): boolean {
+  const value = (target ?? '').toLowerCase();
+  return value === 'blank' || value === '_blank' || value.includes('new');
+}
+
+function getBurgerDest(item: BurgerLink): {
+  type: 'url' | 'page' | 'anchor';
+  value: string;
+  target?: '_blank';
+  anchor?: string;
+} {
+  const dest = item.link;
+  if (dest && typeof dest === 'object') {
+    const target = isBlankTarget(dest.target) ? '_blank' : undefined;
+    if (dest.type === 'url') {
+      return { type: 'url', value: dest.value ?? dest.url ?? '', target };
+    }
+    if (dest.type === 'anchor') {
+      return { type: 'anchor', value: dest.value ?? '', target };
+    }
+    if (dest.type === 'page') {
+      return { type: 'page', value: dest.value ?? '', target, anchor: dest.anchor };
+    }
+    if (typeof dest.url === 'string') {
+      return { type: 'url', value: dest.url, target };
+    }
+  }
+  const target = isBlankTarget(item.openIn) ? '_blank' : undefined;
+  if (item.mode === 'url') {
+    return { type: 'url', value: item.url ?? '', target };
+  }
+  return { type: 'page', value: item.page ?? '', target, anchor: item.anchor };
+}
+
 function resolveBurgerLink(item: BurgerLink, pages?: BurgerPageRef[]): {
   label: string;
   href: string;
   target?: '_blank';
 } {
   const label = item.label || 'Link';
-  const mode = item.mode === 'url' ? 'url' : 'page';
-  const openIn = (item.openIn ?? '').toLowerCase();
-  const target = openIn.includes('new') || openIn === 'blank' || openIn === '_blank'
-    ? '_blank'
-    : undefined;
+  const dest = getBurgerDest(item);
 
-  if (mode === 'url') {
-    return { label, href: item.url ?? '', target };
+  if (dest.type === 'url') {
+    return { label, href: dest.value, target: dest.target };
+  }
+  if (dest.type === 'anchor') {
+    const anchor = dest.value.replace(/^#/, '');
+    return { label, href: anchor ? `#${anchor}` : '', target: dest.target };
   }
 
-  const page = resolvePagePath(item.page ?? '', pages);
-  const anchor = (item.anchor ?? '').replace(/^#/, '');
+  const page = resolvePagePath(dest.value, pages);
+  const anchor = (dest.anchor ?? '').replace(/^#/, '');
   const href = anchor ? (page ? `${page}#${anchor}` : `#${anchor}`) : page;
-  return { label, href, target };
+  return { label, href, target: dest.target };
 }
 
 const BURGER_ICON_VIEWBOX = 24;
@@ -1451,12 +1492,15 @@ function handleLinkClick(
     event.preventDefault();
     event.stopPropagation();
     const resolved = resolveBurgerLink(item, pages);
+    const dest = getBurgerDest(item);
     onLinkNavigate({
-      mode: item.mode === 'url' ? 'url' : 'page',
+      mode: dest.type === 'url' ? 'url' : 'page',
       href: resolved.href || href,
-      page: item.page,
-      url: item.url,
-      anchor: (item.anchor ?? '').replace(/^#/, ''),
+      page: dest.type === 'page' ? dest.value : undefined,
+      url: dest.type === 'url' ? dest.value : undefined,
+      anchor: dest.type === 'anchor'
+        ? dest.value.replace(/^#/, '')
+        : (dest.anchor ?? '').replace(/^#/, ''),
       target: resolved.target,
     });
     onClose();

@@ -200,12 +200,16 @@ const schema = {
         items: {
           type: 'object',
           properties: {
-            mode: { type: 'string', enum: ['page', 'url'] },
-            page: { type: 'string' },
-            url: { type: 'string', message: 'Paste URL here...' },
+            link: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', enum: ['url', 'page', 'anchor'] },
+                value: { type: 'string', message: 'Paste URL here...' },
+                target: { type: 'string', enum: ['blank', 'self'] },
+                anchor: { type: 'string' },
+              },
+            },
             label: { type: 'string' },
-            anchor: { type: 'string' },
-            openIn: { type: 'string' },
             showIn: { type: 'string', scope: 'layout', enum: ['Always', 'Open Only', 'Open and Compact', 'Default and Open', 'Default and Compact'] },
           },
         },
@@ -524,10 +528,10 @@ const schema = {
     },
     defaults: {
       link: [
-        { mode: 'page', page: '', url: '', label: 'Home', anchor: '', openIn: 'Same Tab', showIn: defaultShowIn },
-        { mode: 'page', page: '', url: '', label: 'Works', anchor: '', openIn: 'Same Tab', showIn: defaultShowIn },
-        { mode: 'page', page: '', url: '', label: 'About', anchor: '', openIn: 'Same Tab', showIn: defaultShowIn },
-        { mode: 'page', page: '', url: '', label: 'Contact', anchor: '', openIn: 'Same Tab', showIn: defaultShowIn },
+        { link: { type: 'page', value: '', target: 'self' }, label: 'Home', showIn: defaultShowIn },
+        { link: { type: 'page', value: '', target: 'self' }, label: 'Works', showIn: defaultShowIn },
+        { link: { type: 'page', value: '', target: 'self' }, label: 'About', showIn: defaultShowIn },
+        { link: { type: 'page', value: '', target: 'self' }, label: 'Contact', showIn: defaultShowIn },
       ],
       logo: {
         mode: 'On',
