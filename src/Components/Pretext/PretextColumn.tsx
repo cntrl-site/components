@@ -3,7 +3,6 @@ import type React from 'react';
 import { createPortal } from 'react-dom';
 import { EDIT_SPAN } from './vecContours';
 import {
-  capScaleToMaxSize,
   coveredImageSize,
   imageOffsetFromFocal,
   preserveImageTransformAcrossBoundsChange,
@@ -609,18 +608,10 @@ export function PretextColumn({
   const activeImageFocalY = freezeImage && imageAnchor
     ? imageAnchor.focalY
     : (pathPreservedTransform?.focalY ?? imageFocalY);
-  const rawImageScale = freezeImage && imageAnchor
+  const activeImageScale = freezeImage && imageAnchor
     ? imageAnchor.scale
     : (pathPreservedTransform?.scale ?? imageScale);
   const placementBounds = freezeImage && imageAnchor ? imageAnchor.bounds : committedShapeImageBounds;
-  const activeImageScale = placementBounds
-    ? capScaleToMaxSize(
-      placementBounds,
-      naturalImageSize ?? { width: placementBounds.width, height: placementBounds.height },
-      rawImageScale,
-      box,
-    )
-    : rawImageScale;
 
   const shapeFillPath = useMemo(() => {
     if (!(box.width > 0) || !(box.height > 0)) return '';
