@@ -19,6 +19,7 @@ type BurgerLogo = {
 };
 
 type BurgerLogoPosition = 'left' | 'center' | 'right';
+type BurgerTextPosition = 'left' | 'center' | 'right';
 
 type BurgerShowInValue = string | Record<string, string>;
 
@@ -80,6 +81,8 @@ type BurgerSettings = {
   compactShowIcon?: 'on' | 'off';
   compactIconSize?: number;
   compactNavTextWidth?: number;
+  compactNavTextPosition?: BurgerTextPosition;
+  compactNavTextOffset?: number;
   compactNavGap?: number;
   compactNavPaddingLeft?: number;
   compactNavPaddingRight?: number;
@@ -101,6 +104,8 @@ type BurgerSettings = {
   effect?: BurgerEffect;
   textWidth?: number;
   navTextWidth?: number;
+  navTextPosition?: BurgerTextPosition;
+  navTextOffset?: number;
   gap?: number;
   navGap?: number;
   navPaddingLeft?: number;
@@ -148,6 +153,23 @@ type BurgerShowIn = 'always' | 'open only' | 'open and compact' | 'default and o
 function resolveLogoPosition(value?: string): BurgerLogoPosition {
   if (value === 'center' || value === 'right') return value;
   return 'left';
+}
+
+function resolveTextPosition(value?: string): BurgerTextPosition {
+  if (value === 'left' || value === 'right') return value;
+  return 'center';
+}
+
+function getNavTextOffsetTransform(
+  position: BurgerTextPosition,
+  offset: number,
+  isEditor?: boolean,
+): string {
+  const shift = scalingValue(offset, isEditor);
+  if (position === 'center') {
+    return `translateX(calc(-50% + ${shift}))`;
+  }
+  return `translateX(${shift})`;
 }
 
 function pickShowIn(value?: BurgerShowInValue, layoutId?: string): string | undefined {
@@ -654,6 +676,8 @@ function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
   inheritScrollParam('compactShowIcon', 'showIcon');
   inheritScrollParam('compactIconSize', 'iconSize');
   inheritScrollParam('compactNavTextWidth', 'navTextWidth');
+  inheritScrollParam('compactNavTextPosition', 'navTextPosition');
+  inheritScrollParam('compactNavTextOffset', 'navTextOffset');
   inheritScrollParam('compactNavGap', 'navGap');
   inheritScrollParam('compactNavPaddingLeft', 'navPaddingLeft');
   inheritScrollParam('compactNavPaddingRight', 'navPaddingRight');
@@ -846,7 +870,11 @@ function getCSS(P: string): string {
   font-size: 0;
 }
 .${P}-nav-links-inner {
-  display: contents;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 .${P}-toggle {
   display: block;
@@ -1191,13 +1219,26 @@ function getCSS(P: string): string {
 }
 .${P}-nav-links {
   position: absolute;
-  inset: 0;
+  top: 0;
+  height: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
   min-width: 0;
+  flex-shrink: 0;
   pointer-events: none;
   z-index: 0;
+}
+.${P}-nav-links-left {
+  left: 0;
+  right: auto;
+}
+.${P}-nav-links-center {
+  left: 50%;
+  right: auto;
+}
+.${P}-nav-links-right {
+  left: auto;
+  right: 0;
 }
 .${P}-nav-links .${P}-nav-link,
 .${P}-nav-links .${P}-gap-control {
@@ -1340,7 +1381,8 @@ function getCSS(P: string): string {
     gap ${NAV_STATE_ANIM_MS}ms ease;
 }
 .${P}-nav-state-anim .${P}-nav-logo,
-.${P}-nav-state-anim .${P}-nav-toggle-wrap {
+.${P}-nav-state-anim .${P}-nav-toggle-wrap,
+.${P}-nav-state-anim .${P}-nav-links {
   transition:
     left ${NAV_STATE_ANIM_MS}ms ease,
     right ${NAV_STATE_ANIM_MS}ms ease,
@@ -1652,6 +1694,8 @@ export function Burger({
     compactShowIcon = 'on',
     compactIconSize = 16 / 1440,
     compactNavTextWidth,
+    compactNavTextPosition,
+    compactNavTextOffset,
     compactNavGap,
     compactNavPaddingLeft = 10 / 1440,
     compactNavPaddingRight = 10 / 1440,
@@ -1670,6 +1714,8 @@ export function Burger({
     effect = 'fade',
     textWidth = 280 / 1440,
     navTextWidth,
+    navTextPosition = 'center',
+    navTextOffset = 0,
     gap = 0,
     navGap,
     navPaddingLeft = 10 / 1440,
@@ -1710,6 +1756,8 @@ export function Burger({
   const closedPanelHeight = isCompactNav ? compactPanelHeight : panelHeight;
   const closedIconSize = isCompactNav ? compactIconSize : iconSize;
   const closedNavTextWidth = isCompactNav ? compactNavTextWidth : navTextWidth;
+  const closedNavTextPosition = resolveTextPosition(isCompactNav ? compactNavTextPosition : navTextPosition);
+  const closedNavTextOffset = (isCompactNav ? compactNavTextOffset : navTextOffset) ?? 0;
   const closedNavGap = isCompactNav ? compactNavGap : navGap;
   const closedNavPaddingLeft = isCompactNav ? compactNavPaddingLeft : navPaddingLeft;
   const closedNavPaddingRight = isCompactNav ? compactNavPaddingRight : navPaddingRight;
@@ -2223,7 +2271,8 @@ export function Burger({
             </div>
           ) : null}
           <nav
-            className={`${P}-nav-links`}
+            className={`${P}-nav-links ${P}-nav-links-${closedNavTextPosition}`}
+            style={{ transform: getNavTextOffsetTransform(closedNavTextPosition, closedNavTextOffset, isEditor) }}
             aria-label="Navigation"
           >
             <div className={`${P}-nav-links-inner`}>
