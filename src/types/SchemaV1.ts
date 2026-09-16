@@ -90,12 +90,20 @@ export type SchemaSection = {
   displayRules?: SchemaDisplayRule[];
 };
 
+export type SchemaPanelAvailability = Record<string, string[]>;
+
 export type SchemaPanel = {
   id: string;
   icon: string;
   title: string;
   tooltip?: string;
   layout: LayoutItem[];
+  /**
+   * When set, the panel is available only if every listed context key
+   * is either missing or matches one of the allowed values.
+   * Example: `{ navigationPosition: ['switch'] }`.
+   */
+  availableWhen?: SchemaPanelAvailability;
 };
 
 export type SchemaPaletteBookmark = {
@@ -114,4 +122,10 @@ export type ComponentSchemaV1 = {
   fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
+  /**
+   * Panel ids that represent a visual component state.
+   * `null` or omitted means the component has no state panels.
+   * Opening one of these panels sets `currentState` to that panel id.
+   */
+  statePanels?: string[] | null;
 };

@@ -21,6 +21,7 @@ import { WaterfallComponent } from './Waterfall/WaterfallComponent';
 import { Slider20Component } from './Slider20/Slider20Component';
 import { MercuryComponent } from './Mercury/MercuryComponent';
 import { HelixComponent } from './Helix/HelixComponent';
+import { BurgerComponent } from './Burger/BurgerComponent';
 import { PretextComponent } from './Pretext/PretextComponent';
 
 export const components: Component[] = [
@@ -46,5 +47,6 @@ export const components: Component[] = [
   Slider20Component,
   MercuryComponent,
   HelixComponent,
+  BurgerComponent,
   PretextComponent,
 ];

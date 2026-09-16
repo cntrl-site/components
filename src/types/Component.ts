@@ -10,14 +10,19 @@ export type ComponentSize = {
 
 export type ComponentDefaultSize = Partial<Record<Breakpoint, ComponentSize>>;
 
+export type ComponentNavigationPosition = 'default' | 'stickyTop' | 'switch';
+
+export type ComponentDefaultNavigationPosition = Partial<Record<Breakpoint, ComponentNavigationPosition>>;
+
 export type Component = {
   element: (props: any) => React.ReactElement;
   id: string;
   name: string;
   category?: string;
   version?: number;
-  layoutMode?: 'freeform' | 'structured';
+  layoutMode?: 'freeform' | 'structured' | 'navigation';
   defaultSize?: ComponentDefaultSize;
+  defaultNavigationPosition?: ComponentDefaultNavigationPosition;
   schema: any;
   preview?: {
     type: 'image' | 'video';
