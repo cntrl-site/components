@@ -81,6 +81,10 @@ export function HiveLightboxTitles({
   } = settings;
 
   const contentMarginTop = scalingValue(contentMarginTopSetting, isEditor);
+  const contentMarginTopHandleHeight = scalingValue(
+    Math.max(contentMarginTopSetting, TITLE_PADDING_HANDLE_WIDTH),
+    isEditor,
+  );
   const iconMarginRight = scalingValue(iconMarginRightSetting, isEditor);
   const titleRowMarginBottomScaled = scalingValue(titleRowMarginBottom, isEditor);
   const useTwoRowHeader = titleHeaderLayout === 'mobile';
@@ -670,10 +674,30 @@ export function HiveLightboxTitles({
   return (
     <div className={`${P}-lightbox-overlay-content`}>
       <div
-        data-controls={isEditMode ? 'contentMarginTop' : undefined}
-        className={isEditMode ? `${P}-control` : undefined}
-        style={{ height: contentMarginTop, width: '100%' }}
-      />
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: contentMarginTop,
+          flexShrink: 0,
+        }}
+      >
+        {isEditMode && (
+          <div
+            data-controls="contentMarginTop"
+            data-controls-axis="y"
+            data-controls-min="0"
+            className={`${P}-control`}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: contentMarginTopHandleHeight,
+              pointerEvents: 'auto',
+            }}
+          />
+        )}
+      </div>
       <div style={{
         display: 'flex',
         flexDirection: 'row',
