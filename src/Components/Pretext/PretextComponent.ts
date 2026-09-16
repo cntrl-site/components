@@ -70,6 +70,21 @@ const schema: ComponentSchemaV1 = {
         tooltip: 'Scales the type down until all text fits the path.',
         display: { type: 'toggle-cycle', enum: ['off', 'on'] },
       },
+      hyphenate: {
+        type: 'string',
+        scope: 'common',
+        title: 'Hyphenate',
+        tooltip: 'Breaks long words with a hyphen when they don’t fit on a line.',
+        display: { type: 'toggle-cycle', enum: ['off', 'on'] },
+      },
+      padding: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Padding',
+        tooltip: 'Insets the shape and its text on all sides.',
+        min: 0,
+        display: { type: 'numeric-input' },
+      },
       dropCapLines: {
         type: 'number',
         scope: 'common',
@@ -173,6 +188,7 @@ const schema: ComponentSchemaV1 = {
       pathSnap: 0,
       shapeMode: 'A',
       fitText: 'off',
+      hyphenate: 'off',
       dropCapLines: 1,
       dropCapSize: 1,
       image: 'https://cdn.cntrl.site/component-assets/shapedType_img.jpg',
@@ -193,18 +209,21 @@ const schema: ComponentSchemaV1 = {
         textLineHeight: 0.048,
         textLetterSpacing: 0,
         textWordSpacing: 0,
+        padding: 0,
       },
       t: {
         textFontSize: 0.018,
         textLineHeight: 0.024,
         textLetterSpacing: 0,
         textWordSpacing: 0,
+        padding: 0,
       },
       d: {
         textFontSize: 0.032,
         textLineHeight: 0.0155,
         textLetterSpacing: -0.001,
         textWordSpacing: 0,
+        padding: 0,
       },
     },
     layout: [
@@ -215,6 +234,8 @@ const schema: ComponentSchemaV1 = {
       'pathFit',
       'shapeMode',
       'fitText',
+      'hyphenate',
+      'padding',
       'dropCapLines',
       'dropCapSize',
       'image',
@@ -223,6 +244,10 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'shapeMode', value: 'B', isNotEqual: true },
         then: { name: 'properties.image.display.visible', value: false },
+      },
+      {
+        if: { name: 'shapeMode', value: 'B', isNotEqual: true },
+        then: { name: 'properties.padding.display.visible', value: false },
       },
       {
         if: { name: 'shapeMode', value: 'A' },
@@ -244,7 +269,8 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['__componentName__'] },
         { type: 'row', items: ['shapeMode'] },
         { type: 'row', title: 'Shape', items: ['shape'] },
-        { type: 'row', items: ['dropCapSize', 'image'] },
+        { type: 'row', items: ['dropCapSize', 'hyphenate'] },
+        { type: 'row', items: ['padding', 'image'] },
       ],
     },
     {

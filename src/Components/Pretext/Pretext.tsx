@@ -65,6 +65,8 @@ export type PretextSettings = {
   shapeMode?: 'A' | 'B';
   overflowMode?: 'clip' | 'visible';
   fitText?: 'on' | 'off';
+  hyphenate?: 'on' | 'off';
+  padding?: number;
   dropCapLines?: number;
   dropCapSize?: number;
   image?: string | null;
@@ -179,6 +181,8 @@ export type SnapGuide = { kind: 'align' | 'angle' | 'center'; a: Pt; b: Pt };
 export type ColumnMetrics = {
   widths: number[];
   spaceWidth: number;
+  dashWidth: number;
+  charWidths: (number[] | undefined)[];
   lineHeight: number;
   capWidth: number;
   dropCapFontSize: number;
@@ -198,6 +202,9 @@ export type ColumnProps = {
   fitEnabled: boolean;
   scale: number;
   onFitScale: (scale: number) => void;
+  padding: string;
+  hyphenate: boolean;
+  showOverflowIndicator: boolean;
   dropCapLines: number;
   dropCapSize: number;
   showGuides: boolean;
@@ -281,16 +288,20 @@ const getCSS = (P: string): string => `
   color: var(--${P}-text-color, #000000);
 }
 .${P}-column {
+  box-sizing: border-box;
   position: relative;
   flex: 1 1 0;
   min-width: 0;
   height: 100%;
 }
+.${P}-overflow-icon {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+}
 .${P}-shape-fill {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   pointer-events: none;
   overflow: hidden;
 }
@@ -299,7 +310,6 @@ const getCSS = (P: string): string => `
 }
 .${P}-flow {
   position: absolute;
-  inset: 0;
 }
 .${P}-clip {
   overflow: hidden;
@@ -538,9 +548,12 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const align = settings?.textAlign ?? 'left';
   const allowOverflow = (settings?.overflowMode ?? 'clip') === 'visible';
   const fitEnabled = (settings?.fitText ?? 'off') === 'on';
+  const hyphenate = (settings?.hyphenate ?? 'off') === 'on';
+  const paddingCss = scalingValue(settings?.padding ?? 0, editor);
   const dropCapSize = settings?.dropCapSize ?? DROP_CAP_SIZE_DEFAULT;
   const dropCapLines = Math.max(1, Math.round(settings?.dropCapLines ?? dropCapSize));
   const showGuides = editor && selected && !isPreviewMode;
+  const showOverflowIndicator = editor && !isPreviewMode;
 
   const [isItemTransforming, setIsItemTransforming] = useState(false);
   useEffect(() => {
@@ -790,6 +803,9 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           fitEnabled={fitEnabled}
           scale={sharedScale}
           onFitScale={handleFitScale}
+          padding={paddingCss}
+          hyphenate={hyphenate}
+          showOverflowIndicator={showOverflowIndicator}
           dropCapLines={dropCapLines}
           dropCapSize={dropCapSize}
           showGuides={(showGuides || pathEditing) && shapeOverlayVisible}

@@ -3,6 +3,7 @@ import type React from 'react';
 import { createPortal } from 'react-dom';
 import { EDIT_SPAN } from './vecContours';
 import {
+  capScaleToMaxSize,
   coveredImageSize,
   imageOffsetFromFocal,
   preserveImageTransformAcrossBoundsChange,
@@ -110,6 +111,9 @@ export function PretextColumn({
   fitEnabled,
   scale,
   onFitScale,
+  padding,
+  hyphenate,
+  showOverflowIndicator,
   dropCapLines,
   dropCapSize,
   showGuides,
@@ -129,6 +133,7 @@ export function PretextColumn({
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const [box, setBox] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [paddingPx, setPaddingPx] = useState(0);
   const [metrics, setMetrics] = useState<ColumnMetrics | null>(null);
   const [fontsReady, setFontsReady] = useState(0);
   const [editStage, setEditStage] = useState<EditStage>('none');
@@ -260,22 +265,32 @@ export function PretextColumn({
     box.height,
   ]);
 
+  const measureBox = useCallback(() => {
+    const element = columnEl;
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const pad = parseFloat(window.getComputedStyle(element).paddingTop) || 0;
+    setPaddingPx(previous => (Math.abs(previous - pad) < 0.5 ? previous : pad));
+    const next = { width: rect.width, height: rect.height };
+    setBox(previous => (
+      Math.abs(previous.width - next.width) < 0.5 && Math.abs(previous.height - next.height) < 0.5
+        ? previous
+        : next
+    ));
+  }, [columnEl]);
+
   useIsomorphicLayoutEffect(() => {
     const element = columnEl;
     if (!element || typeof ResizeObserver === 'undefined') return;
-    const update = () => {
-      const rect = element.getBoundingClientRect();
-      setBox(previous => (
-        Math.abs(previous.width - rect.width) < 0.5 && Math.abs(previous.height - rect.height) < 0.5
-          ? previous
-          : { width: rect.width, height: rect.height }
-      ));
-    };
-    update();
-    const observer = new ResizeObserver(update);
+    measureBox();
+    const observer = new ResizeObserver(measureBox);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [columnEl]);
+  }, [columnEl, measureBox]);
+
+  useIsomorphicLayoutEffect(() => {
+    measureBox();
+  }, [padding, measureBox]);
 
   useEffect(() => {
     const fonts = typeof document !== 'undefined' ? (document as any).fonts : undefined;
@@ -306,6 +321,10 @@ export function PretextColumn({
     const spaceSpan = document.createElement('span');
     spaceSpan.textContent = ' ';
     fragment.appendChild(spaceSpan);
+
+    const dashSpan = document.createElement('span');
+    dashSpan.textContent = '-';
+    fragment.appendChild(dashSpan);
 
     const capProbeChar = dropCapChar || 'H';
     const capSpan = document.createElement('span');
@@ -374,18 +393,37 @@ export function PretextColumn({
 
     const widths = spans.map(span => span.getBoundingClientRect().width);
     const spaceWidth = spaceSpan.getBoundingClientRect().width;
+    const dashWidth = dashSpan.getBoundingClientRect().width;
     const capWidth = dropCapChar ? capSpan.getBoundingClientRect().width : 0;
+
+    const charWidths: (number[] | undefined)[] = hyphenate
+      ? spans.map((span) => {
+        const textNode = span.firstChild;
+        if (!(textNode instanceof Text) || textNode.data.length < 4) return undefined;
+        const range = document.createRange();
+        const spanLeft = span.getBoundingClientRect().left;
+        const cumulative: number[] = [];
+        for (let count = 1; count <= textNode.data.length; count += 1) {
+          range.setStart(textNode, 0);
+          range.setEnd(textNode, count);
+          cumulative.push(range.getBoundingClientRect().right - spanLeft);
+        }
+        return cumulative;
+      })
+      : [];
 
     element.replaceChildren();
     setMetrics({
       widths,
       spaceWidth,
+      dashWidth,
+      charWidths,
       lineHeight,
       capWidth,
       dropCapFontSize,
       dropCapTopAdjust,
     });
-  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width]);
+  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width, hyphenate]);
 
   const capInset = metrics && dropCapChar ? metrics.capWidth + metrics.lineHeight * DROP_CAP_GAP : 0;
   const capLineSpan = Math.max(dropCapLines, Math.ceil(dropCapSize));
@@ -407,6 +445,10 @@ export function PretextColumn({
       allowOverflow: false,
       capInset: capInset * candidate,
       capLines: dropCapChar ? capLineSpan : 0,
+      hyphenate,
+      charWidths: metrics.charWidths,
+      hyphenWidth: metrics.dashWidth,
+      shapeMargin: paddingPx,
     });
     if (run(1).placed >= tokens.length) return 1;
     if (run(MIN_FIT_SCALE).placed < tokens.length) return MIN_FIT_SCALE;
@@ -418,7 +460,7 @@ export function PretextColumn({
       else high = middle;
     }
     return low;
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan, hyphenate, paddingPx]);
 
   useEffect(() => {
     onFitScale(naturalScale);
@@ -428,7 +470,7 @@ export function PretextColumn({
 
   const result = useMemo(() => {
     if (!metrics || !tokens.length || box.width <= 0 || box.height <= 0) {
-      return { segments: [], placed: 0, height: 0, capLeft: 0, capTop: 0 } as LayoutResult;
+      return { segments: [], placed: 0, height: 0, capLeft: 0, capTop: 0, renderTokens: tokens } as LayoutResult;
     }
     return layoutText({
       tokens,
@@ -444,12 +486,24 @@ export function PretextColumn({
       allowOverflow,
       capInset: capInset * appliedScale,
       capLines: dropCapChar ? capLineSpan : 0,
+      hyphenate,
+      charWidths: metrics.charWidths,
+      hyphenWidth: metrics.dashWidth,
+      shapeMargin: paddingPx,
     });
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan, hyphenate, paddingPx]);
+
+  const isOverflowing = showOverflowIndicator && tokens.length > 0 && result.placed < tokens.length;
 
   const dropCapFontSizePx = metrics ? metrics.dropCapFontSize * appliedScale : 0;
   const dropCapTopAdjustPx = metrics ? metrics.dropCapTopAdjust * appliedScale : 0;
   const textAlign: React.CSSProperties['textAlign'] = align === 'justify' ? 'left' : align;
+
+  const lineHeightPx = metrics ? metrics.lineHeight * appliedScale : 0;
+  const lastSegment = result.segments.length ? result.segments[result.segments.length - 1] : null;
+  const overflowIconAnchor = lastSegment
+    ? { top: lastSegment.top + lineHeightPx, left: lastSegment.left + lastSegment.width / 2 }
+    : { top: box.height, left: box.width / 2 };
 
   const showPathEditor = Boolean(pathEditor && draftContours && box.width > 0 && box.height > 0);
   const canArmImage = Boolean(imageEditor);
@@ -555,10 +609,18 @@ export function PretextColumn({
   const activeImageFocalY = freezeImage && imageAnchor
     ? imageAnchor.focalY
     : (pathPreservedTransform?.focalY ?? imageFocalY);
-  const activeImageScale = freezeImage && imageAnchor
+  const rawImageScale = freezeImage && imageAnchor
     ? imageAnchor.scale
     : (pathPreservedTransform?.scale ?? imageScale);
   const placementBounds = freezeImage && imageAnchor ? imageAnchor.bounds : committedShapeImageBounds;
+  const activeImageScale = placementBounds
+    ? capScaleToMaxSize(
+      placementBounds,
+      naturalImageSize ?? { width: placementBounds.width, height: placementBounds.height },
+      rawImageScale,
+      box,
+    )
+    : rawImageScale;
 
   const shapeFillPath = useMemo(() => {
     if (!(box.width > 0) || !(box.height > 0)) return '';
@@ -619,10 +681,11 @@ export function PretextColumn({
   }, [placementBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
 
   return (
-    <div className={`${P}-column`} ref={setColumnEl}>
+    <div className={`${P}-column`} style={{ padding }} ref={setColumnEl}>
       {shapeFillPath ? (
         <svg
           className={`${P}-shape-fill`}
+          style={{ top: 0, left: 0, width: box.width, height: box.height }}
           viewBox={`0 0 ${box.width} ${box.height}`}
           preserveAspectRatio="none"
           aria-hidden
@@ -650,11 +713,18 @@ export function PretextColumn({
       ) : null}
       <div
         className={`${P}-flow${allowOverflow ? '' : ` ${P}-clip`}`}
-        style={{ ...typography, ['--' + P + '-fit']: appliedScale } as React.CSSProperties}
+        style={{
+          ...typography,
+          ['--' + P + '-fit']: appliedScale,
+          top: 0,
+          left: 0,
+          width: box.width,
+          height: box.height,
+        } as React.CSSProperties}
       >
         <div className={`${P}-measure`} ref={measureRef} style={typography} aria-hidden />
         {result.segments.map((segment, segmentIndex) => {
-          const segmentTokens = tokens.slice(segment.from, segment.to);
+          const segmentTokens = result.renderTokens.slice(segment.from, segment.to);
           const isFirstSegment = segmentIndex === 0;
           return (
             <div
@@ -760,6 +830,26 @@ export function PretextColumn({
       <div className={`${P}-a11y`}>
         {plainParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
       </div>
+      {isOverflowing && (
+        <svg
+          className={`${P}-overflow-icon`}
+          width="33"
+          height="24"
+          viewBox="0 0 33 24"
+          style={{
+            top: overflowIconAnchor.top,
+            left: overflowIconAnchor.left,
+          }}
+          aria-hidden
+        >
+          <path d="M12.8,4 L20.2,4 C24.68042,4 26.9206301,4 28.631924,4.87194781 C31.3123488,6.23769248 33,8.99168887 33,12 C33,15.0083111 31.3123488,17.7623075 28.631924,19.1280522 C26.9206301,20 24.68042,20 20.2,20 L12.8,20 C8.31957995,20 6.07936993,20 4.368076,19.1280522 C1.68765116,17.7623075 0,15.0083111 0,12 C0,8.99168887 1.68765116,6.23769248 4.368076,4.87194781 C6.07936993,4 8.31957995,4 12.8,4 Z" fill="#FF4400" />
+          <path
+            transform="translate(5, 0)"
+            fill="#FFFFFF"
+            d="M12,5.625 C12.3846269,5.625 12.7016304,5.91453014 12.7449542,6.28753416 L12.75,6.375 L12.75,11.25 L17.625,11.25 C18.0392136,11.25 18.375,11.5857864 18.375,12 C18.375,12.3846269 18.0854699,12.7016304 17.7124658,12.7449542 L17.625,12.75 L12.75,12.75 L12.75,17.625 C12.75,18.0392136 12.4142136,18.375 12,18.375 C11.6153731,18.375 11.2983696,18.0854699 11.2550458,17.7124658 L11.25,17.625 L11.25,12.75 L6.375,12.75 C5.96078644,12.75 5.625,12.4142136 5.625,12 C5.625,11.6153731 5.91453014,11.2983696 6.28753416,11.2550458 L6.375,11.25 L11.25,11.25 L11.25,6.375 C11.25,5.96078644 11.5857864,5.625 12,5.625 Z"
+          />
+        </svg>
+      )}
     </div>
   );
 }
