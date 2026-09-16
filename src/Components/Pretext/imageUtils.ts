@@ -79,19 +79,6 @@ export const focalFromImageOffset = (
   return clamp01(focal);
 };
 
-export const capScaleToMaxSize = (
-  bounds: { width: number; height: number },
-  natural: { width: number; height: number },
-  scale: number,
-  maxSize: { width: number; height: number },
-): number => {
-  if (!(maxSize.width > 0) || !(maxSize.height > 0)) return scale;
-  const size = coveredImageSize(bounds, natural, scale);
-  if (!(size.width > maxSize.width) && !(size.height > maxSize.height)) return scale;
-  const shrink = Math.min(maxSize.width / size.width, maxSize.height / size.height);
-  return Math.max(MIN_IMAGE_SCALE, scale * shrink);
-};
-
 export const preserveImageTransformAcrossBoundsChange = (
   prevBounds: { x: number; y: number; width: number; height: number },
   nextBounds: { x: number; y: number; width: number; height: number },
