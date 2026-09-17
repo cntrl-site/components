@@ -75,6 +75,14 @@ const schema = {
         min: 1,
         max: 7,
       },
+      textareaRows: {
+        type: 'number',
+        scope: 'common',
+        title: 'Rows',
+        display: { type: 'common-numeric-input' },
+        min: 1,
+        max: 20,
+      },
       fields: {
         type: 'array',
         scope: 'common',
@@ -398,6 +406,7 @@ const schema = {
     },
     defaults: {
       fieldsToShow: 2,
+      textareaRows: 1,
       fields: defaultFieldsItems,
       type: 'A',
       inputColor: '#FFFFFF',
@@ -603,6 +612,13 @@ const schema = {
           items: [ 
             { type: 'row', title: 'Button', items: ['buttonCorners', 'buttonPadding']},
             { type: 'row', title: '', items: ['buttonStroke', 'isButtonFullWidth']},
+          ],
+        },
+        {
+          type: 'group',
+          title: '',
+          items: [ 
+            { type: 'row', title: 'Textarea', items: ['textareaRows']},
           ],
         },
       ],
