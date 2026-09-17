@@ -180,6 +180,7 @@ export function Form({ settings, isEditor, isEditMode, isPreviewMode, metadata, 
   const {
     type = 'A',
     fieldsToShow = 2,
+    textareaRows = 1,
     fields = [],
     buttonLabel,
     gap,
@@ -249,13 +250,15 @@ export function Form({ settings, isEditor, isEditMode, isPreviewMode, metadata, 
   };
   const inputTypographyCss = omitTextColors(textStylesToCss(resolvedInputTextStyle, isEditor));
   const strokeForInput = scalingValue(inputStroke ?? 0, isEditor);
-  const inputBaseHeight = scalingValue(
-    (inputLineHeight ?? inputFontSize ?? 0.01) +
+  const getInputHeight = (rows: number) => scalingValue(
+    (inputLineHeight ?? inputFontSize ?? 0.01) * rows +
       (inputPadding?.top ?? 0) +
       (inputPadding?.bottom ?? 0) +
       (type === 'C' ? (inputStroke ?? 0) : (inputStroke ?? 0) * 2),
     isEditor,
   );
+  const inputBaseHeight = getInputHeight(1);
+  const textareaHeight = getInputHeight(Math.max(1, textareaRows));
   const inputFieldCss = {
     ...inputTypographyCss,
     borderStyle: 'solid',
@@ -444,8 +447,8 @@ export function Form({ settings, isEditor, isEditMode, isPreviewMode, metadata, 
                     onChange={(e) => handleFieldChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     className={`${P}-input`}
-                    style={inputFieldCss}
-                    rows={1}
+                    style={{ ...inputFieldCss, height: textareaHeight, minHeight: textareaHeight }}
+                    rows={textareaRows}
                     data-filled={isFilledPreview || ((displayValues[field.name] ?? '') as string).trim().length > 0}
                     data-field-type="textarea"
                   />
@@ -568,6 +571,7 @@ type FormSettings = {
   type: 'A' | 'B' | 'C';
   fontFamily: string;
   fieldsToShow: number;
+  textareaRows?: number;
   fields: FormFieldItem[];
   buttonLabel?: string;
   gap?: number;
