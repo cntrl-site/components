@@ -36,6 +36,7 @@ function getTextLeadingVars(
   lineHeight: number | undefined,
   varPrefix: string,
   isEditor?: boolean,
+  gapKey = 'title-leading-gap',
 ): React.CSSProperties {
   const resolvedFontSize = fontSize ?? 0.01;
 
@@ -44,7 +45,7 @@ function getTextLeadingVars(
   }
 
   return {
-    [`--${varPrefix}-title-leading-gap`]: scalingValue((resolvedFontSize - lineHeight) / 2, isEditor),
+    [`--${varPrefix}-${gapKey}`]: scalingValue((resolvedFontSize - lineHeight) / 2, isEditor),
   } as React.CSSProperties;
 }
 
@@ -96,12 +97,27 @@ function getCSS(P: string): string {
   overflow: visible;
   color: var(--${P}-title-color);
 }
-.${P}-title-text {
+.${P}-title-text,
+.${P}-description-text {
   display: block;
   width: 100%;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+.${P}-description-text {
+  color: var(--${P}-description-color);
+}
+.${P}-title-texts {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+.${P}-title-texts-gap {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
 }
 .${P}-title-text-inner {
   display: flex;
@@ -124,47 +140,50 @@ function getCSS(P: string): string {
   position: relative;
   box-sizing: border-box;
 }
-.${P}-item-a .${P}-title-position-top .${P}-title-text-stack,
-.${P}-item-b .${P}-title-position-top .${P}-title-text-stack,
-.${P}-item-c .${P}-title-position-top .${P}-title-text-stack,
-.${P}-single-title-layer .${P}-title-position-top .${P}-title-text-stack {
+.${P}-item-a .${P}-title-v-top .${P}-title-text-stack,
+.${P}-item-b .${P}-title-v-top .${P}-title-text-stack,
+.${P}-item-c .${P}-title-v-top .${P}-title-text-stack,
+.${P}-single-title-layer .${P}-title-v-top .${P}-title-text-stack {
   padding-top: var(--${P}-title-top-padding, 0);
 }
-.${P}-title-position-left,
-.${P}-title-position-center,
-.${P}-title-position-right {
+.${P}-item-a .${P}-title-v-bottom .${P}-title-text-stack,
+.${P}-item-b .${P}-title-v-bottom .${P}-title-text-stack,
+.${P}-item-c .${P}-title-v-bottom .${P}-title-text-stack,
+.${P}-single-title-layer .${P}-title-v-bottom .${P}-title-text-stack {
+  padding-bottom: var(--${P}-title-bottom-padding, 0);
+}
+.${P}-title-v-center {
   top: calc(var(--cntrl-article-top, 0px) + var(--cntrl-viewport-height, 100vh) / 2 - (var(--${P}-title-height, 0px) / 2));
   align-items: center;
 }
-.${P}-title-position-top {
+.${P}-title-v-top {
   top: var(--cntrl-article-top, 0px);
   bottom: auto;
-  justify-content: flex-start;
   align-self: flex-start;
 }
-.${P}-title-position-left {
+.${P}-title-v-bottom {
+  top: calc(var(--cntrl-article-top, 0px) + var(--cntrl-viewport-height, 100vh) - var(--${P}-title-height, 0px));
+  align-items: center;
+}
+.${P}-title-h-left {
   justify-content: flex-start;
 }
-.${P}-item-a .${P}-title-position-top,
-.${P}-item-a .${P}-title-position-left,
-.${P}-item-b .${P}-title-position-top,
-.${P}-item-b .${P}-title-position-left,
-.${P}-item-c .${P}-title-position-top,
-.${P}-item-c .${P}-title-position-left,
-.${P}-single-title-layer .${P}-title-position-top,
-.${P}-single-title-layer .${P}-title-position-left {
+.${P}-item-a .${P}-title-h-left,
+.${P}-item-b .${P}-title-h-left,
+.${P}-item-c .${P}-title-h-left,
+.${P}-single-title-layer .${P}-title-h-left {
   padding-left: var(--${P}-title-left-padding, 0);
 }
-.${P}-title-position-center {
+.${P}-title-h-center {
   justify-content: center;
 }
-.${P}-title-position-right {
+.${P}-title-h-right {
   justify-content: flex-end;
 }
-.${P}-item-a .${P}-title-position-right,
-.${P}-item-b .${P}-title-position-right,
-.${P}-item-c .${P}-title-position-right,
-.${P}-single-title-layer .${P}-title-position-right {
+.${P}-item-a .${P}-title-h-right,
+.${P}-item-b .${P}-title-h-right,
+.${P}-item-c .${P}-title-h-right,
+.${P}-single-title-layer .${P}-title-h-right {
   padding-right: var(--${P}-title-right-padding, 0);
 }
 .${P}-item-a .${P}-title,
@@ -248,6 +267,11 @@ function getCSS(P: string): string {
   padding-top: var(--${P}-title-leading-gap, 0);
   padding-bottom: var(--${P}-title-leading-gap, 0);
 }
+.${P}-description-tight-leading {
+  flex-shrink: 0;
+  padding-top: var(--${P}-description-leading-gap, 0);
+  padding-bottom: var(--${P}-description-leading-gap, 0);
+}
 .${P}-lightbox-counter {
   margin: 0;
   color: var(--${P}-lightbox-counter-color);
@@ -269,6 +293,77 @@ function getCSS(P: string): string {
 `;
 }
 
+type TitleHorizontal = 'left' | 'center' | 'right';
+type TitleVertical = 'top' | 'center' | 'bottom';
+type TitlePosition =
+  | 'left-top'
+  | 'top-center'
+  | 'top-right'
+  | 'left-center'
+  | 'center'
+  | 'right-center'
+  | 'left-bottom'
+  | 'bottom-center'
+  | 'right-bottom';
+
+type TitlePositionAxes = {
+  horizontal: TitleHorizontal;
+  vertical: TitleVertical;
+};
+
+const TITLE_POSITION_AXES: Record<TitlePosition, TitlePositionAxes> = {
+  'left-top': { horizontal: 'left', vertical: 'top' },
+  'top-center': { horizontal: 'center', vertical: 'top' },
+  'top-right': { horizontal: 'right', vertical: 'top' },
+  'left-center': { horizontal: 'left', vertical: 'center' },
+  center: { horizontal: 'center', vertical: 'center' },
+  'right-center': { horizontal: 'right', vertical: 'center' },
+  'left-bottom': { horizontal: 'left', vertical: 'bottom' },
+  'bottom-center': { horizontal: 'center', vertical: 'bottom' },
+  'right-bottom': { horizontal: 'right', vertical: 'bottom' },
+};
+
+function resolveTitlePosition(value?: string): TitlePosition {
+  switch (value) {
+    case 'left-top':
+    case 'top-center':
+    case 'top-right':
+    case 'left-center':
+    case 'center':
+    case 'right-center':
+    case 'left-bottom':
+    case 'bottom-center':
+    case 'right-bottom':
+      return value;
+    case 'center-top':
+      return 'top-center';
+    case 'right-top':
+      return 'top-right';
+    case 'top-left':
+      return 'left-top';
+    case 'center-bottom':
+      return 'bottom-center';
+    case 'bottom-left':
+      return 'left-bottom';
+    case 'bottom-right':
+      return 'right-bottom';
+    case 'center-center':
+      return 'center';
+    case 'left':
+      return 'left-center';
+    case 'right':
+      return 'right-center';
+    case 'top':
+      return 'left-top';
+    default:
+      return 'center';
+  }
+}
+
+function getTitlePositionAxes(position: TitlePosition): TitlePositionAxes {
+  return TITLE_POSITION_AXES[position];
+}
+
 type MercuryMedia = {
   url: string;
   name?: string;
@@ -287,6 +382,7 @@ type MercuryDisplayItem = {
 
 export type MercuryContentItem = {
   title?: string;
+  description?: string;
   gallery?: MercuryMedia[] | MercuryMediaPair[];
 };
 
@@ -304,10 +400,12 @@ export type MercurySettings = {
   galleryPaddingLeft?: number;
   galleryPaddingBetween?: number;
   cornerRadius?: number;
-  position?: 'left' | 'center' | 'right' | 'top';
+  position?: TitlePosition | 'left' | 'right' | 'top' | 'center-center' | 'center-top' | 'right-top' | 'center-bottom';
   titleTopPadding?: number;
+  titleBottomPadding?: number;
   titleLeftPadding?: number;
   titleRightPadding?: number;
+  titleDescriptionPadding?: number;
   transition?: 'fade' | 'retype' | 'scroll';
   titleColor?: string;
   titleFontFamily?: string;
@@ -318,6 +416,15 @@ export type MercurySettings = {
   titleWordSpacing?: number;
   titleAlign?: TextStyles['textAlign'];
   titleTextAppearance?: TextStyles['textAppearance'];
+  descriptionColor?: string;
+  descriptionFontFamily?: string;
+  descriptionFontSettings?: { fontWeight: number; fontStyle: string };
+  descriptionFontSize?: number;
+  descriptionLineHeight?: number;
+  descriptionLetterSpacing?: number;
+  descriptionWordSpacing?: number;
+  descriptionAlign?: TextStyles['textAlign'];
+  descriptionTextAppearance?: TextStyles['textAppearance'];
   lightbox?: 'on' | 'off';
   lightboxImageDisplay?: 'fit' | 'cover' | { display?: 'fit' | 'cover' };
   backgroundColor?: string;
@@ -368,6 +475,7 @@ type SwipeAxis = 'none' | 'horizontal' | 'vertical';
 
 const COLOR_VAR_MAP = {
   titleColor: 'title-color',
+  descriptionColor: 'description-color',
   lightboxCounterColor: 'lightbox-counter-color',
 } as const;
 
@@ -1302,8 +1410,6 @@ function GalleryWithEdgePadding({
   );
 }
 
-type TitlePosition = 'left' | 'center' | 'right' | 'top';
-
 type MercuryTransition = 'fade' | 'retype' | 'scroll';
 
 function resolveTransition(value?: string): MercuryTransition {
@@ -1319,27 +1425,31 @@ function resolveTransition(value?: string): MercuryTransition {
   }
 }
 
-function renderTitleTopPaddingControl({
+function renderTitleRowPaddingControl({
   P,
+  controlKey,
   scaled,
   height,
   paired,
+  side,
 }: {
   P: string;
+  controlKey: 'titleTopPadding' | 'titleBottomPadding';
   scaled: (value: number) => string;
   height: number;
   paired: boolean;
+  side: 'top' | 'bottom';
 }) {
   return (
     <div
-      data-controls="titleTopPadding"
+      data-controls={controlKey}
       {...(paired ? { 'data-controls-paired': '' } : {})}
       data-controls-axis="y"
       data-controls-variant="row-padding"
       data-controls-min="0"
       className={`${P}-control-anchor`}
       style={{
-        top: 0,
+        ...(side === 'top' ? { top: 0 } : { bottom: 0 }),
         left: 0,
         width: '100%',
         height: scaled(height),
@@ -1391,33 +1501,51 @@ function renderTitleColumnPaddingControl({
 function StickyTitle({
   P,
   title,
+  description,
   position,
   titleRef,
   titleClassName,
   titleContainerStyle,
   titleTextBoxStyle,
   titleStyle,
+  descriptionClassName,
+  descriptionStyle,
+  descriptionPadding,
   showTextBoxOutline = false,
+  showDescriptionPaddingControl = false,
+  descriptionPaddingPaired = false,
   topPaddingControl,
+  bottomPaddingControl,
 }: {
   P: string;
   title?: string;
+  description?: string;
   position: TitlePosition;
   titleRef: (element: HTMLDivElement | null) => void;
   titleClassName: string;
   titleContainerStyle: React.CSSProperties;
   titleTextBoxStyle: React.CSSProperties;
   titleStyle: React.CSSProperties;
+  descriptionClassName: string;
+  descriptionStyle: React.CSSProperties;
+  descriptionPadding: string;
   showTextBoxOutline?: boolean;
+  showDescriptionPaddingControl?: boolean;
+  descriptionPaddingPaired?: boolean;
   topPaddingControl?: React.ReactNode;
+  bottomPaddingControl?: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [height, setHeight] = useState(0);
   const displayedTitle = title ?? '';
-  const usesViewportCenterSticky = position === 'left' || position === 'center' || position === 'right';
+  const displayedDescription = description ?? '';
+  const hasDescription = displayedDescription.length > 0;
+  const { horizontal, vertical } = getTitlePositionAxes(position);
+  const usesMeasuredHeightSticky = vertical === 'center' || vertical === 'bottom';
+  const descriptionAboveTitle = vertical === 'bottom';
 
   useLayoutEffect(() => {
-    if (!usesViewportCenterSticky) return;
+    if (!usesMeasuredHeightSticky) return;
 
     const el = ref.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -1428,7 +1556,41 @@ function StickyTitle({
     const observer = new ResizeObserver(updateHeight);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [displayedTitle, usesViewportCenterSticky]);
+  }, [displayedTitle, displayedDescription, usesMeasuredHeightSticky]);
+
+  const titleNode = (
+    <span className={`${P}-title-text`} style={titleStyle}>
+      {displayedTitle}
+    </span>
+  );
+  const descriptionNode = hasDescription ? (
+    <span className={descriptionClassName} style={descriptionStyle}>
+      {displayedDescription}
+    </span>
+  ) : null;
+  const descriptionGap = hasDescription ? (
+    <div
+      className={`${P}-title-texts-gap`}
+      style={{ height: descriptionPadding }}
+    >
+      {showDescriptionPaddingControl && (
+        <div
+          data-controls="titleDescriptionPadding"
+          {...(descriptionPaddingPaired ? { 'data-controls-paired': '' } : {})}
+          data-controls-axis="y"
+          data-controls-variant="row-padding"
+          data-controls-min="0"
+          className={`${P}-control-anchor`}
+          style={{
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+          }}
+        />
+      )}
+    </div>
+  ) : null;
 
   return (
     <div
@@ -1438,10 +1600,11 @@ function StickyTitle({
       }}
       className={[
         titleClassName,
-        `${P}-title-position-${position}`,
+        `${P}-title-h-${horizontal}`,
+        `${P}-title-v-${vertical}`,
       ].join(' ')}
       style={{
-        ...(usesViewportCenterSticky ? { [`--${P}-title-height`]: `${height}px` } : {}),
+        ...(usesMeasuredHeightSticky ? { [`--${P}-title-height`]: `${height}px` } : {}),
         ...titleContainerStyle,
       } as React.CSSProperties}
     >
@@ -1454,10 +1617,23 @@ function StickyTitle({
           className={showTextBoxOutline ? `${P}-title-text-inner` : `${P}-title-text-inner-hidden`}
           style={{ width: '100%' }}
         >
-          <span className={`${P}-title-text`} style={titleStyle}>
-            {displayedTitle}
-          </span>
+          <div className={`${P}-title-texts`}>
+            {descriptionAboveTitle ? (
+              <>
+                {descriptionNode}
+                {descriptionGap}
+                {titleNode}
+              </>
+            ) : (
+              <>
+                {titleNode}
+                {descriptionGap}
+                {descriptionNode}
+              </>
+            )}
+          </div>
         </div>
+        {bottomPaddingControl}
       </div>
     </div>
   );
@@ -1478,19 +1654,23 @@ function readCssVarPx(element: HTMLElement | null | undefined, varName: string, 
   return fallback;
 }
 
-function getPreviewViewportMetrics(element?: HTMLElement | null): { top: number; centerY: number } {
+function getPreviewViewportMetrics(element?: HTMLElement | null): { top: number; height: number; centerY: number } {
   const height = readCssVarPx(element, '--cntrl-viewport-height', window.innerHeight);
   const top = readCssVarPx(element, '--cntrl-article-top', 0);
-  return { top, centerY: top + height / 2 };
+  return { top, height, centerY: top + height / 2 };
 }
 
 function getTitleStickyDistance(rect: DOMRect, position: TitlePosition, element?: HTMLElement | null): number {
-  const { top: viewportTop, centerY } = getPreviewViewportMetrics(element);
-  if (position === 'top') {
+  const { vertical } = getTitlePositionAxes(position);
+  const { top: viewportTop, height: viewportHeight, centerY } = getPreviewViewportMetrics(element);
+  if (vertical === 'top') {
     const stickyTop = element
       ? parseFloat(getComputedStyle(element).top) || viewportTop
       : viewportTop;
     return Math.abs(rect.top - stickyTop);
+  }
+  if (vertical === 'bottom') {
+    return Math.abs(rect.bottom - (viewportTop + viewportHeight));
   }
   const titleCenter = rect.top + rect.height / 2;
   return Math.abs(titleCenter - centerY);
@@ -1605,7 +1785,7 @@ function useRetypedTitle(title: string, enabled: boolean): string {
       if (step >= steps) {
         window.clearInterval(intervalId);
       }
-    }, 35);
+    }, 70);
 
     return () => window.clearInterval(intervalId);
   }, [enabled, title]);
@@ -1630,19 +1810,25 @@ export function Mercury({
   const titleWidth = settings?.titleWidth ?? DEFAULT_TITLE_WIDTH;
   const imageDisplay = normalizeImageDisplay(settings?.imageDisplay);
   const cornerRadius = settings?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
-  const position = settings?.position ?? 'center';
+  const position = resolveTitlePosition(settings?.position);
+  const { horizontal: titleHorizontal, vertical: titleVertical } = getTitlePositionAxes(position);
   const titleTopPadding = settings?.titleTopPadding ?? 0;
+  const titleBottomPadding = settings?.titleBottomPadding ?? 0;
   const titleLeftPadding = settings?.titleLeftPadding ?? 0;
   const titleRightPadding = settings?.titleRightPadding ?? 0;
+  const titleDescriptionPadding = settings?.titleDescriptionPadding ?? 0;
   const transition = resolveTransition(settings?.transition);
   const lightbox = settings?.lightbox ?? 'on';
   const isOverlayLayout = layoutType === 'b';
   const animateTransitions = transition === 'fade' || transition === 'retype';
   const { setTitleRef, dominantIndex } = useTitleTransitionState(items.length, animateTransitions, position);
   const activeTitle = items[dominantIndex]?.title ?? '';
+  const activeDescription = items[dominantIndex]?.description ?? '';
   const retypedTitle = useRetypedTitle(activeTitle, transition === 'retype');
+  const retypedDescription = useRetypedTitle(activeDescription, transition === 'retype');
   const usesSingleTitle = transition === 'fade' || transition === 'retype';
   const singleTitle = transition === 'retype' ? retypedTitle : activeTitle;
+  const singleDescription = transition === 'retype' ? retypedDescription : activeDescription;
   const galleryWidthStyle = !isOverlayLayout
     ? { width: scalingValue(imgWidth, isEditor ?? false) }
     : undefined;
@@ -1667,8 +1853,10 @@ export function Mercury({
   const galleryPaddingLeftWidth = Math.max(galleryPaddingLeft, PADDING_HANDLE_SIZE);
   const galleryPaddingBetweenHeight = Math.max(galleryPaddingBetween, PADDING_HANDLE_SIZE);
   const titleTopPaddingHeight = Math.max(titleTopPadding, PADDING_HANDLE_SIZE);
+  const titleBottomPaddingHeight = Math.max(titleBottomPadding, PADDING_HANDLE_SIZE);
   const titleLeftPaddingWidth = Math.max(titleLeftPadding, PADDING_HANDLE_SIZE);
   const titleRightPaddingWidth = Math.max(titleRightPadding, PADDING_HANDLE_SIZE);
+  const titleDescriptionPaddingHeight = Math.max(titleDescriptionPadding, PADDING_HANDLE_SIZE);
   const galleryPaddingMaxFraction = Math.max(0, (wrapperWidth ?? 1) - (imgWidth ?? DEFAULT_IMG_WIDTH));
   const titleColumnMaxFraction = layoutType === 'a'
     ? Math.max(0, (wrapperWidth ?? 1) - (imgWidth ?? DEFAULT_IMG_WIDTH) - galleryPaddingRight)
@@ -1677,15 +1865,10 @@ export function Mercury({
       : layoutType === 'b'
         ? (wrapperWidth ?? 1)
         : 1;
-  const showTitleTopPaddingControl = showControls && (layoutType === 'a' || layoutType === 'b' || layoutType === 'c') && position === 'top';
-  const showTitleLeftPaddingControl = showControls && (
-    ((layoutType === 'a' || layoutType === 'b') && (position === 'left' || position === 'top'))
-    || (layoutType === 'c' && (position === 'left' || position === 'top'))
-  );
-  const showTitleRightPaddingControl = showControls && (
-    ((layoutType === 'c' || layoutType === 'b') && position === 'right')
-    || (layoutType === 'a' && position === 'right')
-  );
+  const showTitleTopPaddingControl = showControls && titleVertical === 'top';
+  const showTitleBottomPaddingControl = showControls && titleVertical === 'bottom';
+  const showTitleLeftPaddingControl = showControls && titleHorizontal === 'left';
+  const showTitleRightPaddingControl = showControls && titleHorizontal === 'right';
   const hasMultipleItems = items.length > 1;
   const titleGalleryInset = !isOverlayLayout
     ? scaled((layoutType === 'c' ? galleryPaddingLeft : galleryPaddingRight) + (imgWidth ?? DEFAULT_IMG_WIDTH))
@@ -1712,6 +1895,15 @@ export function Mercury({
     titleWordSpacing,
     titleAlign,
     titleTextAppearance,
+    descriptionColor,
+    descriptionFontFamily,
+    descriptionFontSettings,
+    descriptionFontSize,
+    descriptionLineHeight,
+    descriptionLetterSpacing,
+    descriptionWordSpacing,
+    descriptionAlign,
+    descriptionTextAppearance,
     lightboxCounterColor,
     lightboxCounterFontFamily,
     lightboxCounterFontSettings,
@@ -1739,13 +1931,39 @@ export function Mercury({
   const titleTypographyCss = omitTextColors(textStylesToCss(resolvedTitleTextStyle, isEditor));
   const titleStyle = titleTypographyCss;
   const titleTextBoxStyle = titleTextWidthStyle;
-  const titleContainerStyle = getTextLeadingVars(titleFontSize, titleLineHeight, P, isEditor);
+  const titleContainerStyle = {
+    ...getTextLeadingVars(titleFontSize, titleLineHeight, P, isEditor),
+    ...getTextLeadingVars(descriptionFontSize, descriptionLineHeight, P, isEditor, 'description-leading-gap'),
+  };
   const titleClassName = getTextClassName(
     titleFontSize,
     titleLineHeight,
     `${P}-title`,
     `${P}-text-tight-leading`,
   );
+
+  const resolvedDescriptionTextStyle: TextStyles = {
+    fontSettings: {
+      fontFamily: descriptionFontFamily,
+      fontWeight: descriptionFontSettings?.fontWeight ?? 400,
+      fontStyle: descriptionFontSettings?.fontStyle ?? 'normal',
+    },
+    fontSize: descriptionFontSize ?? 0.01,
+    lineHeight: descriptionLineHeight,
+    letterSpacing: descriptionLetterSpacing ?? 0,
+    wordSpacing: descriptionWordSpacing ?? 0,
+    textAlign: descriptionAlign ?? 'left',
+    textAppearance: descriptionTextAppearance,
+    color: descriptionColor ?? '#000000',
+  };
+  const descriptionStyle = omitTextColors(textStylesToCss(resolvedDescriptionTextStyle, isEditor));
+  const descriptionClassName = getTextClassName(
+    descriptionFontSize,
+    descriptionLineHeight,
+    `${P}-description-text`,
+    `${P}-description-tight-leading`,
+  );
+  const descriptionPaddingStyle = scaled(showControls ? titleDescriptionPaddingHeight : titleDescriptionPadding);
 
   const resolvedLightboxCounterTextStyle: TextStyles = {
     fontSettings: {
@@ -1774,6 +1992,7 @@ export function Mercury({
 
   const colorVars = buildColorVars(P, {
     titleColor: titleColor ?? '#000000',
+    descriptionColor: descriptionColor ?? '#000000',
     lightboxCounterColor: lightboxCounterColor ?? '#DEDDDD',
   }, COLOR_VAR_MAP, STATE_KEYS);
 
@@ -1834,15 +2053,10 @@ export function Mercury({
           className={`${P}-wrapper`}
           style={{
             width: scalingValue(wrapperWidth, isEditor ?? false),
-            [`--${P}-title-top-padding`]: (layoutType === 'a' || layoutType === 'b' || layoutType === 'c') && position === 'top' ? scaled(titleTopPadding) : undefined,
-            [`--${P}-title-left-padding`]: (
-              ((layoutType === 'a' || layoutType === 'b') && (position === 'left' || position === 'top'))
-              || (layoutType === 'c' && (position === 'left' || position === 'top'))
-            ) ? scaled(titleLeftPadding) : undefined,
-            [`--${P}-title-right-padding`]: (
-              ((layoutType === 'c' || layoutType === 'b') && position === 'right')
-              || (layoutType === 'a' && position === 'right')
-            ) ? scaled(titleRightPadding) : undefined,
+            [`--${P}-title-top-padding`]: titleVertical === 'top' ? scaled(titleTopPadding) : undefined,
+            [`--${P}-title-bottom-padding`]: titleVertical === 'bottom' ? scaled(titleBottomPadding) : undefined,
+            [`--${P}-title-left-padding`]: titleHorizontal === 'left' ? scaled(titleLeftPadding) : undefined,
+            [`--${P}-title-right-padding`]: titleHorizontal === 'right' ? scaled(titleRightPadding) : undefined,
           } as React.CSSProperties}
         >
           {usesSingleTitle && (
@@ -1850,6 +2064,7 @@ export function Mercury({
               <StickyTitle
                 P={P}
                 title={singleTitle}
+                description={singleDescription}
                 position={position}
                 titleRef={() => {}}
                 titleClassName={`${titleClassName} ${P}-single-title`}
@@ -1859,13 +2074,29 @@ export function Mercury({
                 }}
                 titleTextBoxStyle={titleTextBoxStyle}
                 titleStyle={titleStyle}
+                descriptionClassName={descriptionClassName}
+                descriptionStyle={descriptionStyle}
+                descriptionPadding={descriptionPaddingStyle}
                 showTextBoxOutline={showControls}
+                showDescriptionPaddingControl={showControls}
                 topPaddingControl={showTitleTopPaddingControl
-                  ? renderTitleTopPaddingControl({
+                  ? renderTitleRowPaddingControl({
                     P,
+                    controlKey: 'titleTopPadding',
                     scaled,
                     height: titleTopPaddingHeight,
                     paired: false,
+                    side: 'top',
+                  })
+                  : undefined}
+                bottomPaddingControl={showTitleBottomPaddingControl
+                  ? renderTitleRowPaddingControl({
+                    P,
+                    controlKey: 'titleBottomPadding',
+                    scaled,
+                    height: titleBottomPaddingHeight,
+                    paired: false,
+                    side: 'bottom',
                   })
                   : undefined}
               />
@@ -1885,13 +2116,30 @@ export function Mercury({
               titleContainerStyle,
               titleTextBoxStyle: usesSingleTitle ? { maxWidth: '100%' } : titleTextBoxStyle,
               titleStyle,
+              descriptionClassName,
+              descriptionStyle,
+              descriptionPadding: descriptionPaddingStyle,
               showTextBoxOutline: showControls && !usesSingleTitle,
+              showDescriptionPaddingControl: showControls && !usesSingleTitle,
+              descriptionPaddingPaired: hasMultipleItems,
               topPaddingControl: showTitleTopPaddingControl && !usesSingleTitle
-                ? renderTitleTopPaddingControl({
+                ? renderTitleRowPaddingControl({
                   P,
+                  controlKey: 'titleTopPadding',
                   scaled,
                   height: titleTopPaddingHeight,
                   paired: hasMultipleItems,
+                  side: 'top' as const,
+                })
+                : undefined,
+              bottomPaddingControl: showTitleBottomPaddingControl && !usesSingleTitle
+                ? renderTitleRowPaddingControl({
+                  P,
+                  controlKey: 'titleBottomPadding',
+                  scaled,
+                  height: titleBottomPaddingHeight,
+                  paired: hasMultipleItems,
+                  side: 'bottom' as const,
                 })
                 : undefined,
             };
@@ -1971,6 +2219,7 @@ export function Mercury({
                       <StickyTitle
                         {...titleProps}
                         title={usesSingleTitle ? '' : item.title}
+                        description={usesSingleTitle ? '' : item.description}
                       />
                     </div>
                   </div>
@@ -1979,6 +2228,7 @@ export function Mercury({
                     <StickyTitle
                       {...titleProps}
                       title={usesSingleTitle ? '' : item.title}
+                      description={usesSingleTitle ? '' : item.description}
                     />
                     {displayItems.length > 0 && (
                       <GalleryWithEdgePadding
