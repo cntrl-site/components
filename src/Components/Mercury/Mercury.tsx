@@ -323,18 +323,16 @@ const TITLE_POSITION_AXES: Record<TitlePosition, TitlePositionAxes> = {
   'right-bottom': { horizontal: 'right', vertical: 'bottom' },
 };
 
+function isTitlePosition(value: string): value is TitlePosition {
+  return value in TITLE_POSITION_AXES;
+}
+
 function resolveTitlePosition(value?: string): TitlePosition {
+  if (value && isTitlePosition(value)) {
+    return value;
+  }
+
   switch (value) {
-    case 'left-top':
-    case 'top-center':
-    case 'top-right':
-    case 'left-center':
-    case 'center':
-    case 'right-center':
-    case 'left-bottom':
-    case 'bottom-center':
-    case 'right-bottom':
-      return value;
     case 'center-top':
       return 'top-center';
     case 'right-top':
@@ -400,7 +398,7 @@ export type MercurySettings = {
   galleryPaddingLeft?: number;
   galleryPaddingBetween?: number;
   cornerRadius?: number;
-  position?: TitlePosition | 'left' | 'right' | 'top' | 'center-center' | 'center-top' | 'right-top' | 'center-bottom';
+  position?: string;
   titleTopPadding?: number;
   titleBottomPadding?: number;
   titleLeftPadding?: number;
