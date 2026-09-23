@@ -77,6 +77,14 @@ const schema: ComponentSchemaV1 = {
             type: 'text-input',
           },
         },
+        description: {
+          type: 'string',
+          label: 'Description',
+          placeholder: 'Add Description...',
+          display: {
+            type: 'text-input',
+          },
+        },
         gallery: {
           type: 'array',
           label: 'Gallery',
@@ -113,6 +121,7 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         title: 'AX-2 Space Suit',
+        description: 'Pressure garment and life support',
         gallery: [
           {
             media: [
@@ -154,6 +163,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         title: 'Earth-orbital mission',
+        description: 'Hasselblad documentation series',
         gallery: [
           {
             media: [
@@ -201,6 +211,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         title: 'Salton Sea from Above',
+        description: 'Aerial survey, California',
         gallery: [
           {
             media: [
@@ -316,11 +327,26 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'layout',
         title: 'Position',
-        display: { type: 'toggle-cycle', enum: ['left', 'center', 'right', 'top'] },
+        display: {
+          type: 'toggle-cycle',
+          enum: [
+            'left-top',
+            'top-center',
+            'top-right',
+            'left-center',
+            'center',
+            'right-center',
+            'left-bottom',
+            'bottom-center',
+            'right-bottom',
+          ],
+        },
       },
       titleTopPadding: createRangeControlLayoutProperty('Title Top Padding'),
+      titleBottomPadding: createRangeControlLayoutProperty('Title Bottom Padding'),
       titleLeftPadding: createRangeControlLayoutProperty('Title Left Padding'),
       titleRightPadding: createRangeControlLayoutProperty('Title Right Padding'),
+      titleDescriptionPadding: createRangeControlLayoutProperty('Title Description Padding'),
       transition: {
         type: 'string',
         scope: 'common',
@@ -375,6 +401,59 @@ const schema: ComponentSchemaV1 = {
         title: 'Align',
       },
       titleTextAppearance: {
+        type: 'object',
+        scope: 'layout',
+        title: 'Input Text Appearance',
+        display: { type: 'text-appearance' },
+      },
+      descriptionColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Description',
+        display: { type: 'palette-color-picker' },
+      },
+      descriptionFontFamily: {
+        type: 'string',
+        scope: 'common',
+        title: 'Font family',
+        display: { type: 'font-family-select' },
+      },
+      descriptionFontSettings: {
+        ...textStyleProperties.fontSettings,
+        scope: 'common',
+        title: '',
+        display: { type: 'font-settings-weight' },
+      },
+      descriptionFontSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Font Size',
+        display: { type: 'font-size' },
+      },
+      descriptionLineHeight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Line Height',
+        display: { type: 'line-height-input' },
+      },
+      descriptionLetterSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Letter Spacing',
+        display: { type: 'letter-spacing-input' },
+      },
+      descriptionWordSpacing: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Input Word Spacing',
+        display: { type: 'word-spacing-input' },
+      },
+      descriptionAlign: {
+        ...textStyleProperties.textAlign,
+        scope: 'layout',
+        title: 'Align',
+      },
+      descriptionTextAppearance: {
         type: 'object',
         scope: 'layout',
         title: 'Input Text Appearance',
@@ -449,7 +528,7 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       type: 'a',
-      position: 'left',
+      position: 'left-center',
       transition: 'scroll',
       titleColor: '#000000',
       titleFontFamily: 'Goudy Bookletter 1911',
@@ -461,6 +540,20 @@ const schema: ComponentSchemaV1 = {
       titleWordSpacing: 0,
       titleAlign: 'center',
       titleTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
+      descriptionColor: '#000000',
+      descriptionFontFamily: 'Goudy Bookletter 1911',
+      descriptionFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      descriptionLetterSpacing: 0,
+      descriptionWordSpacing: 0,
+      descriptionAlign: 'center',
+      descriptionTextAppearance: {
         textTransform: 'none',
         textDecoration: 'none',
         fontVariant: 'normal',
@@ -497,12 +590,16 @@ const schema: ComponentSchemaV1 = {
         galleryPaddingLeft: 30 / 1440,
         galleryPaddingBetween: 30 / 1440,
         titleTopPadding: 0,
+        titleBottomPadding: 0,
         titleLeftPadding: 0,
         titleRightPadding: 0,
+        titleDescriptionPadding: 10 / 1440,
         cornerRadius: 4 / 1440,
         position: 'center',
         titleFontSize: 73 / 1440,
         titleLineHeight: 66 / 1440,
+        descriptionFontSize: 20 / 1440,
+        descriptionLineHeight: 24 / 1440,
         lightboxCounterFontSize: 0.01,
         lightboxCounterLineHeight: 0.01,
       },
@@ -515,12 +612,16 @@ const schema: ComponentSchemaV1 = {
         galleryPaddingLeft: 10 / 375,
         galleryPaddingBetween: 10 / 375,
         titleTopPadding: 0,
+        titleBottomPadding: 0,
         titleLeftPadding: 10 / 375,
         titleRightPadding: 10 / 375,
+        titleDescriptionPadding: 8 / 375,
         cornerRadius: 8 / 375,
-        position: 'left',
+        position: 'left-center',
         titleFontSize: 30 / 375,
         titleLineHeight: 25 / 375,
+        descriptionFontSize: 14 / 375,
+        descriptionLineHeight: 18 / 375,
         lightboxCounterFontSize: 14 / 375,
         lightboxCounterLineHeight: 14 / 375,
       },
@@ -533,12 +634,16 @@ const schema: ComponentSchemaV1 = {
         galleryPaddingLeft: 20 / 768,
         galleryPaddingBetween: 20 / 768,
         titleTopPadding: 0,
+        titleBottomPadding: 0,
         titleLeftPadding: 0,
         titleRightPadding: 0,
+        titleDescriptionPadding: 8 / 768,
         cornerRadius: 8 / 768,
         position: 'center',
         titleFontSize: 58 / 768,
         titleLineHeight: 48 / 768,
+        descriptionFontSize: 16 / 768,
+        descriptionLineHeight: 20 / 768,
         lightboxCounterFontSize: 8 / 768,
         lightboxCounterLineHeight: 8 / 768,
       },
@@ -607,6 +712,25 @@ const schema: ComponentSchemaV1 = {
         },
         {
           type: 'group',
+          title: 'Description',
+          items: [
+            'descriptionFontFamily',
+            'descriptionFontSettings',
+            {
+              type: 'row',
+              items: [
+                'descriptionFontSize',
+                'descriptionLineHeight',
+                'descriptionLetterSpacing',
+                'descriptionWordSpacing',
+              ],
+            },
+            'descriptionAlign',
+            'descriptionTextAppearance',
+          ],
+        },
+        {
+          type: 'group',
           title: 'Lightbox Counter',
           items: [
             'lightboxCounterFontFamily',
@@ -627,7 +751,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['titleColor', 'backgroundColor', 'lightboxCounterColor'],
+    items: ['titleColor', 'descriptionColor', 'backgroundColor', 'lightboxCounterColor'],
     panelIds: ['general', 'typeStyle'],
   },
 };
@@ -657,10 +781,11 @@ export const MercuryComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'titleFontFamily' }, { path: 'lightboxCounterFontFamily' }],
+    parameters: [{ path: 'titleFontFamily' }, { path: 'descriptionFontFamily' }, { path: 'lightboxCounterFontFamily' }],
   },
   fontRelations: {
     titleFontSettings: 'titleFontFamily',
+    descriptionFontSettings: 'descriptionFontFamily',
     lightboxCounterFontSettings: 'lightboxCounterFontFamily',
   },
 };
