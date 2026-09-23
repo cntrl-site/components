@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
@@ -222,6 +223,7 @@ type ListProps = {
   isPreviewMode?: boolean;
   isEditMode?: boolean;
   activeEvent: string | undefined;
+  portalId?: string;
   onUpdateSettings?: (settings: ListSettings) => void;
 } & CommonComponentProps;
 
@@ -312,27 +314,25 @@ function getListHoverImagePosition(
     return { x: 0, y: 0 };
   }
 
-  const listWidth = container.offsetWidth;
-  const listHeight = container.offsetHeight;
-  const verticalCenterY = listHeight / 2;
+  const rect = container.getBoundingClientRect();
+  const verticalCenterY = rect.top + rect.height / 2;
 
   if (mode === 'cursor' && event) {
-    const rect = container.getBoundingClientRect();
     return {
-      x: event.clientX - rect.left + HOVER_IMAGE_CURSOR_OFFSET,
-      y: event.clientY - rect.top + HOVER_IMAGE_CURSOR_OFFSET,
+      x: event.clientX + HOVER_IMAGE_CURSOR_OFFSET,
+      y: event.clientY + HOVER_IMAGE_CURSOR_OFFSET,
     };
   }
 
   switch (mode) {
     case 'left':
-      return { x: HOVER_IMAGE_EDGE_PADDING + imageWidthPx / 2, y: verticalCenterY };
+      return { x: rect.left + HOVER_IMAGE_EDGE_PADDING + imageWidthPx / 2, y: verticalCenterY };
     case 'center':
-      return { x: listWidth / 2, y: verticalCenterY };
+      return { x: rect.left + rect.width / 2, y: verticalCenterY };
     case 'right':
-      return { x: listWidth - HOVER_IMAGE_EDGE_PADDING - imageWidthPx / 2, y: verticalCenterY };
+      return { x: rect.right - HOVER_IMAGE_EDGE_PADDING - imageWidthPx / 2, y: verticalCenterY };
     default:
-      return { x: listWidth / 2, y: verticalCenterY };
+      return { x: rect.left + rect.width / 2, y: verticalCenterY };
   }
 }
 
@@ -490,10 +490,10 @@ function getCSS(P: string): string {
 }
 
 .${P}-hover-media-anchor {
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
-  z-index: 10;
+  z-index: 9997;
   pointer-events: none;
   will-change: transform;
   transform-origin: center center;
@@ -1981,7 +1981,7 @@ function buildListColumns(
   });
 }
 
-export function List({ settings, content, isEditor, isPreviewMode, isEditMode, activeEvent, layoutId, onUpdateSettings }: ListProps) {
+export function List({ settings, content, isEditor, isPreviewMode, isEditMode, activeEvent, layoutId, portalId, onUpdateSettings }: ListProps) {
   const { prefix: P } = useScopedStyles();
   const showControls = Boolean(isEditMode);
   const {
@@ -3061,7 +3061,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             </button>
             );
           })()}
-          {showHoverImage && hoverImage && (() => {
+          {showHoverImage && hoverImage && typeof document !== 'undefined' && (() => {
             const hoverSize = `${hoverImage.widthPx}px`;
             const hoverMediaStyle: React.CSSProperties = {
               width: hoverSize,
@@ -3069,16 +3069,18 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
               maxHeight: hoverSize,
               objectFit: 'contain',
             };
+            const portalTarget = (portalId ? document.getElementById(portalId) : null) ?? document.body;
 
-            return (
-              <div ref={anchorRef} className={`${P}-hover-media-anchor`}>
+            return createPortal(
+              <div ref={anchorRef} className={`${P}-hover-media-anchor`} data-selection="none">
                 <ListHoverMedia
                   key={`${hoverImage.rowId}-${hoverImage.url}`}
                   media={hoverImage}
                   className={hoverImage.isVideo ? `${P}-hover-video` : `${P}-hover-image`}
                   style={hoverMediaStyle}
                 />
-              </div>
+              </div>,
+              portalTarget,
             );
           })()}
         </div>
