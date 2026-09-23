@@ -7,6 +7,14 @@ interface Props {
   content: any[];
 }
 
+function hasVisibleText(children: any[] | undefined): boolean {
+  if (!children?.length) return false;
+  return children.some((child) => {
+    if (child.type === 'link') return hasVisibleText(child.children);
+    return Boolean(child.text);
+  });
+}
+
 export const RichTextRenderer: FC<Props> = ({ content }) => {
   const getChildren = (children: any[]) => {
     return children.map((child, i) => {
@@ -22,7 +30,7 @@ export const RichTextRenderer: FC<Props> = ({ content }) => {
         const children = block.children;
         return (
           <div key={i}>
-            {getChildren(children)}
+            {hasVisibleText(children) ? getChildren(children) : '\u00a0'}
           </div>
         );
       })}
