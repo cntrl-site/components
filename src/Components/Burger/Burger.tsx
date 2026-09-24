@@ -71,7 +71,6 @@ type BurgerSettings = {
   linkColor?: string;
   openLinkColor?: string;
   compactIconColor?: string;
-  compactCloseButtonColor?: string;
   compactLinkColor?: string;
   compactLogoColor?: string;
   compactBackgroundColor?: string;
@@ -138,7 +137,7 @@ type BurgerSettings = {
   openWordSpacing?: number;
   openTextAlign?: TextStyles['textAlign'];
   openTextAppearance?: TextStyles['textAppearance'];
-  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor', string>>>;
+  stateOverrides?: Record<string, Partial<Record<'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor', string>>>;
 };
 
 type BurgerVisualState = 'default' | 'compact' | 'open';
@@ -223,9 +222,13 @@ type BurgerPageRef = {
   slug: string;
 };
 
+function getDefaultPage(pages?: BurgerPageRef[]): BurgerPageRef | undefined {
+  return pages?.find((item) => item.slug === '') ?? pages?.[0];
+}
+
 function resolvePagePath(page: string, pages?: BurgerPageRef[]): string {
-  if (!page) return '';
-  const match = pages?.find((item) => item.id === page);
+  const match = page ? pages?.find((item) => item.id === page) : getDefaultPage(pages);
+  if (!page && !match) return '';
   if (match) {
     return match.slug === '' ? '/' : `/${match.slug}`;
   }
@@ -631,7 +634,6 @@ function hasBurgerPaddingChanges(left: BurgerSettings, right: BurgerSettings): b
 
 const LEGACY_COMPACT_SETTING_KEYS = [
   ['onScrollIconColor', 'compactIconColor'],
-  ['onScrollCloseButtonColor', 'compactCloseButtonColor'],
   ['onScrollLinkColor', 'compactLinkColor'],
   ['onScrollLogoColor', 'compactLogoColor'],
   ['onScrollBackgroundColor', 'compactBackgroundColor'],
@@ -721,10 +723,6 @@ function applyBurgerOpenTextDefaults(settings: BurgerSettings): BurgerSettings {
   if (settings.compactIconColor === undefined) {
     const inherited = settings.stateOverrides?.compact?.iconColor ?? settings.iconColor;
     if (inherited !== undefined) updates.compactIconColor = inherited;
-  }
-  if (settings.compactCloseButtonColor === undefined) {
-    const inherited = settings.stateOverrides?.compact?.closeButtonColor ?? settings.closeButtonColor;
-    if (inherited !== undefined) updates.compactCloseButtonColor = inherited;
   }
   if (settings.compactLinkColor === undefined) {
     const inherited = settings.stateOverrides?.compact?.linkColor ?? settings.linkColor;
@@ -892,7 +890,7 @@ function renderTextPaddingControls(
   );
 }
 
-type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactCloseButtonColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor';
+type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor';
 
 export type BurgerLinkNavigateEvent = {
   mode: 'page' | 'url';
@@ -926,7 +924,6 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
   linkColor: 'link-color',
   openLinkColor: 'menu-link-color',
   compactIconColor: 'compact-icon-color',
-  compactCloseButtonColor: 'compact-close-button-color',
   compactLinkColor: 'compact-link-color',
   compactLogoColor: 'compact-logo-color',
   compactBackgroundColor: 'compact-background-color',
@@ -1020,23 +1017,13 @@ function getCSS(P: string): string {
   .${P}-interactive .${P}-toggle:hover {
     color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
   }
-  .${P}-interactive .${P}-open .${P}-toggle:hover {
-    color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
-  }
 }
 .${P}-interactive .${P}-toggle:active {
   color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
 }
-.${P}-interactive .${P}-open .${P}-toggle:active {
-  color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
-}
 .${P}-interactive .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-hover .${P}-toggle {
   color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
-}
-.${P}-interactive .${P}-open .${P}-toggle:focus-visible,
-.${P}-root.${P}-state-hover .${P}-open .${P}-toggle {
-  color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
 }
 .${P}-lightbox {
   position: fixed;
@@ -1462,30 +1449,17 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-compact .${P}-toggle {
   color: var(--${P}-compact-icon-color);
 }
-.${P}-root.${P}-state-compact .${P}-open .${P}-toggle {
-  color: var(--${P}-compact-close-button-color);
-}
 @media (hover: hover) and (pointer: fine) {
   .${P}-interactive.${P}-state-compact .${P}-toggle:hover {
     color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
-  }
-  .${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:hover {
-    color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
   }
 }
 .${P}-interactive.${P}-state-compact .${P}-toggle:active {
   color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
 }
-.${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:active {
-  color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
-}
 .${P}-interactive.${P}-state-compact .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-toggle {
   color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
-}
-.${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:focus-visible,
-.${P}-root.${P}-state-compact.${P}-state-hover .${P}-open .${P}-toggle {
-  color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
 }
 .${P}-root.${P}-state-compact .${P}-nav-link {
   color: var(--${P}-compact-link-color);
@@ -1516,19 +1490,19 @@ function getCSS(P: string): string {
   color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
 }
 .${P}-root.${P}-state-open .${P}-toggle {
-  color: var(--${P}-open-close-button-color, var(--${P}-close-button-color));
+  color: var(--${P}-close-button-color);
 }
 @media (hover: hover) and (pointer: fine) {
   .${P}-interactive.${P}-state-open .${P}-toggle:hover {
-    color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
+    color: var(--${P}-open-hover-close-button-color, var(--${P}-close-button-color));
   }
 }
 .${P}-interactive.${P}-state-open .${P}-toggle:active {
-  color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
+  color: var(--${P}-open-hover-close-button-color, var(--${P}-close-button-color));
 }
 .${P}-interactive.${P}-state-open .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-open.${P}-state-hover .${P}-toggle {
-  color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
+  color: var(--${P}-open-hover-close-button-color, var(--${P}-close-button-color));
 }
 .${P}-lightbox .${P}-link {
   color: var(--${P}-menu-link-color);
@@ -1876,8 +1850,19 @@ export function Burger({
   const isStateUnavailable = (state?: string | null) => Boolean(state && unavailableStateSet.has(state));
   const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open' && !isStateUnavailable('open'));
   const isOpen = isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser);
-  const shouldLockScroll = isOpen && !(isEditor && !isPreviewMode);
+  const isEditorCanvas = Boolean(isEditor && !isPreviewMode);
+  const shouldLockScroll = isOpen && !isEditorCanvas;
   useLightboxScrollLock(shouldLockScroll);
+  useEffect(() => {
+    if (!isOpen || !isEditorCanvas) return;
+    // Editor tools depend on window.scrollY, so only block user scrolling without moving the page.
+    const html = document.documentElement;
+    const originalOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
+    return () => {
+      html.style.overflow = originalOverflow;
+    };
+  }, [isOpen, isEditorCanvas]);
   const canUseCompact = !isStateUnavailable('compact') && !isStateUnavailable('onScroll');
   const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
   const interactionState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
@@ -1911,7 +1896,6 @@ export function Burger({
     linkColor = '#000000',
     openLinkColor = '#000000',
     compactIconColor = '#000000',
-    compactCloseButtonColor = '#000000',
     compactLinkColor = '#000000',
     compactLogoColor = '#000000',
     compactBackgroundColor = '#ffffff',
@@ -1999,7 +1983,6 @@ export function Burger({
     linkColor,
     openLinkColor,
     compactIconColor,
-    compactCloseButtonColor,
     compactLinkColor,
     compactLogoColor,
     compactBackgroundColor,
@@ -2167,7 +2150,7 @@ export function Burger({
   const items = Array.isArray(linkItems) ? linkItems : [];
   const stateClass = [
     navigationState !== 'default' ? `${P}-state-${navigationState}` : '',
-    pinnedState === 'open' ? `${P}-state-open` : '',
+    isOpen || pinnedState === 'open' ? `${P}-state-open` : '',
     interactionState && interactionState !== navigationState && interactionState !== pinnedState
       ? `${P}-state-${interactionState}`
       : '',
