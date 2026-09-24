@@ -103,6 +103,7 @@ type BurgerSettings = {
   overlayColor?: string;
   closeButtonColor?: string;
   effect?: BurgerEffect;
+  openPanelSize?: number;
   textWidth?: number;
   navTextWidth?: number;
   navTextPosition?: BurgerTextPosition;
@@ -980,6 +981,9 @@ function getCSS(P: string): string {
 .${P}-lightbox.${P}-lightbox-active .${P}-backdrop {
   opacity: 1;
 }
+.${P}-backdrop-clickable {
+  cursor: pointer;
+}
 .${P}-panel {
   position: absolute;
   box-sizing: border-box;
@@ -994,24 +998,18 @@ function getCSS(P: string): string {
   pointer-events: none;
   box-shadow: none;
 }
+.${P}-full-lightbox .${P}-panel.${P}-panel-blocking {
+  pointer-events: auto;
+}
 .${P}-safari-tint {
   position: fixed;
+  top: 0;
   left: 0;
-  width: 100%;
-  height: 4px;
+  width: 0;
+  height: 0;
   pointer-events: none;
   background-color: var(--${P}-menu-background-color);
   opacity: 0;
-  transition: opacity ${MENU_ANIM_MS}ms ease;
-}
-.${P}-safari-tint-top {
-  top: 0;
-}
-.${P}-safari-tint-bottom {
-  bottom: 0;
-}
-.${P}-lightbox.${P}-lightbox-active .${P}-safari-tint {
-  opacity: 1;
 }
 .${P}-full-lightbox .${P}-link,
 .${P}-full-lightbox .${P}-gap-control {
@@ -1043,6 +1041,8 @@ function getCSS(P: string): string {
   transform: translateX(0);
 }
 .${P}-effect-right .${P}-panel {
+  left: auto;
+  right: 0;
   transform: translateX(100%);
 }
 .${P}-effect-right.${P}-lightbox-active .${P}-panel {
@@ -1055,6 +1055,8 @@ function getCSS(P: string): string {
   transform: translateY(0);
 }
 .${P}-effect-bottom .${P}-panel {
+  top: auto;
+  bottom: 0;
   transform: translateY(100%);
 }
 .${P}-effect-bottom.${P}-lightbox-active .${P}-panel {
@@ -1830,6 +1832,7 @@ export function Burger({
     overlayColor = 'rgba(0, 0, 0, 0.45)',
     closeButtonColor = '#000000',
     effect = 'fade',
+    openPanelSize = 100,
     textWidth = 280 / 1440,
     navTextWidth,
     navTextPosition = 'center',
@@ -1980,8 +1983,14 @@ export function Burger({
     );
   };
 
+  const isHorizontalEffect = effect === 'left' || effect === 'right';
+  const panelSizeStyle: CSSProperties = isHorizontalEffect
+    ? { width: `${openPanelSize}%` }
+    : { height: `${openPanelSize}%` };
+
   const panelStyle = {
     ...getPanelPaddingStyle(effectiveLayout, isEditor),
+    ...panelSizeStyle,
     alignItems: HORIZONTAL_ALIGN_MAP[horizontalAlign],
     justifyContent: VERTICAL_ALIGN_MAP[verticalAlign],
   };
@@ -2067,6 +2076,8 @@ export function Burger({
   const closeMenu = () => {
     setIsOpen(false);
   };
+
+  const canCloseByOverlay = !isEditor || isPreviewMode;
 
   const onNavLinkClick = (event: MouseEvent<HTMLAnchorElement>, item?: BurgerLink) => {
     handleLinkClick(event, closeMenu, {
@@ -2260,16 +2271,22 @@ export function Burger({
       style={{ ...colorVars, ...lightboxLayoutStyle }}
       aria-hidden={!isOverlayActive}
     >
-      <div className={`${P}-backdrop`} aria-hidden="true" />
-      <nav className={`${P}-panel`} style={panelStyle} aria-label="Menu" data-lightbox-scrollable="">
+      <div
+        className={[`${P}-backdrop`, canCloseByOverlay ? `${P}-backdrop-clickable` : ''].filter(Boolean).join(' ')}
+        aria-hidden="true"
+        onClick={canCloseByOverlay ? closeMenu : undefined}
+      />
+      <nav
+        className={[`${P}-panel`, canCloseByOverlay ? `${P}-panel-blocking` : ''].filter(Boolean).join(' ')}
+        style={panelStyle}
+        aria-label="Menu"
+        data-lightbox-scrollable=""
+      >
         {showControls && renderTextPaddingControls(P, effectiveLayout, openTypeStyle.fontSize, scaled)}
         {renderOpenNavItems(`${P}-link`)}
       </nav>
       {shouldLockScroll ? (
-        <>
-          <div ref={safariTintRef} className={`${P}-safari-tint ${P}-safari-tint-top`} aria-hidden="true" />
-          <div className={`${P}-safari-tint ${P}-safari-tint-bottom`} aria-hidden="true" />
-        </>
+        <div ref={safariTintRef} className={`${P}-safari-tint`} aria-hidden="true" />
       ) : null}
     </div>
   ) : null;

@@ -143,8 +143,8 @@ const compactNavStateLayout = [
 
 const openNavStateLayout = [
   '__componentName__',
-  { type: 'row' as const, items: ['textWidth', 'effect'] },
-  'position',
+  { type: 'row' as const, title: 'Text', items: ['textWidth', 'position'] },
+  { type: 'row' as const, title: 'Menu', items: ['openPanelSize', 'effect'] },
   'openFontFamily',
   'openFontSettings',
   { type: 'row' as const, items: ['openFontSize', 'openLineHeight', 'openLetterSpacing', 'openWordSpacing'] },
@@ -304,10 +304,10 @@ const schema = {
       linkColor: {
         type: 'string',
         scope: 'common',
-        title: 'Link Default',
+        title: 'Text Default',
         titleByState: {
-          default: 'Link Default',
-          hover: 'Link Hover',
+          default: 'Text Default',
+          hover: 'Text Hover',
         },
         display: { type: 'palette-color-picker' },
       },
@@ -340,10 +340,10 @@ const schema = {
       compactLinkColor: {
         type: 'string',
         scope: 'common',
-        title: 'Link Default',
+        title: 'Text Default',
         titleByState: {
-          compact: 'Link Default',
-          'compact-hover': 'Link Hover',
+          compact: 'Text Default',
+          'compact-hover': 'Text Hover',
         },
         display: { type: 'palette-color-picker' },
       },
@@ -366,10 +366,10 @@ const schema = {
       openLinkColor: {
         type: 'string',
         scope: 'common',
-        title: 'Link Default',
+        title: 'Text Default',
         titleByState: {
-          open: 'Link Default',
-          'open-hover': 'Link Hover',
+          open: 'Text Default',
+          'open-hover': 'Text Hover',
         },
         display: { type: 'palette-color-picker' },
       },
@@ -413,10 +413,18 @@ const schema = {
         title: 'Effect',
         display: { type: 'toggle-cycle', enum: ['fade', 'left', 'top', 'right', 'bottom'] },
       },
+      openPanelSize: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Height',
+        display: { type: 'percentage-input' },
+        min: 0,
+        max: 100,
+      },
       textWidth: {
         type: 'number',
         scope: 'layout',
-        title: 'Text width',
+        title: 'Width',
         display: { type: 'numeric-input' },
         min: 0,
         max: 9999,
@@ -639,6 +647,14 @@ const schema = {
         then: { name: 'properties.openLogoColor.display.visible', value: false },
       },
       {
+        if: { name: 'effect', value: 'left' },
+        then: { name: 'properties.openPanelSize.title', value: 'Width' },
+      },
+      {
+        if: { name: 'effect', value: 'right' },
+        then: { name: 'properties.openPanelSize.title', value: 'Width' },
+      },
+      {
         if: { name: 'showIcon', value: 'off' },
         then: { name: 'properties.iconSize.display.visible', value: false },
       },
@@ -669,6 +685,7 @@ const schema = {
         showIcon: 'on',
         iconSize: 30 / 375,
         textWidth: 240 / 375,
+        openPanelSize: 100,
         navTextWidth: 120 / 375,
         gap: 24 / 375,
         navGap: 24 / 375,
@@ -717,6 +734,7 @@ const schema = {
         showIcon: 'on',
         iconSize: 16 / 768,
         textWidth: 300 / 768,
+        openPanelSize: 100,
         navTextWidth: 90 / 768,
         gap: 32 / 768,
         navGap: 32 / 768,
@@ -765,6 +783,7 @@ const schema = {
         showIcon: 'on',
         iconSize: 20 / 1440,
         textWidth: 300 / 1440,
+        openPanelSize: 100,
         navTextWidth: 60 / 1440,
         gap: 12 / 1440,
         navGap: 64 / 1440,
