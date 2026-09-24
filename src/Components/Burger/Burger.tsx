@@ -365,6 +365,97 @@ function getTextLeadingVars(
   } as CSSProperties;
 }
 
+const OPTICAL_OFFSET_EPSILON_EM = 0.004;
+
+let opticalCanvasCtx: CanvasRenderingContext2D | null | undefined;
+
+function getOpticalCanvasCtx(): CanvasRenderingContext2D | null {
+  if (opticalCanvasCtx !== undefined) return opticalCanvasCtx;
+  if (typeof document === 'undefined') {
+    opticalCanvasCtx = null;
+    return null;
+  }
+  opticalCanvasCtx = document.createElement('canvas').getContext('2d');
+  return opticalCanvasCtx;
+}
+
+function readOpticalOffsetEm(el: HTMLElement): number {
+  const computed = getComputedStyle(el);
+  const fontSizePx = parseFloat(computed.fontSize) || 0;
+  if (fontSizePx <= 0) return 0;
+  const ctx = getOpticalCanvasCtx();
+  if (!ctx) return 0;
+  ctx.font = `${computed.fontStyle} ${computed.fontWeight} ${fontSizePx}px ${computed.fontFamily}`;
+  const metrics = ctx.measureText('H');
+  const inkAscent = metrics.actualBoundingBoxAscent > 0 ? metrics.actualBoundingBoxAscent : 0;
+  const inkDescent = Math.max(0, metrics.actualBoundingBoxDescent || 0);
+  const fontAscent = metrics.fontBoundingBoxAscent || 0;
+  const fontDescent = metrics.fontBoundingBoxDescent || 0;
+  if (inkAscent <= 0 || (fontAscent <= 0 && fontDescent <= 0)) return 0;
+  return (((fontDescent - inkDescent) - (fontAscent - inkAscent)) / 2) / fontSizePx;
+}
+
+function useOpticalTextOffsetEm(
+  probeRef: { readonly current: HTMLElement | null },
+  fontKey: string,
+): number {
+  const [offsetEm, setOffsetEm] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = probeRef.current;
+    if (!el) return undefined;
+
+    const measure = () => {
+      const next = readOpticalOffsetEm(el);
+      setOffsetEm((prev) => (Math.abs(prev - next) < OPTICAL_OFFSET_EPSILON_EM ? prev : next));
+    };
+
+    measure();
+    const fonts = document.fonts;
+    fonts.ready.then(measure).catch(() => {});
+    fonts.addEventListener('loadingdone', measure);
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => {
+      fonts.removeEventListener('loadingdone', measure);
+      observer.disconnect();
+    };
+  }, [probeRef, fontKey]);
+
+  return offsetEm;
+}
+
+function opticalTextTransform(offsetEm: number): string | undefined {
+  if (Math.abs(offsetEm) < OPTICAL_OFFSET_EPSILON_EM) return undefined;
+  return `translateY(${offsetEm}em)`;
+}
+
+function burgerTypeStyleKey(style: BurgerTypeStyle): string {
+  return [
+    style.fontFamily ?? '',
+    style.fontSettings?.fontWeight ?? 400,
+    style.fontSettings?.fontStyle ?? 'normal',
+    style.fontSize ?? '',
+    style.lineHeight ?? '',
+  ].join('\0');
+}
+
+function textProbeStyle(css: CSSProperties): CSSProperties {
+  return {
+    fontFamily: css.fontFamily,
+    fontWeight: css.fontWeight,
+    fontStyle: css.fontStyle,
+    fontSize: css.fontSize,
+    lineHeight: css.lineHeight,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+  };
+}
+
 type BurgerTypeStyle = {
   fontFamily?: string;
   fontSettings?: {
@@ -1755,6 +1846,8 @@ export function Burger({
   const { prefix: P } = useScopedStyles();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const closedTextProbeRef = useRef<HTMLSpanElement>(null);
+  const openTextProbeRef = useRef<HTMLSpanElement>(null);
   const safariTintRef = useRef<HTMLDivElement>(null);
   const openAnimationRef = useRef(0);
   const closeTimerRef = useRef<number | null>(null);
@@ -1936,9 +2029,12 @@ export function Burger({
   }, closedTypeStyle);
   const closedTextCss = burgerTypeStyleToCss(P, closedTypeStyle, isEditor);
   const openTextCss = burgerTypeStyleToCss(P, openTypeStyle, isEditor);
+  const closedOpticalOffsetEm = useOpticalTextOffsetEm(closedTextProbeRef, burgerTypeStyleKey(closedTypeStyle));
+  const openOpticalOffsetEm = useOpticalTextOffsetEm(openTextProbeRef, burgerTypeStyleKey(openTypeStyle));
   const linkTextStyle: CSSProperties = {
     ...openTextCss.css,
     whiteSpace: 'pre-wrap',
+    transform: opticalTextTransform(openOpticalOffsetEm),
   };
   const linkTextClassName = openTextCss.className;
   const scaled = (value: number) => scalingValue(value, isEditor);
@@ -2044,6 +2140,7 @@ export function Burger({
   const navLinkTextStyle: CSSProperties = {
     ...closedTextCss.css,
     textDecoration: 'none',
+    transform: opticalTextTransform(closedOpticalOffsetEm),
   };
   const navLinkTextClassName = closedTextCss.className;
   const showLogo = logo?.mode !== 'Off';
@@ -2412,6 +2509,8 @@ export function Burger({
       }}
     >
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
+      <span ref={closedTextProbeRef} aria-hidden style={textProbeStyle(closedTextCss.css)}>H</span>
+      <span ref={openTextProbeRef} aria-hidden style={textProbeStyle(openTextCss.css)}>H</span>
       <div className={`${P}-nav-slide`}>
         <div className={`${P}-nav-bar`} style={navBarStyle}>
           {showLogo && logoSrc ? (

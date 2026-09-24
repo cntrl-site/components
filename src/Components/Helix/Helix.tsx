@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 
-const ORBIT_STEPS = 48;
 const DEG_PER_SEC_PER_SPEED_UNIT = 10;
 const MAX_TOTAL_ITEMS = 400;
 const OVERFLOW_TURNS = 1;
@@ -23,26 +22,24 @@ const BACKGROUND_BLUR = 1.5;
 const FOREGROUND_BLUR = 0;
 const FOREGROUND_OPACITY_ZONE = 0.85;
 
-function getCSS(P: string, keyframes: string): string {
+function getCSS(P: string): string {
   return `
 .${P}-wrapper {
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
-  clip-path: inset(0);
   isolation: isolate;
+  contain: layout paint;
 }
 .${P}-item {
   position: absolute;
+  left: 0;
+  width: var(--helix-base-w);
   overflow: hidden;
-  animation-name: ${P}-orbit;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-fill-mode: both;
-  will-change: left, width, height, z-index, opacity, filter;
+  transform-origin: center center;
 }
-.${P}-item-static {
-  animation-name: none;
+.${P}-item-cover {
+  height: var(--helix-base-h);
 }
 .${P}-media {
   display: block;
@@ -68,7 +65,6 @@ function getCSS(P: string, keyframes: string): string {
   object-fit: cover;
   object-position: center;
 }
-${keyframes}
 `;
 }
 
@@ -214,16 +210,12 @@ function getOrbitCenterX(width: number, orbitRadius: number, offset: number): nu
   return width / 2 + orbitRadius * offset;
 }
 
-function getOrbitLeft(
+function getOrbitTransform(
   scaled: (value: number) => string,
   centerX: number,
-  layoutWidth: number,
+  scale: number,
 ): string {
-  return scaled(centerX - layoutWidth / 2);
-}
-
-function getOrbitLayoutWidth(baseItemWidth: number, scale: number): number {
-  return baseItemWidth * scale;
+  return `translate(calc(${scaled(centerX)} - var(--helix-base-w) / 2), -50%) scale(${round(scale)})`;
 }
 
 function getOrbitZIndex(scale: number): number {
@@ -256,44 +248,32 @@ function getOrbitFilter(angle: number, blurEnabled: boolean): string {
   return blur <= 0 ? 'none' : `blur(${blur}px)`;
 }
 
-function getOrbitKeyframeStyles(
-  scaled: (value: number) => string,
-  width: number,
-  orbitRadius: number,
-  depthFactor: number,
-  spreadFactor: number,
-  progress: number,
-  isCover: boolean,
-  blurEnabled: boolean,
-): string {
-  const { offset, scale } = getOrbitPose(depthFactor, spreadFactor, progress * Math.PI * 2);
-  const angle = progress * Math.PI * 2;
-  const centerX = getOrbitCenterX(width, orbitRadius, offset);
-  const layoutWidthFactor = round(scale);
-  const left = `calc(${scaled(centerX)} - var(--helix-base-w) * ${layoutWidthFactor} / 2)`;
-  const widthStyle = `calc(var(--helix-base-w) * ${layoutWidthFactor})`;
-  const heightStyle = isCover ? `height: calc(var(--helix-base-h) * ${layoutWidthFactor});` : '';
-  return `left: ${left}; width: ${widthStyle}; ${heightStyle} z-index: ${getOrbitZIndex(scale)}; transform: translateY(-50%); opacity: ${getOrbitOpacity(angle)}; filter: ${getOrbitFilter(angle, blurEnabled)};`;
-}
+type OrbitParams = {
+  scaled: (value: number) => string;
+  width: number;
+  orbitRadius: number;
+  depthFactor: number;
+  spreadFactor: number;
+  blurEnabled: boolean;
+};
 
-function getOrbitKeyframes(
-  P: string,
-  scaled: (value: number) => string,
-  width: number,
-  orbitRadius: number,
-  depthFactor: number,
-  spreadFactor: number,
-  isCover: boolean,
-  blurEnabled: boolean,
-): string {
-  const frames: string[] = [];
-  for (let step = 0; step <= ORBIT_STEPS; step += 1) {
-    const progress = step / ORBIT_STEPS;
-    frames.push(
-      `  ${round(progress * 100)}% { ${getOrbitKeyframeStyles(scaled, width, orbitRadius, depthFactor, spreadFactor, progress, isCover, blurEnabled)} }`,
-    );
-  }
-  return `@keyframes ${P}-orbit {\n${frames.join('\n')}\n}`;
+type OrbitItemStyle = {
+  transform: string;
+  zIndex: number;
+  opacity: number;
+  filter: string;
+};
+
+function getOrbitItemStyle(params: OrbitParams, orbitPhase: number): OrbitItemStyle {
+  const angle = orbitPhase * Math.PI * 2;
+  const { offset, scale } = getOrbitPose(params.depthFactor, params.spreadFactor, angle);
+  const centerX = getOrbitCenterX(params.width, params.orbitRadius, offset);
+  return {
+    transform: getOrbitTransform(params.scaled, centerX, scale),
+    zIndex: getOrbitZIndex(scale),
+    opacity: getOrbitOpacity(angle),
+    filter: getOrbitFilter(angle, params.blurEnabled),
+  };
 }
 
 function mod(value: number, length: number): number {
@@ -314,11 +294,6 @@ function getTurnIndex(index: number, itemsPerTurn: number): number {
 
 function getVerticalOffset(index: number, itemsPerTurn: number, turnHeight: number, verticalStep: number): number {
   return getTurnIndex(index, itemsPerTurn) * turnHeight + getOrbitSlotIndex(index, itemsPerTurn) * verticalStep;
-}
-
-function getOrbitAnimationDelay(phase: number, durationSeconds: number, direction: 'left' | 'right'): string {
-  const delayPhase = direction === 'left' ? 1 - phase : phase;
-  return `${round(-delayPhase * durationSeconds)}s`;
 }
 
 function hashUnit(seed: number): number {
@@ -370,10 +345,20 @@ export function Helix({
     () => getOrbitRadius(width, imageWidth, isCover, scatter),
     [width, imageWidth, isCover, scatter],
   );
-  const scopedCss = useMemo(
-    () => getCSS(P, getOrbitKeyframes(P, scaled, width, orbitRadius, depthFactor, spreadFactor, isCover, blurEnabled)),
-    [P, width, orbitRadius, depthFactor, spreadFactor, isCover, blurEnabled, isEditor],
+  const scopedCss = useMemo(() => getCSS(P), [P]);
+  const orbitParams = useMemo<OrbitParams>(
+    () => ({
+      scaled: (value: number) => scalingValue(value, isEditor ?? false),
+      width,
+      orbitRadius,
+      depthFactor,
+      spreadFactor,
+      blurEnabled,
+    }),
+    [isEditor, width, orbitRadius, depthFactor, spreadFactor, blurEnabled],
   );
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const orbitProgressRef = useRef(0);
 
   const mediaItems = useMemo(
     () => (content ?? []).filter((item) => Boolean(item.image?.url)),
@@ -390,36 +375,89 @@ export function Helix({
 
   const motionEnabled = speed > 0;
   const useScrollMotion = playback === 'scroll' && motionEnabled;
-  const useCssAnimation = playback === 'autoplay' && motionEnabled && (isEditor ? Boolean(isPreviewMode) : true);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const useAutoplayMotion = playback === 'autoplay' && motionEnabled && (isEditor ? Boolean(isPreviewMode) : true);
+  const durationSeconds = useAutoplayMotion ? 360 / (speed * DEG_PER_SEC_PER_SPEED_UNIT) : 0;
+  const renderedItemCount = mediaItems.length === 0 ? 0 : totalItems;
+  const itemPhases = useMemo(
+    () => Array.from({ length: renderedItemCount }, (_, index) => getOrbitPhase(index - overflowItems, itemsPerTurn)),
+    [renderedItemCount, overflowItems, itemsPerTurn],
+  );
 
   useEffect(() => {
-    if (!useScrollMotion) return;
+    if (!useAutoplayMotion && !useScrollMotion) return;
     const element = wrapperRef.current;
     if (!element) return;
 
-    const update = () => {
-      const rect = element.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-      const range = viewportHeight + rect.height;
-      if (range <= 0) return;
-      setScrollProgress(Math.min(1, Math.max(0, (viewportHeight - rect.top) / range)));
+    const applyOrbitProgress = (progress: number) => {
+      orbitProgressRef.current = progress;
+      itemPhases.forEach((phase, index) => {
+        const node = itemRefs.current[index];
+        if (!node) return;
+        const style = getOrbitItemStyle(orbitParams, normalizePhase(phase + progress));
+        node.style.transform = style.transform;
+        node.style.zIndex = String(style.zIndex);
+        node.style.opacity = String(style.opacity);
+        node.style.filter = style.filter;
+      });
     };
 
-    update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    const resizeObserver = new ResizeObserver(update);
-    resizeObserver.observe(element);
+    if (useScrollMotion) {
+      const update = () => {
+        const rect = element.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const range = viewportHeight + rect.height;
+        if (range <= 0) return;
+        const scrollProgress = Math.min(1, Math.max(0, (viewportHeight - rect.top) / range));
+        applyOrbitProgress(getScrollOrbitProgress(scrollProgress, speed, direction));
+      };
+
+      update();
+      window.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      const resizeObserver = new ResizeObserver(update);
+      resizeObserver.observe(element);
+      return () => {
+        window.removeEventListener('scroll', update);
+        window.removeEventListener('resize', update);
+        resizeObserver.disconnect();
+      };
+    }
+
+    const directionSign = direction === 'left' ? -1 : 1;
+    let frameId: number | null = null;
+    let lastTime: number | null = null;
+
+    const tick = (time: number) => {
+      if (lastTime !== null) {
+        const delta = ((time - lastTime) / 1000 / durationSeconds) * directionSign;
+        orbitProgressRef.current = normalizePhase(orbitProgressRef.current + delta);
+      }
+      lastTime = time;
+      applyOrbitProgress(orbitProgressRef.current);
+      frameId = requestAnimationFrame(tick);
+    };
+    const start = () => {
+      if (frameId !== null) return;
+      lastTime = null;
+      frameId = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      frameId = null;
+    };
+
+    const intersectionObserver = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) start();
+      else stop();
+    });
+    intersectionObserver.observe(element);
     return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-      resizeObserver.disconnect();
+      stop();
+      intersectionObserver.disconnect();
     };
-  }, [useScrollMotion]);
+  }, [useAutoplayMotion, useScrollMotion, itemPhases, orbitParams, durationSeconds, speed, direction]);
 
-  const scrollOrbitProgress = useScrollMotion ? getScrollOrbitProgress(scrollProgress, speed, direction) : 0;
-  const durationSeconds = motionEnabled && playback === 'autoplay' ? 360 / (speed * DEG_PER_SEC_PER_SPEED_UNIT) : 0;
+  const renderProgress = useAutoplayMotion || useScrollMotion ? orbitProgressRef.current : 0;
 
   if (mediaItems.length === 0) {
     return (
@@ -447,18 +485,13 @@ export function Helix({
           const item = mediaItems[mod(logicalIndex, mediaItems.length)];
           const media = item.image as HelixMedia;
           const slotIndex = getOrbitSlotIndex(logicalIndex, itemsPerTurn);
-          const phase = getOrbitPhase(logicalIndex, itemsPerTurn);
-          const orbitPhase = useScrollMotion ? normalizePhase(phase + scrollOrbitProgress) : phase;
+          const phase = itemPhases[index];
           const verticalOffset = getVerticalOffset(logicalIndex, itemsPerTurn, turnHeight, verticalStep);
           const verticalJitter = scatter === 0 ? 0 : (hashUnit(slotIndex + 7.3) - 0.5) * scatter * verticalStep;
           const sizeJitter = isCover
             ? 1
             : 1 + (hashUnit(slotIndex + 3.1) - 0.5) * 2 * SIZE_JITTER * (0.35 + scatter);
-          const angle = orbitPhase * Math.PI * 2;
-          const { offset, scale } = getOrbitPose(depthFactor, spreadFactor, angle);
           const itemWidth = imageWidth * sizeJitter;
-          const layoutWidth = getOrbitLayoutWidth(itemWidth, scale);
-          const centerX = getOrbitCenterX(width, orbitRadius, offset);
           const orbitCssVars = {
             '--helix-base-w': scaled(itemWidth),
             ...(isCover ? { '--helix-base-h': scaled(imageHeight) } : {}),
@@ -466,22 +499,8 @@ export function Helix({
 
           const itemStyle: CSSProperties = {
             top: scaled(verticalOffset + verticalJitter),
-            transform: 'translateY(-50%)',
             ...orbitCssVars,
-            ...(useCssAnimation
-              ? {
-                  animationDuration: `${round(durationSeconds)}s`,
-                  animationDelay: getOrbitAnimationDelay(phase, durationSeconds, direction),
-                  animationDirection: direction === 'left' ? 'reverse' : 'normal',
-                }
-              : {
-                  left: getOrbitLeft(scaled, centerX, layoutWidth),
-                  width: scaled(layoutWidth),
-                  ...(isCover ? { height: scaled(imageHeight * scale) } : {}),
-                  zIndex: getOrbitZIndex(scale),
-                  opacity: getOrbitOpacity(angle),
-                  filter: getOrbitFilter(angle, blurEnabled),
-                }),
+            ...getOrbitItemStyle(orbitParams, normalizePhase(phase + renderProgress)),
           };
 
           const mediaStyle: CSSProperties = cornerRadius > 0 ? { borderRadius: scaled(cornerRadius) } : {};
@@ -519,7 +538,10 @@ export function Helix({
           return (
             <div
               key={`${turns}-${itemsPerTurn}-${logicalIndex}`}
-              className={useCssAnimation ? `${P}-item` : `${P}-item ${P}-item-static`}
+              ref={(node) => {
+                itemRefs.current[index] = node;
+              }}
+              className={isCover ? `${P}-item ${P}-item-cover` : `${P}-item`}
               style={itemStyle}
             >
               {isCover ? (
