@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils';
+import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 const MENU_ANIM_MS = 300;
@@ -923,12 +924,24 @@ function getCSS(P: string): string {
 .${P}-root.${P}-open .${P}-toggle {
   color: var(--${P}-close-button-color);
 }
-.${P}-interactive .${P}-toggle:hover,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive .${P}-toggle:hover {
+    color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
+  }
+  .${P}-interactive .${P}-open .${P}-toggle:hover {
+    color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
+  }
+}
+.${P}-interactive .${P}-toggle:active {
+  color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
+}
+.${P}-interactive .${P}-open .${P}-toggle:active {
+  color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
+}
 .${P}-interactive .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-hover .${P}-toggle {
   color: var(--${P}-hover-icon-color, var(--${P}-icon-color));
 }
-.${P}-interactive .${P}-open .${P}-toggle:hover,
 .${P}-interactive .${P}-open .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-hover .${P}-open .${P}-toggle {
   color: var(--${P}-hover-close-button-color, var(--${P}-close-button-color));
@@ -962,7 +975,6 @@ function getCSS(P: string): string {
   margin: 0;
   background-color: var(--${P}-overlay-color);
   opacity: 0;
-  cursor: pointer;
   transition: opacity ${MENU_ANIM_MS}ms ease, background-color ${MENU_ANIM_MS}ms ease;
 }
 .${P}-lightbox.${P}-lightbox-active .${P}-backdrop {
@@ -981,6 +993,25 @@ function getCSS(P: string): string {
 .${P}-full-lightbox .${P}-panel {
   pointer-events: none;
   box-shadow: none;
+}
+.${P}-safari-tint {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  pointer-events: none;
+  background-color: var(--${P}-menu-background-color);
+  opacity: 0;
+  transition: opacity ${MENU_ANIM_MS}ms ease;
+}
+.${P}-safari-tint-top {
+  top: 0;
+}
+.${P}-safari-tint-bottom {
+  bottom: 0;
+}
+.${P}-lightbox.${P}-lightbox-active .${P}-safari-tint {
+  opacity: 1;
 }
 .${P}-full-lightbox .${P}-link,
 .${P}-full-lightbox .${P}-gap-control {
@@ -1104,19 +1135,40 @@ function getCSS(P: string): string {
 .${P}-interactive .${P}-has-href {
   cursor: pointer;
 }
-.${P}-interactive .${P}-has-href:hover,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive .${P}-has-href:hover {
+    color: var(--${P}-hover-link-color, var(--${P}-link-color));
+    outline: none;
+  }
+  .${P}-interactive .${P}-lightbox .${P}-has-href:hover {
+    color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
+    outline: none;
+  }
+  .${P}-interactive .${P}-has-href:hover .${P}-link-text {
+    color: inherit;
+  }
+}
+.${P}-interactive .${P}-has-href:active {
+  color: var(--${P}-hover-link-color, var(--${P}-link-color));
+  outline: none;
+}
+.${P}-interactive .${P}-lightbox .${P}-has-href:active {
+  color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
+  outline: none;
+}
+.${P}-interactive .${P}-has-href:active .${P}-link-text {
+  color: inherit;
+}
 .${P}-interactive .${P}-has-href:focus-visible,
 .${P}-lightbox.${P}-state-hover .${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
-.${P}-interactive .${P}-lightbox .${P}-has-href:hover,
 .${P}-interactive .${P}-lightbox .${P}-has-href:focus-visible,
 .${P}-lightbox.${P}-state-hover .${P}-link.${P}-has-href {
   color: var(--${P}-open-hover-menu-link-color, var(--${P}-menu-link-color));
   outline: none;
 }
-.${P}-interactive .${P}-has-href:hover .${P}-link-text,
 .${P}-interactive .${P}-has-href:focus-visible .${P}-link-text,
 .${P}-lightbox.${P}-state-hover .${P}-has-href .${P}-link-text {
   color: inherit;
@@ -1205,15 +1257,32 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-open .${P}-nav-logo-tinted .${P}-nav-logo-tint {
   background-color: var(--${P}-open-logo-color, var(--${P}-logo-color));
 }
-.${P}-interactive .${P}-nav-logo:hover .${P}-nav-logo-tint,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive .${P}-nav-logo:hover .${P}-nav-logo-tint {
+    background-color: var(--${P}-hover-logo-color, var(--${P}-logo-color));
+  }
+  .${P}-interactive.${P}-state-compact .${P}-nav-logo:hover .${P}-nav-logo-tint {
+    background-color: var(--${P}-compact-hover-compact-logo-color, var(--${P}-compact-logo-color));
+  }
+  .${P}-interactive.${P}-state-open .${P}-nav-logo:hover .${P}-nav-logo-tint {
+    background-color: var(--${P}-open-hover-open-logo-color, var(--${P}-open-logo-color, var(--${P}-logo-color)));
+  }
+}
+.${P}-interactive .${P}-nav-logo:active .${P}-nav-logo-tint {
+  background-color: var(--${P}-hover-logo-color, var(--${P}-logo-color));
+}
+.${P}-interactive.${P}-state-compact .${P}-nav-logo:active .${P}-nav-logo-tint {
+  background-color: var(--${P}-compact-hover-compact-logo-color, var(--${P}-compact-logo-color));
+}
+.${P}-interactive.${P}-state-open .${P}-nav-logo:active .${P}-nav-logo-tint {
+  background-color: var(--${P}-open-hover-open-logo-color, var(--${P}-open-logo-color, var(--${P}-logo-color)));
+}
 .${P}-root.${P}-state-hover .${P}-nav-logo-tinted .${P}-nav-logo-tint {
   background-color: var(--${P}-hover-logo-color, var(--${P}-logo-color));
 }
-.${P}-interactive.${P}-state-compact .${P}-nav-logo:hover .${P}-nav-logo-tint,
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-nav-logo-tinted .${P}-nav-logo-tint {
   background-color: var(--${P}-compact-hover-compact-logo-color, var(--${P}-compact-logo-color));
 }
-.${P}-interactive.${P}-state-open .${P}-nav-logo:hover .${P}-nav-logo-tint,
 .${P}-root.${P}-state-open.${P}-state-hover .${P}-nav-logo-tinted .${P}-nav-logo-tint {
   background-color: var(--${P}-open-hover-open-logo-color, var(--${P}-open-logo-color, var(--${P}-logo-color)));
 }
@@ -1269,13 +1338,27 @@ function getCSS(P: string): string {
   cursor: default;
   transition: color 200ms ease;
 }
-.${P}-interactive .${P}-nav-link.${P}-has-href:hover,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive .${P}-nav-link.${P}-has-href:hover {
+    color: var(--${P}-hover-link-color, var(--${P}-link-color));
+    outline: none;
+  }
+  .${P}-interactive.${P}-state-compact .${P}-nav-link.${P}-has-href:hover {
+    color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
+  }
+}
+.${P}-interactive .${P}-nav-link.${P}-has-href:active {
+  color: var(--${P}-hover-link-color, var(--${P}-link-color));
+  outline: none;
+}
+.${P}-interactive.${P}-state-compact .${P}-nav-link.${P}-has-href:active {
+  color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
+}
 .${P}-interactive .${P}-nav-link.${P}-has-href:focus-visible,
 .${P}-root.${P}-state-hover .${P}-nav-link.${P}-has-href {
   color: var(--${P}-hover-link-color, var(--${P}-link-color));
   outline: none;
 }
-.${P}-interactive.${P}-state-compact .${P}-nav-link.${P}-has-href:hover,
 .${P}-interactive.${P}-state-compact .${P}-nav-link.${P}-has-href:focus-visible,
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-nav-link.${P}-has-href {
   color: var(--${P}-compact-hover-compact-link-color, var(--${P}-compact-link-color));
@@ -1289,12 +1372,24 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-compact .${P}-open .${P}-toggle {
   color: var(--${P}-compact-close-button-color);
 }
-.${P}-interactive.${P}-state-compact .${P}-toggle:hover,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive.${P}-state-compact .${P}-toggle:hover {
+    color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
+  }
+  .${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:hover {
+    color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
+  }
+}
+.${P}-interactive.${P}-state-compact .${P}-toggle:active {
+  color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
+}
+.${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:active {
+  color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
+}
 .${P}-interactive.${P}-state-compact .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-toggle {
   color: var(--${P}-compact-hover-compact-icon-color, var(--${P}-compact-icon-color));
 }
-.${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:hover,
 .${P}-interactive.${P}-state-compact .${P}-open .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-compact.${P}-state-hover .${P}-open .${P}-toggle {
   color: var(--${P}-compact-hover-compact-close-button-color, var(--${P}-compact-close-button-color));
@@ -1305,10 +1400,20 @@ function getCSS(P: string): string {
 .${P}-lightbox.${P}-state-compact .${P}-panel {
   background-color: var(--${P}-compact-menu-background-color, var(--${P}-menu-background-color));
 }
+.${P}-lightbox.${P}-state-compact .${P}-safari-tint {
+  background-color: var(--${P}-compact-menu-background-color, var(--${P}-menu-background-color));
+}
 .${P}-lightbox.${P}-state-compact .${P}-backdrop {
   background-color: var(--${P}-compact-overlay-color, var(--${P}-overlay-color));
 }
-.${P}-interactive .${P}-has-href:hover,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive .${P}-has-href:hover {
+    color: var(--${P}-hover-link-color, var(--${P}-link-color));
+  }
+}
+.${P}-interactive .${P}-has-href:active {
+  color: var(--${P}-hover-link-color, var(--${P}-link-color));
+}
 .${P}-interactive .${P}-has-href:focus-visible,
 .${P}-lightbox.${P}-state-hover .${P}-has-href,
 .${P}-root.${P}-state-hover .${P}-has-href {
@@ -1320,7 +1425,14 @@ function getCSS(P: string): string {
 .${P}-root.${P}-state-open .${P}-toggle {
   color: var(--${P}-open-close-button-color, var(--${P}-close-button-color));
 }
-.${P}-interactive.${P}-state-open .${P}-toggle:hover,
+@media (hover: hover) and (pointer: fine) {
+  .${P}-interactive.${P}-state-open .${P}-toggle:hover {
+    color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
+  }
+}
+.${P}-interactive.${P}-state-open .${P}-toggle:active {
+  color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
+}
 .${P}-interactive.${P}-state-open .${P}-toggle:focus-visible,
 .${P}-root.${P}-state-open.${P}-state-hover .${P}-toggle {
   color: var(--${P}-open-hover-close-button-color, var(--${P}-open-close-button-color, var(--${P}-close-button-color)));
@@ -1329,6 +1441,9 @@ function getCSS(P: string): string {
   color: var(--${P}-menu-link-color);
 }
 .${P}-lightbox.${P}-state-open .${P}-panel {
+  background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
+}
+.${P}-lightbox.${P}-state-open .${P}-safari-tint {
   background-color: var(--${P}-open-menu-background-color, var(--${P}-menu-background-color));
 }
 .${P}-lightbox.${P}-state-open .${P}-backdrop {
@@ -1638,6 +1753,7 @@ export function Burger({
   const { prefix: P } = useScopedStyles();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const safariTintRef = useRef<HTMLDivElement>(null);
   const openAnimationRef = useRef(0);
   const closeTimerRef = useRef<number | null>(null);
   const prevLayoutIdForOverlayRef = useRef(layoutId);
@@ -1651,6 +1767,8 @@ export function Burger({
   const isStateUnavailable = (state?: string | null) => Boolean(state && unavailableStateSet.has(state));
   const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open' && !isStateUnavailable('open'));
   const isOpen = isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser);
+  const shouldLockScroll = isOpen && !(isEditor && !isPreviewMode);
+  useLightboxScrollLock(shouldLockScroll);
   const canUseCompact = !isStateUnavailable('compact') && !isStateUnavailable('onScroll');
   const isHoverEnabled = !isEditor || (Boolean(isPreviewMode) && !isEditMode);
   const interactionState = activeEvent && activeEvent !== 'default' ? activeEvent : undefined;
@@ -1966,6 +2084,12 @@ export function Burger({
     setIsOpen((open) => !open);
   };
 
+  const handleTogglePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === 'touch') {
+      event.currentTarget.blur();
+    }
+  };
+
   const clearCloseTimer = () => {
     if (closeTimerRef.current !== null) {
       window.clearTimeout(closeTimerRef.current);
@@ -2034,6 +2158,27 @@ export function Burger({
       cancelAnimationFrame(frameId);
     };
   }, [isOverlayMounted, isOpen]);
+
+  useLayoutEffect(() => {
+    if (!shouldLockScroll || !isOverlayMounted) return;
+    const tint = safariTintRef.current;
+    if (!tint) return;
+    const color = getComputedStyle(tint).backgroundColor;
+    if (!color) return;
+
+    // Safari 26 ignores theme-color and falls back to the html/body background for toolbar tint.
+    const html = document.documentElement;
+    const { body } = document;
+    const prevHtmlBackground = html.style.backgroundColor;
+    const prevBodyBackground = body.style.backgroundColor;
+    html.style.backgroundColor = color;
+    body.style.backgroundColor = color;
+
+    return () => {
+      html.style.backgroundColor = prevHtmlBackground;
+      body.style.backgroundColor = prevBodyBackground;
+    };
+  }, [shouldLockScroll, isOverlayMounted, stateClass, menuBackgroundColor, stateOverrides]);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -2115,16 +2260,17 @@ export function Burger({
       style={{ ...colorVars, ...lightboxLayoutStyle }}
       aria-hidden={!isOverlayActive}
     >
-      <button
-        type="button"
-        className={`${P}-backdrop`}
-        onClick={closeMenu}
-        aria-label="Close menu"
-      />
-      <nav className={`${P}-panel`} style={panelStyle} aria-label="Menu">
+      <div className={`${P}-backdrop`} aria-hidden="true" />
+      <nav className={`${P}-panel`} style={panelStyle} aria-label="Menu" data-lightbox-scrollable="">
         {showControls && renderTextPaddingControls(P, effectiveLayout, openTypeStyle.fontSize, scaled)}
         {renderOpenNavItems(`${P}-link`)}
       </nav>
+      {shouldLockScroll ? (
+        <>
+          <div ref={safariTintRef} className={`${P}-safari-tint ${P}-safari-tint-top`} aria-hidden="true" />
+          <div className={`${P}-safari-tint ${P}-safari-tint-bottom`} aria-hidden="true" />
+        </>
+      ) : null}
     </div>
   ) : null;
 
@@ -2133,6 +2279,7 @@ export function Burger({
       type="button"
       className={`${P}-toggle`}
       onClick={handleToggle}
+      onPointerUp={handleTogglePointerUp}
       aria-expanded={isOpen}
       aria-label={isOpen ? 'Close menu' : 'Open menu'}
     >
