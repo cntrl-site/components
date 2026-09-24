@@ -1710,12 +1710,17 @@ function isSameDocumentHref(href: string): boolean {
   }
 }
 
-function scrollToAnchor(hash: string): boolean {
-  if (!hash) return false;
+function findAnchorTarget(hash: string): HTMLElement | null {
+  if (!hash) return null;
   const byId = document.getElementById(hash);
   const bySectionId = document.querySelector(`[data-section-id="${CSS.escape(hash)}"]`);
   const target = byId ?? bySectionId;
-  if (!(target instanceof HTMLElement)) return false;
+  return target instanceof HTMLElement ? target : null;
+}
+
+function scrollToAnchor(hash: string): boolean {
+  const target = findAnchorTarget(hash);
+  if (!target) return false;
   target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return true;
 }
@@ -1730,9 +1735,11 @@ function handleLinkClick(
     item?: BurgerLink;
     pages?: BurgerPageRef[];
     onLinkNavigate?: (event: BurgerLinkNavigateEvent) => void;
+    runAfterClose?: (action: () => void) => void;
   } = {},
 ) {
   const { isEditor, isPreviewMode, item, pages, onLinkNavigate } = options;
+  const runAfterClose = options.runAfterClose ?? ((action: () => void) => action());
 
   const href = event.currentTarget.getAttribute('href') ?? '';
   const hash = getLinkHash(href);
@@ -1743,7 +1750,7 @@ function handleLinkClick(
     event.stopPropagation();
     const resolved = resolveBurgerLink(item, pages);
     const dest = getBurgerDest(item);
-    onLinkNavigate({
+    const navigateEvent: BurgerLinkNavigateEvent = {
       mode: dest.type === 'url' ? 'url' : 'page',
       href: resolved.href || href,
       page: dest.type === 'page' ? dest.value : undefined,
@@ -1752,20 +1759,26 @@ function handleLinkClick(
         ? dest.value.replace(/^#/, '')
         : (dest.anchor ?? '').replace(/^#/, ''),
       target: resolved.target,
-    });
+    };
+    if (navigateEvent.target === '_blank') {
+      onLinkNavigate(navigateEvent);
+    } else {
+      runAfterClose(() => onLinkNavigate(navigateEvent));
+    }
     onClose();
     return;
   }
 
   if (isEditor) {
     event.preventDefault();
-    scrollToAnchor(hash);
+    runAfterClose(() => scrollToAnchor(hash));
     onClose();
     return;
   }
 
-  if (!opensInNewTab && hash && isSameDocumentHref(href) && scrollToAnchor(hash)) {
+  if (!opensInNewTab && hash && isSameDocumentHref(href) && findAnchorTarget(hash)) {
     event.preventDefault();
+    runAfterClose(() => scrollToAnchor(hash));
   }
 
   onClose();
@@ -1851,6 +1864,7 @@ export function Burger({
   const safariTintRef = useRef<HTMLDivElement>(null);
   const openAnimationRef = useRef(0);
   const closeTimerRef = useRef<number | null>(null);
+  const pendingAfterCloseRef = useRef<(() => void) | null>(null);
   const prevLayoutIdForOverlayRef = useRef(layoutId);
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const [isOpenUser, setIsOpen] = useState(false);
@@ -2176,6 +2190,21 @@ export function Burger({
 
   const canCloseByOverlay = !isEditor || isPreviewMode;
 
+  const runAfterClose = (action: () => void) => {
+    if (shouldLockScroll) {
+      pendingAfterCloseRef.current = action;
+      return;
+    }
+    action();
+  };
+
+  useEffect(() => {
+    if (isOpen) return;
+    const action = pendingAfterCloseRef.current;
+    pendingAfterCloseRef.current = null;
+    action?.();
+  }, [isOpen]);
+
   const onNavLinkClick = (event: MouseEvent<HTMLAnchorElement>, item?: BurgerLink) => {
     handleLinkClick(event, closeMenu, {
       isEditor,
@@ -2184,6 +2213,7 @@ export function Burger({
       item,
       pages,
       onLinkNavigate,
+      runAfterClose,
     });
   };
 
