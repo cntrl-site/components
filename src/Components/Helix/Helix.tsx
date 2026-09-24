@@ -402,9 +402,10 @@ export function Helix({
     };
 
     if (useScrollMotion) {
+      const view = element.ownerDocument.defaultView ?? window;
       const update = () => {
         const rect = element.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const viewportHeight = view.innerHeight || element.ownerDocument.documentElement.clientHeight;
         const range = viewportHeight + rect.height;
         if (range <= 0) return;
         const scrollProgress = Math.min(1, Math.max(0, (viewportHeight - rect.top) / range));
@@ -412,13 +413,13 @@ export function Helix({
       };
 
       update();
-      window.addEventListener('scroll', update, { passive: true });
-      window.addEventListener('resize', update);
+      view.addEventListener('scroll', update, { passive: true, capture: true });
+      view.addEventListener('resize', update);
       const resizeObserver = new ResizeObserver(update);
       resizeObserver.observe(element);
       return () => {
-        window.removeEventListener('scroll', update);
-        window.removeEventListener('resize', update);
+        view.removeEventListener('scroll', update, { capture: true });
+        view.removeEventListener('resize', update);
         resizeObserver.disconnect();
       };
     }
