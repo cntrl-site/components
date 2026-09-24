@@ -463,7 +463,7 @@ export function Helix({
     return (
       <>
         <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
-        <div className={`${P}-wrapper`} style={{ width: scaled(width), marginInline: 'auto' }} />
+        <div className={`${P}-wrapper`} style={{ width: scaled(width) }} />
       </>
     );
   }
@@ -476,8 +476,7 @@ export function Helix({
         className={`${P}-wrapper`}
         style={{
           width: scaled(width),
-          height: scaled(wrapperHeight),
-          marginInline: 'auto',
+          height: scaled(wrapperHeight)
         }}
       >
         {Array.from({ length: totalItems }, (_, index) => {
