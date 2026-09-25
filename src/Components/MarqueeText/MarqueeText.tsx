@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
@@ -31,12 +31,15 @@ function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
   return `
 .${P}-wrapper {
   position: relative;
+  display: flow-root;
   width: 100%;
   height: auto;
 }
 .${P}-marquee-wrapper {
   position: relative;
   overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   width: 100%;
   height: auto;
 }
@@ -361,7 +364,6 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     textFontFamily,
     textFontSettings,
     textFontSize,
-    textLineHeight,
     textLetterSpacing,
     textWordSpacing,
     textTextAppearance,
@@ -369,7 +371,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     backgroundColor,
     ribbonWidth: ribbonWidthSetting,
   } = settings;
-  const ribbonWidth = ribbonWidthSetting ?? textLineHeight;
+  const ribbonWidth = ribbonWidthSetting ?? textFontSize;
   const isCurveLayout = layoutType === 'curve';
   const amplitudeRatio = normalizeCurveAmplitude(curveAmplitude);
   const curvePeriods = normalizeCurveFrequency(curveFrequency);
@@ -384,10 +386,10 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     letterSpacing: textLetterSpacing,
     wordSpacing: textWordSpacing,
     fontSize: textFontSize,
-    lineHeight: textLineHeight,
+    lineHeight: textFontSize,
     textAppearance: textTextAppearance,
     color: textColor,
-  }, isEditor), [textFontFamily, textFontSettings, textLetterSpacing, textWordSpacing, textFontSize, textLineHeight, textTextAppearance, textColor, isEditor]);
+  }, isEditor), [textFontFamily, textFontSettings, textLetterSpacing, textWordSpacing, textFontSize, textTextAppearance, textColor, isEditor]);
 
   const scaled = (v: number) => scalingValue(v, isEditor ?? false);
   const hasContent = (content?.length ?? 0) > 0;
@@ -588,7 +590,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       cancelAnimationFrame(raf.id);
       ro.disconnect();
     };
-  }, [isCurveLayout, contentKey, capHeightPx, textLineHeight, textFontSize, useMarqueeTrack]);
+  }, [isCurveLayout, contentKey, capHeightPx, textFontSize, useMarqueeTrack]);
 
   useLayoutEffect(() => {
     if (!useMarqueeTrack || animationDistance <= 0) return;
@@ -752,8 +754,8 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     // previously culled glyphs into view; they need a frame to get their transform.
   }, [waveShouldLoop, direction]);
 
-  const onTrackEnter = () => {
-    if (hoverPauseEnabled) setIsHovering(true);
+  const onTrackEnter = (e: ReactPointerEvent) => {
+    if (hoverPauseEnabled && e.pointerType === 'mouse') setIsHovering(true);
   };
   const onTrackLeave = () => {
     if (hoverPauseEnabled) setIsHovering(false);
@@ -766,7 +768,12 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const bandStyle: CSSProperties = {
     minHeight: ribbonHeightCss,
     ...(isCurveLayout
-      ? { paddingTop: `${curvePaddingPercent}%`, paddingBottom: `${curvePaddingPercent}%` }
+      ? {
+        paddingTop: `${curvePaddingPercent}%`,
+        paddingBottom: `${curvePaddingPercent}%`,
+        marginTop: `-${curvePaddingPercent}%`,
+        marginBottom: `-${curvePaddingPercent}%`,
+      }
       : {}),
   };
   const ribbonStyle: CSSProperties = {
@@ -817,12 +824,17 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     <div ref={ribbonRef} className={`${P}-ribbon`} style={ribbonStyle} aria-hidden />
   );
 
+  const itemTextCss: CSSProperties = {
+    ...textCss,
+    lineHeight: capHeightPx > 0 ? `${capHeightPx}px` : `${DEFAULT_CAP_HEIGHT_RATIO}em`,
+  };
+
   const renderItem = (item: MarqueeTextItem, copyIndex: number, slotIndex: number) => (
     <MarqueeTextItemView
       key={`${copyIndex}-${slotIndex}`}
       item={item}
       prefix={P}
-      textCss={textCss}
+      textCss={itemTextCss}
       capHeightPx={capHeightPx}
       opticalOffsetY={opticalOffsetY}
       imageGapPx={scaled(gap)}
@@ -841,8 +853,8 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       ref={trackRef}
       className={`${P}-marquee-track`}
       data-direction={direction}
-      onMouseEnter={onTrackEnter}
-      onMouseLeave={onTrackLeave}
+      onPointerEnter={onTrackEnter}
+      onPointerLeave={onTrackLeave}
       style={{
         WebkitAnimationDuration: durationS,
         animationDuration: durationS,
@@ -909,7 +921,6 @@ export type MarqueeTextSettings = {
     fontStyle: string;
   };
   textFontSize: number;
-  textLineHeight: number;
   textLetterSpacing: number;
   textWordSpacing: number;
   textTextAppearance: {
