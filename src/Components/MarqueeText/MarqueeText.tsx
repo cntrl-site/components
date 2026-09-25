@@ -31,7 +31,6 @@ function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
   return `
 .${P}-wrapper {
   position: relative;
-  display: flow-root;
   width: 100%;
   height: auto;
 }
@@ -768,12 +767,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const bandStyle: CSSProperties = {
     minHeight: ribbonHeightCss,
     ...(isCurveLayout
-      ? {
-        paddingTop: `${curvePaddingPercent}%`,
-        paddingBottom: `${curvePaddingPercent}%`,
-        marginTop: `-${curvePaddingPercent}%`,
-        marginBottom: `-${curvePaddingPercent}%`,
-      }
+      ? { paddingTop: `${curvePaddingPercent}%`, paddingBottom: `${curvePaddingPercent}%` }
       : {}),
   };
   const ribbonStyle: CSSProperties = {
