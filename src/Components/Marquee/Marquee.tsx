@@ -495,6 +495,27 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
     };
   }, [hoverEffect, swappedSlots, showHoverEffects]);
 
+  // Only decode videos that are actually visible: the track renders many copies of each item,
+  // and playing all of them at once saturates the decoder and drops frames.
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper || typeof IntersectionObserver === 'undefined') return;
+    const videos = wrapper.querySelectorAll('video');
+    if (videos.length === 0) return;
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const video = entry.target as HTMLVideoElement;
+        if (entry.isIntersecting) {
+          if (video.paused) video.play().catch(() => {});
+        } else if (!video.paused) {
+          video.pause();
+        }
+      }
+    }, { threshold: 0 });
+    videos.forEach((video) => observer.observe(video));
+    return () => observer.disconnect();
+  }, [useMarqueeTrack, setContent, copies, swappedSlots]);
+
   useLayoutEffect(() => {
     if (!useMarqueeTrack) return;
     const wrapper = wrapperRef.current;
