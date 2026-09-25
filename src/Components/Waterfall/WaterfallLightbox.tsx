@@ -31,6 +31,12 @@ export type LightboxEntryData = {
 
 export type AnimRect = { top: number; left: number; width: number; height: number };
 
+export type CloseTargetTracker = () => { rect: AnimRect; opacity: number } | null;
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 export function getLightboxCSS(P: string): string {
   return `
 .${P}-titles-row {
@@ -612,7 +618,7 @@ function LightboxVideo({
   }, [src, onMediaElement]);
 
   return (
-    <div style={wrapperStyle} onTransitionEnd={onTransitionEnd}>
+    <div style={wrapperStyle} onTransitionEnd={onTransitionEnd} data-lightbox-center>
       <video
         key={src}
         ref={videoRef}
@@ -631,17 +637,20 @@ function LightboxVideo({
 function LightboxSideMedia({
   media,
   style,
+  side,
   onTransitionEnd,
   onMeasure,
 }: {
   media: WaterfallMedia;
   style: React.CSSProperties;
+  side?: 'prev' | 'next';
   onTransitionEnd?: (e: React.TransitionEvent<HTMLElement>) => void;
   onMeasure?: (url: string, width: number, height: number) => void;
 }) {
   if (isVideoMedia(media)) {
     return (
       <video
+        data-lightbox-side={side}
         src={media.url}
         muted
         playsInline
@@ -660,6 +669,7 @@ function LightboxSideMedia({
 
   return (
     <img
+      data-lightbox-side={side}
       src={media.url}
       alt={media.name}
       style={style}
@@ -689,6 +699,7 @@ export function Lightbox({
   layoutId,
   sourceRect,
   resolveCloseSourceRect,
+  createCloseTracker,
   onClose,
   onPrev,
   onNext,
@@ -707,6 +718,7 @@ export function Lightbox({
   layoutId?: string;
   sourceRect?: AnimRect | null;
   resolveCloseSourceRect?: () => AnimRect | null;
+  createCloseTracker?: () => CloseTargetTracker | null;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -743,6 +755,13 @@ export function Lightbox({
   const [pendingImageIdx, setPendingImageIdx] = useState<number | null>(null);
   const [zoomTransitionActive, setZoomTransitionActive] = useState(false);
   const [closeSourceRect, setCloseSourceRect] = useState<AnimRect | null>(null);
+  const [closeTracker, setCloseTracker] = useState<CloseTargetTracker | null>(null);
+  const closeTrackerRef = useRef<CloseTargetTracker | null>(null);
+  const closeStartRectRef = useRef<AnimRect | null>(null);
+  const closeStartTimeRef = useRef(0);
+  const closeLastTargetRef = useRef<{ rect: AnimRect; opacity: number } | null>(null);
+  const finalRectRef = useRef<AnimRect | null>(null);
+  const closeFinishedRef = useRef(false);
   const [sidePeekAnimating, setSidePeekAnimating] = useState(false);
   const sidePeekOpenDoneRef = useRef(false);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -1172,9 +1191,72 @@ export function Lightbox({
 
   useEffect(() => {
     if (phase !== 'closing') return;
-    const t = setTimeout(() => onClose(), LIGHTBOX_ANIM_MS);
-    return () => clearTimeout(t);
-  }, [phase, onClose]);
+    closeFinishedRef.current = false;
+    const t = window.setTimeout(() => {
+      if (closeFinishedRef.current) return;
+      closeFinishedRef.current = true;
+      onClose();
+    }, LIGHTBOX_ANIM_MS + (closeTracker ? 250 : 32));
+    return () => window.clearTimeout(t);
+  }, [phase, onClose, closeTracker]);
+
+  finalRectRef.current = finalRect;
+
+  const applyTrackedCloseFrame = useCallback((now: number): number => {
+    const tracker = closeTrackerRef.current;
+    const startRect = closeStartRectRef.current;
+    const baseRect = finalRectRef.current;
+    if (!tracker || !startRect || !baseRect?.width || !baseRect.height) return 0;
+
+    const t = Math.min(1, (now - closeStartTimeRef.current) / LIGHTBOX_ANIM_MS);
+    const eased = easeOutCubic(t);
+    const target = tracker() ?? closeLastTargetRef.current;
+    closeLastTargetRef.current = target;
+
+    const node = containerRef.current?.querySelector('[data-lightbox-center]');
+    if (node instanceof HTMLElement && target) {
+      const { rect, opacity } = target;
+      const left = startRect.left + (rect.left - startRect.left) * eased;
+      const top = startRect.top + (rect.top - startRect.top) * eased;
+      const width = startRect.width + (rect.width - startRect.width) * eased;
+      const height = startRect.height + (rect.height - startRect.height) * eased;
+      const tx = left - baseRect.left;
+      const ty = top - baseRect.top;
+      node.style.transform = `translate(${tx}px, ${ty}px) scale(${width / baseRect.width}, ${height / baseRect.height})`;
+      node.style.opacity = String(1 + (opacity - 1) * eased);
+    }
+    return t;
+  }, []);
+
+  useLayoutEffect(() => {
+    if (phase !== 'closing' || !closeTracker) return;
+
+    let frameId: number | null = null;
+    const tick = (now: number) => {
+      const t = applyTrackedCloseFrame(now);
+      if (t >= 1) {
+        if (!closeFinishedRef.current) {
+          closeFinishedRef.current = true;
+          onClose();
+        }
+        return;
+      }
+      frameId = requestAnimationFrame(tick);
+    };
+
+    applyTrackedCloseFrame(performance.now());
+    frameId = requestAnimationFrame(tick);
+    return () => {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+    };
+  }, [phase, closeTracker, onClose, applyTrackedCloseFrame]);
+
+  // Re-renders during the tracked close (e.g. a committed slide swapping the center media)
+  // must not paint a frame with the node at its untransformed position.
+  useLayoutEffect(() => {
+    if (phase !== 'closing' || !closeTrackerRef.current) return;
+    applyTrackedCloseFrame(performance.now());
+  });
 
   useEffect(() => {
     return () => {
@@ -1378,13 +1460,57 @@ export function Lightbox({
   }, [phase, allowNavigation, setNavSwipeAnimatingState, scheduleNavSwipeSnapBackEnd, clearNavSwipeCommitTimer, allowSwipeDismiss, scheduleSlideCommit, beginSlideTo]);
 
   const startClosing = useCallback(() => {
+    if (createCloseTracker && finalRect) {
+      const container = containerRef.current;
+      const readRect = (selector: string): AnimRect | null => {
+        const el = container?.querySelector(selector);
+        if (!(el instanceof HTMLElement)) return null;
+        const r = el.getBoundingClientRect();
+        return r.width && r.height ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
+      };
+
+      clearArrowHoldNavigation();
+      rapidNavDirectionRef.current = null;
+      const pendingDirection = slideCommitDirectionRef.current;
+      let startRect: AnimRect | null;
+      if (pendingDirection !== null) {
+        // Mid-slide: the incoming side media is what the user is looking at, so commit to it.
+        startRect = readRect(`[data-lightbox-side="${pendingDirection === -1 ? 'prev' : 'next'}"]`);
+        commitSlideNavigation();
+      } else {
+        startRect = readRect('[data-lightbox-center]');
+        if (navSwipeAnimatingRef.current || isSwipingRef.current) {
+          cancelNavSwipeAnimation();
+        }
+      }
+
+      const tracker = createCloseTracker();
+      if (tracker) {
+        closeTrackerRef.current = tracker;
+        closeStartRectRef.current = startRect ?? finalRect;
+        closeStartTimeRef.current = performance.now();
+        closeLastTargetRef.current = null;
+        setCloseTracker(() => tracker);
+        setPhase('closing');
+        return;
+      }
+    }
+
     const rect = resolveCloseSourceRect?.() ?? sourceRect ?? null;
     if (rect && finalRect) {
       setCloseSourceRect(rect);
       setZoomTransitionActive(true);
     }
     setPhase('closing');
-  }, [resolveCloseSourceRect, sourceRect, finalRect]);
+  }, [
+    createCloseTracker,
+    resolveCloseSourceRect,
+    sourceRect,
+    finalRect,
+    clearArrowHoldNavigation,
+    commitSlideNavigation,
+    cancelNavSwipeAnimation,
+  ]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -1456,7 +1582,19 @@ export function Lightbox({
   const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
   const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
 
+  const finishClosing = useCallback(() => {
+    if (closeFinishedRef.current) return;
+    closeFinishedRef.current = true;
+    onClose();
+  }, [onClose]);
+
   const handleNavSwipeTransitionEnd = useCallback((e: React.TransitionEvent<HTMLElement>) => {
+    if (phase === 'closing') {
+      if (e.propertyName !== 'transform') return;
+      finishClosing();
+      return;
+    }
+
     if (e.propertyName !== 'transform' || !navSwipeAnimatingRef.current) return;
 
     if (slideCommitDirectionRef.current !== null) {
@@ -1466,7 +1604,7 @@ export function Lightbox({
 
     clearNavSwipeCommitTimer();
     setNavSwipeAnimatingState(false);
-  }, [clearNavSwipeCommitTimer, setNavSwipeAnimatingState, commitSlideNavigation]);
+  }, [phase, finishClosing, clearNavSwipeCommitTimer, setNavSwipeAnimatingState, commitSlideNavigation]);
 
   const zoomSourceRect = phase === 'closing'
     ? (closeSourceRect ?? sourceRect)
@@ -1487,8 +1625,22 @@ export function Lightbox({
   const shouldAnimateZoom = useZoomAnimation && (
     phase === 'closing' || (phase === 'open' && zoomTransitionActive)
   );
+  const isTrackedClose = isClosing && Boolean(closeTracker);
 
-  const mediaStyle: React.CSSProperties = {
+  const mediaStyle: React.CSSProperties = isTrackedClose ? {
+    position: 'absolute',
+    top: containerMediaRect?.top,
+    left: containerMediaRect?.left,
+    width: containerMediaRect?.width,
+    height: containerMediaRect?.height,
+    objectFit: 'contain',
+    transformOrigin: 'top left',
+    transition: 'none',
+    willChange: 'transform, opacity',
+    pointerEvents: 'none',
+    zIndex: 1,
+    overflow: isCurrentVideo ? 'hidden' : undefined,
+  } : {
     position: 'absolute',
     top: containerMediaRect?.top,
     left: containerMediaRect?.left,
@@ -1704,6 +1856,7 @@ export function Lightbox({
           <LightboxSideMedia
             key={`prev-${prevMedia.url}`}
             media={prevMedia}
+            side="prev"
             style={getSideMediaStyle(prevMedia, 'left')}
             onMeasure={rememberMediaDimensions}
             onTransitionEnd={handleNavSwipeTransitionEnd}
@@ -1731,6 +1884,7 @@ export function Lightbox({
           <LightboxSideMedia
             key={`next-${nextMedia.url}`}
             media={nextMedia}
+            side="next"
             style={getSideMediaStyle(nextMedia, 'right')}
             onMeasure={rememberMediaDimensions}
             onTransitionEnd={handleNavSwipeTransitionEnd}
@@ -1779,6 +1933,7 @@ export function Lightbox({
           <img
             key={`${index}-${currentItem.url}`}
             ref={setCenterMediaElement}
+            data-lightbox-center
             src={currentItem.url}
             alt={currentItem.name}
             onLoad={computeFinalRect}

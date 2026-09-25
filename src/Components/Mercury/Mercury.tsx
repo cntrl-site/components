@@ -236,6 +236,11 @@ function getCSS(P: string): string {
   align-items: center;
   width: 100%;
 }
+.${P}-gallery-placeholder {
+  flex-shrink: 0;
+  height: 0;
+  pointer-events: none;
+}
 .${P}-gallery-image,
 .${P}-gallery-video {
   display: block;
@@ -1187,6 +1192,33 @@ function Lightbox({
           />
         </>
       )}
+    </div>
+  );
+}
+
+function GalleryPlaceholder({
+  P,
+  imgWidth,
+  fillGalleryWidth,
+  isEditor,
+}: {
+  P: string;
+  imgWidth?: number;
+  fillGalleryWidth?: boolean;
+  isEditor?: boolean;
+}) {
+  const scaled = (value: number) => scalingValue(value, isEditor ?? false);
+  const resolvedImgWidth = imgWidth ?? DEFAULT_IMG_WIDTH;
+  const widthStyle = fillGalleryWidth
+    ? { width: '100%', maxWidth: '100%' }
+    : { width: scaled(resolvedImgWidth), maxWidth: '100%' };
+
+  return (
+    <div className={`${P}-gallery-item`} aria-hidden="true">
+      <div
+        className={`${P}-gallery-placeholder`}
+        style={widthStyle}
+      />
     </div>
   );
 }
@@ -2190,7 +2222,7 @@ export function Mercury({
                 {isOverlayLayout ? (
                   <div className={`${P}-gallery`}>
                     <div className={`${P}-gallery-media`}>
-                      {displayItems.map(({ displayMedia, lightboxMedia }, mediaIndex) => {
+                      {displayItems.length > 0 ? displayItems.map(({ displayMedia, lightboxMedia }, mediaIndex) => {
                         const lightboxItemIndex = lightboxMedia
                           ? lightboxItemsForEntry.findIndex((media) => media.url === lightboxMedia.url)
                           : -1;
@@ -2211,7 +2243,14 @@ export function Mercury({
                               : undefined}
                           />
                         );
-                      })}
+                      }) : (
+                        <GalleryPlaceholder
+                          P={P}
+                          imgWidth={imgWidth || undefined}
+                          fillGalleryWidth
+                          isEditor={isEditor}
+                        />
+                      )}
                     </div>
                     <div className={`${P}-title-layer`}>
                       <StickyTitle
@@ -2228,43 +2267,47 @@ export function Mercury({
                       title={usesSingleTitle ? '' : item.title}
                       description={usesSingleTitle ? '' : item.description}
                     />
-                    {displayItems.length > 0 && (
-                      <GalleryWithEdgePadding
-                        P={P}
-                        layoutType={layoutType}
-                        galleryWidthStyle={galleryWidthStyle}
-                        galleryPaddingRight={galleryPaddingRight}
-                        galleryPaddingLeft={galleryPaddingLeft}
-                        galleryPaddingRightWidth={galleryPaddingRightWidth}
-                        galleryPaddingLeftWidth={galleryPaddingLeftWidth}
-                        galleryPaddingMaxFraction={galleryPaddingMaxFraction}
-                        showControls={showControls}
-                        scaled={scaled}
-                      >
-                        {displayItems.map(({ displayMedia, lightboxMedia }, mediaIndex) => {
-                          const lightboxItemIndex = lightboxMedia
-                            ? lightboxItemsForEntry.findIndex((media) => media.url === lightboxMedia.url)
-                            : -1;
-                          return (
-                            <GalleryMediaItem
-                              key={`${displayMedia.url}-${mediaIndex}`}
-                              P={P}
-                              media={displayMedia}
-                              cornerRadius={cornerRadius || undefined}
-                              fillGalleryWidth
-                              imageDisplay={imageDisplay}
-                              isEditor={isEditor}
-                              galleryPaddingBetween={galleryPaddingBetween}
-                              showPaddingAfter={mediaIndex < displayItems.length - 1}
-                              showControls={showControls}
-                              onMediaClick={canOpenLightbox && lightboxItemIndex >= 0
-                                ? () => openLightbox(lightboxItemsForEntry, lightboxItemIndex)
-                                : undefined}
-                            />
-                          );
-                        })}
-                      </GalleryWithEdgePadding>
-                    )}
+                    <GalleryWithEdgePadding
+                      P={P}
+                      layoutType={layoutType}
+                      galleryWidthStyle={galleryWidthStyle}
+                      galleryPaddingRight={galleryPaddingRight}
+                      galleryPaddingLeft={galleryPaddingLeft}
+                      galleryPaddingRightWidth={galleryPaddingRightWidth}
+                      galleryPaddingLeftWidth={galleryPaddingLeftWidth}
+                      galleryPaddingMaxFraction={galleryPaddingMaxFraction}
+                      showControls={showControls}
+                      scaled={scaled}
+                    >
+                      {displayItems.length > 0 ? displayItems.map(({ displayMedia, lightboxMedia }, mediaIndex) => {
+                        const lightboxItemIndex = lightboxMedia
+                          ? lightboxItemsForEntry.findIndex((media) => media.url === lightboxMedia.url)
+                          : -1;
+                        return (
+                          <GalleryMediaItem
+                            key={`${displayMedia.url}-${mediaIndex}`}
+                            P={P}
+                            media={displayMedia}
+                            cornerRadius={cornerRadius || undefined}
+                            fillGalleryWidth
+                            imageDisplay={imageDisplay}
+                            isEditor={isEditor}
+                            galleryPaddingBetween={galleryPaddingBetween}
+                            showPaddingAfter={mediaIndex < displayItems.length - 1}
+                            showControls={showControls}
+                            onMediaClick={canOpenLightbox && lightboxItemIndex >= 0
+                              ? () => openLightbox(lightboxItemsForEntry, lightboxItemIndex)
+                              : undefined}
+                          />
+                        );
+                      }) : (
+                        <GalleryPlaceholder
+                          P={P}
+                          fillGalleryWidth
+                          isEditor={isEditor}
+                        />
+                      )}
+                    </GalleryWithEdgePadding>
                   </>
                 )}
               </div>
