@@ -1,7 +1,28 @@
-import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
+import type { HiveLightboxTitleSettings } from '../Hive/HiveLightboxTitles';
+import {
+  Lightbox,
+  PreloadedMediaPool,
+  getLightboxCSS,
+  type AnimRect,
+} from '../Waterfall/WaterfallLightbox';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import {
+  buildHelixLightboxEntries,
+  collectAllHelixMedia,
+  getHelixContentItems,
+  getHelixDisplayItems,
+  createHelixCloseTracker,
+  getHelixItemSourceRect,
+  getHelixMediaClickSourceRect,
+  isHelixVideoMedia,
+  normalizeHelixGallery,
+  type HelixLightboxContentItem,
+  type HelixMedia,
+} from './HelixLightbox';
 
 const DEG_PER_SEC_PER_SPEED_UNIT = 10;
 const MAX_TOTAL_ITEMS = 400;
@@ -48,8 +69,15 @@ function getCSS(P: string): string {
   height: auto;
   vertical-align: top;
   user-select: none;
+}
+.${P}-media-clickable {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.${P}-media-static {
   pointer-events: none;
 }
+${getLightboxCSS(P)}
 .${P}-cover {
   display: block;
   width: 100%;
@@ -68,15 +96,7 @@ function getCSS(P: string): string {
 `;
 }
 
-type HelixMedia = {
-  url?: string;
-  name?: string;
-  type?: 'image' | 'video';
-};
-
-export type HelixContentItem = {
-  image?: HelixMedia;
-};
+export type HelixContentItem = HelixLightboxContentItem;
 
 export type HelixSettings = {
   width?: number;
@@ -98,7 +118,7 @@ export type HelixSettings = {
     ratioValue?: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
     reversed?: boolean;
   } | string;
-};
+} & HiveLightboxTitleSettings;
 
 type HelixProps = {
   settings?: HelixSettings;
@@ -106,6 +126,8 @@ type HelixProps = {
   isEditor?: boolean;
   isPreviewMode?: boolean;
   isEditMode?: boolean;
+  layoutId?: string;
+  portalId?: string;
 } & CommonComponentProps;
 
 type ImageDisplay = {
@@ -163,12 +185,6 @@ function getAspectHeightFactor(imageDisplay: ImageDisplay): number {
   const effectiveWidth = imageDisplay.reversed ? ratioHeight : ratioWidth;
   const effectiveHeight = imageDisplay.reversed ? ratioWidth : ratioHeight;
   return effectiveHeight / effectiveWidth;
-}
-
-function isVideoMedia(media: HelixMedia): boolean {
-  if (media.type === 'video') return true;
-  if (media.type === 'image') return false;
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url ?? '');
 }
 
 function getOrbitScale(depthFactor: number, angle: number): number {
@@ -317,9 +333,19 @@ export function Helix({
   content,
   isEditor,
   isPreviewMode,
+  isEditMode,
+  layoutId,
+  portalId,
 }: HelixProps) {
   const { prefix: P } = useScopedStyles();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxItems, setLightboxItems] = useState<HelixMedia[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxEntryIdx, setLightboxEntryIdx] = useState(0);
+  const lightboxEntryIdxRef = useRef(0);
+  const [lightboxSourceRect, setLightboxSourceRect] = useState<AnimRect | null>(null);
+  const [lightboxEntry, setLightboxEntry] = useState({ title1: '', title2: '', title3: '' });
 
   const width = resolveLayoutMetric(
     settings?.width ?? settings?.spread ?? settings?.wrapperWidth,
@@ -360,10 +386,87 @@ export function Helix({
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const orbitProgressRef = useRef(0);
 
-  const mediaItems = useMemo(
-    () => (content ?? []).filter((item) => Boolean(item.image?.url)),
-    [content],
-  );
+  const mediaItems = useMemo(() => getHelixContentItems(content), [content]);
+  const allLightboxEntries = useMemo(() => buildHelixLightboxEntries(mediaItems), [mediaItems]);
+  const allMedia = useMemo(() => collectAllHelixMedia(mediaItems), [mediaItems]);
+  const canOpenLightbox = !isEditor || isPreviewMode || isEditMode;
+  const objectFitMode = isCover ? 'cover' as const : 'contain' as const;
+
+  const lightboxPortalStyle = (() => {
+    const style: Record<string, string> = {};
+    const articleWidth = wrapperRef.current
+      ? getComputedStyle(wrapperRef.current).getPropertyValue('--cntrl-article-width').trim()
+      : '';
+    if (articleWidth) {
+      style['--cntrl-article-width'] = articleWidth;
+    }
+    return style as CSSProperties;
+  })();
+
+  const openLightbox = useCallback((contentIndex: number, sourceRect?: AnimRect) => {
+    if (isEditor && !isEditMode && !isPreviewMode) return;
+    const entryIdx = allLightboxEntries.findIndex((entry) => entry.gridIndex === contentIndex);
+    if (entryIdx < 0) return;
+
+    const data = allLightboxEntries[entryIdx];
+    lightboxEntryIdxRef.current = entryIdx;
+    setLightboxEntryIdx(entryIdx);
+    setLightboxItems(data.items);
+    setLightboxIndex(0);
+    setLightboxEntry(data.entry);
+    setLightboxSourceRect(sourceRect ?? null);
+    setLightboxOpen(true);
+  }, [allLightboxEntries, isEditor, isEditMode, isPreviewMode]);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxOpen(false);
+    setLightboxSourceRect(null);
+  }, []);
+
+  const resolveCloseSourceRect = useCallback((): AnimRect | null => {
+    const entry = allLightboxEntries[lightboxEntryIdx];
+    if (!entry || !wrapperRef.current) return lightboxSourceRect;
+    return getHelixItemSourceRect(wrapperRef.current, entry.gridIndex, objectFitMode) ?? lightboxSourceRect;
+  }, [allLightboxEntries, lightboxEntryIdx, lightboxSourceRect, objectFitMode]);
+
+  const createCloseTracker = useCallback(() => {
+    const entry = allLightboxEntries[lightboxEntryIdxRef.current];
+    if (!entry || !wrapperRef.current) return null;
+    return createHelixCloseTracker(wrapperRef.current, entry.gridIndex, objectFitMode);
+  }, [allLightboxEntries, objectFitMode]);
+
+  const navigateLightbox = useCallback((direction: -1 | 1) => {
+    if (allLightboxEntries.length > 1) {
+      const len = allLightboxEntries.length;
+      const newEntryIdx = (lightboxEntryIdxRef.current + direction + len) % len;
+      const newData = allLightboxEntries[newEntryIdx];
+      lightboxEntryIdxRef.current = newEntryIdx;
+      setLightboxEntryIdx(newEntryIdx);
+      setLightboxItems(newData.items);
+      setLightboxIndex(0);
+      setLightboxEntry(newData.entry);
+      setLightboxSourceRect(null);
+      return;
+    }
+    setLightboxIndex((prev) => (prev + direction + lightboxItems.length) % lightboxItems.length);
+  }, [allLightboxEntries, lightboxEntryIdx, lightboxItems.length]);
+
+  const canNavigateLightbox = allLightboxEntries.length > 1 || lightboxItems.length > 1;
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    if (typeof document === 'undefined') return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightboxOpen]);
+
+  useEffect(() => {
+    if (!isEditor || isEditMode || isPreviewMode) return;
+    setLightboxOpen(false);
+  }, [isEditor, isEditMode, isPreviewMode]);
 
   const verticalStep = turnHeight / itemsPerTurn;
   const imageHeight = imageWidth * getAspectHeightFactor(imageDisplay);
@@ -472,6 +575,7 @@ export function Helix({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
+      <PreloadedMediaPool mediaList={allMedia} />
       <div
         ref={wrapperRef}
         className={`${P}-wrapper`}
@@ -482,8 +586,14 @@ export function Helix({
       >
         {Array.from({ length: totalItems }, (_, index) => {
           const logicalIndex = index - overflowItems;
-          const item = mediaItems[mod(logicalIndex, mediaItems.length)];
-          const media = item.image as HelixMedia;
+          const contentIndex = mod(logicalIndex, mediaItems.length);
+          const item = mediaItems[contentIndex];
+          const gallery = normalizeHelixGallery(item);
+          const displayItems = getHelixDisplayItems(gallery);
+          const displayMedia = displayItems[0]?.displayMedia;
+          const hasLightbox = Boolean(displayItems[0]?.lightboxMedia?.url);
+          const media = displayMedia as HelixMedia | undefined;
+          if (!media?.url) return null;
           const slotIndex = getOrbitSlotIndex(logicalIndex, itemsPerTurn);
           const phase = itemPhases[index];
           const verticalOffset = getVerticalOffset(logicalIndex, itemsPerTurn, turnHeight, verticalStep);
@@ -513,25 +623,38 @@ export function Helix({
                 objectPosition: 'center',
               }
             : mediaStyle;
-          const mediaNode = isVideoMedia(media) ? (
+          const mediaClassName = `${P}-media ${canOpenLightbox && hasLightbox ? `${P}-media-clickable` : `${P}-media-static`}`;
+          const handleMediaClick = canOpenLightbox && hasLightbox
+            ? (e: React.MouseEvent<HTMLElement>) => {
+              openLightbox(
+                contentIndex,
+                getHelixMediaClickSourceRect(e.currentTarget, objectFitMode),
+              );
+            }
+            : undefined;
+          const mediaNode = isHelixVideoMedia(media) ? (
             <video
-              className={`${P}-media`}
+              className={mediaClassName}
               style={coverMediaStyle}
               src={media.url}
+              data-helix-index={contentIndex}
               muted
               loop
               autoPlay
               playsInline
               preload="auto"
+              onClick={handleMediaClick}
             />
           ) : (
             <img
-              className={`${P}-media`}
+              className={mediaClassName}
               style={coverMediaStyle}
               src={media.url}
               alt={media.name ?? ''}
+              data-helix-index={contentIndex}
               loading="lazy"
               decoding="async"
+              onClick={handleMediaClick}
             />
           );
 
@@ -555,6 +678,34 @@ export function Helix({
           );
         })}
       </div>
+      {lightboxOpen && typeof document !== 'undefined' && settings && (() => {
+        const portalTarget = (portalId ? document.getElementById(portalId) : null) ?? document.body;
+        return createPortal(
+          <div style={lightboxPortalStyle} data-selection="none">
+            <Lightbox
+              prefix={P}
+              items={lightboxItems}
+              index={lightboxIndex}
+              entry={lightboxEntry}
+              settings={settings}
+              isEditor={isEditor}
+              isEditMode={isEditMode}
+              isPreviewMode={isPreviewMode}
+              canNavigate={canNavigateLightbox}
+              lightboxEntries={allLightboxEntries}
+              entryIdx={lightboxEntryIdx}
+              layoutId={layoutId}
+              sourceRect={lightboxSourceRect}
+              resolveCloseSourceRect={resolveCloseSourceRect}
+              createCloseTracker={createCloseTracker}
+              onClose={closeLightbox}
+              onPrev={() => navigateLightbox(-1)}
+              onNext={() => navigateLightbox(1)}
+            />
+          </div>,
+          portalTarget,
+        );
+      })()}
     </>
   );
 }

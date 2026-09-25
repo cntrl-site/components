@@ -409,7 +409,7 @@ const schema: ComponentSchemaV1 = {
       descriptionColor: {
         type: 'string',
         scope: 'common',
-        title: 'Description',
+        title: 'Desc',
         display: { type: 'palette-color-picker' },
       },
       descriptionFontFamily: {
