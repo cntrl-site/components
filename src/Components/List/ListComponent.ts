@@ -509,31 +509,31 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
 const DEFAULT_HOVER_IMAGES = [
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
+    url: '01M3QM74XESYN1HRYH9VRTZ5CK',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
+    url: '01M3QM74XEVZ9F59FC7M9BA63Q',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+    url: '01M3QM74XEE2101QD8PM6E4JSA',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
+    url: '01M3QM74XE20C38X4NND20C5R4',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+    url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+    url: '01M3QM74XEBS5231QA4355P4VQ',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+    url: '01M3QM74XEWT5YM43KF6PEYRCV',
   },
 ];
 
@@ -1079,7 +1079,7 @@ export const ListComponent = {
     applyListColumnCountChange(nextSettings as ListSettings, prevSettings as ListSettings),
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Programme-list-default.png',
+    url: '01M3QM74XGZ2M0FA7122EKXDJM',
   },
   version: 1,
   defaultSize: {

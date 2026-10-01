@@ -7,7 +7,7 @@ export const ControlSliderComponent: Component = {
   name: 'Slider',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Slider.mp4',
+    url: '01M3QM74XGDEQTW8Y71W6D7ANX',
   },
   defaultSize: {
     d: {
@@ -446,7 +446,7 @@ export const ControlSliderComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
+              url: '01M3QM74XES6E7GVC0H3KJ2RH6',
               name: 'Slider-1.png'
             },
             imageCaption: [
@@ -459,7 +459,7 @@ export const ControlSliderComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-2.png',
+              url: '01M3QM74XEAZ8H1DTC5V1S554K',
               name: 'Slider-2.png'
             },
             imageCaption: [
@@ -472,7 +472,7 @@ export const ControlSliderComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-3.png',
+              url: '01M3QM74XEDRP49HNTEPNZYQTP',
               name: 'Slider-3.png'
             },
             imageCaption: [

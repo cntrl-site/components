@@ -9,14 +9,7 @@ import {
 } from '../LightboxJournal/utils';
 import hiveSourceRaw from './Hive.tsx?raw';
 
-const defaultCloseIconUrl =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M15.959 0.40332L0.402635 15.9597" stroke="#000000" stroke-width="1.14"/>' +
-      '<path d="M15.959 15.9594L0.402635 0.403002" stroke="#000000" stroke-width="1.14"/>' +
-    '</svg>',
-  );
+const defaultCloseIconUrl = '01M3SBP3P8CMVMM1ZZ0QVD2PPF';
 
 type JournalFontSettings = { fontWeight: number; fontStyle: string };
 
@@ -202,6 +195,33 @@ const HIVE_DEFAULT_TITLES = {
   title3: 'Archive Footage',
 };
 
+const HIVE_DEFAULT_IMAGE_URLS = [
+  '01M3QM74XEQE7FN1WYJN6H984H',
+  '01M3QM74XFXCSMJJ8TNR0RXSWV',
+  '01M3QM74XFQ6K4CJ0QYC7BT7VP',
+  '01M3QM74XFK2K9T3SPCZD8M7RT',
+  '01M3QM74XFV4J15XRFB85877RE',
+  '01M3QM74XFB8Q39K12G4G6CZDM',
+  '01M3QM74XFWVH9HND47HYNCBZB',
+  '01M3QM74XF3MFEKEA4E0W9F9ZQ',
+  '01M3QM74XFEQY4XMN22Q9ERGKX',
+  '01M3QM74XFWP1RY8ND8QX88J2V',
+  '01M3QM74XFD41TXQ5BQ2KFJBGQ',
+  '01M3QM74XFV8973P7WXXWJP3QK',
+  '01M3QM74XF67PD2N10JYF9409X',
+  '01M3QM74XFA5B75WMTTKRN9TM7',
+  '01M3QM74XFFQRBHCQGKWPGSAGE',
+  '01M3QM74XF1HQBTRANGVX0QVGK',
+  '01M3QM74XF8ZWGSVCX3KS5YXSC',
+  '01M3QM74XFPHGV2XFZ23ADCVFC',
+  '01M3QM74XFECQG799S95G63BDJ',
+  '01M3QM74XFW1XS568WAHG3BGN1',
+  '01M3QM74XFT1RRJ3N1JJKPK5EA',
+  '01M3QM74XFB2JQ62RPFSM145GN',
+  '01M3QM74XFH61QR5PACJS04Z5K',
+  '01M3QM74XFKD44BXHRA7SSMD7N',
+];
+
 const HIVE_DEFAULT_CONTENT = (() => {
   const items = [];
   for (let i = 1; i <= 24; i += 1) {
@@ -209,7 +229,7 @@ const HIVE_DEFAULT_CONTENT = (() => {
       ...HIVE_DEFAULT_TITLES,
       gallery: [{
         media: [{
-          url: `https://cdn.cntrl.site/component-assets/hive_${i}.jpg`,
+          url: HIVE_DEFAULT_IMAGE_URLS[i - 1],
           name: '',
           objectFit: 'cover' as const,
         }, {
@@ -655,7 +675,7 @@ export const HiveComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/hive.png',
+    url: '01M3QM74XFD9RBV73Y4XTYYSM6',
   },
   version: 1,
   defaultSize: {

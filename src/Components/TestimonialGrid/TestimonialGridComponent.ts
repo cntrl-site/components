@@ -409,7 +409,7 @@ const schema: ComponentSchemaV1 = {
       {
         logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/component-assets/julia.png',
+          url: '01M3QM74XFE5YFEHBH605E8FXT',
           name: '',
         },
         text: [
@@ -432,7 +432,7 @@ const schema: ComponentSchemaV1 = {
       {
         logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/component-assets/mark.png',
+          url: '01M3QM74XFZD1R3FV8BKW3NT24',
           name: '',
         },
         text: [
@@ -455,7 +455,7 @@ const schema: ComponentSchemaV1 = {
       {
         logo: {
           objectFit: 'contain',
-          url: 'https://cdn.cntrl.site/component-assets/pia.png',
+          url: '01M3QM74XGNPA7232QGZAYFNSS',
           name: '',
         },
         text: [
@@ -487,7 +487,7 @@ export const TestimonialGridComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Testimonials_Grid.mp4',
+    url: '01M3QM74XGQM3BE2A9MHTSEC02',
   },
   defaultSize: {
     d: {

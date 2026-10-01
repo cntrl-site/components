@@ -399,7 +399,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
+          url: '01M3QM74XESYN1HRYH9VRTZ5CK',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Earth-orbital mission' }] },
@@ -408,7 +408,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg',
+          url: '01M3QM74XERA3G7J0J00XVKEXX',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Salton Sea from Above' }] },
@@ -417,7 +417,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+          url: '01M3QM74XEE2101QD8PM6E4JSA',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Lunar Module Pilot' }] },
@@ -426,7 +426,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
+          url: '01M3QM74XEVZ9F59FC7M9BA63Q',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Lunar Module 3 porch' }] },
@@ -435,7 +435,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+          url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Command Module' }] },
@@ -467,7 +467,7 @@ export const Slider20Component = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Slider.mp4',
+    url: '01M3QM74XGDEQTW8Y71W6D7ANX',
   },
   schema,
   sourceCode: slider20SourceRaw,

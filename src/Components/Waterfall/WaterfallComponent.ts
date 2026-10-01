@@ -9,14 +9,7 @@ import {
 } from '../LightboxJournal/utils';
 import waterfallSourceRaw from './Waterfall.tsx?raw';
 
-const defaultCloseIconUrl =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M15.959 0.40332L0.402635 15.9597" stroke="#000000" stroke-width="1.14"/>' +
-      '<path d="M15.959 15.9594L0.402635 0.403002" stroke="#000000" stroke-width="1.14"/>' +
-    '</svg>',
-  );
+const defaultCloseIconUrl = '01M3SBP3P8CMVMM1ZZ0QVD2PPF';
 
 type JournalFontSettings = { fontWeight: number; fontStyle: string };
 
@@ -206,7 +199,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: "Salton Sea from Above",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg',
+      url: '01M3QM74XERA3G7J0J00XVKEXX',
       objectFit: 'cover' as const,
     },
   },
@@ -214,7 +207,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: "Lunar Module Pilot",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+      url: '01M3QM74XEE2101QD8PM6E4JSA',
       objectFit: 'cover' as const,
     },
   },
@@ -222,7 +215,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: 'CSM and Lunar Module LM',
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+      url: '01M3QM74XEBS5231QA4355P4VQ',
       objectFit: 'cover' as const,
     },
   },
@@ -230,7 +223,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: "David R. Scott During EVA",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+      url: '01M3QM74XEWT5YM43KF6PEYRCV',
       objectFit: 'cover' as const,
     },
   },
@@ -732,7 +725,7 @@ export const WaterfallComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/waterfall.png',
+    url: '01M3QM74XGADNQDV6HV7DCP59K',
   },
   version: 1,
   defaultSize: {

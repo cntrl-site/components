@@ -329,7 +329,7 @@ const schema = {
     },
     defaults: {
       label: 'Button',
-      icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KY78A0YVT403B042HVWWTHBC.svg',
+      icon: '01M3QM74XG7DQZZXTPG1E8EBBC',
       boxShadowColor: '#000000',
       innerBoxShadowColor: '#000000',
       backgroundColor: '#2E12F0',
@@ -659,7 +659,7 @@ export const SimpleButtonComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/button-preview.png',
+    url: '01M3QM74XE56V3FGD7SN9GY8NG',
   },
   schema,
   sourceCode: simpleButtonSourceRaw,

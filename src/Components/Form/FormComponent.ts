@@ -690,7 +690,7 @@ export const FormComponent = {
   category: 'forms',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Newsletter_Stacked.png',
+    url: '01M3QM74XGJ9E5C05JQTJCXFSJ',
   },
   defaultSize: {
     d: {

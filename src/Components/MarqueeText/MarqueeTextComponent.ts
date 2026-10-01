@@ -266,7 +266,7 @@ const schema: ComponentSchemaV1 = {
       { 
         text: 'NEW WORK',
         image: { 
-          url: 'https://cdn.cntrl.site/component-assets/marquee_text_icon.svg',
+          url: '01M3QM74XF10Z2N5P1Y0J0XDQQ',
           name: '',
         },
         link: '',
@@ -294,7 +294,7 @@ export const MarqueeTextComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Text_Marquee.mp4',
+    url: '01M3QM74XG0WTJ97K104N36MNS',
   },
   schema,
   sourceCode: marqueeTextSourceRaw,

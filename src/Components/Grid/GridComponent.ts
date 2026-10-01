@@ -122,7 +122,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
+              url: '01M3QM74XESYN1HRYH9VRTZ5CK',
               name: '',
               objectFit: 'cover',
             }, {
@@ -138,7 +138,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Sonnar 250 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg',
+              url: '01M3QM74XERA3G7J0J00XVKEXX',
               name: '',
               objectFit: 'cover',
             }, {
@@ -154,7 +154,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+              url: '01M3QM74XEE2101QD8PM6E4JSA',
               name: '',
               objectFit: 'cover',
             }, {
@@ -170,7 +170,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
+              url: '01M3QM74XEVZ9F59FC7M9BA63Q',
               name: '',
               objectFit: 'cover',
             }, {
@@ -186,7 +186,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+              url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
               name: '',
               objectFit: 'cover',
             }, {
@@ -196,7 +196,7 @@ const schema: ComponentSchemaV1 = {
             }],
           }, {
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-10.jpg',
+              url: '01M3QM74XEZCK8SJPAFXCKG8QN',
               name: '',
               objectFit: 'cover',
             }, {
@@ -206,7 +206,7 @@ const schema: ComponentSchemaV1 = {
             }],
           }, {
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
+              url: '01M3QM74XE20C38X4NND20C5R4',
               name: '',
               objectFit: 'cover',
             }, {
@@ -222,7 +222,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+              url: '01M3QM74XEBS5231QA4355P4VQ',
               name: '',
               objectFit: 'cover',
             }, {
@@ -238,7 +238,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+              url: '01M3QM74XEWT5YM43KF6PEYRCV',
               name: '',
               objectFit: 'cover',
             }, {
@@ -254,7 +254,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-8.jpg',
+              url: '01M3QM74XES6MX14JTT1CF24BB',
               name: '',
               objectFit: 'cover',
             }, {
@@ -270,7 +270,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: 'https://cdn.cntrl.site/component-assets/Component-default-9.jpg',
+              url: '01M3QM74XEMGJWCYNPZ3ETQTKM',
               name: '',
               objectFit: 'cover',
             }, {
@@ -854,7 +854,7 @@ export const GridComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Neptune_Grid.png',
+    url: '01M3QM74XGB9A72KYAEG4WM9XK',
   },
   version: 1,
   defaultSize: {

@@ -378,7 +378,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {
             objectFit: 'contain',
-            url: 'https://cdn.cntrl.site/component-assets/julia.png',
+            url: '01M3QM74XFE5YFEHBH605E8FXT',
             name: '',
           },
           text: [
@@ -401,7 +401,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {
             objectFit: 'contain',
-            url: 'https://cdn.cntrl.site/component-assets/mark.png',
+            url: '01M3QM74XFZD1R3FV8BKW3NT24',
             name: '',
           },
           text: [
@@ -424,7 +424,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {
             objectFit: 'contain',
-            url: 'https://cdn.cntrl.site/component-assets/pia.png',
+            url: '01M3QM74XGNPA7232QGZAYFNSS',
             name: '',
           },
           text: [
@@ -456,7 +456,7 @@ export const TestimonialSingleComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Testimonials_Single.png',
+    url: '01M3QM74XG6GKXCQ6S7HSC99TF',
   },
   defaultSize: {
     d: {

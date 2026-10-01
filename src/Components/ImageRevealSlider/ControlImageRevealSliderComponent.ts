@@ -7,7 +7,7 @@ export const ControlImageRevealSliderComponent: Component = {
   name: 'Click Gallery',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Click_Gallery.mp4',
+    url: '01M3QM74XEPYV09AFGKHG6H1ZQ',
   },
   defaultSize: {
     d: {
@@ -292,7 +292,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png",
+              url: "01M3QM74XGWBJY3AQQ71GC2Z6Q",
               name: "Slider-1.png"
             },
             link: "",
@@ -300,7 +300,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png",
+              url: "01M3QM74XGMXS1Z5ZY2RFGS3T4",
               name: "Slider-2.png"
             },
             link: "",
@@ -308,7 +308,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png",
+              url: "01M3QM74XGWG6VCHNEXKVKAJGT",
               name: "Slider-3.png"
             },
             link: "",
@@ -316,7 +316,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQP84JKRDT7WNWDQZR4Y9.png",
+              url: "01M3QM74XGCVMTPNHFHMR98RPZ",
               name: "Slider-4.png"
             },
             link: "",

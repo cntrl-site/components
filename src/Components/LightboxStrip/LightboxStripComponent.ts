@@ -8,14 +8,7 @@ import {
 import { ComponentSchemaV1, SchemaProperty } from '../../types/SchemaV1';
 import lightboxStripSourceRaw from './LightboxStrip.tsx?raw';
 
-const defaultCloseIconUrl =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M15.959 0.40332L0.402635 15.9597" stroke="#000000" stroke-width="1.14"/>' +
-      '<path d="M15.959 15.9594L0.402635 0.403002" stroke="#000000" stroke-width="1.14"/>' +
-    '</svg>',
-  );
+const defaultCloseIconUrl = '01M3SBP3P8CMVMM1ZZ0QVD2PPF';
 
 type StripFontSettings = { fontWeight: number; fontStyle: string };
 
@@ -406,7 +399,7 @@ const schema: ComponentSchemaV1 = {
       },
     },
     defaults: {
-      cover: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
+      cover: '01M3QM74XESYN1HRYH9VRTZ5CK',
       coverFit: {
         display: 'fit',
         ratioValue: '1:1',
@@ -614,7 +607,7 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
+          url: '01M3QM74XEVZ9F59FC7M9BA63Q',
           name: '',
           objectFit: 'contain',
         },
@@ -624,7 +617,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+          url: '01M3QM74XEE2101QD8PM6E4JSA',
           name: '',
           objectFit: 'contain',
         },
@@ -634,7 +627,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
+          url: '01M3QM74XE20C38X4NND20C5R4',
           name: '',
           objectFit: 'contain',
         },
@@ -644,7 +637,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+          url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
           name: '',
           objectFit: 'contain',
         },
@@ -654,7 +647,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+          url: '01M3QM74XEBS5231QA4355P4VQ',
           name: '',
           objectFit: 'contain',
         },
@@ -664,7 +657,7 @@ const schema: ComponentSchemaV1 = {
       },
       {
         image: {
-          url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+          url: '01M3QM74XEWT5YM43KF6PEYRCV',
           name: '',
           objectFit: 'contain',
         },
@@ -695,7 +688,7 @@ export const LightboxStripComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Strip.mp4',
+    url: '01M3QM74XG47J2PVBJ6XSNMZN6',
   },
   schema,
   sourceCode: lightboxStripSourceRaw,

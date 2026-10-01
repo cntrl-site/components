@@ -7,7 +7,7 @@ export const LightboxComponent: Component = {
   name: 'Lightbox',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Lightbox.png',
+    url: '01M3QM74XF4M8H1ATJ56F5HPCH',
   },
   defaultSize: {
     d: {
@@ -609,7 +609,7 @@ export const LightboxComponent: Component = {
           'd': {
             thumbnailBlock: {
               cover: {
-                url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
+                url: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
               },
             },
             lightboxBlock: {
@@ -680,7 +680,7 @@ export const LightboxComponent: Component = {
           'm': {
             thumbnailBlock: {
               cover: {
-                url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
+                url: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
               },
             },
             lightboxBlock: {
@@ -750,7 +750,7 @@ export const LightboxComponent: Component = {
           't': {
             thumbnailBlock: {
               cover: {
-                url: 'https://cdn.cntrl.site/component-assets/Cover.jpg'
+                url: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
               },
             },
             lightboxBlock: {
@@ -913,7 +913,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: 'https://cdn.cntrl.site/component-assets/2.jpg',
+              url: '01M3QM74XD4J8X0B8TTSQ8CV3P',
               name: 'Slider-1.png'
             },
             imageCaption: [
@@ -926,7 +926,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: 'https://cdn.cntrl.site/component-assets/3.jpg',
+              url: '01M3QM74XD0N6VQJ5J8J9YB32N',
               name: 'Slider-2.png'
             },
             imageCaption: [
@@ -939,7 +939,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: 'https://cdn.cntrl.site/component-assets/4.jpg',
+              url: '01M3QM74XE4WSEPVF1QQSKMD76',
               name: 'Slider-3.png'
             },
             imageCaption: [

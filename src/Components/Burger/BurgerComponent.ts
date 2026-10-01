@@ -565,7 +565,7 @@ const schema = {
       ],
       logo: {
         mode: 'On',
-        icon: 'https://cdn.cntrl.site/component-assets/hamburger-logo.svg',
+        icon: '01M3QM74XE09DSJCWGD1XM6Y45',
       },
       backgroundColor: '#ffffff',
       logoColor: '#000000',
@@ -946,7 +946,7 @@ export const BurgerComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Simple Burger.png',
+    url: '01M3QM74XG22TTJ182A0MNK29A',
   },
   layoutMode: 'navigation' as const,
   defaultSize: {

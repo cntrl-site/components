@@ -551,7 +551,7 @@ export const OnelinerFormComponent = {
   category: 'forms',
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Newsletter_Single_Line.png',
+    url: '01M3QM74XGJAEF1BDS9GZQNX72',
   },
   defaultSize: {
     d: {

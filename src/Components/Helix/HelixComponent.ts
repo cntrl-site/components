@@ -3,11 +3,11 @@ import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import helixSourceRaw from './Helix.tsx?raw';
 
 const defaultImageUrls = [
-  'https://cdn.cntrl.site/component-assets/Helix-default-1.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-2.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-3.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-4.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-5.png',
+  '01M3QM74XEA13H9Z3AZF1NGY48',
+  '01M3QM74XEZJJC5STVP0WF2GN3',
+  '01M3QM74XE170PHTE4A34MKNP3',
+  '01M3QM74XEZD3SDVVQZ1TF9JPA',
+  '01M3QM74XEPJWV4ZR7R3JPS67H',
 ];
 
 const schema: ComponentSchemaV1 = {
@@ -224,7 +224,7 @@ export const HelixComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Helix.mp4',
+    url: '01M3QM74XEAV9VYFDKJ386Z0TC',
   },
   version: 1,
   defaultSize: {
