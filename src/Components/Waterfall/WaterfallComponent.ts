@@ -242,6 +242,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemWithoutImage: true,
       allowsVideo: true,
     },
@@ -254,12 +255,14 @@ const schema: ComponentSchemaV1 = {
         title: {
           type: 'string',
           label: 'Title',
+          contentKey: 'title',
           placeholder: 'Add Title...',
           display: { type: 'text-input' },
         },
         subtitle: {
           type: 'string',
           label: 'Subtitle',
+          contentKey: 'subtitle',
           placeholder: 'Add Subtitle...',
           display: { type: 'text-input' },
         },
@@ -272,6 +275,7 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             isObjectFitEditable: false,
             defaultObjectFit: 'cover',

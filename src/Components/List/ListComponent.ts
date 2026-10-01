@@ -12,7 +12,7 @@ import {
   type ListSettings,
   type ListTextStylePrefix,
 } from './List';
-import { ComponentSchemaV1, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
+import { ComponentContentProperty, ComponentSchemaV1, ContentKey, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
 import formSourceRaw from './List.tsx?raw';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
@@ -177,12 +177,13 @@ const textStyleProperties = {
   },
 };
 
-function createTextInputContentProperty(label: string) {
+function createTextInputContentProperty(label: string, contentKey?: ContentKey): ComponentContentProperty {
   return {
-    type: 'string' as const,
+    type: 'string',
     label,
     placeholder: 'Add Title...',
-    display: { type: 'text-input' as const },
+    ...(contentKey && { contentKey }),
+    display: { type: 'text-input' },
   };
 }
 
@@ -197,12 +198,19 @@ function createRangeControlLayoutProperty(title: string) {
   };
 }
 
-function createContentColumnProperties(): Record<string, SchemaProperty> {
+/** The post fields the first columns take when a collection is connected; the others are typed by hand. */
+const COLUMN_CONTENT_SOURCE_KEYS: Partial<Record<typeof LIST_COLUMN_LETTERS[number], ContentKey>> = {
+  A: 'title',
+  B: 'subtitle',
+  C: 'date',
+};
+
+function createContentColumnProperties(): Record<string, ComponentContentProperty> {
   return Object.fromEntries(
     LIST_COLUMN_LETTERS.map((letter, index) => {
       const key = COLUMN_CONTENT_KEYS[index];
       const label = `${letter} column`;
-      return [key, createTextInputContentProperty(label)];
+      return [key, createTextInputContentProperty(label, COLUMN_CONTENT_SOURCE_KEYS[letter])];
     }),
   );
 }
@@ -619,6 +627,7 @@ const schema: ComponentSchemaV1 = {
   content: {
       type: 'array',
       settings: {
+        allowsCollection: true,
         addItemWithoutImage: true,
         allowsVideo: true,
       },
@@ -636,6 +645,7 @@ const schema: ComponentSchemaV1 = {
           image: {
             type: 'object',
             label: 'Image',
+            contentKey: 'gallery',
             display: {
               isObjectFitEditable: false,
               defaultObjectFit: 'contain',
@@ -655,6 +665,7 @@ const schema: ComponentSchemaV1 = {
           link: {
             type: 'string',
             label: 'Link',
+            contentKey: 'link',
             placeholder: 'Add link...',
             display: { type: 'text-input' },
           },

@@ -50,6 +50,7 @@ const schema: ComponentSchemaV1 = {
   content: {
       type: 'array',
       settings: {
+        allowsCollection: true,
         addItemWithoutImage: true,
         allowsVideo: true,
       },
@@ -63,6 +64,7 @@ const schema: ComponentSchemaV1 = {
             type: 'string',
             label: 'Title',
             placeholder: 'Add Title...',
+            contentKey: 'title',
             display: {
               type: 'text-input',
             },
@@ -70,6 +72,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: {
             type: 'string',
             label: 'Subtitle',
+            contentKey: 'subtitle',
             placeholder: 'Add Subtitle...',
             display: {
               type: 'text-input',
@@ -77,6 +80,7 @@ const schema: ComponentSchemaV1 = {
           },
           gallery: {
             type: 'array',
+            contentKey: 'gallery',
             label: 'Gallery',
             display: {
               type: 'media-pair-list-input',
@@ -108,6 +112,7 @@ const schema: ComponentSchemaV1 = {
           link: {
             type: 'string',
             label: 'Link',
+            contentKey: 'link',
             placeholder: 'Add link...',
             display: {
               type: 'text-input',

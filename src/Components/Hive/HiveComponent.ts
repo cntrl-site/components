@@ -229,6 +229,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: true,
       allowsVideo: true,
     },
@@ -241,12 +242,14 @@ const schema: ComponentSchemaV1 = {
         title1: {
           type: 'string',
           label: 'Title',
+          contentKey: 'title',
           placeholder: 'Add Title...',
           display: { type: 'text-input' },
         },
         title2: {
           type: 'string',
           label: 'Subtitle',
+          contentKey: 'subtitle',
           placeholder: 'Add Subtitle...',
           display: { type: 'text-input' },
         },
@@ -259,6 +262,7 @@ const schema: ComponentSchemaV1 = {
         gallery: {
           type: 'array',
           label: 'Gallery',
+          contentKey: 'gallery',
           max: 1,
           display: {
             type: 'media-pair-list-input',

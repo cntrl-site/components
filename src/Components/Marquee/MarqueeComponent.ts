@@ -156,6 +156,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: true,
       allowsVideo: true,
     },
@@ -165,6 +166,7 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             isObjectFitEditable: false,
             type: 'media-input',
@@ -180,6 +182,7 @@ const schema: ComponentSchemaV1 = {
         },
         link: {
           label: 'URL',
+          contentKey: 'link',
           placeholder: 'Enter link...',
           display: {
             type: 'text-input',

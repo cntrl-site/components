@@ -235,6 +235,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: false,
     },
     items: {
@@ -243,6 +244,7 @@ const schema: ComponentSchemaV1 = {
         text: {
           placeholder: 'Add text...',
           label: 'Text',
+          contentKey: 'title',
           display: {
             type: 'text-input',
           },
@@ -250,6 +252,7 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             type: 'media-input',
           },
@@ -257,6 +260,7 @@ const schema: ComponentSchemaV1 = {
         link: {
           type: 'string',
           label: 'Link',
+          contentKey: 'link',
           placeholder: 'Add link...',
           display: { type: 'text-input' },
         },

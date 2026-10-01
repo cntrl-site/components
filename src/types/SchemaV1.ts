@@ -80,6 +80,52 @@ export type SchemaDisplayRule = {
   };
 };
 
+/** The post header fields a content field can be filled from when a collection is connected, and the post page's link. */
+export type ContentKey = 'title' | 'subtitle' | 'date' | 'gallery' | 'link';
+
+export type ComponentContentSettings = {
+  allowsVideo?: boolean;
+  addItemWithoutImage?: boolean;
+  addItemFromFileExplorer?: boolean;
+  deleteImageDeletesEntry?: boolean;
+  stripFieldsOnAdd?: string[];
+  /** A collection's posts may be connected as this component's rows. */
+  allowsCollection?: boolean;
+};
+
+export type ComponentContentProperty = {
+  type?: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  label?: string;
+  placeholder?: string;
+  /** The post field this one is filled from when a collection is connected; none leaves it to the user. */
+  contentKey?: ContentKey;
+  display?: SchemaDisplay;
+  properties?: Record<string, ComponentContentProperty>;
+  items?: ComponentContentProperty;
+  required?: string[];
+  enum?: Array<string | number>;
+  min?: number;
+  max?: number;
+  default?: unknown;
+};
+
+export type ComponentContentSchema = {
+  type: 'array';
+  max?: number;
+  settings?: ComponentContentSettings;
+  display?: {
+    type: string;
+    ref?: Record<string, string>;
+    rules?: SchemaDisplayRule[];
+  };
+  items: {
+    type: 'object';
+    properties: Record<string, ComponentContentProperty>;
+    required?: string[];
+  };
+  default: unknown[];
+};
+
 export type SchemaSection = {
   sizing?: string;
   hasLinkParameter?: boolean;
@@ -118,7 +164,7 @@ export type ComponentSchemaV1 = {
   settings: SchemaSection;
   panels?: SchemaPanel[];
   paletteBookmark?: SchemaPaletteBookmark;
-  content?: any;
+  content?: ComponentContentSchema;
   fontRelations?: Record<string, string>;
   allowedPlugins?: string[];
   states?: string[];
