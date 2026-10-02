@@ -553,7 +553,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Portland, OR',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[0],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '02',
@@ -562,7 +562,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Savannah, GA',
     EColumnWidth: 'Scheduled',
     image: DEFAULT_HOVER_IMAGES[1],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '03',
@@ -571,7 +571,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Madison, WI',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[2],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '04',
@@ -580,7 +580,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Boise, ID',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[3],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '05',
@@ -589,7 +589,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Tampa, FL',
     EColumnWidth: 'Postponed',
     image: DEFAULT_HOVER_IMAGES[4],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '06',
@@ -598,7 +598,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Albuquerque, NM',
     EColumnWidth: 'Scheduled',
     image: DEFAULT_HOVER_IMAGES[5],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '07',
@@ -607,7 +607,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Pittsburgh, PA',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[6],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
 ];
 
@@ -663,11 +663,10 @@ const schema: ComponentSchemaV1 = {
             required: ['url', 'name'],
           },
           link: {
-            type: 'string',
+            type: 'object',
             label: 'Link',
             contentKey: 'link',
-            placeholder: 'Add link...',
-            display: { type: 'text-input' },
+            display: { type: 'link-input' },
           },
         },
         required: ['image'],

@@ -110,12 +110,11 @@ const schema: ComponentSchemaV1 = {
             },
           },
           link: {
-            type: 'string',
+            type: 'object',
             label: 'Link',
             contentKey: 'link',
-            placeholder: 'Add link...',
             display: {
-              type: 'text-input',
+              type: 'link-input',
             },
           },
         },
@@ -136,7 +135,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Salton Sea from Above',
@@ -152,7 +151,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Lunar Module Pilot',
@@ -168,7 +167,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Lunar Module 3 porch',
@@ -184,7 +183,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Command Module',
@@ -220,7 +219,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'CSM and Lunar Module LM',
@@ -236,7 +235,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'David R. Scott during EVA',
@@ -252,7 +251,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Fourth day of the mission',
@@ -268,7 +267,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Landing of the Spider1',
@@ -284,7 +283,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
       ],
   },

@@ -279,10 +279,10 @@ export const ControlImageRevealSliderComponent: Component = {
               required: ['url', 'name']
             },
             link: {
+              type: 'object',
               label: 'URL',
-              placeholder: 'Enter link...',
               display: {
-                type: 'text-input',
+                type: 'link-input',
               }
             }
           },
@@ -295,7 +295,7 @@ export const ControlImageRevealSliderComponent: Component = {
               url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png",
               name: "Slider-1.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           },
           {
             image: {
@@ -303,7 +303,7 @@ export const ControlImageRevealSliderComponent: Component = {
               url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png",
               name: "Slider-2.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           },
           {
             image: {
@@ -311,7 +311,7 @@ export const ControlImageRevealSliderComponent: Component = {
               url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png",
               name: "Slider-3.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           },
           {
             image: {
@@ -319,7 +319,7 @@ export const ControlImageRevealSliderComponent: Component = {
               url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQP84JKRDT7WNWDQZR4Y9.png",
               name: "Slider-4.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           }
         ]
       },

@@ -17,3 +17,5 @@ export {
   isPanelAvailable,
 } from './panelAvailability';
 export type { PanelAvailabilityContext } from './panelAvailability';
+export { LinkWrapper } from './LinkWrapper';
+export type { ContentLink } from '../../types/SchemaV1';

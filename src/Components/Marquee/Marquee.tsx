@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
-import { scalingValue } from '../utils/scalingValue';
-import { useScopedStyles } from '../utils/useScopedStyles';
+import { LinkWrapper, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
 
 function getCSS(P: string, setWidthPx: number): string {
   const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
@@ -369,14 +368,11 @@ const MarqueeItemCard = ({
               }),
         }}
       >
-        {imageNode && item.link
-          ? (
-            <a href={item.link} target='_self' rel='noopener noreferrer' className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}>
-              {imageNode}
-            </a>
-          )
-          : imageNode
-        }
+        {imageNode && (
+          <LinkWrapper link={item.link} className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}>
+            {imageNode}
+          </LinkWrapper>
+        )}
       </div>
     </div>
   );
@@ -755,7 +751,7 @@ export type MarqueeItem = {
     name?: string;
     type?: 'image' | 'video';
   };
-  link?: string;
+  link?: ContentLink;
 };
 
 export type MarqueeSettings = {

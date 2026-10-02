@@ -4,6 +4,7 @@ import { CommonComponentProps } from '../props';
 import {
   buildColorVars,
   getFormFieldValidationError,
+  LinkWrapper,
   scalingValue,
   useScopedStyles,
 } from '../utils/index';
@@ -1664,7 +1665,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
           {cropContent.map((item: any, index: number) => {
             const hasTitle = hasText(item.title);
             const hasSubtitle = hasText(item.subtitle);
-            const itemLink = (item.link?.length ?? 0) > 0 && lightbox === 'off' ? item.link : undefined;
+            const itemLink = lightbox === 'off' && item.link?.value ? item.link : undefined;
             const isLastRow = Math.floor(index / columnsCount)
               === Math.ceil(cropContent.length / columnsCount) - 1;
             const gridColumn = isPartialLastRow && index >= lastRowStartIndex
@@ -1766,16 +1767,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             ) : null;
 
-            const alignedTextRows = itemLink ? (
-              <a href={itemLink} target="_blank" className={`${P}-item-text-link`}>
+            const alignedTextRows = (
+              <LinkWrapper link={itemLink} className={`${P}-item-text-link`}>
                 {titleRow}
                 {subtitleRow}
-              </a>
-            ) : (
-              <>
-                {titleRow}
-                {subtitleRow}
-              </>
+              </LinkWrapper>
             );
 
             const displayItems = getGridDisplayItems(item.gallery);
@@ -1898,6 +1894,15 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </>
             ) : null;
 
+            // the aligned layout sizes this box whether or not it links anywhere
+            const alignedImage = itemLink ? (
+              <LinkWrapper link={itemLink} className={`${P}-item-image-link`}>
+                {imageContent}
+              </LinkWrapper>
+            ) : (
+              <a className={`${P}-item-image-link`}>{imageContent}</a>
+            );
+
             return (
             <div
               key={index}
@@ -1920,29 +1925,25 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     {isTextBeforeImage ? (
                       <>
                         {alignedTextRows}
-                        <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
-                          {imageContent}
-                        </a>
+                        {alignedImage}
                       </>
                     ) : (
                       <>
-                        <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
-                          {imageContent}
-                        </a>
+                        {alignedImage}
                         {alignedTextRows}
                       </>
                     )}
                   </>
                 ) : itemLink ? (
                   <>
-                    <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                    <LinkWrapper link={itemLink} className={`${P}-item-image-link`}>
                       {typeCTextBlock}
                       {imageContent}
-                    </a>
+                    </LinkWrapper>
                     {!isTextBeforeImage && (
-                      <a href={itemLink} target="_blank" className={`${P}-item-text-link`}>
+                      <LinkWrapper link={itemLink} className={`${P}-item-text-link`}>
                         {typeABText}
-                      </a>
+                      </LinkWrapper>
                     )}
                   </>
                 ) : (

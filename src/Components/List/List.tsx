@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
+import { buildColorVars, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import type { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
@@ -141,14 +141,14 @@ type ListContentItem = {
   DColumnWidth?: string;
   EColumnWidth?: string;
   image?: ListMedia;
-  link?: string;
+  link?: ContentLink;
 };
 
 type ListItemRow = {
   id: string | number;
   cells: Record<string, React.ReactNode>;
   image?: ListContentItem['image'];
-  link?: string;
+  link?: ContentLink;
 };
 
 type HoverImageState = {
@@ -2636,7 +2636,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
         >
           <div style={{ width: '100%', position: 'relative' }}>
             {visibleRows.map((row, rowIdx) => {
-              const hasLink = (row.link?.length ?? 0) > 0;
+              const hasLink = (row.link?.value.length ?? 0) > 0;
               const RowElement = hasLink && (!isEditor || isPreviewMode) ? 'a' : 'div';
               const rowStyle = getEntryDividerWidths(
                 rowIdx,
@@ -2653,7 +2653,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 key={row.id}
                 ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstRowRef.current = el; } : undefined}
                 className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}${showCutLabel && rowIdx === visibleRows.length - 1 ? ` ${P}-list-item-before-cut` : ''}`}
-                {...(hasLink ? { href: row.link, target: '_blank' } : {})}
+                {...(hasLink ? { href: row.link?.value, target: row.link?.target === 'blank' ? '_blank' : '_self' } : {})}
                 style={rowStyle}
                 onMouseEnter={(event) => {
                   if (revealHoverActive && (hasLink || entryHoverShowOption === 'always')) {

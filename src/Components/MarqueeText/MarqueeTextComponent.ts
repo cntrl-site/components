@@ -258,11 +258,10 @@ const schema: ComponentSchemaV1 = {
           },
         },
         link: {
-          type: 'string',
+          type: 'object',
           label: 'Link',
           contentKey: 'link',
-          placeholder: 'Add link...',
-          display: { type: 'text-input' },
+          display: { type: 'link-input' },
         },
       },
     },
@@ -273,7 +272,7 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/component-assets/marquee_text_icon.svg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       }
     ],
   },

@@ -181,11 +181,11 @@ const schema: ComponentSchemaV1 = {
           },
         },
         link: {
+          type: 'object',
           label: 'URL',
           contentKey: 'link',
-          placeholder: 'Enter link...',
           display: {
-            type: 'text-input',
+            type: 'link-input',
           },
         },
       },
@@ -196,49 +196,49 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
     ],
   },

@@ -31,10 +31,10 @@ const schema: ComponentSchemaV1 = {
           required: ['url', 'name'],
         },
         link: {
+          type: 'object',
           label: 'URL',
-          placeholder: 'Enter link...',
           display: {
-            type: 'text-input',
+            type: 'link-input',
           },
         },
       },
@@ -46,49 +46,49 @@ const schema: ComponentSchemaV1 = {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
           name: 'Slider-1.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
           name: 'Slider-2.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
           name: 'Slider-3.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
           name: 'Slider-4.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
           name: 'Slider-5.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
           name: 'Slider-6.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
           name: 'Slider-7.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
     ],
   },

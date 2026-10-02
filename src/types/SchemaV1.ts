@@ -83,6 +83,17 @@ export type SchemaDisplayRule = {
 /** The post header fields a content field can be filled from when a collection is connected, and the post page's link. */
 export type ContentKey = 'title' | 'subtitle' | 'date' | 'gallery' | 'link';
 
+/**
+ * A link as a `link-input` content field holds it. In the editor `value` is a url, a page id or a
+ * section id; a published site gets it with `value` already the url to follow.
+ */
+export type ContentLink = {
+  type: 'url' | 'anchor' | 'page';
+  value: string;
+  target: 'blank' | 'self';
+  anchor?: string;
+};
+
 export type ComponentContentSettings = {
   allowsVideo?: boolean;
   addItemWithoutImage?: boolean;

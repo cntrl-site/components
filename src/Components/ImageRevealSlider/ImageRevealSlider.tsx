@@ -1,5 +1,6 @@
 import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './ImageRevealSlider.module.scss';
+import { LinkWrapper, type ContentLink } from '../utils/index';
 
 interface ImageRevealSliderProps {
   settings: ImageRevealSliderSettings;
@@ -43,13 +44,13 @@ type ImageRevealSliderItem = {
     url: string;
     name: string;
   };
-  link: string;
+  link?: ContentLink;
 };
 
 interface PlacedImage {
   id: number;
   url: string;
-  link: string;
+  link?: ContentLink;
   name: string;
   x: number;
   y: number;
@@ -318,23 +319,14 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
             cursor: customCursorImg === 'none' ? 'default' : 'none'
           }}
         >
-          {target === 'area' && img.link ? (
-            <a href={img.link} target='_blank' className={styles.link}>
-              <img
-                key={img.id}
-                src={img.url}
-                alt={img.name}
-                className={styles.image}
-              />
-            </a>
-          ) : (
+          <LinkWrapper link={target === 'area' ? img.link : undefined} className={styles.link}>
             <img
               key={img.id}
               src={img.url}
               alt={img.name}
               className={styles.image}
             />
-          )}
+          </LinkWrapper>
         </div>
       ))}
       {isInside &&
