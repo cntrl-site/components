@@ -736,7 +736,7 @@ export const WaterfallComponent = {
   },
   assetsPaths: {
     content: [{ path: 'image.url', placeholderEnabled: true }],
-    parameters: [],
+    parameters: [{ path: 'closeIcon' }],
   },
   fontSettingsPaths: {
     content: [],

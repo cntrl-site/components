@@ -686,7 +686,7 @@ export const HiveComponent = {
   },
   assetsPaths: {
     content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
-    parameters: [],
+    parameters: [{ path: 'closeIcon' }],
   },
   fontSettingsPaths: {
     content: [],
