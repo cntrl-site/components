@@ -184,7 +184,6 @@ const POSITION_VALUES = [
 const paletteBookmarkItems = [
   'iconColor',
   'logoColor',
-  'closeButtonColor',
   'linkColor',
   'backgroundColor',
 ] as const;
@@ -327,16 +326,6 @@ const schema = {
         },
         display: { type: 'palette-color-picker' },
       },
-      compactCloseButtonColor: {
-        type: 'string',
-        scope: 'common',
-        title: 'Close Default',
-        titleByState: {
-          compact: 'Close Default',
-          'compact-hover': 'Close Hover',
-        },
-        display: { type: 'palette-color-picker' },
-      },
       compactLinkColor: {
         type: 'string',
         scope: 'common',
@@ -400,8 +389,6 @@ const schema = {
         scope: 'common',
         title: 'Close Default',
         titleByState: {
-          default: 'Close Default',
-          hover: 'Close Hover',
           open: 'Close Default',
           'open-hover': 'Close Hover',
         },
@@ -581,7 +568,6 @@ const schema = {
       linkColor: '#000000',
       openLinkColor: '#000000',
       compactIconColor: '#000000',
-      compactCloseButtonColor: '#000000',
       compactLinkColor: '#000000',
       compactLogoColor: '#000000',
       compactBackgroundColor: '#ffffff',
@@ -613,6 +599,8 @@ const schema = {
           linkColor: '#666666',
           iconColor: '#666666',
           logoColor: '#666666',
+        },
+        'open-hover': {
           closeButtonColor: '#666666',
         },
       },
@@ -837,7 +825,6 @@ const schema = {
       'openLinkColor',
       'compactShowIcon',
       'compactIconColor',
-      'compactCloseButtonColor',
       'compactLinkColor',
       'compactLogoColor',
       'compactBackgroundColor',
@@ -945,10 +932,10 @@ const schema = {
     items: [...paletteBookmarkItems],
     panelIds: ['default', 'compact', 'open'],
     stateItems: {
-      default: ['iconColor', 'logoColor', 'closeButtonColor', 'linkColor', 'backgroundColor'],
-      hover: ['iconColor', 'logoColor', 'closeButtonColor', 'linkColor'],
-      compact: ['compactIconColor', 'compactLogoColor', 'compactCloseButtonColor', 'compactLinkColor', 'compactBackgroundColor'],
-      'compact-hover': ['compactIconColor', 'compactLogoColor', 'compactCloseButtonColor', 'compactLinkColor'],
+      default: ['iconColor', 'logoColor', 'linkColor', 'backgroundColor'],
+      hover: ['iconColor', 'logoColor', 'linkColor'],
+      compact: ['compactIconColor', 'compactLogoColor', 'compactLinkColor', 'compactBackgroundColor'],
+      'compact-hover': ['compactIconColor', 'compactLogoColor', 'compactLinkColor'],
       open: ['closeButtonColor', 'openLogoColor', 'openLinkColor', 'menuBackgroundColor', 'overlayColor'],
       'open-hover': ['closeButtonColor', 'openLogoColor', 'openLinkColor'],
     },
