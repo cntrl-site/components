@@ -97,12 +97,6 @@ const schema: ComponentSchemaV1 = {
         title: 'Font Size',
         display: { type: 'font-size' },
       },
-      textLineHeight: {
-        type: 'number',
-        scope: 'layout',
-        title: 'Line Height',
-        display: { type: 'line-height-input' },
-      },
       textLetterSpacing: {
         type: 'number',
         scope: 'layout',
@@ -157,7 +151,6 @@ const schema: ComponentSchemaV1 = {
         curveAmplitude: 6,
         curveFrequency: 15,
         textFontSize: 0.08,
-        textLineHeight: 0.08,
       },
       t: {
         speed: 1.3,
@@ -166,7 +159,6 @@ const schema: ComponentSchemaV1 = {
         curveAmplitude: 5,
         curveFrequency: 15,
         textFontSize: 0.07,
-        textLineHeight: 0.05,
       },
       d: {
         speed: 2.5,
@@ -175,7 +167,6 @@ const schema: ComponentSchemaV1 = {
         curveAmplitude: 5,
         curveFrequency: 18,
         textFontSize: 0.071,
-        textLineHeight: 0.035,
       },
     },
     displayRules: [
@@ -223,7 +214,7 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         'textFontFamily',
         'textFontSettings',
-        { type: 'row', items: ['textFontSize', 'textLineHeight', 'textLetterSpacing', 'textWordSpacing'] },
+        { type: 'row', items: ['textFontSize', 'textLetterSpacing', 'textWordSpacing'] },
         'textTextAppearance',
       ],
     },

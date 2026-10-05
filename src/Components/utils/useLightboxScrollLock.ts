@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 
 const SCROLLABLE_SELECTOR = '[data-lightbox-scrollable]';
 
-export const useLightboxScrollLock = () => {
+export const useLightboxScrollLock = (active = true) => {
   useEffect(() => {
+    if (!active) return;
+
     const scrollY = window.scrollY;
     const originalBodyOverflow = document.body.style.overflow;
     const originalBodyPosition = document.body.style.position;
@@ -36,5 +38,5 @@ export const useLightboxScrollLock = () => {
       document.documentElement.style.overflow = originalHtmlOverflow;
       window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
     };
-  }, []);
+  }, [active]);
 };
