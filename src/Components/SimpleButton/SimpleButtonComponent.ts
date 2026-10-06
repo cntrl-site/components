@@ -659,7 +659,7 @@ export const SimpleButtonComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XE56V3FGD7SN9GY8NG',
+    url: 'https://cdn.cntrl.site/component-assets/button-preview.png',
   },
   schema,
   sourceCode: simpleButtonSourceRaw,

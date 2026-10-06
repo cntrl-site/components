@@ -224,7 +224,7 @@ export const HelixComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XEAV9VYFDKJ386Z0TC',
+    url: 'https://cdn.cntrl.site/component-assets/Helix.mp4',
   },
   version: 1,
   defaultSize: {

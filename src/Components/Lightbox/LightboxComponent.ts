@@ -7,7 +7,7 @@ export const LightboxComponent: Component = {
   name: 'Lightbox',
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XF4M8H1ATJ56F5HPCH',
+    url: 'https://cdn.cntrl.site/component-assets/Lightbox.png',
   },
   defaultSize: {
     d: {

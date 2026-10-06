@@ -654,7 +654,7 @@ export const LightboxJournalComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XFFQ85SY5E1KBMNE0F',
+    url: 'https://cdn.cntrl.site/component-assets/Journal.png',
   },
   schema,
   sourceCode: lightboxJournalSourceRaw,

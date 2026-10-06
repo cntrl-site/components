@@ -688,7 +688,7 @@ export const LightboxStripComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XG47J2PVBJ6XSNMZN6',
+    url: 'https://cdn.cntrl.site/component-assets/Strip.mp4',
   },
   schema,
   sourceCode: lightboxStripSourceRaw,

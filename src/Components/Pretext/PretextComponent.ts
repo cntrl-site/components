@@ -376,7 +376,7 @@ export const PretextComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XG2XSE348QCE4VTAYF',
+    url: 'https://cdn.cntrl.site/component-assets/pretext.png',
   },
   schema,
   sourceCode: pretextSourceRaw,

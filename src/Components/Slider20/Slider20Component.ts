@@ -467,7 +467,7 @@ export const Slider20Component = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XGDEQTW8Y71W6D7ANX',
+    url: 'https://cdn.cntrl.site/component-assets/Slider.mp4',
   },
   schema,
   sourceCode: slider20SourceRaw,

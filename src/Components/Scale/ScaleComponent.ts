@@ -150,7 +150,7 @@ export const ScaleComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XG650XSVXMDJM47DEE',
+    url: 'https://cdn.cntrl.site/component-assets/Scale.mp4',
   },
   schema,
   sourceCode: scaleSourceRaw,

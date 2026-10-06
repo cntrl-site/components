@@ -541,7 +541,7 @@ export const FAQComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XEQ12SP6P9KHBXZBZM',
+    url: 'https://cdn.cntrl.site/component-assets/FAQ_List.png',
   },
   version: 1,
   defaultSize: {

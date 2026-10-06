@@ -675,7 +675,7 @@ export const HiveComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XFD9RBV73Y4XTYYSM6',
+    url: 'https://cdn.cntrl.site/component-assets/hive.png',
   },
   version: 1,
   defaultSize: {

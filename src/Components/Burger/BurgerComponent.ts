@@ -952,7 +952,7 @@ export const BurgerComponent = {
   version: 1,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XG22TTJ182A0MNK29A',
+    url: 'https://cdn.cntrl.site/component-assets/Simple Burger.png',
   },
   layoutMode: 'navigation' as const,
   defaultSize: {

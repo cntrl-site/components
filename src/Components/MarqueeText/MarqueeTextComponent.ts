@@ -285,7 +285,7 @@ export const MarqueeTextComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XG0WTJ97K104N36MNS',
+    url: 'https://cdn.cntrl.site/component-assets/Text_Marquee.mp4',
   },
   schema,
   sourceCode: marqueeTextSourceRaw,

@@ -854,7 +854,7 @@ export const GridComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XGB9A72KYAEG4WM9XK',
+    url: 'https://cdn.cntrl.site/component-assets/Neptune_Grid.png',
   },
   version: 1,
   defaultSize: {

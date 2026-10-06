@@ -771,7 +771,7 @@ export const MercuryComponent = {
   },
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XGMQ91TP81WB81ZP6V',
+    url: 'https://cdn.cntrl.site/component-assets/Mercury.mp4',
   },
   schema,
   sourceCode: mercurySourceRaw,

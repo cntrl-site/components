@@ -725,7 +725,7 @@ export const WaterfallComponent = {
   layoutMode: 'structured' as const,
   preview: {
     type: 'image' as const,
-    url: '01M3QM74XGADNQDV6HV7DCP59K',
+    url: 'https://cdn.cntrl.site/component-assets/waterfall.png',
   },
   version: 1,
   defaultSize: {
