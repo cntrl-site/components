@@ -88,43 +88,43 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: '01M3QM74XESYN1HRYH9VRTZ5CK',
+          assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
           name: '',
         },
       },
       {
         image: {
-          url: '01M3QM74XEVZ9F59FC7M9BA63Q',
+          assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
           name: '',
         },
       },
       {
         image: {
-          url: '01M3QM74XEE2101QD8PM6E4JSA',
+          assetId: '01M3QM74XEE2101QD8PM6E4JSA',
           name: '',
         },
       },
       {
         image: {
-          url: '01M3QM74XE20C38X4NND20C5R4',
+          assetId: '01M3QM74XE20C38X4NND20C5R4',
           name: '',
         },
       },
       {
         image: {
-          url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
+          assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
           name: '',
         },
       },
       {
         image: {
-          url: '01M3QM74XEBS5231QA4355P4VQ',
+          assetId: '01M3QM74XEBS5231QA4355P4VQ',
           name: '',
         },
       },
       {
         image: {
-          url: '01M3QM74XEWT5YM43KF6PEYRCV',
+          assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
           name: '',
         },
       },
@@ -155,7 +155,7 @@ export const ScaleComponent = {
   schema,
   sourceCode: scaleSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

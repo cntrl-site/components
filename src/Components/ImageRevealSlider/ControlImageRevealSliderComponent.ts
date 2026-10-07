@@ -24,7 +24,7 @@ export const ControlImageRevealSliderComponent: Component = {
     }
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'settings.cursor.defaultCursor' }, { path: 'settings.cursor.hoverCursor' }]
   },
   fontSettingsPaths: {
@@ -265,7 +265,7 @@ export const ControlImageRevealSliderComponent: Component = {
                 type: 'media-input',
               },
               properties: {
-                url: {
+                assetId: {
                   type: 'string',
                 },
                 name: {
@@ -276,7 +276,7 @@ export const ControlImageRevealSliderComponent: Component = {
                   enum: ['cover', 'contain'],
                 }
               },
-              required: ['url', 'name']
+              required: ['assetId', 'name']
             },
             link: {
               label: 'URL',
@@ -292,7 +292,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "01M3QM74XGWBJY3AQQ71GC2Z6Q",
+              assetId: "01M3QM74XGWBJY3AQQ71GC2Z6Q",
               name: "Slider-1.png"
             },
             link: "",
@@ -300,7 +300,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "01M3QM74XGMXS1Z5ZY2RFGS3T4",
+              assetId: "01M3QM74XGMXS1Z5ZY2RFGS3T4",
               name: "Slider-2.png"
             },
             link: "",
@@ -308,7 +308,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "01M3QM74XGWG6VCHNEXKVKAJGT",
+              assetId: "01M3QM74XGWG6VCHNEXKVKAJGT",
               name: "Slider-3.png"
             },
             link: "",
@@ -316,7 +316,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "01M3QM74XGCVMTPNHFHMR98RPZ",
+              assetId: "01M3QM74XGCVMTPNHFHMR98RPZ",
               name: "Slider-4.png"
             },
             link: "",

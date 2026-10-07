@@ -159,7 +159,7 @@ export function ControlSlider({ settings, content, styles: sliderStyles, isEdito
                     [styles.contain]: item.image.objectFit === 'contain',
                     [styles.cover]: item.image.objectFit === 'cover'
                   })}
-                  src={item.image.url} alt={item.image.name ?? ''}
+                  src={item.image.assetId} alt={item.image.name ?? ''}
                 />
               </div>
             </div>
@@ -304,7 +304,7 @@ function ArrowIcon({ color, className }: { color: string, className: string }) {
 
 type SliderItem = {
   image: {
-    url: string;
+    assetId: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
   };

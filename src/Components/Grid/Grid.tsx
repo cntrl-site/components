@@ -464,7 +464,7 @@ const SWIPE_NAV_THRESHOLD = 50;
 type SwipeAxis = 'none' | 'horizontal' | 'vertical';
 
 type GridMedia = {
-  url: string;
+  assetId: string;
   name?: string;
   type: 'image' | 'video';
 };
@@ -486,14 +486,14 @@ function isPairFormat(image: GridMedia[] | GridMediaPair[] | undefined): image i
 
 function getDisplayMediaForPair(pair: GridMediaPair): GridMedia | null {
   const [first, second] = pair.media;
-  if (second?.url) return second;
-  if (first?.url) return first;
+  if (second?.assetId) return second;
+  if (first?.assetId) return first;
   return null;
 }
 
 function getLightboxMediaForPair(pair: GridMediaPair): GridMedia | null {
   const [first] = pair.media;
-  if (first?.url) return first;
+  if (first?.assetId) return first;
   return null;
 }
 
@@ -508,13 +508,13 @@ function getGridDisplayItems(image: GridMedia[] | GridMediaPair[] | undefined): 
       const lightboxMedia = getLightboxMediaForPair(pair);
       return [{
         displayMedia,
-        lightboxMedia: lightboxMedia?.url ? lightboxMedia : null,
+        lightboxMedia: lightboxMedia?.assetId ? lightboxMedia : null,
       }];
     });
   }
 
   return (image as GridMedia[])
-    .filter(media => media?.url)
+    .filter(media => media?.assetId)
     .map(media => ({
       displayMedia: media,
       lightboxMedia: media,
@@ -534,8 +534,8 @@ function collectGridLightboxMedia(content: any[]): GridMedia[] {
     const displayItems = getGridDisplayItems(item.gallery);
     for (const entry of displayItems) {
       const media = entry.lightboxMedia;
-      if (media?.url && !seen.has(media.url)) {
-        seen.add(media.url);
+      if (media?.assetId && !seen.has(media.assetId)) {
+        seen.add(media.assetId);
         result.push(media);
       }
     }
@@ -562,16 +562,16 @@ function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
       {mediaList.map((media) => (
         isVideoMedia(media) ? (
           <video
-            key={media.url}
-            src={media.url}
+            key={media.assetId}
+            src={media.assetId}
             preload='auto'
             muted
             playsInline
           />
         ) : (
           <img
-            key={media.url}
-            src={media.url}
+            key={media.assetId}
+            src={media.assetId}
             alt=''
           />
         )
@@ -600,7 +600,7 @@ function GridMediaItem({
   if (isVideoMedia(media)) {
     return (
       <video
-        src={media.url}
+        src={media.assetId}
         className={className}
         style={{
           ...style,
@@ -617,7 +617,7 @@ function GridMediaItem({
 
   return (
     <img
-      src={media.url}
+      src={media.assetId}
       alt={media.name}
       className={className}
       style={{
@@ -885,7 +885,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
   }, [clearSlideCommitTimer]);
 
   useLayoutEffect(() => {
-    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.url) return;
+    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.assetId) return;
 
     clearSlideCommitTimer();
     slideCommitDirectionRef.current = null;
@@ -907,8 +907,8 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     touchInteractionRef.current = false;
 
     prevIndexRef.current = index;
-    prevItemUrlRef.current = currentItem?.url;
-  }, [index, currentItem?.url, clearSlideCommitTimer]);
+    prevItemUrlRef.current = currentItem?.assetId;
+  }, [index, currentItem?.assetId, clearSlideCommitTimer]);
 
   useLayoutEffect(() => {
     const rapidDirection = rapidNavDirectionRef.current;
@@ -918,7 +918,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     requestAnimationFrame(() => {
       startProgrammaticSlideRef.current(rapidDirection);
     });
-  }, [index, currentItem?.url]);
+  }, [index, currentItem?.assetId]);
 
   useEffect(() => {
     if (phase !== 'open') return;
@@ -1292,8 +1292,8 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
         <div style={neighborBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
           {isVideoMedia(neighborItem) ? (
             <video
-              key={`neighbor-${neighborIndex}-${neighborItem.url}`}
-              src={neighborItem.url}
+              key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
+              src={neighborItem.assetId}
               muted
               playsInline
               preload='auto'
@@ -1301,8 +1301,8 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
             />
           ) : (
             <img
-              key={`neighbor-${neighborIndex}-${neighborItem.url}`}
-              src={neighborItem.url}
+              key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
+              src={neighborItem.assetId}
               alt={neighborItem.name}
               style={neighborMediaStyle}
             />
@@ -1314,8 +1314,8 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
         <div style={currentBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
           {isCurrentVideo ? (
             <LightboxVideo
-              key={`${index}-${currentItem.url}`}
-              src={currentItem.url}
+              key={`${index}-${currentItem.assetId}`}
+              src={currentItem.assetId}
               phase={phase}
               mediaRef={mediaRef as React.RefObject<HTMLVideoElement>}
               mediaStyle={currentMediaStyle}
@@ -1325,9 +1325,9 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
             />
           ) : (
             <img
-              key={`${index}-${currentItem.url}`}
+              key={`${index}-${currentItem.assetId}`}
               ref={mediaRef as React.RefObject<HTMLImageElement>}
-              src={currentItem.url}
+              src={currentItem.assetId}
               alt={currentItem.name}
               onLoad={handleMediaLoad}
               style={currentMediaStyle}
@@ -1792,7 +1792,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     (() => {
                       const { displayMedia, lightboxMedia } = displayItems[0];
                       const lightboxIndex = lightboxMedia
-                        ? lightboxItemsForEntry.findIndex(item => item.url === lightboxMedia.url)
+                        ? lightboxItemsForEntry.findIndex(item => item.assetId === lightboxMedia.assetId)
                         : -1;
                       return (
                         <GridMediaItem
@@ -1811,9 +1811,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
                         {displayItems.map(({ displayMedia }) => (
                           isVideoMedia(displayMedia) ? (
-                            <video key={`sizer-${displayMedia.url}`} src={displayMedia.url} muted playsInline />
+                            <video key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} muted playsInline />
                           ) : (
-                            <img key={`sizer-${displayMedia.url}`} src={displayMedia.url} alt="" />
+                            <img key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} alt="" />
                           )
                         ))}
                       </div>
@@ -1844,7 +1844,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     >
                       {displayItems.map(({ displayMedia, lightboxMedia }, imgIndex) => {
                         const lightboxIndex = lightboxMedia
-                          ? lightboxItemsForEntry.findIndex(item => item.url === lightboxMedia.url)
+                          ? lightboxItemsForEntry.findIndex(item => item.assetId === lightboxMedia.assetId)
                           : -1;
                         return (
                           <SplideSlide key={imgIndex}>

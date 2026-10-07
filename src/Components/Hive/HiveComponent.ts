@@ -229,11 +229,11 @@ const HIVE_DEFAULT_CONTENT = (() => {
       ...HIVE_DEFAULT_TITLES,
       gallery: [{
         media: [{
-          url: HIVE_DEFAULT_IMAGE_URLS[i - 1],
+          assetId: HIVE_DEFAULT_IMAGE_URLS[i - 1],
           name: '',
           objectFit: 'cover' as const,
         }, {
-          url: '',
+          assetId: '',
           name: '',
           objectFit: 'cover' as const,
         }],
@@ -291,7 +291,7 @@ const schema: ComponentSchemaV1 = {
                 items: {
                   type: 'object',
                   properties: {
-                    url: { type: 'string' },
+                    assetId: { type: 'string' },
                     name: { type: 'string' },
                     type: {
                       type: 'string',
@@ -685,7 +685,7 @@ export const HiveComponent = {
     },
   },
   assetsPaths: {
-    content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
+    content: [{ path: 'gallery.media.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'closeIcon' }],
   },
   fontSettingsPaths: {

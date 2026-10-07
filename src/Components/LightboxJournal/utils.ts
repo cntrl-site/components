@@ -3,7 +3,7 @@ import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
 type JournalImage = {
-  url: string;
+  assetId: string;
   name?: string;
   objectFit?: 'cover' | 'contain';
 };

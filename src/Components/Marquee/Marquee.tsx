@@ -226,12 +226,12 @@ const isAnyCopyOfSlotInView = (wrapper: Element, itemIndex: number): boolean => 
   return Array.from(cards).some((card) => isCardInMarqueeView(card, wrapper));
 };
 
-const isVideoMedia = (media: Pick<NonNullable<MarqueeItem['image']>, 'url' | 'type' | 'name'>): boolean => {
+const isVideoMedia = (media: Pick<NonNullable<MarqueeItem['image']>, 'assetId' | 'type' | 'name'>): boolean => {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   const name = media.name ?? '';
   if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(name)) return true;
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url ?? '');
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.assetId ?? '');
 };
 
 const isMediaReady = (el: HTMLImageElement | HTMLVideoElement | null): boolean => {
@@ -267,12 +267,12 @@ const MarqueeItemCard = ({
   onFirstSetImageDone,
 }: MarqueeItemCardProps) => {
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
-  const isVideo = Boolean(item.image?.url && isVideoMedia(item.image));
+  const isVideo = Boolean(item.image?.assetId && isVideoMedia(item.image));
 
   useLayoutEffect(() => {
     if (!isFirstSet) return;
     if (isMediaReady(mediaRef.current)) onFirstSetImageDone?.();
-  }, [isFirstSet, item.image?.url, onFirstSetImageDone]);
+  }, [isFirstSet, item.image?.assetId, onFirstSetImageDone]);
 
   const isCover = imageFit.display === 'cover';
   const ratioValue = imageFit.ratioValue ?? '1:1';
@@ -312,11 +312,11 @@ const MarqueeItemCard = ({
       };
 
   const imageNode =
-    item.image?.url &&
+    item.image?.assetId &&
     (isVideo ? (
       <video
         ref={(el) => { mediaRef.current = el; }}
-        src={item.image.url}
+        src={item.image.assetId}
         style={mediaStyle}
         muted
         loop
@@ -329,7 +329,7 @@ const MarqueeItemCard = ({
     ) : (
       <img
         ref={(el) => { mediaRef.current = el; }}
-        src={item.image.url}
+        src={item.image.assetId}
         alt={item.image?.name ?? ''}
         style={mediaStyle}
         onLoad={isFirstSet ? onFirstSetImageDone : undefined}
@@ -419,7 +419,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
   const stableCandidateRef = useRef<number | null>(null);
   const loadedFirstSetImagesRef = useRef(0);
   const scheduleRemeasureRef = useRef<(() => void) | null>(null);
-  const contentImageUrlsKey = useMemo(() => (content ?? []).map((i) => i.image?.url ?? '').join('\0'),[content]);
+  const contentImageUrlsKey = useMemo(() => (content ?? []).map((i) => i.image?.assetId ?? '').join('\0'),[content]);
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
   const setContent = useMemo(() => {
     const items = content ?? [];
@@ -429,7 +429,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
     return expandSetContent(items, contentSequenceRepeat);
   }, [content, autoplayEnabled, contentSequenceRepeat, isEditor]);
   const firstSetImageUrlCount = useMemo(
-    () => (content ?? []).filter((i) => Boolean(i.image?.url)).length,
+    () => (content ?? []).filter((i) => Boolean(i.image?.assetId)).length,
     [content],
   );
   const copies = useMarqueeTrack ? OUTER_SET_COPIES : 1;
@@ -772,7 +772,7 @@ export const Marquee = ({ settings, content, isEditor, isPreviewMode, isEditMode
 
 export type MarqueeItem = {
   image?: {
-    url?: string;
+    assetId?: string;
     name?: string;
     type?: 'image' | 'video';
   };

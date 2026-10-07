@@ -257,7 +257,7 @@ const schema: ComponentSchemaV1 = {
       { 
         text: 'NEW WORK',
         image: { 
-          url: '01M3QM74XF10Z2N5P1Y0J0XDQQ',
+          assetId: '01M3QM74XF10Z2N5P1Y0J0XDQQ',
           name: '',
         },
         link: '',
@@ -290,7 +290,7 @@ export const MarqueeTextComponent = {
   schema,
   sourceCode: marqueeTextSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

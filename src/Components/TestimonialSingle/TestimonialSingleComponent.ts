@@ -372,7 +372,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {
             objectFit: 'contain',
-            url: '01M3QM74XFE5YFEHBH605E8FXT',
+            assetId: '01M3QM74XFE5YFEHBH605E8FXT',
             name: '',
           },
           text: [
@@ -395,7 +395,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {
             objectFit: 'contain',
-            url: '01M3QM74XFZD1R3FV8BKW3NT24',
+            assetId: '01M3QM74XFZD1R3FV8BKW3NT24',
             name: '',
           },
           text: [
@@ -418,7 +418,7 @@ const schema: ComponentSchemaV1 = {
         {
           image: {
             objectFit: 'contain',
-            url: '01M3QM74XGNPA7232QGZAYFNSS',
+            assetId: '01M3QM74XGNPA7232QGZAYFNSS',
             name: '',
           },
           text: [
@@ -466,7 +466,7 @@ export const TestimonialSingleComponent = {
   schema,
   sourceCode: testimonialSingleSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'controls.icon' }]
   },
   fontSettingsPaths: {

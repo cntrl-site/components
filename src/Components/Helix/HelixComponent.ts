@@ -34,7 +34,7 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
           },
           properties: {
-            url: { type: 'string' },
+            assetId: { type: 'string' },
             name: { type: 'string' },
             type: {
               type: 'string',
@@ -44,7 +44,7 @@ const schema: ComponentSchemaV1 = {
         },
       },
     },
-    default: defaultImageUrls.map((url) => ({ image: { url, name: '' } })),
+    default: defaultImageUrls.map((url) => ({ image: { assetId: url, name: '' } })),
   },
   settings: {
     sizing: 'auto auto',
@@ -236,7 +236,7 @@ export const HelixComponent = {
   schema,
   sourceCode: helixSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

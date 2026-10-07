@@ -89,7 +89,7 @@ const schema: ComponentSchemaV1 = {
                   items: {
                     type: 'object',
                     properties: {
-                      url: { type: 'string' },
+                      assetId: { type: 'string' },
                       name: { type: 'string' },
                       type: {
                         type: 'string',
@@ -122,11 +122,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XESYN1HRYH9VRTZ5CK',
+              assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -138,11 +138,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Sonnar 250 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XERA3G7J0J00XVKEXX',
+              assetId: '01M3QM74XERA3G7J0J00XVKEXX',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -154,11 +154,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XEE2101QD8PM6E4JSA',
+              assetId: '01M3QM74XEE2101QD8PM6E4JSA',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -170,11 +170,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XEVZ9F59FC7M9BA63Q',
+              assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -186,31 +186,31 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
+              assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
           }, {
             media: [{
-              url: '01M3QM74XEZCK8SJPAFXCKG8QN',
+              assetId: '01M3QM74XEZCK8SJPAFXCKG8QN',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
           }, {
             media: [{
-              url: '01M3QM74XE20C38X4NND20C5R4',
+              assetId: '01M3QM74XE20C38X4NND20C5R4',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -222,11 +222,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XEBS5231QA4355P4VQ',
+              assetId: '01M3QM74XEBS5231QA4355P4VQ',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -238,11 +238,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XEWT5YM43KF6PEYRCV',
+              assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -254,11 +254,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad 500 EL / Zeiss Planar 80 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XES6MX14JTT1CF24BB',
+              assetId: '01M3QM74XES6MX14JTT1CF24BB',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -270,11 +270,11 @@ const schema: ComponentSchemaV1 = {
           subtitle: 'Hasselblad SWC/ Zeiss Biogon 38 mm / SO-368 Ektachrome',
           gallery: [{
             media: [{
-              url: '01M3QM74XEMGJWCYNPZ3ETQTKM',
+              assetId: '01M3QM74XEMGJWCYNPZ3ETQTKM',
               name: '',
               objectFit: 'cover',
             }, {
-              url: '',
+              assetId: '',
               name: '',
               objectFit: 'cover',
             }],
@@ -864,7 +864,7 @@ export const GridComponent = {
     }
   },
   assetsPaths: {
-    content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
+    content: [{ path: 'gallery.media.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

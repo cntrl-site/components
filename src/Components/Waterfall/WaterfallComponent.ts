@@ -199,7 +199,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: "Salton Sea from Above",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: '01M3QM74XERA3G7J0J00XVKEXX',
+      assetId: '01M3QM74XERA3G7J0J00XVKEXX',
       objectFit: 'cover' as const,
     },
   },
@@ -207,7 +207,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: "Lunar Module Pilot",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: '01M3QM74XEE2101QD8PM6E4JSA',
+      assetId: '01M3QM74XEE2101QD8PM6E4JSA',
       objectFit: 'cover' as const,
     },
   },
@@ -215,7 +215,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: 'CSM and Lunar Module LM',
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: '01M3QM74XEBS5231QA4355P4VQ',
+      assetId: '01M3QM74XEBS5231QA4355P4VQ',
       objectFit: 'cover' as const,
     },
   },
@@ -223,7 +223,7 @@ const DEFAULT_CONTENT_ITEMS = [
     title: "David R. Scott During EVA",
     ...WATERFALL_DEFAULT_TEXTS,
     image: {
-      url: '01M3QM74XEWT5YM43KF6PEYRCV',
+      assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
       objectFit: 'cover' as const,
     },
   },
@@ -271,7 +271,7 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
           },
           properties: {
-            url: { type: 'string' },
+            assetId: { type: 'string' },
             name: { type: 'string' },
             type: {
               type: 'string',
@@ -279,7 +279,7 @@ const schema: ComponentSchemaV1 = {
             },
             objectFit: { type: 'string', enum: ['cover', 'contain'] },
           },
-          required: ['url', 'name'],
+          required: ['assetId', 'name'],
         },
       },
       required: ['image'],
@@ -735,7 +735,7 @@ export const WaterfallComponent = {
     },
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'closeIcon' }],
   },
   fontSettingsPaths: {

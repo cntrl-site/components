@@ -170,7 +170,7 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
           },
           properties: {
-            url: { type: 'string' },
+            assetId: { type: 'string' },
             name: { type: 'string' },
             type: {
               type: 'string',
@@ -190,49 +190,49 @@ const schema: ComponentSchemaV1 = {
     default: [
       {
         image: {
-          url: '01M3QM74XESYN1HRYH9VRTZ5CK',
+          assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: '01M3QM74XEVZ9F59FC7M9BA63Q',
+          assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: '01M3QM74XEE2101QD8PM6E4JSA',
+          assetId: '01M3QM74XEE2101QD8PM6E4JSA',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: '01M3QM74XE20C38X4NND20C5R4',
+          assetId: '01M3QM74XE20C38X4NND20C5R4',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
+          assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: '01M3QM74XEBS5231QA4355P4VQ',
+          assetId: '01M3QM74XEBS5231QA4355P4VQ',
           name: '',
         },
         link: '',
       },
       {
         image: {
-          url: '01M3QM74XEWT5YM43KF6PEYRCV',
+          assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
           name: '',
         },
         link: '',
@@ -265,7 +265,7 @@ export const MarqueeComponent = {
   schema,
   sourceCode: marqueeSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

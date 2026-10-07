@@ -313,9 +313,9 @@ const buildCurveBackgroundPath = (
 const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOffsetY, imageGapPx, isCurve }: MarqueeTextItemViewProps) => {
   const textStyle: CSSProperties = opticalOffsetY !== 0 ? { ...textCss, transform: `translateY(${opticalOffsetY}px)` } : textCss;
   const imageHeightStyle: CSSProperties = capHeightPx > 0 ? { height: `${capHeightPx}px` } : { fontSize: textCss.fontSize, height: `${DEFAULT_CAP_HEIGHT_RATIO}em` };
-  const image = item.image?.url && (
+  const image = item.image?.assetId && (
     <img
-      src={item.image.url}
+      src={item.image.assetId}
       alt={item.image.name ?? ''}
       className={`${P}-item-image`}
       style={imageHeightStyle}
@@ -426,7 +426,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const [ribbonHeightPx, setRibbonHeightPx] = useState(0);
 
   const contentKey = useMemo(
-    () => (content ?? []).map((i) => `${i.text}\0${i.image?.url ?? ''}\0${i.link ?? ''}`).join('\0'),
+    () => (content ?? []).map((i) => `${i.text}\0${i.image?.assetId ?? ''}\0${i.link ?? ''}`).join('\0'),
     [content],
   );
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
@@ -894,7 +894,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
 export type MarqueeTextItem = {
   text: string;
   image?: {
-    url?: string;
+    assetId?: string;
     name?: string;
   };
   link?: string;

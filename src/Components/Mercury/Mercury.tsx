@@ -363,7 +363,7 @@ function getTitlePositionAxes(position: TitlePosition): TitlePositionAxes {
 }
 
 type MercuryMedia = {
-  url: string;
+  assetId: string;
   name?: string;
   type?: 'image' | 'video';
   objectFit?: 'cover' | 'contain';
@@ -489,14 +489,14 @@ function isPairFormat(
 
 function getDisplayMediaForPair(pair: MercuryMediaPair): MercuryMedia | null {
   const [first, second] = pair.media;
-  if (second?.url) return second;
-  if (first?.url) return first;
+  if (second?.assetId) return second;
+  if (first?.assetId) return first;
   return null;
 }
 
 function getLightboxMediaForPair(pair: MercuryMediaPair): MercuryMedia | null {
   const [first] = pair.media;
-  if (first?.url) return first;
+  if (first?.assetId) return first;
   return null;
 }
 
@@ -514,14 +514,14 @@ function getMercuryDisplayItems(
       const lightboxMedia = getLightboxMediaForPair(pair);
       result.push({
         displayMedia,
-        lightboxMedia: lightboxMedia?.url ? lightboxMedia : null,
+        lightboxMedia: lightboxMedia?.assetId ? lightboxMedia : null,
       });
     }
     return result;
   }
 
   return (gallery as MercuryMedia[])
-    .filter((media) => media?.url)
+    .filter((media) => media?.assetId)
     .map((media) => ({
       displayMedia: media,
       lightboxMedia: media,
@@ -1128,8 +1128,8 @@ function Lightbox({
       {finalRect && currentItem && (
         isCurrentVideo ? (
           <LightboxVideo
-            key={`${index}-${currentItem.url}`}
-            src={currentItem.url}
+            key={`${index}-${currentItem.assetId}`}
+            src={currentItem.assetId}
             phase={phase}
             mediaRef={mediaRef as React.RefObject<HTMLVideoElement>}
             mediaStyle={mediaStyle}
@@ -1140,9 +1140,9 @@ function Lightbox({
           />
         ) : (
           <img
-            key={`${index}-${currentItem.url}`}
+            key={`${index}-${currentItem.assetId}`}
             ref={mediaRef as React.RefObject<HTMLImageElement>}
-            src={currentItem.url}
+            src={currentItem.assetId}
             alt={currentItem.name}
             onLoad={computeFinalRect}
             onTransitionEnd={handleNavSwipeTransitionEnd}
@@ -1266,7 +1266,7 @@ function GalleryMediaItem({
   const mediaNode = isVideoMedia(media) ? (
     <video
       {...mediaProps}
-      src={media.url}
+      src={media.assetId}
       muted
       autoPlay
       loop
@@ -1275,7 +1275,7 @@ function GalleryMediaItem({
   ) : (
     <img
       {...mediaProps}
-      src={media.url}
+      src={media.assetId}
       alt={media.name ?? ''}
     />
   );
@@ -2192,11 +2192,11 @@ export function Mercury({
                     <div className={`${P}-gallery-media`}>
                       {displayItems.map(({ displayMedia, lightboxMedia }, mediaIndex) => {
                         const lightboxItemIndex = lightboxMedia
-                          ? lightboxItemsForEntry.findIndex((media) => media.url === lightboxMedia.url)
+                          ? lightboxItemsForEntry.findIndex((media) => media.assetId === lightboxMedia.assetId)
                           : -1;
                         return (
                           <GalleryMediaItem
-                            key={`${displayMedia.url}-${mediaIndex}`}
+                            key={`${displayMedia.assetId}-${mediaIndex}`}
                             P={P}
                             media={displayMedia}
                             imgWidth={imgWidth || undefined}
@@ -2243,11 +2243,11 @@ export function Mercury({
                       >
                         {displayItems.map(({ displayMedia, lightboxMedia }, mediaIndex) => {
                           const lightboxItemIndex = lightboxMedia
-                            ? lightboxItemsForEntry.findIndex((media) => media.url === lightboxMedia.url)
+                            ? lightboxItemsForEntry.findIndex((media) => media.assetId === lightboxMedia.assetId)
                             : -1;
                           return (
                             <GalleryMediaItem
-                              key={`${displayMedia.url}-${mediaIndex}`}
+                              key={`${displayMedia.assetId}-${mediaIndex}`}
                               P={P}
                               media={displayMedia}
                               cornerRadius={cornerRadius || undefined}

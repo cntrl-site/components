@@ -28,9 +28,9 @@ export const LightboxComponent: Component = {
     parameters: [{ path: 'styles.imageCaption.fontSettings' }]
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [
-      { path: 'settings.thumbnailBlock.cover.url', placeholderEnabled: true },
+      { path: 'settings.thumbnailBlock.cover.assetId', placeholderEnabled: true },
       { path: 'settings.controls.arrowsImgUrl' },
       { path: 'settings.area.closeIconUrl' }
     ]
@@ -54,7 +54,7 @@ export const LightboxComponent: Component = {
                 tooltip: 'Cover Image',
                 type: 'object',
                 properties: {
-                  url: {
+                  assetId: {
                     type: 'string',
                     display: {
                       type: 'cover-image-input',
@@ -609,7 +609,7 @@ export const LightboxComponent: Component = {
           'd': {
             thumbnailBlock: {
               cover: {
-                url: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
+                assetId: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
               },
             },
             lightboxBlock: {
@@ -680,7 +680,7 @@ export const LightboxComponent: Component = {
           'm': {
             thumbnailBlock: {
               cover: {
-                url: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
+                assetId: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
               },
             },
             lightboxBlock: {
@@ -750,7 +750,7 @@ export const LightboxComponent: Component = {
           't': {
             thumbnailBlock: {
               cover: {
-                url: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
+                assetId: '01M3QM74XEQ5ZGJ9WAMKV0EY1V'
               },
             },
             lightboxBlock: {
@@ -886,7 +886,7 @@ export const LightboxComponent: Component = {
                 type: 'media-input'
               },
               properties: {
-                url: {
+                assetId: {
                   type: 'string',
                 },
                 name: {
@@ -897,7 +897,7 @@ export const LightboxComponent: Component = {
                   enum: ['cover', 'contain'],
                 }
               },
-              required: ['url', 'name']
+              required: ['assetId', 'name']
             },
             imageCaption: {
               label: 'Description',
@@ -913,7 +913,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: '01M3QM74XD4J8X0B8TTSQ8CV3P',
+              assetId: '01M3QM74XD4J8X0B8TTSQ8CV3P',
               name: 'Slider-1.png'
             },
             imageCaption: [
@@ -926,7 +926,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: '01M3QM74XD0N6VQJ5J8J9YB32N',
+              assetId: '01M3QM74XD0N6VQJ5J8J9YB32N',
               name: 'Slider-2.png'
             },
             imageCaption: [
@@ -939,7 +939,7 @@ export const LightboxComponent: Component = {
           {
             image: {
               objectFit: 'contain',
-              url: '01M3QM74XE4WSEPVF1QQSKMD76',
+              assetId: '01M3QM74XE4WSEPVF1QQSKMD76',
               name: 'Slider-3.png'
             },
             imageCaption: [

@@ -8,7 +8,7 @@ import {
 } from '../Hive/HiveLightboxTitles';
 
 export type WaterfallMedia = {
-  url: string;
+  assetId: string;
   name?: string;
   objectFit?: 'cover' | 'contain';
   type?: 'image' | 'video';
@@ -277,7 +277,7 @@ export function getItemSourceRect(
 
 export function buildLightboxEntries(content: WaterfallLightboxContentItem[]): LightboxEntryData[] {
   return content.reduce<LightboxEntryData[]>((acc, item, gridIndex) => {
-    if (!item.image?.url) return acc;
+    if (!item.image?.assetId) return acc;
     acc.push({
       gridIndex,
       items: [item.image],
@@ -390,13 +390,13 @@ function preloadMediaDimensions(
     const video = document.createElement('video');
     const handleMetadata = () => {
       if (video.videoWidth > 0 && video.videoHeight > 0) {
-        onDimensions(media.url, video.videoWidth, video.videoHeight);
+        onDimensions(media.assetId, video.videoWidth, video.videoHeight);
       }
       video.removeEventListener('loadedmetadata', handleMetadata);
     };
     video.addEventListener('loadedmetadata', handleMetadata);
     video.preload = 'auto';
-    video.src = media.url;
+    video.src = media.assetId;
     video.load();
     return;
   }
@@ -404,10 +404,10 @@ function preloadMediaDimensions(
   const image = new Image();
   image.onload = () => {
     if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-      onDimensions(media.url, image.naturalWidth, image.naturalHeight);
+      onDimensions(media.assetId, image.naturalWidth, image.naturalHeight);
     }
   };
-  image.src = media.url;
+  image.src = media.assetId;
 }
 
 export function collectAllWaterfallMedia(content: WaterfallLightboxContentItem[]): WaterfallMedia[] {
@@ -415,8 +415,8 @@ export function collectAllWaterfallMedia(content: WaterfallLightboxContentItem[]
   const result: WaterfallMedia[] = [];
   for (const item of content) {
     const media = item.image;
-    if (!media?.url || seen.has(media.url)) continue;
-    seen.add(media.url);
+    if (!media?.assetId || seen.has(media.assetId)) continue;
+    seen.add(media.assetId);
     result.push(media);
   }
   return result;
@@ -440,16 +440,16 @@ export function PreloadedMediaPool({ mediaList }: { mediaList: WaterfallMedia[] 
       {mediaList.map((media) => (
         isVideoMedia(media) ? (
           <video
-            key={media.url}
-            src={media.url}
+            key={media.assetId}
+            src={media.assetId}
             preload='auto'
             muted
             playsInline
           />
         ) : (
           <img
-            key={media.url}
-            src={media.url}
+            key={media.assetId}
+            src={media.assetId}
             alt=''
           />
         )
@@ -579,7 +579,7 @@ function getSideOpenTransform(
 
 function isVideoMedia(media: WaterfallMedia): boolean {
   if (media.type === 'video') return true;
-  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.url);
+  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.assetId);
 }
 
 function LightboxVideo({
@@ -642,7 +642,7 @@ function LightboxSideMedia({
   if (isVideoMedia(media)) {
     return (
       <video
-        src={media.url}
+        src={media.assetId}
         muted
         playsInline
         preload='auto'
@@ -650,7 +650,7 @@ function LightboxSideMedia({
         onLoadedMetadata={(e) => {
           const video = e.currentTarget;
           if (video.videoWidth > 0 && video.videoHeight > 0) {
-            onMeasure?.(media.url, video.videoWidth, video.videoHeight);
+            onMeasure?.(media.assetId, video.videoWidth, video.videoHeight);
           }
         }}
         onTransitionEnd={onTransitionEnd}
@@ -660,13 +660,13 @@ function LightboxSideMedia({
 
   return (
     <img
-      src={media.url}
+      src={media.assetId}
       alt={media.name}
       style={style}
       onLoad={(e) => {
         const image = e.currentTarget;
         if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-          onMeasure?.(media.url, image.naturalWidth, image.naturalHeight);
+          onMeasure?.(media.assetId, image.naturalWidth, image.naturalHeight);
         }
       }}
       onTransitionEnd={onTransitionEnd}
@@ -782,10 +782,10 @@ export function Lightbox({
         ? getAdjacentImage(pendingImageIdx, 1)
         : null
     : null;
-  const farPrevMedia = farPrevCandidate && farPrevCandidate.url !== prevMedia?.url
+  const farPrevMedia = farPrevCandidate && farPrevCandidate.assetId !== prevMedia?.assetId
     ? farPrevCandidate
     : null;
-  const farNextMedia = farNextCandidate && farNextCandidate.url !== nextMedia?.url
+  const farNextMedia = farNextCandidate && farNextCandidate.assetId !== nextMedia?.assetId
     ? farNextCandidate
     : null;
 
@@ -796,7 +796,7 @@ export function Lightbox({
         : items.length > 2
           ? getAdjacentImage((index - 1 + items.length) % items.length, -1)
           : null;
-      return candidate && candidate.url !== prevMedia.url ? candidate : null;
+      return candidate && candidate.assetId !== prevMedia.assetId ? candidate : null;
     })()
     : null;
   const idleFarNextMedia = nextMedia && allowNavigation
@@ -806,7 +806,7 @@ export function Lightbox({
         : items.length > 2
           ? getAdjacentImage((index + 1) % items.length, 1)
           : null;
-      return candidate && candidate.url !== nextMedia.url ? candidate : null;
+      return candidate && candidate.assetId !== nextMedia.assetId ? candidate : null;
     })()
     : null;
   const renderFarPrevMedia = farPrevMedia ?? idleFarPrevMedia;
@@ -824,8 +824,8 @@ export function Lightbox({
   }, []);
 
   const getFittedRectForMedia = useCallback((media: WaterfallMedia | null | undefined): AnimRect | null => {
-    if (!media?.url) return null;
-    const dimensions = mediaDimensionsCacheRef.current.get(media.url);
+    if (!media?.assetId) return null;
+    const dimensions = mediaDimensionsCacheRef.current.get(media.assetId);
     return getMediaFittedRect(ghostRef.current, dimensions);
   }, [mediaDimensionsVersion, layoutVersion]);
 
@@ -1055,7 +1055,7 @@ export function Lightbox({
     const ghost = ghostRef.current;
     if (!ghost) return;
 
-    const url = currentItem?.url;
+    const url = currentItem?.assetId;
     const cached = url ? mediaDimensionsCacheRef.current.get(url) : undefined;
     if (cached?.width && cached?.height) {
       setFinalRect(fitMediaRectInGhost(ghost, cached.width, cached.height));
@@ -1075,7 +1075,7 @@ export function Lightbox({
     const ghostRect = getGhostRect(ghost);
     if (!ghostRect.width || !ghostRect.height) return;
     setFinalRect(ghostRect);
-  }, [currentItem?.url, rememberMediaDimensions]);
+  }, [currentItem?.assetId, rememberMediaDimensions]);
 
   const setCenterMediaElement = useCallback((element: HTMLImageElement | HTMLVideoElement | null) => {
     centerMediaRef.current = element;
@@ -1126,7 +1126,7 @@ export function Lightbox({
     if (media instanceof HTMLVideoElement && media.readyState >= 1 && media.videoWidth > 0) {
       computeFinalRect();
     }
-  }, [currentItem?.url, index, computeFinalRect]);
+  }, [currentItem?.assetId, index, computeFinalRect]);
 
   useEffect(() => {
     syncFinalRectForCurrentItem();
@@ -1137,8 +1137,8 @@ export function Lightbox({
     const mediaItems: WaterfallMedia[] = [];
 
     const addMedia = (media: WaterfallMedia | null | undefined) => {
-      if (!media?.url || seen.has(media.url)) return;
-      seen.add(media.url);
+      if (!media?.assetId || seen.has(media.assetId)) return;
+      seen.add(media.assetId);
       mediaItems.push(media);
     };
 
@@ -1146,7 +1146,7 @@ export function Lightbox({
     lightboxEntries.forEach((entry) => entry.items.forEach(addMedia));
 
     mediaItems.forEach((media) => {
-      if (mediaDimensionsCacheRef.current.has(media.url)) return;
+      if (mediaDimensionsCacheRef.current.has(media.assetId)) return;
       preloadMediaDimensions(media, rememberMediaDimensions);
     });
   }, [items, lightboxEntries, rememberMediaDimensions]);
@@ -1183,7 +1183,7 @@ export function Lightbox({
   }, [clearNavSwipeCommitTimer]);
 
   useLayoutEffect(() => {
-    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.url) return;
+    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.assetId) return;
 
     clearNavSwipeCommitTimer();
     slideCommitDirectionRef.current = null;
@@ -1206,8 +1206,8 @@ export function Lightbox({
     syncFinalRectForCurrentItem();
 
     prevIndexRef.current = index;
-    prevItemUrlRef.current = currentItem?.url;
-  }, [index, currentItem?.url, setNavSwipeAnimatingState, clearNavSwipeCommitTimer, syncFinalRectForCurrentItem]);
+    prevItemUrlRef.current = currentItem?.assetId;
+  }, [index, currentItem?.assetId, setNavSwipeAnimatingState, clearNavSwipeCommitTimer, syncFinalRectForCurrentItem]);
 
   useLayoutEffect(() => {
     const rapidDirection = rapidNavDirectionRef.current;
@@ -1217,7 +1217,7 @@ export function Lightbox({
     requestAnimationFrame(() => {
       startSlideNavigationRef.current(rapidDirection);
     });
-  }, [index, entryIdx, currentItem?.url]);
+  }, [index, entryIdx, currentItem?.assetId]);
 
   useLayoutEffect(() => {
     if (phase === 'opening') {
@@ -1241,7 +1241,7 @@ export function Lightbox({
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [phase, prevMedia?.url, nextMedia?.url]);
+  }, [phase, prevMedia?.assetId, nextMedia?.assetId]);
 
   useEffect(() => {
     if (phase !== 'open') return;
@@ -1691,7 +1691,7 @@ export function Lightbox({
 
       {isOpen && renderFarPrevMedia && (
         <LightboxSideMedia
-          key={`far-prev-${renderFarPrevMedia.url}`}
+          key={`far-prev-${renderFarPrevMedia.assetId}`}
           media={renderFarPrevMedia}
           style={getSideMediaStyle(renderFarPrevMedia, 'left', 'far')}
           onMeasure={rememberMediaDimensions}
@@ -1702,7 +1702,7 @@ export function Lightbox({
       {isOpen && prevMedia && (
         <>
           <LightboxSideMedia
-            key={`prev-${prevMedia.url}`}
+            key={`prev-${prevMedia.assetId}`}
             media={prevMedia}
             style={getSideMediaStyle(prevMedia, 'left')}
             onMeasure={rememberMediaDimensions}
@@ -1729,7 +1729,7 @@ export function Lightbox({
       {isOpen && nextMedia && (
         <>
           <LightboxSideMedia
-            key={`next-${nextMedia.url}`}
+            key={`next-${nextMedia.assetId}`}
             media={nextMedia}
             style={getSideMediaStyle(nextMedia, 'right')}
             onMeasure={rememberMediaDimensions}
@@ -1755,7 +1755,7 @@ export function Lightbox({
 
       {isOpen && renderFarNextMedia && (
         <LightboxSideMedia
-          key={`far-next-${renderFarNextMedia.url}`}
+          key={`far-next-${renderFarNextMedia.assetId}`}
           media={renderFarNextMedia}
           style={getSideMediaStyle(renderFarNextMedia, 'right', 'far')}
           onMeasure={rememberMediaDimensions}
@@ -1766,8 +1766,8 @@ export function Lightbox({
       {finalRect && currentItem && (
         isCurrentVideo ? (
           <LightboxVideo
-            key={`${index}-${currentItem.url}`}
-            src={currentItem.url}
+            key={`${index}-${currentItem.assetId}`}
+            src={currentItem.assetId}
             phase={phase}
             onMediaElement={setCenterMediaElement}
             wrapperStyle={mediaStyle}
@@ -1777,9 +1777,9 @@ export function Lightbox({
           />
         ) : (
           <img
-            key={`${index}-${currentItem.url}`}
+            key={`${index}-${currentItem.assetId}`}
             ref={setCenterMediaElement}
-            src={currentItem.url}
+            src={currentItem.assetId}
             alt={currentItem.name}
             onLoad={computeFinalRect}
             onTransitionEnd={handleNavSwipeTransitionEnd}

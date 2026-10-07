@@ -564,11 +564,11 @@ const schema: ComponentSchemaV1 = {
             type: 'media-list-input',
           },
           properties: {
-            url: { type: 'string' },
+            assetId: { type: 'string' },
             name: { type: 'string' },
             objectFit: { type: 'string', enum: ['cover', 'contain'] },
           },
-          required: ['url', 'name'],
+          required: ['assetId', 'name'],
         },
       },
     },
@@ -579,12 +579,12 @@ const schema: ComponentSchemaV1 = {
         title3: 'Archival Footage',
         image: [
           {
-            url: '01M3QM74XEVZ9F59FC7M9BA63Q',
+            assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: '01M3QM74XEE2101QD8PM6E4JSA',
+            assetId: '01M3QM74XEE2101QD8PM6E4JSA',
             name: '',
             objectFit: 'contain',
           },
@@ -596,7 +596,7 @@ const schema: ComponentSchemaV1 = {
         title3: 'Archival Footage',
         image: [
           {
-            url: '01M3QM74XE20C38X4NND20C5R4',
+            assetId: '01M3QM74XE20C38X4NND20C5R4',
             name: '',
             objectFit: 'contain',
           }
@@ -608,12 +608,12 @@ const schema: ComponentSchemaV1 = {
         title3: 'Archival Footage',
         image: [
           {
-            url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
+            assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
             name: '',
             objectFit: 'contain',
           },
           {
-            url: '01M3QM74XEBS5231QA4355P4VQ',
+            assetId: '01M3QM74XEBS5231QA4355P4VQ',
             name: '',
             objectFit: 'contain',
           },
@@ -625,7 +625,7 @@ const schema: ComponentSchemaV1 = {
         title3: 'Archival Footage',
         image: [
           {
-            url: '01M3QM74XEWT5YM43KF6PEYRCV',
+            assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
             name: '',
             objectFit: 'contain',
           },
@@ -659,7 +659,7 @@ export const LightboxJournalComponent = {
   schema,
   sourceCode: lightboxJournalSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'cover', placeholderEnabled: true }, { path: 'closeIcon' }],
   },
   fontSettingsPaths: {

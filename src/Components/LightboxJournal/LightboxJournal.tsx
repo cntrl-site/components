@@ -534,7 +534,7 @@ function getCSS(P: string): string {
 }
 
 export type LightboxJournalImage = {
-  url: string;
+  assetId: string;
   name?: string;
   objectFit?: 'cover' | 'contain';
 };

@@ -381,11 +381,11 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
           },
           properties: {
-            url: { type: 'string' },
+            assetId: { type: 'string' },
             name: { type: 'string' },
             objectFit: { type: 'string', enum: ['cover', 'contain'] },
           },
-          required: ['url', 'name'],
+          required: ['assetId', 'name'],
         },
         imageCaption: {
           placeholder: 'Add Caption...',
@@ -399,7 +399,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: '01M3QM74XESYN1HRYH9VRTZ5CK',
+          assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Earth-orbital mission' }] },
@@ -408,7 +408,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: '01M3QM74XERA3G7J0J00XVKEXX',
+          assetId: '01M3QM74XERA3G7J0J00XVKEXX',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Salton Sea from Above' }] },
@@ -417,7 +417,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: '01M3QM74XEE2101QD8PM6E4JSA',
+          assetId: '01M3QM74XEE2101QD8PM6E4JSA',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Lunar Module Pilot' }] },
@@ -426,7 +426,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: '01M3QM74XEVZ9F59FC7M9BA63Q',
+          assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Lunar Module 3 porch' }] },
@@ -435,7 +435,7 @@ const schema: ComponentSchemaV1 = {
       {
         image: {
           objectFit: 'cover',
-          url: '01M3QM74XEGBJMJ7Q63KMZY6NA',
+          assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
         },
         imageCaption: [
           { type: 'paragraph', children: [{ text: 'Command Module' }] },
@@ -472,7 +472,7 @@ export const Slider20Component = {
   schema,
   sourceCode: slider20SourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'controls' }],
   },
   fontSettingsPaths: {
