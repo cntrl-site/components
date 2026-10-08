@@ -5,7 +5,7 @@ import { useScopedStyles } from '../utils/useScopedStyles';
 
 type ScaleContentItem = {
   image?: {
-    url?: string;
+    assetId?: string;
     name?: string;
   };
 };
@@ -318,7 +318,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
   }, []);
 
   useEffect(() => {
-    const urls = (content ?? []).map((item) => item.image?.url).filter((url): url is string => Boolean(url));
+    const urls = (content ?? []).map((item) => item.image?.assetId).filter((url): url is string => Boolean(url));
     preloadImages(urls, (url, dimensions) => {
       setImageDimensions((prev) => (
         prev[url]?.width === dimensions.width && prev[url]?.height === dimensions.height
@@ -354,8 +354,8 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
     const targetIndex = direction === 'next'
       ? (activeIndex + 1) % items.length
       : (activeIndex - 1 + items.length) % items.length;
-    const activeSize = getImageSizePercents(items[activeIndex]?.image?.url);
-    const targetSize = getImageSizePercents(items[targetIndex]?.image?.url);
+    const activeSize = getImageSizePercents(items[activeIndex]?.image?.assetId);
+    const targetSize = getImageSizePercents(items[targetIndex]?.image?.assetId);
     const activeCoverScale = computeCoverScale(containerSize.width, containerSize.height, activeSize);
     const targetCoverScale = computeCoverScale(containerSize.width, containerSize.height, targetSize);
 
@@ -424,9 +424,9 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
   const incomingItem = incomingIndex !== null ? items[incomingIndex] : null;
   const prevIndex = items.length <= 1 ? 0 : (activeIndex - 1 + items.length) % items.length;
   const nextIndex = items.length <= 1 ? 0 : (activeIndex + 1) % items.length;
-  const foregroundSize = getImageSizePercents(foregroundItem?.image?.url);
-  const outgoingFitSize = getImageSizePercents(outgoingItem?.image?.url);
-  const incomingFitSize = getImageSizePercents(incomingItem?.image?.url);
+  const foregroundSize = getImageSizePercents(foregroundItem?.image?.assetId);
+  const outgoingFitSize = getImageSizePercents(outgoingItem?.image?.assetId);
+  const incomingFitSize = getImageSizePercents(incomingItem?.image?.assetId);
   const wrapperStyle = {
     [`--${P}-transition-ms`]: `${transitionMs}ms`,
   } as React.CSSProperties;
@@ -440,17 +440,17 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
         style={wrapperStyle}
         aria-label="Zoom gallery"
       >
-        {backgroundItem?.image?.url && (
+        {backgroundItem?.image?.assetId && (
           <div className={`${P}-background`} aria-hidden="true">
             <img
               className={`${P}-effect-image`}
-              src={backgroundItem.image.url}
+              src={backgroundItem.image.assetId}
               alt=""
               style={{ filter: backgroundFilter }}
             />
           </div>
         )}
-        {isAnimating && outgoingItem?.image?.url && (
+        {isAnimating && outgoingItem?.image?.assetId && (
           <div
             className={cn(
               `${P}-stage`,
@@ -462,13 +462,13 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
           >
             <img
               className={`${P}-effect-image`}
-              src={outgoingItem.image.url}
+              src={outgoingItem.image.assetId}
               alt=""
               style={{ filter: outgoingFilter }}
             />
           </div>
         )}
-        {isAnimating && incomingItem?.image?.url && (
+        {isAnimating && incomingItem?.image?.assetId && (
           <div
             className={cn(
               `${P}-stage`,
@@ -480,19 +480,19 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
           >
             <img
               className={`${P}-image`}
-              src={incomingItem.image.url}
+              src={incomingItem.image.assetId}
               alt=""
             />
           </div>
         )}
-        {!isAnimating && foregroundItem?.image?.url && (
+        {!isAnimating && foregroundItem?.image?.assetId && (
           <div
             className={cn(`${P}-stage`, `${P}-foreground`)}
             style={toSizeStyle(foregroundSize)}
           >
             <img
               className={`${P}-image`}
-              src={foregroundItem.image.url}
+              src={foregroundItem.image.assetId}
               alt={foregroundItem.image.name ?? ''}
             />
           </div>

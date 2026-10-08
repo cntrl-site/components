@@ -560,7 +560,7 @@ const schema = {
       ],
       logo: {
         mode: 'On',
-        icon: 'https://cdn.cntrl.site/component-assets/hamburger-logo.svg',
+        icon: '01M3QM74XE09DSJCWGD1XM6Y45',
       },
       backgroundColor: '#ffffff',
       logoColor: '#000000',

@@ -36,7 +36,7 @@ type LightboxGalleryProps = {
 
 export const LightboxGallery = ({ settings, content, styles, portalId, activeEvent, isEditor, isPreviewMode }: LightboxGalleryProps) => {
   const [open, setOpen] = useState(false);
-  const { url } = settings.thumbnailBlock.cover;
+  const { assetId } = settings.thumbnailBlock.cover;
 
   useEffect(() => {
     if (activeEvent === 'close') {
@@ -50,7 +50,7 @@ export const LightboxGallery = ({ settings, content, styles, portalId, activeEve
   return (
     <>
       <img
-        src={url}
+        src={assetId}
         alt='Cover'
         className={classes.heroImage}
         onClick={() => setOpen(true)}
@@ -563,7 +563,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                       [classes.cover]: item.image.objectFit === 'cover',
                       [classes.scaleSlide]: slider.type === 'scale'
                     })}
-                    src={item.image.url}
+                    src={item.image.assetId}
                     alt={item.image.name ?? ''}
                     style={{...imageStyle, pointerEvents: item.image.objectFit === 'contain' ? 'none' : 'auto' } as React.CSSProperties}
                   />
@@ -778,7 +778,7 @@ const Lightbox: FC<LightboxProps> = ({ isOpen, onClose, content, lightboxStyles,
                   }}
                 >
                   <img
-                    src={item.image.url}
+                    src={item.image.assetId}
                     alt={item.image.name ?? ''}
                     onLoad={(e) => {
                       const img = e.currentTarget;
@@ -818,7 +818,7 @@ function ArrowIcon({ color, className }: { color: string, className: string }) {
 
 type LightboxImage = {
   image: {
-    url: string;
+    assetId: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
   };
@@ -858,7 +858,7 @@ type Triggers = {
 type LightboxSettings = {
   thumbnailBlock: {
     cover: {
-      url: string;
+      assetId: string;
     }
   },
   lightboxBlock: {

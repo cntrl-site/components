@@ -509,31 +509,31 @@ const HORIZONTAL_LAYOUT_PROPERTY_NAMES = [
 const DEFAULT_HOVER_IMAGES = [
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg',
+    assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg',
+    assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg',
+    assetId: '01M3QM74XEE2101QD8PM6E4JSA',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg',
+    assetId: '01M3QM74XE20C38X4NND20C5R4',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg',
+    assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg',
+    assetId: '01M3QM74XEBS5231QA4355P4VQ',
   },
   {
     objectFit: 'contain' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg',
+    assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
   },
 ];
 
@@ -642,7 +642,7 @@ const schema: ComponentSchemaV1 = {
               type: 'media-input',
             },
             properties: {
-              url: { type: 'string' },
+              assetId: { type: 'string' },
               name: { type: 'string' },
               type: {
                 type: 'string',
@@ -650,7 +650,7 @@ const schema: ComponentSchemaV1 = {
               },
               objectFit: { type: 'string', enum: ['cover', 'contain'] },
             },
-            required: ['url', 'name'],
+            required: ['assetId', 'name'],
           },
           link: {
             type: 'string',
@@ -1089,7 +1089,7 @@ export const ListComponent = {
     }
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

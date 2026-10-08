@@ -191,7 +191,7 @@ const schema: ComponentSchemaV1 = {
       hyphenate: 'off',
       dropCapLines: 1,
       dropCapSize: 1,
-      image: 'https://cdn.cntrl.site/component-assets/shapedType_img.jpg',
+      image: '01M3QM74XGCCGW8DXMAHA0RGGH',
       backgroundColor: 'rgba(0, 0, 0, 0)',
       textFontFamily: 'Basteleur',
       textFontSettings: {

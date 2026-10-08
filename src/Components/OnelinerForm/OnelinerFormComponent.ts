@@ -2,17 +2,7 @@ import { OnelinerForm } from './OnelinerForm';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import onelinerFormSourceRaw from './OnelinerForm.tsx?raw';
 
-const onelinerDefaultSubmitIconUrl =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg width="23px" height="20px" viewBox="0 0 23 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' +
-      '<g id="Newsletter" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">' +
-        '<g id="Tutorials-pop-up-Copy-12" transform="translate(-43, -687)" fill="#FFFFFF" fill-rule="nonzero">' +
-          '<path d="M66,697 C66,697.552285 65.5522847,698 65,698 L44,698 C43.4477153,698 43,697.552285 43,697 C43,696.447715 43.4477153,696 44,696 L65,696 C65.5522847,696 66,696.447715 66,697 Z M55.6689647,687.256706 L65.6689647,696.256706 C66.1103451,696.653948 66.1103451,697.346052 65.6689647,697.743294 L55.6689647,706.743294 C55.2584547,707.112753 54.6261649,707.079475 54.2567059,706.668965 C53.8872468,706.258455 53.9205252,705.626165 54.3310353,705.256706 L63.5051529,697 L54.3310353,688.743294 C53.9205252,688.373835 53.8872468,687.741545 54.2567059,687.331035 C54.6261649,686.920525 55.2584547,686.887247 55.6689647,687.256706 Z" id="Combined-Shape"></path>' +
-        '</g>' +
-      '</g>' +
-    '</svg>',
-  );
+const onelinerDefaultSubmitIconUrl = '01M46GNEM2XB41HP5K8WY5BHD2';
 
 const defaultFields = [
   { name: 'email', type: 'email' as const, placeholder: 'Enter your email', label: 'Email', isRequired: true, error: 'Please, enter a valid e-mail.' },

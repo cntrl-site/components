@@ -399,7 +399,7 @@ export function Waterfall({
       <PreloadedMediaPool mediaList={allMedia} />
       <div ref={containerRef} className={`${P}-wrapper ${P}-type-${type}`} style={wrapperStyle}>
         {items.map((item, index) => {
-          const hasLightbox = Boolean(item.image?.url);
+          const hasLightbox = Boolean(item.image?.assetId);
           const handleOpen = createWaterfallItemOpenHandler(
             Boolean(canOpenLightbox),
             hasLightbox,
@@ -423,7 +423,7 @@ export function Waterfall({
                   {item.title}
                 </span>
               ) : null}
-              {item.image?.url ? (
+              {item.image?.assetId ? (
                 <span
                   className={[
                     `${P}-item-image`,
@@ -434,7 +434,7 @@ export function Waterfall({
                   {item.image.type === 'video' ? (
                     <video
                       ref={syncFitMediaLayout}
-                      src={item.image.url}
+                      src={item.image.assetId}
                       data-waterfall-index={index}
                       style={imageStyle}
                       playsInline
@@ -447,7 +447,7 @@ export function Waterfall({
                   ) : (
                     <img
                       ref={syncFitMediaLayout}
-                      src={item.image.url}
+                      src={item.image.assetId}
                       alt={item.image.name ?? ''}
                       data-waterfall-index={index}
                       style={imageStyle}

@@ -99,7 +99,7 @@ const schema: ComponentSchemaV1 = {
                 items: {
                   type: 'object',
                   properties: {
-                    url: { type: 'string' },
+                    assetId: { type: 'string' },
                     name: { type: 'string' },
                     type: {
                       type: 'string',
@@ -125,38 +125,38 @@ const schema: ComponentSchemaV1 = {
         gallery: [
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-1.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XFEM0SKERMGHMJ3Q2W', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-2.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XG5SKREDC1KS41Y9E7', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-3.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGZAMX3BJWP2GWPG2V', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-4.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGWVQPRZ334BZBJ0MN', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-5.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XG89JTWMZ3JE9DMV05', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-6.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGTT2Q8FRDTYX62W0H', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
         ],
@@ -167,44 +167,44 @@ const schema: ComponentSchemaV1 = {
         gallery: [
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-1.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XESYN1HRYH9VRTZ5CK', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-2.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XEVZ9F59FC7M9BA63Q', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-3.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XEE2101QD8PM6E4JSA', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-4.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XE20C38X4NND20C5R4', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-5.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-6.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XEBS5231QA4355P4VQ', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-7.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XEWT5YM43KF6PEYRCV', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
         ],
@@ -215,44 +215,44 @@ const schema: ComponentSchemaV1 = {
         gallery: [
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Component-default-11.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XERA3G7J0J00XVKEXX', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-7.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGK74ANMH9PH0YAYCY', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-8.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGSP2F13EM5TFRQZGJ', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-9.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGJPAGBPVYJSM3TV07', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-10.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XF9TBBQMH8393VK14S', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-11.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XG5BANHQ2F7FV8KXSG', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
           {
             media: [
-              { url: 'https://cdn.cntrl.site/component-assets/Mercury-default-12.jpg', name: '', objectFit: 'cover' },
-              { url: '', name: '', objectFit: 'cover' },
+              { assetId: '01M3QM74XGTS00H47RCAKVNGE3', name: '', objectFit: 'cover' },
+              { assetId: '', name: '', objectFit: 'cover' },
             ],
           },
         ],
@@ -776,7 +776,7 @@ export const MercuryComponent = {
   schema,
   sourceCode: mercurySourceRaw,
   assetsPaths: {
-    content: [{ path: 'gallery.media.url', placeholderEnabled: true }],
+    content: [{ path: 'gallery.media.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

@@ -24,7 +24,7 @@ export const ControlImageRevealSliderComponent: Component = {
     }
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'settings.cursor.defaultCursor' }, { path: 'settings.cursor.hoverCursor' }]
   },
   fontSettingsPaths: {
@@ -265,7 +265,7 @@ export const ControlImageRevealSliderComponent: Component = {
                 type: 'media-input',
               },
               properties: {
-                url: {
+                assetId: {
                   type: 'string',
                 },
                 name: {
@@ -276,7 +276,7 @@ export const ControlImageRevealSliderComponent: Component = {
                   enum: ['cover', 'contain'],
                 }
               },
-              required: ['url', 'name']
+              required: ['assetId', 'name']
             },
             link: {
               label: 'URL',
@@ -292,7 +292,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQK9211QXBE9W284ZNKB8.png",
+              assetId: "01M3QM74XGWBJY3AQQ71GC2Z6Q",
               name: "Slider-1.png"
             },
             link: "",
@@ -300,7 +300,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQMFT72JD18WKP0Q2DVAT.png",
+              assetId: "01M3QM74XGMXS1Z5ZY2RFGS3T4",
               name: "Slider-2.png"
             },
             link: "",
@@ -308,7 +308,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQNEVRXPSRX5K1YTMJQY9.png",
+              assetId: "01M3QM74XGWG6VCHNEXKVKAJGT",
               name: "Slider-3.png"
             },
             link: "",
@@ -316,7 +316,7 @@ export const ControlImageRevealSliderComponent: Component = {
           {
             image: {
               objectFit: "cover",
-              url: "https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01K7ERQP84JKRDT7WNWDQZR4Y9.png",
+              assetId: "01M3QM74XGCVMTPNHFHMR98RPZ",
               name: "Slider-4.png"
             },
             link: "",

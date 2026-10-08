@@ -382,9 +382,9 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
             style={{ height: scaled(logoMarginTop) }}
             />
             <div style={{ width: scaled(logoWidth), height: scaled(logoHeight) }}>
-              {item.logo?.url && (
+              {item.logo?.assetId && (
                 <img
-                  src={item.logo.url}
+                  src={item.logo.assetId}
                   alt={item.logo?.name ?? ''}
                   style={{ pointerEvents: 'auto', width: '100%', height: '100%', objectFit: item.logo?.objectFit || 'contain' }}
                 />
@@ -597,7 +597,7 @@ export const TestimonialGrid = ({ settings, content, isEditor, isPreviewMode, is
 
 export type TestimonialsItem = {
   logo?: {
-    url?: string;
+    assetId?: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
   };

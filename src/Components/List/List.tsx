@@ -129,7 +129,7 @@ export type ListSettings = {
 
 type ListMedia = {
   objectFit?: 'cover' | 'contain';
-  url: string;
+  assetId: string;
   name: string;
   type?: 'image' | 'video';
 };
@@ -153,18 +153,18 @@ type ListItemRow = {
 
 type HoverImageState = {
   rowId: string | number;
-  url: string;
+  assetId: string;
   objectFit: 'cover' | 'contain';
   isVideo: boolean;
   widthPx: number;
 };
 
-function isVideoMedia(media: Pick<ListMedia, 'url' | 'type' | 'name'>): boolean {
+function isVideoMedia(media: Pick<ListMedia, 'assetId' | 'type' | 'name'>): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   const name = media.name ?? '';
   if (/\.(mp4|webm|ogg|mov)(\?|$)/i.test(name)) return true;
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url);
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.assetId);
 }
 
 function ListHoverMedia({
@@ -172,7 +172,7 @@ function ListHoverMedia({
   className,
   style,
 }: {
-  media: Pick<HoverImageState, 'url' | 'objectFit' | 'isVideo'>;
+  media: Pick<HoverImageState, 'assetId' | 'objectFit' | 'isVideo'>;
   className: string;
   style: React.CSSProperties;
 }) {
@@ -187,14 +187,14 @@ function ListHoverMedia({
     if (playPromise) {
       playPromise.catch(() => {});
     }
-  }, [media.isVideo, media.url]);
+  }, [media.isVideo, media.assetId]);
 
   if (media.isVideo) {
     return (
       <video
         ref={videoRef}
         className={className}
-        src={media.url}
+        src={media.assetId}
         style={style}
         muted
         loop
@@ -208,7 +208,7 @@ function ListHoverMedia({
   return (
     <img
       className={className}
-      src={media.url}
+      src={media.assetId}
       alt=""
       style={style}
     />
@@ -2328,7 +2328,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     if (!showHoverImage) return;
 
     const image = row.image;
-    if (!image?.url) {
+    if (!image?.assetId) {
       exit(() => setHoverImage(null));
       return;
     }
@@ -2348,7 +2348,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
 
     setHoverImage({
       rowId: row.id,
-      url: image.url,
+      assetId: image.assetId,
       objectFit: 'contain',
       isVideo: isVideoMedia(image),
       widthPx,
@@ -2388,7 +2388,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
     const { x, y } = hoverShowPositionRef.current;
     hoverShowPositionRef.current = null;
     onShow(x, y);
-  }, [hoverImage?.rowId, hoverImage?.url, onShow]);
+  }, [hoverImage?.rowId, hoverImage?.assetId, onShow]);
 
   useLayoutEffect(() => {
     if (!showControls || isVerticalLayout) {
@@ -3074,7 +3074,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
             return createPortal(
               <div ref={anchorRef} className={`${P}-hover-media-anchor`} data-selection="none">
                 <ListHoverMedia
-                  key={`${hoverImage.rowId}-${hoverImage.url}`}
+                  key={`${hoverImage.rowId}-${hoverImage.assetId}`}
                   media={hoverImage}
                   className={hoverImage.isVideo ? `${P}-hover-video` : `${P}-hover-image`}
                   style={hoverMediaStyle}

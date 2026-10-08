@@ -4,7 +4,7 @@ import { useScopedStyles } from '../utils/index';
 
 type ClickGallerieItem = {
   image: {
-    url: string;
+    assetId: string;
     name: string;
   };
   link: string;
@@ -40,7 +40,7 @@ type ImageMeta = {
 
 interface PlacedImage {
   id: number;
-  url: string;
+  assetId: string;
   link: string;
   name: string;
   x: number;
@@ -255,7 +255,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
   } = settings;
 
   const validContent = content.filter(
-    (item): item is ClickGallerieItem => Boolean(item?.image?.url),
+    (item): item is ClickGallerieItem => Boolean(item?.image?.assetId),
   );
 
   const scopedCss = useMemo(() => getCSS(P), [P]);
@@ -279,7 +279,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
 
   useEffect(() => {
     const urls = [
-      ...validContent.map((item) => item.image.url),
+      ...validContent.map((item) => item.image.assetId),
       defaultCursor,
       hoverCursor,
     ].filter((url): url is string => Boolean(url));
@@ -344,10 +344,10 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
     containerHeight: number,
     clickPosition: { x?: number; y?: number } = {},
   ): PlacedImage | null => {
-    if (!imgData?.image?.url) return null;
+    if (!imgData?.image?.assetId) return null;
 
-    const aspectRatio = imageMetaByUrlRef.current.get(imgData.image.url)?.aspectRatio ?? 1;
-    const widthPx = resolveImageWidthPx(imgData.image.url, imageSize, imageMetaByUrlRef.current);
+    const aspectRatio = imageMetaByUrlRef.current.get(imgData.image.assetId)?.aspectRatio ?? 1;
+    const widthPx = resolveImageWidthPx(imgData.image.assetId, imageSize, imageMetaByUrlRef.current);
     const { heightPx } = getImageDimensions(widthPx, aspectRatio);
 
     let x = 0;
@@ -362,7 +362,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
 
     return {
       id: imageIdCounter.current++,
-      url: imgData.image.url,
+      assetId: imgData.image.assetId,
       link: imgData.link,
       name: imgData.image.name,
       x,
@@ -388,7 +388,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
       return prev.map((img) => {
         const widthPx = imageSize.sizeType === 'random'
           ? img.widthPx
-          : resolveImageWidthPx(img.url, imageSize, imageMetaByUrlRef.current);
+          : resolveImageWidthPx(img.assetId, imageSize, imageMetaByUrlRef.current);
         const { heightPx } = getImageDimensions(widthPx, img.aspectRatio);
 
         if (position === 'same') {
@@ -504,10 +504,10 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
           >
             {target === 'area' && img.link ? (
               <a href={img.link} target="_blank" rel="noreferrer" className={`${P}-link`}>
-                <img src={img.url} alt={img.name} className={`${P}-image`} />
+                <img src={img.assetId} alt={img.name} className={`${P}-image`} />
               </a>
             ) : (
-              <img src={img.url} alt={img.name} className={`${P}-image`} />
+              <img src={img.assetId} alt={img.name} className={`${P}-image`} />
             )}
           </div>
         ))}

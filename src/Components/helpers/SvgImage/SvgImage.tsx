@@ -1,6 +1,7 @@
 import React, { useState, useEffect, FC } from 'react';
 import cn from 'classnames';
 import styles from './SvgImage.module.scss';
+import { isInlineMaskUrl, loadSvgMaskUrl } from './loadSvgMaskUrl';
 
 interface SvgImageProps {
   url: string;
@@ -29,6 +30,9 @@ export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill =
     if (typeof window === 'undefined') return true;
     return CSS.supports('mask-image', 'url("")') || CSS.supports('-webkit-mask-image', 'url("")');
   });
+  const [maskUrl, setMaskUrl] = useState<string | null>(() => (
+    isInlineMaskUrl(url) ? url : null
+  ));
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.CSS) {
@@ -37,7 +41,27 @@ export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill =
     }
   }, []);
 
-  if (!isSvgMaskableUrl(url) || !supportsMask) {
+  useEffect(() => {
+    if (!isSvgMaskableUrl(url)) {
+      setMaskUrl(null);
+      return;
+    }
+    if (isInlineMaskUrl(url)) {
+      setMaskUrl(url);
+      return;
+    }
+    let cancelled = false;
+    loadSvgMaskUrl(url).then((resolved) => {
+      if (!cancelled) setMaskUrl(resolved);
+    }).catch(() => {
+      if (!cancelled) setMaskUrl(null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+
+  if (!maskUrl || !supportsMask) {
     return <img src={url} alt="" className={cn(styles.img, className)} style={style} />;
   }
 
@@ -46,7 +70,7 @@ export const SvgImage: FC<SvgImageProps> = ({ url, fill = '#000000', hoverFill =
       data-supports-mask={supportsMask}
       className={cn(styles.svg, className)}
       style={{
-        '--svg': maskImageUrlCss(url),
+        '--svg': maskImageUrlCss(maskUrl),
         '--fill': fill,
         '--hover-fill': hoverFill,
         ...(style ?? {}),

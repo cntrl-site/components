@@ -3,6 +3,7 @@ import { CommonComponentProps } from '../props';
 import { buildColorVars, scalingValue, useScopedStyles } from '../utils';
 import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 import { omitTextColors, textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
+import { isInlineMaskUrl, loadSvgMaskUrl } from '../helpers/SvgImage/loadSvgMaskUrl';
 
 const MENU_ANIM_MS = 300;
 const NAV_STATE_ANIM_MS = 300;
@@ -1612,6 +1613,26 @@ function getCSS(P: string): string {
 `;
 }
 
+function isStoredAssetIcon(icon: string | null | undefined): icon is string {
+  if (!icon) return false;
+  return !icon.startsWith('http://')
+    && !icon.startsWith('https://')
+    && !icon.startsWith('blob:')
+    && !icon.startsWith('data:');
+}
+
+function preserveLogoIcon(settings: BurgerSettings, storedIcon: string | null): BurgerSettings {
+  const icon = settings.logo?.icon;
+  if (!settings.logo || isStoredAssetIcon(icon) || !storedIcon) return settings;
+  return {
+    ...settings,
+    logo: {
+      ...settings.logo,
+      icon: storedIcon,
+    },
+  };
+}
+
 function cssMaskImageUrl(href: string): string {
   const escaped = href.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   return `url("${escaped}")`;
@@ -1662,6 +1683,34 @@ function useIsSvgLogo(url: string): boolean {
   }, [knownSvg, url]);
 
   return knownSvg || blobIsSvg;
+}
+
+function useSvgMaskUrl(url: string, enabled: boolean): string | null {
+  const [maskUrl, setMaskUrl] = useState<string | null>(isInlineMaskUrl(url) ? url : null);
+
+  useEffect(() => {
+    if (!enabled || !url) {
+      setMaskUrl(null);
+      return;
+    }
+    if (isInlineMaskUrl(url)) {
+      setMaskUrl(url);
+      return;
+    }
+
+    let cancelled = false;
+    loadSvgMaskUrl(url).then((resolved) => {
+      if (!cancelled) setMaskUrl(resolved);
+    }).catch(() => {
+      if (!cancelled) setMaskUrl(null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, url]);
+
+  return enabled ? maskUrl : null;
 }
 
 function getLinkHash(href: string): string {
@@ -2090,6 +2139,10 @@ export function Burger({
 
   const prevSettingsRef = useRef(settingsProp);
   const prevLayoutIdRef = useRef(layoutId);
+  const storedLogoIconRef = useRef<string | null>(null);
+  if (isStoredAssetIcon(settingsProp.logo?.icon)) {
+    storedLogoIconRef.current = settingsProp.logo.icon;
+  }
 
   useEffect(() => {
     if (!onUpdateSettings || !isEditor) {
@@ -2098,12 +2151,23 @@ export function Burger({
       return;
     }
 
+    const logoIcon = settingsProp.logo?.icon;
+    if (settingsProp.logo && !isStoredAssetIcon(logoIcon) && !storedLogoIconRef.current) {
+      prevSettingsRef.current = settingsProp;
+      prevLayoutIdRef.current = layoutId;
+      return;
+    }
+
+    const persistSettings = (nextSettings: BurgerSettings) => {
+      onUpdateSettings(preserveLogoIcon(nextSettings, storedLogoIconRef.current));
+    };
+
     if (prevLayoutIdRef.current !== layoutId) {
       prevSettingsRef.current = settingsProp;
       prevLayoutIdRef.current = layoutId;
       const withTextDefaults = applyBurgerOpenTextDefaults(settingsProp);
       if (withTextDefaults !== settingsProp) {
-        onUpdateSettings(withTextDefaults);
+        persistSettings(withTextDefaults);
       }
       return;
     }
@@ -2122,7 +2186,7 @@ export function Burger({
       return;
     }
 
-    onUpdateSettings(updatedSettings);
+    persistSettings(updatedSettings);
   }, [settingsProp, onUpdateSettings, isEditor, layoutId]);
 
   const resolvedIconSize = scalingValue(closedIconSize, isEditor);
@@ -2143,6 +2207,8 @@ export function Burger({
   const showLogo = logo?.mode !== 'Off';
   const logoSrc = logo?.icon ?? '';
   const isSvgLogo = useIsSvgLogo(logoSrc);
+  const logoMaskUrl = useSvgMaskUrl(logoSrc, isSvgLogo);
+  const tintLogo = Boolean(logoMaskUrl);
   const logoHeight = scaled(Math.min(closedLogoMaxHeight, closedPanelHeight));
   const isLogoOnRight = Boolean(showLogo && logoSrc && closedLogoPosition === 'right');
   const toggleSide = isLogoOnRight ? 'left' : 'right';
@@ -2530,18 +2596,18 @@ export function Burger({
             <div className={`${P}-nav-logo ${P}-nav-logo-${closedLogoPosition}`}>
               {closedLogoPosition === 'left' ? renderNavEdgePadding('left') : null}
               <div
-                className={`${P}-nav-logo-inner${isSvgLogo ? ` ${P}-nav-logo-tinted` : ''}`}
+                className={`${P}-nav-logo-inner${tintLogo ? ` ${P}-nav-logo-tinted` : ''}`}
                 style={{
                   height: logoHeight,
-                  ...(isSvgLogo ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoSrc) } : {}),
+                  ...(tintLogo && logoMaskUrl ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoMaskUrl) } : {}),
                 } as CSSProperties}
               >
                 <img
-                  src={logoSrc}
+                  src={tintLogo && logoMaskUrl ? logoMaskUrl : logoSrc}
                   alt=""
                   className={`${P}-nav-logo-img`}
                 />
-                {isSvgLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
+                {tintLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
               </div>
               {closedLogoPosition === 'right' ? renderNavEdgePadding('right') : null}
             </div>

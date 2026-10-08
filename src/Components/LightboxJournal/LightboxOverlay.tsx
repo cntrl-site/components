@@ -1143,7 +1143,7 @@ export const LightboxOverlay = ({
       const image = images[0];
       return (
         <div {...getSlideImageCellProps(image)}>
-          <img {...getSlideImageProps(image)} src={image.url} alt={image.name ?? ''} draggable={false} />
+          <img {...getSlideImageProps(image)} src={image.assetId} alt={image.name ?? ''} draggable={false} />
         </div>
       );
     }
@@ -1155,10 +1155,10 @@ export const LightboxOverlay = ({
       >
         {images.map((image, imageIndex) => {
           return (
-            <div key={`${image.url}-${imageIndex}`} {...getSlideImageCellProps(image)}>
+            <div key={`${image.assetId}-${imageIndex}`} {...getSlideImageCellProps(image)}>
               <img
                 {...getSlideImageProps(image)}
-                src={image.url}
+                src={image.assetId}
                 alt={image.name ?? ''}
                 draggable={false}
               />
