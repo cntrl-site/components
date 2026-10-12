@@ -85,6 +85,23 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         display: { type: 'numeric-input' },
       },
+      columns: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Columns',
+        tooltip: 'Splits the text area into columns. Text fills them left to right.',
+        min: 1,
+        max: 5,
+        display: { type: 'count-number' },
+      },
+      columnGutter: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Columns gap',
+        tooltip: 'Space between columns.',
+        min: 0,
+        display: { type: 'numeric-input' },
+      },
       dropCapLines: {
         type: 'number',
         scope: 'common',
@@ -210,6 +227,8 @@ const schema: ComponentSchemaV1 = {
         textLetterSpacing: 0,
         textWordSpacing: 0,
         padding: 0,
+        columns: 1,
+        columnGutter: 0.04,
       },
       t: {
         textFontSize: 0.018,
@@ -217,6 +236,8 @@ const schema: ComponentSchemaV1 = {
         textLetterSpacing: 0,
         textWordSpacing: 0,
         padding: 0,
+        columns: 1,
+        columnGutter: 0.02,
       },
       d: {
         textFontSize: 0.032,
@@ -224,6 +245,8 @@ const schema: ComponentSchemaV1 = {
         textLetterSpacing: -0.001,
         textWordSpacing: 0,
         padding: 0,
+        columns: 1,
+        columnGutter: 0.015,
       },
     },
     layout: [
@@ -236,6 +259,8 @@ const schema: ComponentSchemaV1 = {
       'fitText',
       'hyphenate',
       'padding',
+      'columns',
+      'columnGutter',
       'dropCapLines',
       'dropCapSize',
       'image',
@@ -271,6 +296,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', title: 'Shape', items: ['shape'] },
         { type: 'row', items: ['dropCapSize', 'hyphenate'] },
         { type: 'row', items: ['padding', 'image'] },
+        { type: 'row', items: ['columns', 'columnGutter'] },
       ],
     },
     {

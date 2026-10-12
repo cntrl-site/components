@@ -113,6 +113,8 @@ export type LayoutParams = {
   charWidths?: (number[] | undefined)[];
   hyphenWidth?: number;
   shapeMargin?: number;
+  columns?: number;
+  columnGap?: number;
 };
 
 // Offsets the shape's own ring outward (avoid mode) or inward (contain mode) by
@@ -228,112 +230,131 @@ export function layoutText(params: LayoutParams): LayoutResult {
   const minSegment = Math.max(1, spaceWidth * 0.5);
   const slack = lineHeight * BAND_SLACK;
   const marginRings = offsetRingsForMargin(rings, shapeMargin, width, height, mode);
+  const columnCount = Math.max(1, Math.floor(params.columns ?? 1));
+  const columnGap = columnCount > 1 ? Math.max(0, params.columnGap ?? 0) : 0;
+  const columnWidth = (width - columnGap * (columnCount - 1)) / columnCount;
   let index = 0;
-  let y = 0;
+  let maxY = 0;
   let line = 0;
-  let previousPara = queue[0].token.para;
   let capLeft = 0;
   let capTop = 0;
   let capFirstLine: number | null = null;
 
-  while (index < queue.length && line < MAX_LINES) {
-    const beyondShape = y + lineHeight > height;
-    if (beyondShape && !allowOverflow) break;
+  // Columns are vertical strips of the box: the shape is shared, each strip
+  // takes the part of every band that falls inside it, and text fills the
+  // strips left to right. Only the last strip may run past the box bottom.
+  for (let column = 0; column < columnCount && index < queue.length && columnWidth > 0; column += 1) {
+    const columnLeft = column * (columnWidth + columnGap);
+    const columnRight = columnLeft + columnWidth;
+    const columnOverflows = allowOverflow && column === columnCount - 1;
+    let previousPara = queue[index].token.para;
+    let y = 0;
 
-    const para = queue[index].token.para;
-    if (para > previousPara + 1) {
-      y += lineHeight * (para - previousPara - 1);
-      previousPara = para - 1;
-      line += 1;
-      continue;
-    }
+    while (index < queue.length && line < MAX_LINES) {
+      const beyondShape = y + lineHeight > height;
+      if (beyondShape && !columnOverflows) break;
 
-    let spans: Span[] = beyondShape
-      ? [{ x0: 0, x1: width }]
-      : spansForBand(marginRings, (y + slack) / height, (y + lineHeight - slack) / height, mode)
-        .map(span => ({ x0: span.x0 * width, x1: span.x1 * width }));
-
-    if (capInset > 0 && capLines > 0 && !beyondShape && spans.length) {
-      if (capFirstLine === null) {
-        capFirstLine = line;
-        capLeft = spans[0].x0;
-        capTop = y;
+      const para = queue[index].token.para;
+      if (para > previousPara + 1) {
+        y += lineHeight * (para - previousPara - 1);
+        previousPara = para - 1;
+        line += 1;
+        continue;
       }
-      if (line - capFirstLine < capLines) {
-        spans = subtractSpan(spans, { x0: capLeft, x1: capLeft + capInset });
+
+      let spans: Span[] = beyondShape
+        ? [{ x0: columnLeft, x1: columnRight }]
+        : spansForBand(marginRings, (y + slack) / height, (y + lineHeight - slack) / height, mode)
+          .map(span => ({
+            x0: Math.max(columnLeft, span.x0 * width),
+            x1: Math.min(columnRight, span.x1 * width),
+          }))
+          .filter(span => span.x1 > span.x0);
+
+      if (capInset > 0 && capLines > 0 && column === 0 && !beyondShape && spans.length) {
+        if (capFirstLine === null) {
+          capFirstLine = line;
+          capLeft = spans[0].x0;
+          capTop = y;
+        }
+        if (line - capFirstLine < capLines) {
+          spans = subtractSpan(spans, { x0: capLeft, x1: capLeft + capInset });
+        }
       }
-    }
 
-    const widest = spans.reduce((max, span) => Math.max(max, span.x1 - span.x0), 0);
+      const widest = spans.reduce((max, span) => Math.max(max, span.x1 - span.x0), 0);
 
-    for (const span of spans) {
-      const available = span.x1 - span.x0;
-      if (available < minSegment) continue;
-      if (index >= queue.length || queue[index].token.para !== para) break;
+      for (const span of spans) {
+        const available = span.x1 - span.x0;
+        if (available < minSegment) continue;
+        if (index >= queue.length || queue[index].token.para !== para) break;
 
-      const start = index;
-      let used = 0;
-      while (index < queue.length && queue[index].token.para === para) {
-        const item = queue[index];
-        const isFirst = index === start;
-        const tokenWidth = item.width * scale;
-        const advance = isFirst ? tokenWidth : spaceWidth + tokenWidth;
+        const start = index;
+        let used = 0;
+        while (index < queue.length && queue[index].token.para === para) {
+          const item = queue[index];
+          const isFirst = index === start;
+          const tokenWidth = item.width * scale;
+          const advance = isFirst ? tokenWidth : spaceWidth + tokenWidth;
 
-        if (used + advance <= available) {
-          used += advance;
-          index += 1;
-          continue;
-        }
-
-        const unbreakable = isFirst && available >= widest - 0.5 && tokenWidth > width - 0.5;
-        if (unbreakable) {
-          used += advance;
-          index += 1;
-          continue;
-        }
-
-        if (hyphenate) {
-          const budget = available - used - (isFirst ? 0 : spaceWidth);
-          const split = tryHyphenate(item, charWidths, budget, scale, hyphenWidth);
-          if (split) {
-            const fragment: QueueItem = {
-              token: { ...item.token, text: split.fragmentText },
-              originalIndex: item.originalIndex,
-              width: split.fragmentWidth,
-              kind: 'fragment',
-            };
-            const remainder: QueueItem = {
-              token: { ...item.token, text: split.remainderText },
-              originalIndex: item.originalIndex,
-              width: split.remainderWidth,
-              kind: 'remainder',
-            };
-            queue.splice(index, 1, fragment, remainder);
-            used += (isFirst ? 0 : spaceWidth) + split.fragmentWidth * scale;
+          if (used + advance <= available) {
+            used += advance;
             index += 1;
+            continue;
           }
+
+          const unbreakable = isFirst && available >= widest - 0.5 && tokenWidth > columnWidth - 0.5;
+          if (unbreakable) {
+            used += advance;
+            index += 1;
+            continue;
+          }
+
+          if (hyphenate) {
+            const budget = available - used - (isFirst ? 0 : spaceWidth);
+            const split = tryHyphenate(item, charWidths, budget, scale, hyphenWidth);
+            if (split) {
+              const fragment: QueueItem = {
+                token: { ...item.token, text: split.fragmentText },
+                originalIndex: item.originalIndex,
+                width: split.fragmentWidth,
+                kind: 'fragment',
+              };
+              const remainder: QueueItem = {
+                token: { ...item.token, text: split.remainderText },
+                originalIndex: item.originalIndex,
+                width: split.remainderWidth,
+                kind: 'remainder',
+              };
+              queue.splice(index, 1, fragment, remainder);
+              used += (isFirst ? 0 : spaceWidth) + split.fragmentWidth * scale;
+              index += 1;
+            }
+          }
+          break;
         }
-        break;
+
+        if (index > start) {
+          const paragraphEnded = index >= queue.length || queue[index].token.para !== para;
+          segments.push({
+            top: y,
+            left: span.x0,
+            width: available,
+            from: start,
+            to: index,
+            justify: align === 'justify' && !paragraphEnded,
+          });
+        }
+
+        if (index >= queue.length || queue[index].token.para !== para) break;
       }
 
-      if (index > start) {
-        const paragraphEnded = index >= queue.length || queue[index].token.para !== para;
-        segments.push({
-          top: y,
-          left: span.x0,
-          width: available,
-          from: start,
-          to: index,
-          justify: align === 'justify' && !paragraphEnded,
-        });
-      }
-
-      if (index >= queue.length || queue[index].token.para !== para) break;
+      previousPara = para;
+      y += lineHeight;
+      line += 1;
     }
 
-    previousPara = para;
-    y += lineHeight;
-    line += 1;
+    maxY = Math.max(maxY, y);
   }
 
   let placed = 0;
@@ -345,7 +366,7 @@ export function layoutText(params: LayoutParams): LayoutResult {
   return {
     segments,
     placed,
-    height: segments.length ? y : 0,
+    height: segments.length ? maxY : 0,
     capLeft,
     capTop,
     renderTokens: queue.map(item => item.token),
