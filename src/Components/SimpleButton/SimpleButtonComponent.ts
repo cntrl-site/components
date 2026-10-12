@@ -329,7 +329,7 @@ const schema = {
     },
     defaults: {
       label: 'Button',
-      icon: 'https://cdn.cntrl.site/projects/01JJKT02AWY2FGN2QJ7A173RNZ/articles-assets/01KY78A0YVT403B042HVWWTHBC.svg',
+      icon: '01M3QM74XG7DQZZXTPG1E8EBBC',
       boxShadowColor: '#000000',
       innerBoxShadowColor: '#000000',
       backgroundColor: '#2E12F0',

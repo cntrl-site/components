@@ -69,7 +69,7 @@ function getCSS(P: string): string {
 }
 
 type HelixMedia = {
-  url?: string;
+  assetId?: string;
   name?: string;
   type?: 'image' | 'video';
 };
@@ -168,7 +168,7 @@ function getAspectHeightFactor(imageDisplay: ImageDisplay): number {
 function isVideoMedia(media: HelixMedia): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.url ?? '');
+  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.assetId ?? '');
 }
 
 function getOrbitScale(depthFactor: number, angle: number): number {
@@ -361,7 +361,7 @@ export function Helix({
   const orbitProgressRef = useRef(0);
 
   const mediaItems = useMemo(
-    () => (content ?? []).filter((item) => Boolean(item.image?.url)),
+    () => (content ?? []).filter((item) => Boolean(item.image?.assetId)),
     [content],
   );
 
@@ -517,7 +517,7 @@ export function Helix({
             <video
               className={`${P}-media`}
               style={coverMediaStyle}
-              src={media.url}
+              src={media.assetId}
               muted
               loop
               autoPlay
@@ -528,7 +528,7 @@ export function Helix({
             <img
               className={`${P}-media`}
               style={coverMediaStyle}
-              src={media.url}
+              src={media.assetId}
               alt={media.name ?? ''}
               loading="lazy"
               decoding="async"

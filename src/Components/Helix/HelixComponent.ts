@@ -3,11 +3,11 @@ import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import helixSourceRaw from './Helix.tsx?raw';
 
 const defaultImageUrls = [
-  'https://cdn.cntrl.site/component-assets/Helix-default-1.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-2.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-3.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-4.png',
-  'https://cdn.cntrl.site/component-assets/Helix-default-5.png',
+  '01M3QM74XEA13H9Z3AZF1NGY48',
+  '01M3QM74XEZJJC5STVP0WF2GN3',
+  '01M3QM74XE170PHTE4A34MKNP3',
+  '01M3QM74XEZD3SDVVQZ1TF9JPA',
+  '01M3QM74XEPJWV4ZR7R3JPS67H',
 ];
 
 const schema: ComponentSchemaV1 = {
@@ -34,7 +34,7 @@ const schema: ComponentSchemaV1 = {
             type: 'media-input',
           },
           properties: {
-            url: { type: 'string' },
+            assetId: { type: 'string' },
             name: { type: 'string' },
             type: {
               type: 'string',
@@ -44,7 +44,7 @@ const schema: ComponentSchemaV1 = {
         },
       },
     },
-    default: defaultImageUrls.map((url) => ({ image: { url, name: '' } })),
+    default: defaultImageUrls.map((url) => ({ image: { assetId: url, name: '' } })),
   },
   settings: {
     sizing: 'auto auto',
@@ -236,7 +236,7 @@ export const HelixComponent = {
   schema,
   sourceCode: helixSourceRaw,
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
   },
   fontSettingsPaths: {

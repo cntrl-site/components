@@ -414,7 +414,7 @@ function getCSS(P: string): string {
 
 export type LightboxStripItem = {
   image: {
-    url: string;
+    assetId: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
   };

@@ -24,7 +24,7 @@ export const ControlSliderComponent: Component = {
     }
   },
   assetsPaths: {
-    content: [{ path: 'image.url', placeholderEnabled: true }],
+    content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'settings.controls.arrowsImgUrl' }]
   },
   fontSettingsPaths: {
@@ -419,7 +419,7 @@ export const ControlSliderComponent: Component = {
                 type: 'media-input',
               },
               properties: {
-                url: {
+                assetId: {
                   type: 'string',
                 },
                 name: {
@@ -430,7 +430,7 @@ export const ControlSliderComponent: Component = {
                   enum: ['cover', 'contain'],
                 }
               },
-              required: ['url', 'name']
+              required: ['assetId', 'name']
             },
             imageCaption: {
               placeholder: 'Add Caption...',
@@ -446,7 +446,7 @@ export const ControlSliderComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-1.png',
+              assetId: '01M3QM74XES6E7GVC0H3KJ2RH6',
               name: 'Slider-1.png'
             },
             imageCaption: [
@@ -459,7 +459,7 @@ export const ControlSliderComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-2.png',
+              assetId: '01M3QM74XEAZ8H1DTC5V1S554K',
               name: 'Slider-2.png'
             },
             imageCaption: [
@@ -472,7 +472,7 @@ export const ControlSliderComponent: Component = {
           {
             image: {
               objectFit: 'cover',
-              url: 'https://cdn.cntrl.site/component-assets/Control-slider-default-picture-3.png',
+              assetId: '01M3QM74XEDRP49HNTEPNZYQTP',
               name: 'Slider-3.png'
             },
             imageCaption: [

@@ -357,7 +357,7 @@ type HiveSettings = {
 } & HiveLightboxTitleSettings;
 
 type HiveMedia = {
-  url: string;
+  assetId: string;
   name?: string;
   objectFit?: 'cover' | 'contain';
   type?: 'image' | 'video';
@@ -385,7 +385,7 @@ type HiveProps = {
   portalId?: string;
 } & CommonComponentProps;
 
-const EMPTY_MEDIA: HiveMedia = { url: '', name: '', objectFit: 'cover' };
+const EMPTY_MEDIA: HiveMedia = { assetId: '', name: '', objectFit: 'cover' };
 
 const LIGHTBOX_ANIM_MS = 500;
 const SLIDE_ANIM_MS = 650;
@@ -562,13 +562,13 @@ function preloadMediaDimensions(
     const video = document.createElement('video');
     const handleMetadata = () => {
       if (video.videoWidth > 0 && video.videoHeight > 0) {
-        onDimensions(media.url, video.videoWidth, video.videoHeight);
+        onDimensions(media.assetId, video.videoWidth, video.videoHeight);
       }
       video.removeEventListener('loadedmetadata', handleMetadata);
     };
     video.addEventListener('loadedmetadata', handleMetadata);
     video.preload = 'auto';
-    video.src = media.url;
+    video.src = media.assetId;
     video.load();
     return;
   }
@@ -576,10 +576,10 @@ function preloadMediaDimensions(
   const image = new Image();
   image.onload = () => {
     if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-      onDimensions(media.url, image.naturalWidth, image.naturalHeight);
+      onDimensions(media.assetId, image.naturalWidth, image.naturalHeight);
     }
   };
-  image.src = media.url;
+  image.src = media.assetId;
 }
 
 function collectAllHiveMedia(content: HiveContentItem[]): HiveMedia[] {
@@ -591,8 +591,8 @@ function collectAllHiveMedia(content: HiveContentItem[]): HiveMedia[] {
     const displayItems = getDisplayItems(gallery);
     for (const entry of displayItems) {
       for (const media of [entry.displayMedia, entry.lightboxMedia]) {
-        if (media?.url && !seen.has(media.url)) {
-          seen.add(media.url);
+        if (media?.assetId && !seen.has(media.assetId)) {
+          seen.add(media.assetId);
           result.push(media);
         }
       }
@@ -620,16 +620,16 @@ function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
       {mediaList.map((media) => (
         isVideoMedia(media) ? (
           <video
-            key={media.url}
-            src={media.url}
+            key={media.assetId}
+            src={media.assetId}
             preload='auto'
             muted
             playsInline
           />
         ) : (
           <img
-            key={media.url}
-            src={media.url}
+            key={media.assetId}
+            src={media.assetId}
             alt=''
           />
         )
@@ -769,8 +769,8 @@ function normalizeGallery(gallery: unknown): HiveMediaPair[] | undefined {
   if (!Array.isArray(gallery)) return undefined;
 
   const [gridImage, lightboxImage] = gallery as HiveMedia[];
-  const grid = gridImage?.url ? gridImage : undefined;
-  const lightbox = lightboxImage?.url ? lightboxImage : undefined;
+  const grid = gridImage?.assetId ? gridImage : undefined;
+  const lightbox = lightboxImage?.assetId ? lightboxImage : undefined;
 
   if (!grid && !lightbox) return undefined;
 
@@ -784,14 +784,14 @@ function normalizeGallery(gallery: unknown): HiveMediaPair[] | undefined {
 
 function getDisplayMediaForPair(pair: HiveMediaPair): HiveMedia | null {
   const [first, second] = pair.media;
-  if (second?.url) return second;
-  if (first?.url) return first;
+  if (second?.assetId) return second;
+  if (first?.assetId) return first;
   return null;
 }
 
 function getLightboxMediaForPair(pair: HiveMediaPair): HiveMedia | null {
   const [first] = pair.media;
-  if (first?.url) return first;
+  if (first?.assetId) return first;
   return null;
 }
 
@@ -807,14 +807,14 @@ function getDisplayItems(gallery: HiveMedia[] | HiveMediaPair[] | undefined): Di
       const lightboxMedia = getLightboxMediaForPair(pair);
       result.push({
         displayMedia,
-        lightboxMedia: lightboxMedia?.url ? lightboxMedia : null,
+        lightboxMedia: lightboxMedia?.assetId ? lightboxMedia : null,
       });
     }
     return result;
   }
 
   return (gallery as HiveMedia[])
-    .filter(media => media?.url)
+    .filter(media => media?.assetId)
     .map(media => ({
       displayMedia: media,
       lightboxMedia: media,
@@ -823,7 +823,7 @@ function getDisplayItems(gallery: HiveMedia[] | HiveMediaPair[] | undefined): Di
 
 function isVideoMedia(media: HiveMedia): boolean {
   if (media.type === 'video') return true;
-  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.url);
+  return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.assetId);
 }
 
 function MediaItem({
@@ -842,7 +842,7 @@ function MediaItem({
   if (isVideoMedia(media)) {
     return (
       <video
-        src={media.url}
+        src={media.assetId}
         className={className}
         data-hive-grid-index={gridIndex}
         style={{
@@ -861,7 +861,7 @@ function MediaItem({
 
   return (
     <img
-      src={media.url}
+      src={media.assetId}
       alt={media.name}
       className={className}
       data-hive-grid-index={gridIndex}
@@ -934,7 +934,7 @@ function LightboxSideMedia({
   if (isVideoMedia(media)) {
     return (
       <video
-        src={media.url}
+        src={media.assetId}
         muted
         playsInline
         preload='auto'
@@ -942,7 +942,7 @@ function LightboxSideMedia({
         onLoadedMetadata={(e) => {
           const video = e.currentTarget;
           if (video.videoWidth > 0 && video.videoHeight > 0) {
-            onMeasure?.(media.url, video.videoWidth, video.videoHeight);
+            onMeasure?.(media.assetId, video.videoWidth, video.videoHeight);
           }
         }}
         onTransitionEnd={onTransitionEnd}
@@ -952,13 +952,13 @@ function LightboxSideMedia({
 
   return (
     <img
-      src={media.url}
+      src={media.assetId}
       alt={media.name}
       style={style}
       onLoad={(e) => {
         const image = e.currentTarget;
         if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-          onMeasure?.(media.url, image.naturalWidth, image.naturalHeight);
+          onMeasure?.(media.assetId, image.naturalWidth, image.naturalHeight);
         }
       }}
       onTransitionEnd={onTransitionEnd}
@@ -1074,10 +1074,10 @@ function Lightbox({
         ? getAdjacentImage(pendingImageIdx, 1)
         : null
     : null;
-  const farPrevMedia = farPrevCandidate && farPrevCandidate.url !== prevMedia?.url
+  const farPrevMedia = farPrevCandidate && farPrevCandidate.assetId !== prevMedia?.assetId
     ? farPrevCandidate
     : null;
-  const farNextMedia = farNextCandidate && farNextCandidate.url !== nextMedia?.url
+  const farNextMedia = farNextCandidate && farNextCandidate.assetId !== nextMedia?.assetId
     ? farNextCandidate
     : null;
 
@@ -1088,7 +1088,7 @@ function Lightbox({
         : items.length > 2
           ? getAdjacentImage((index - 1 + items.length) % items.length, -1)
           : null;
-      return candidate && candidate.url !== prevMedia.url ? candidate : null;
+      return candidate && candidate.assetId !== prevMedia.assetId ? candidate : null;
     })()
     : null;
   const idleFarNextMedia = nextMedia && allowNavigation
@@ -1098,7 +1098,7 @@ function Lightbox({
         : items.length > 2
           ? getAdjacentImage((index + 1) % items.length, 1)
           : null;
-      return candidate && candidate.url !== nextMedia.url ? candidate : null;
+      return candidate && candidate.assetId !== nextMedia.assetId ? candidate : null;
     })()
     : null;
   const renderFarPrevMedia = farPrevMedia ?? idleFarPrevMedia;
@@ -1116,8 +1116,8 @@ function Lightbox({
   }, []);
 
   const getFittedRectForMedia = useCallback((media: HiveMedia | null | undefined): AnimRect | null => {
-    if (!media?.url) return null;
-    const dimensions = mediaDimensionsCacheRef.current.get(media.url);
+    if (!media?.assetId) return null;
+    const dimensions = mediaDimensionsCacheRef.current.get(media.assetId);
     return getMediaFittedRect(ghostRef.current, dimensions);
   }, [mediaDimensionsVersion, layoutVersion]);
 
@@ -1347,7 +1347,7 @@ function Lightbox({
     const ghost = ghostRef.current;
     if (!ghost) return;
 
-    const url = currentItem?.url;
+    const url = currentItem?.assetId;
     const cached = url ? mediaDimensionsCacheRef.current.get(url) : undefined;
     if (cached?.width && cached?.height) {
       setFinalRect(fitMediaRectInGhost(ghost, cached.width, cached.height));
@@ -1367,7 +1367,7 @@ function Lightbox({
     const ghostRect = getGhostRect(ghost);
     if (!ghostRect.width || !ghostRect.height) return;
     setFinalRect(ghostRect);
-  }, [currentItem?.url, rememberMediaDimensions]);
+  }, [currentItem?.assetId, rememberMediaDimensions]);
 
   const setCenterMediaElement = useCallback((element: HTMLImageElement | HTMLVideoElement | null) => {
     centerMediaRef.current = element;
@@ -1418,7 +1418,7 @@ function Lightbox({
     if (media instanceof HTMLVideoElement && media.readyState >= 1 && media.videoWidth > 0) {
       computeFinalRect();
     }
-  }, [currentItem?.url, index, computeFinalRect]);
+  }, [currentItem?.assetId, index, computeFinalRect]);
 
   useEffect(() => {
     syncFinalRectForCurrentItem();
@@ -1429,8 +1429,8 @@ function Lightbox({
     const mediaItems: HiveMedia[] = [];
 
     const addMedia = (media: HiveMedia | null | undefined) => {
-      if (!media?.url || seen.has(media.url)) return;
-      seen.add(media.url);
+      if (!media?.assetId || seen.has(media.assetId)) return;
+      seen.add(media.assetId);
       mediaItems.push(media);
     };
 
@@ -1438,7 +1438,7 @@ function Lightbox({
     lightboxEntries.forEach((entry) => entry.items.forEach(addMedia));
 
     mediaItems.forEach((media) => {
-      if (mediaDimensionsCacheRef.current.has(media.url)) return;
+      if (mediaDimensionsCacheRef.current.has(media.assetId)) return;
       preloadMediaDimensions(media, rememberMediaDimensions);
     });
   }, [items, lightboxEntries, rememberMediaDimensions]);
@@ -1475,7 +1475,7 @@ function Lightbox({
   }, [clearNavSwipeCommitTimer]);
 
   useLayoutEffect(() => {
-    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.url) return;
+    if (prevIndexRef.current === index && prevItemUrlRef.current === currentItem?.assetId) return;
 
     clearNavSwipeCommitTimer();
     slideCommitDirectionRef.current = null;
@@ -1498,8 +1498,8 @@ function Lightbox({
     syncFinalRectForCurrentItem();
 
     prevIndexRef.current = index;
-    prevItemUrlRef.current = currentItem?.url;
-  }, [index, currentItem?.url, setNavSwipeAnimatingState, clearNavSwipeCommitTimer, syncFinalRectForCurrentItem]);
+    prevItemUrlRef.current = currentItem?.assetId;
+  }, [index, currentItem?.assetId, setNavSwipeAnimatingState, clearNavSwipeCommitTimer, syncFinalRectForCurrentItem]);
 
   useLayoutEffect(() => {
     const rapidDirection = rapidNavDirectionRef.current;
@@ -1509,7 +1509,7 @@ function Lightbox({
     requestAnimationFrame(() => {
       startSlideNavigationRef.current(rapidDirection);
     });
-  }, [index, entryIdx, currentItem?.url]);
+  }, [index, entryIdx, currentItem?.assetId]);
 
   useLayoutEffect(() => {
     if (phase === 'opening') {
@@ -1533,7 +1533,7 @@ function Lightbox({
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [phase, prevMedia?.url, nextMedia?.url]);
+  }, [phase, prevMedia?.assetId, nextMedia?.assetId]);
 
   useEffect(() => {
     if (phase !== 'open') return;
@@ -1983,7 +1983,7 @@ function Lightbox({
 
       {isOpen && renderFarPrevMedia && (
         <LightboxSideMedia
-          key={`far-prev-${renderFarPrevMedia.url}`}
+          key={`far-prev-${renderFarPrevMedia.assetId}`}
           media={renderFarPrevMedia}
           style={getSideMediaStyle(renderFarPrevMedia, 'left', 'far')}
           onMeasure={rememberMediaDimensions}
@@ -1994,7 +1994,7 @@ function Lightbox({
       {isOpen && prevMedia && (
         <>
           <LightboxSideMedia
-            key={`prev-${prevMedia.url}`}
+            key={`prev-${prevMedia.assetId}`}
             media={prevMedia}
             style={getSideMediaStyle(prevMedia, 'left')}
             onMeasure={rememberMediaDimensions}
@@ -2021,7 +2021,7 @@ function Lightbox({
       {isOpen && nextMedia && (
         <>
           <LightboxSideMedia
-            key={`next-${nextMedia.url}`}
+            key={`next-${nextMedia.assetId}`}
             media={nextMedia}
             style={getSideMediaStyle(nextMedia, 'right')}
             onMeasure={rememberMediaDimensions}
@@ -2047,7 +2047,7 @@ function Lightbox({
 
       {isOpen && renderFarNextMedia && (
         <LightboxSideMedia
-          key={`far-next-${renderFarNextMedia.url}`}
+          key={`far-next-${renderFarNextMedia.assetId}`}
           media={renderFarNextMedia}
           style={getSideMediaStyle(renderFarNextMedia, 'right', 'far')}
           onMeasure={rememberMediaDimensions}
@@ -2058,8 +2058,8 @@ function Lightbox({
       {finalRect && currentItem && (
         isCurrentVideo ? (
           <LightboxVideo
-            key={`${index}-${currentItem.url}`}
-            src={currentItem.url}
+            key={`${index}-${currentItem.assetId}`}
+            src={currentItem.assetId}
             phase={phase}
             onMediaElement={setCenterMediaElement}
             wrapperStyle={mediaStyle}
@@ -2069,9 +2069,9 @@ function Lightbox({
           />
         ) : (
           <img
-            key={`${index}-${currentItem.url}`}
+            key={`${index}-${currentItem.assetId}`}
             ref={setCenterMediaElement}
-            src={currentItem.url}
+            src={currentItem.assetId}
             alt={currentItem.name}
             onLoad={computeFinalRect}
             onTransitionEnd={handleNavSwipeTransitionEnd}
@@ -2262,7 +2262,7 @@ export function Hive({
 
           const firstDisplayItem = displayItems[0];
           const entryLightboxIndex = firstDisplayItem?.lightboxMedia
-            ? lightboxItemsForEntry.findIndex(media => media.url === firstDisplayItem.lightboxMedia!.url)
+            ? lightboxItemsForEntry.findIndex(media => media.assetId === firstDisplayItem.lightboxMedia!.assetId)
             : -1;
 
           const imageContent = (

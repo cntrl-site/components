@@ -303,9 +303,9 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
             style={{ height: scalingValue(imageMarginTop ?? 0, isEditor ?? false) }}
           />
           <div style={{ width: scalingValue(imageWidth ?? 0, isEditor ?? false), height: scalingValue(imageHeight ?? 0, isEditor ?? false)}}>
-            {item.image?.url && 
+            {item.image?.assetId && 
               <img
-                src={item.image?.url}
+                src={item.image?.assetId}
                 alt={item.image?.name ?? ''}
                 className={`${P}-icon`}
                 style={{ objectFit: item.image?.objectFit || 'contain' }}
@@ -469,7 +469,7 @@ export const TestimonialSingle = ({ settings, content, isEditor, isPreviewMode, 
 
 export type TestimonialsItem = {
   image?: {
-    url?: string;
+    assetId?: string;
     name?: string;
     objectFit?: 'cover' | 'contain';
   };

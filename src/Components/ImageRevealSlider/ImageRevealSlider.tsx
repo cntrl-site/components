@@ -41,7 +41,7 @@ type ImageRevealSliderSettings = {
 
 type ImageRevealSliderItem = {
   image: {
-    url: string;
+    assetId: string;
     name: string;
   };
   link?: ContentLink;
@@ -49,7 +49,7 @@ type ImageRevealSliderItem = {
 
 interface PlacedImage {
   id: number;
-  url: string;
+  assetId: string;
   link?: ContentLink;
   name: string;
   x: number;
@@ -60,7 +60,7 @@ interface PlacedImage {
 function isMouseOverImage(mouseX: number, mouseY: number, placedImages: PlacedImage[]) {
   for (const img of placedImages) {
     const imgEl = new Image();
-    imgEl.src = img.url;
+    imgEl.src = img.assetId;
 
     const imgWidth = img.width ? Number.parseFloat(img.width) : imgEl.naturalWidth;
     const imgHeight = imgEl.naturalHeight / imgEl.naturalWidth * imgWidth;
@@ -214,7 +214,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
     position: { x?: number; y?: number } = {}
   ): Promise<PlacedImage> => {
     const { width, height, finalWidth } = await calculateImageWidthHeight(
-      imgData.image.url,
+      imgData.image.assetId,
       sizeType,
       customWidth,
       randomRange
@@ -234,7 +234,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
 
     return {
       id: imageIdCounter.current++,
-      url: imgData.image.url,
+      assetId: imgData.image.assetId,
       link: imgData.link,
       name: imgData.image.name,
       x: adjustedX,
@@ -322,7 +322,7 @@ export function ImageRevealSlider({ settings, content, isEditor }: ImageRevealSl
           <LinkWrapper link={target === 'area' ? img.link : undefined} className={styles.link}>
             <img
               key={img.id}
-              src={img.url}
+              src={img.assetId}
               alt={img.name}
               className={styles.image}
             />

@@ -1302,13 +1302,13 @@ export const LightboxOverlay = ({
             const imageGapControlRight = `calc(-0.5 * (${imageGapControlSize} + ${imageGap}))`;
             return (
               <div
-                key={`${copyIndex}-${item.image.url}-${sourceIndex}`}
+                key={`${copyIndex}-${item.image.assetId}-${sourceIndex}`}
                 ref={(element) => itemRefs.current[flatIndex] = element}
                 className={`${P}-strip-item`}
                 style={{ height: titleHeaderLayout === 'mobile' ? `calc(0.75 * var(--cntrl-viewport-height, 100vh))` : '100%'}}
               >
                 <img
-                  src={item.image.url}
+                  src={item.image.assetId}
                   draggable={false}
                   style={{
                     display: 'block',
@@ -1409,7 +1409,7 @@ export const LightboxOverlay = ({
                 return (
                 <div
                  ref={(element) => { thumbRefs.current[index] = element; }}
-                  key={`thumb-${item.image.url}-${index}`} style={{ position: 'relative', flex: '0 0 auto' }}
+                  key={`thumb-${item.image.assetId}-${index}`} style={{ position: 'relative', flex: '0 0 auto' }}
                 >
                   <button
                     type="button"
@@ -1422,7 +1422,7 @@ export const LightboxOverlay = ({
                   >
                     <img
                       className={`${P}-thumb-image${isThumbCover ? ` ${P}-thumb-image-cover` : ''}`}
-                      src={item.image.url}
+                      src={item.image.assetId}
                       alt=""
                       draggable={false}
                       style={
