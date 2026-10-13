@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia } from '../utils/index';
 import { getContainedMediaTransformOrigin } from '../utils/getImageRect';
 import { scalingValue, useScopedStyles } from '../utils/index';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
@@ -120,7 +121,8 @@ function getCSS(P: string): string {
   object-position: bottom;
 }
 .${P}-item-image-hover-scale img,
-.${P}-item-image-hover-scale video {
+.${P}-item-image-hover-scale video,
+.${P}-item-image-hover-scale [data-embed-frame] {
   transition: transform 0.3s ease;
 }
 .${P}-item-image-hover-scale:hover {
@@ -430,8 +432,22 @@ export function Waterfall({
                     objectFitMode === 'contain' ? `${P}-item-image-fit` : undefined,
                     imageHoverClass,
                   ].filter(Boolean).join(' ')}
+                  // a frame reports no size of its own, so the stored aspect is set here up front
+                  style={isEmbedMedia(item.image)
+                    ? { [`--${P}-item-media-aspect`]: String(getEmbedAspect(item.image)) } as React.CSSProperties
+                    : undefined}
                 >
-                  {item.image.type === 'video' ? (
+                  {isEmbedMedia(item.image) ? (
+                    <EmbedMediaFrame
+                      media={item.image}
+                      mode="background"
+                      fit={objectFitMode}
+                      data-waterfall-index={index}
+                      // placed the way the image rule above places a picture, inline since the frame positions itself inline
+                      style={{ ...imageStyle, position: 'absolute', left: 0, bottom: 0, width: '100%', height: '1cap' }}
+                      onClick={handleOpen}
+                    />
+                  ) : item.image.type === 'video' ? (
                     <video
                       ref={syncFitMediaLayout}
                       src={item.image.assetId}

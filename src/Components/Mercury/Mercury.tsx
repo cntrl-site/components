@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import type React from 'react';
 import { CommonComponentProps } from '../props';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia } from '../utils/index';
 import {
   buildColorVars,
   scalingValue,
@@ -365,8 +366,11 @@ function getTitlePositionAxes(position: TitlePosition): TitlePositionAxes {
 type MercuryMedia = {
   assetId: string;
   name?: string;
-  type?: 'image' | 'video';
+  type?: 'image' | 'video' | 'vimeo' | 'youtube';
   objectFit?: 'cover' | 'contain';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 type MercuryMediaPair = {
@@ -667,6 +671,7 @@ function Lightbox({
   const prevIndexRef = useRef(index);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
+  const isCurrentEmbed = currentItem ? isEmbedMedia(currentItem) : false;
   const isHorizontalNavActive = navSwipeOffset !== 0 || navSwipeAnimating;
 
   const setNavSwipeAnimatingState = useCallback((value: boolean) => {
@@ -703,18 +708,22 @@ function Lightbox({
       return;
     }
 
-    if (!media) {
-      setFinalRect(getGhostRect(ghost));
-      return;
+    // an embed's player reports no size of its own, so its stored aspect stands in
+    let ir = currentItem && isEmbedMedia(currentItem) ? getEmbedAspect(currentItem) : null;
+    if (ir === null) {
+      if (!media) {
+        setFinalRect(getGhostRect(ghost));
+        return;
+      }
+
+      const { width: nw, height: nh } = getLightboxMediaDimensions(media);
+      if (!nw || !nh) {
+        setFinalRect(getGhostRect(ghost));
+        return;
+      }
+      ir = nw / nh;
     }
 
-    const { width: nw, height: nh } = getLightboxMediaDimensions(media);
-    if (!nw || !nh) {
-      setFinalRect(getGhostRect(ghost));
-      return;
-    }
-
-    const ir = nw / nh;
     const cr = cw / ch;
     if (ir > cr) {
       const dh = cw / ir;
@@ -723,7 +732,7 @@ function Lightbox({
       const dw = ch * ir;
       setFinalRect({ width: dw, height: ch, left: cb.left + (cw - dw) / 2, top: cb.top });
     }
-  }, [imageDisplay]);
+  }, [imageDisplay, currentItem]);
 
   useEffect(() => {
     computeFinalRect();
@@ -1018,15 +1027,17 @@ function Lightbox({
           : phase === 'opening' || isClosing
             ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
             : 'none',
-    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
+    pointerEvents: (isCurrentVideo || isCurrentEmbed) && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
+    touchAction: (isCurrentVideo || isCurrentEmbed) && isOpen ? 'none' : undefined,
     zIndex: 9998,
   };
 
+  // over an embed the overlays stop short of the player's own control bar
+  const navOverlayInset = isCurrentEmbed && finalRect ? Math.min(52, finalRect.height * 0.2) : 0;
   const navOverlayBaseStyle = finalRect ? {
     position: 'fixed' as const,
     top: finalRect.top,
-    height: finalRect.height,
+    height: finalRect.height - navOverlayInset,
     width: finalRect.width / 2,
     zIndex: 9999,
   } : null;
@@ -1126,7 +1137,18 @@ function Lightbox({
       </div>
 
       {finalRect && currentItem && (
-        isCurrentVideo ? (
+        isCurrentEmbed ? (
+          <EmbedMediaFrame
+            key={`${index}-${currentItem.assetId}`}
+            media={currentItem}
+            mode="player"
+            fit={imageDisplay === 'cover' ? 'cover' : 'contain'}
+            lazy={false}
+            interactive={isOpen && !isHorizontalNavActive}
+            style={mediaStyle}
+            onTransitionEnd={handleNavSwipeTransitionEnd}
+          />
+        ) : isCurrentVideo ? (
           <LightboxVideo
             key={`${index}-${currentItem.assetId}`}
             src={currentItem.assetId}
@@ -1263,7 +1285,14 @@ function GalleryMediaItem({
   };
   const galleryPaddingBetweenHeight = Math.max(galleryPaddingBetween, PADDING_HANDLE_SIZE);
 
-  const mediaNode = isVideoMedia(media) ? (
+  const mediaNode = isEmbedMedia(media) ? (
+    <EmbedMediaFrame
+      {...mediaProps}
+      media={media}
+      mode="background"
+      fit={isCover ? 'cover' : 'contain'}
+    />
+  ) : isVideoMedia(media) ? (
     <video
       {...mediaProps}
       src={media.assetId}

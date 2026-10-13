@@ -1,6 +1,7 @@
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia } from '../utils/index';
 import {
   buildColorVars,
   getFormFieldValidationError,
@@ -107,6 +108,10 @@ function getCSS(P: string): string {
   height: auto;
   max-width: 100%;
   object-fit: contain;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer div {
+  grid-area: 1 / 1;
+  width: 100%;
 }
 .${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
   position: absolute;
@@ -467,7 +472,10 @@ type SwipeAxis = 'none' | 'horizontal' | 'vertical';
 type GridMedia = {
   assetId: string;
   name?: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'vimeo' | 'youtube';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 type GridMediaPair = {
@@ -523,8 +531,7 @@ function getGridDisplayItems(image: GridMedia[] | GridMediaPair[] | undefined): 
 }
 
 function isVideoMedia(media: GridMedia): boolean {
-  if (media.type === 'video') return true;
-  return false;
+  return !isEmbedMedia(media) && media.type === 'video';
 }
 
 function collectGridLightboxMedia(content: any[]): GridMedia[] {
@@ -546,7 +553,9 @@ function collectGridLightboxMedia(content: any[]): GridMedia[] {
 }
 
 function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
-  if (mediaList.length === 0) return null;
+  // an embed's player is only ever framed where it shows
+  const files = mediaList.filter(media => !isEmbedMedia(media));
+  if (files.length === 0) return null;
 
   return (
     <div
@@ -560,7 +569,7 @@ function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
         pointerEvents: 'none',
       }}
     >
-      {mediaList.map((media) => (
+      {files.map((media) => (
         isVideoMedia(media) ? (
           <video
             key={media.assetId}
@@ -598,6 +607,22 @@ function GridMediaItem({
   style: React.CSSProperties;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
+  if (isEmbedMedia(media)) {
+    return (
+      <EmbedMediaFrame
+        media={media}
+        mode="background"
+        fit={style.objectFit === 'contain' ? 'contain' : 'cover'}
+        className={className}
+        style={{
+          ...style,
+          cursor: onMediaClick ? 'pointer' : 'default',
+        }}
+        onClick={onMediaClick}
+      />
+    );
+  }
+
   if (isVideoMedia(media)) {
     return (
       <video
@@ -721,6 +746,7 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
   const prevItemUrlRef = useRef<string | undefined>(undefined);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
+  const isCurrentEmbed = currentItem ? isEmbedMedia(currentItem) : false;
   const isHorizontalNavActive = slideOffset !== 0 || slideAnimating;
   const isSliding = slideDir !== null;
 
@@ -1075,8 +1101,12 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
   const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
   const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
 
+  // an embed's player reports no size of its own, so its stored aspect stands in
+  const naturalSize = isCurrentEmbed && currentItem
+    ? { width: getEmbedAspect(currentItem), height: 1 }
+    : mediaNaturalSize;
   const contentRect = finalRect
-    ? (isCover ? finalRect : getContainRect(finalRect, mediaNaturalSize))
+    ? (isCover ? finalRect : getContainRect(finalRect, naturalSize))
     : null;
 
   const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
@@ -1163,8 +1193,8 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     width: contentRect?.width,
     height: contentRect?.height,
     objectFit: objectFitStyle,
-    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
+    pointerEvents: (isCurrentVideo || isCurrentEmbed) && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
+    touchAction: (isCurrentVideo || isCurrentEmbed) && isOpen ? 'none' : undefined,
   };
 
   const slideWidth = viewportRect?.width ?? 0;
@@ -1187,10 +1217,12 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
     pointerEvents: 'none',
   };
 
+  // over an embed the overlays stop short of the player's own control bar
+  const navOverlayInset = isCurrentEmbed && contentRect ? Math.min(52, contentRect.height * 0.2) : 0;
   const navOverlayBaseStyle = contentRect ? {
     position: 'fixed' as const,
     top: contentRect.top,
-    height: contentRect.height,
+    height: contentRect.height - navOverlayInset,
     width: contentRect.width / 2,
     zIndex: 9999,
   } : null;
@@ -1291,7 +1323,14 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
 
       {finalRect && viewportRect && neighborItem && (
         <div style={neighborBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
-          {isVideoMedia(neighborItem) ? (
+          {isEmbedMedia(neighborItem) ? (
+            <img
+              key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
+              src={neighborItem.thumbnail}
+              alt={neighborItem.name}
+              style={neighborMediaStyle}
+            />
+          ) : isVideoMedia(neighborItem) ? (
             <video
               key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
               src={neighborItem.assetId}
@@ -1313,7 +1352,17 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
 
       {finalRect && viewportRect && currentItem && (
         <div style={currentBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
-          {isCurrentVideo ? (
+          {isCurrentEmbed ? (
+            <EmbedMediaFrame
+              key={`${index}-${currentItem.assetId}`}
+              media={currentItem}
+              mode="player"
+              fit={isCover ? 'cover' : 'contain'}
+              lazy={false}
+              interactive={isOpen && !isHorizontalNavActive}
+              style={currentMediaStyle}
+            />
+          ) : isCurrentVideo ? (
             <LightboxVideo
               key={`${index}-${currentItem.assetId}`}
               src={currentItem.assetId}
@@ -1806,7 +1855,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     {isFitSlider && (
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
                         {displayItems.map(({ displayMedia }) => (
-                          isVideoMedia(displayMedia) ? (
+                          isEmbedMedia(displayMedia) ? (
+                            <div key={`sizer-${displayMedia.assetId}`} style={{ aspectRatio: `${getEmbedAspect(displayMedia)}` }} />
+                          ) : isVideoMedia(displayMedia) ? (
                             <video key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} muted playsInline />
                           ) : (
                             <img key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} alt="" />

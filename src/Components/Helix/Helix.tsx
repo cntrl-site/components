@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import { EmbedMediaFrame, isEmbedMedia } from '../utils/index';
 
 const DEG_PER_SEC_PER_SPEED_UNIT = 10;
 const MAX_TOTAL_ITEMS = 400;
@@ -71,7 +72,10 @@ function getCSS(P: string): string {
 type HelixMedia = {
   assetId?: string;
   name?: string;
-  type?: 'image' | 'video';
+  type?: 'image' | 'video' | 'vimeo' | 'youtube';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 export type HelixContentItem = {
@@ -166,6 +170,7 @@ function getAspectHeightFactor(imageDisplay: ImageDisplay): number {
 }
 
 function isVideoMedia(media: HelixMedia): boolean {
+  if (isEmbedMedia(media)) return false;
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.assetId ?? '');
@@ -513,7 +518,16 @@ export function Helix({
                 objectPosition: 'center',
               }
             : mediaStyle;
-          const mediaNode = isVideoMedia(media) ? (
+          const mediaNode = isEmbedMedia(media) ? (
+            <EmbedMediaFrame
+              className={`${P}-media`}
+              // the frame positions itself inline, so the cover's absolute placement is given the same way
+              style={isCover ? { ...coverMediaStyle, position: 'absolute', inset: 0 } : coverMediaStyle}
+              media={media}
+              mode="background"
+              fit={isCover ? 'cover' : 'contain'}
+            />
+          ) : isVideoMedia(media) ? (
             <video
               className={`${P}-media`}
               style={coverMediaStyle}

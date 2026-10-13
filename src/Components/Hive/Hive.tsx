@@ -1,5 +1,5 @@
 import { CommonComponentProps } from '../props';
-import { scalingValue, useScopedStyles } from '../utils/index';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia, scalingValue, useScopedStyles } from '../utils/index';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -360,7 +360,10 @@ type HiveMedia = {
   assetId: string;
   name?: string;
   objectFit?: 'cover' | 'contain';
-  type?: 'image' | 'video';
+  type?: 'image' | 'video' | 'vimeo' | 'youtube';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 type HiveMediaPair = {
@@ -558,6 +561,11 @@ function preloadMediaDimensions(
   media: HiveMedia,
   onDimensions: (url: string, width: number, height: number) => void,
 ) {
+  if (isEmbedMedia(media)) {
+    onDimensions(media.assetId, getEmbedAspect(media), 1);
+    return;
+  }
+
   if (isVideoMedia(media)) {
     const video = document.createElement('video');
     const handleMetadata = () => {
@@ -603,7 +611,9 @@ function collectAllHiveMedia(content: HiveContentItem[]): HiveMedia[] {
 }
 
 function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
-  if (mediaList.length === 0) return null;
+  // an embed's player is only ever framed where it shows
+  const files = mediaList.filter(media => !isEmbedMedia(media));
+  if (files.length === 0) return null;
 
   return (
     <div
@@ -617,7 +627,7 @@ function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
         pointerEvents: 'none',
       }}
     >
-      {mediaList.map((media) => (
+      {files.map((media) => (
         isVideoMedia(media) ? (
           <video
             key={media.assetId}
@@ -822,6 +832,7 @@ function getDisplayItems(gallery: HiveMedia[] | HiveMediaPair[] | undefined): Di
 }
 
 function isVideoMedia(media: HiveMedia): boolean {
+  if (isEmbedMedia(media)) return false;
   if (media.type === 'video') return true;
   return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.assetId);
 }
@@ -839,6 +850,23 @@ function MediaItem({
   gridIndex?: number;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
+  if (isEmbedMedia(media)) {
+    return (
+      <EmbedMediaFrame
+        media={media}
+        mode="background"
+        fit={style.objectFit === 'contain' ? 'contain' : 'cover'}
+        className={className}
+        data-hive-grid-index={gridIndex}
+        style={{
+          ...style,
+          cursor: onMediaClick ? 'pointer' : 'default',
+        }}
+        onClick={onMediaClick}
+      />
+    );
+  }
+
   if (isVideoMedia(media)) {
     return (
       <video
@@ -931,6 +959,10 @@ function LightboxSideMedia({
   onTransitionEnd?: (e: React.TransitionEvent<HTMLElement>) => void;
   onMeasure?: (url: string, width: number, height: number) => void;
 }) {
+  if (isEmbedMedia(media)) {
+    return <img src={media.thumbnail} alt={media.name} style={style} onTransitionEnd={onTransitionEnd} />;
+  }
+
   if (isVideoMedia(media)) {
     return (
       <video
@@ -1043,6 +1075,7 @@ function Lightbox({
   const prevItemUrlRef = useRef<string | undefined>(undefined);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
+  const isCurrentEmbed = currentItem ? isEmbedMedia(currentItem) : false;
   const isHorizontalNavActive = navSwipeOffset !== 0 || navSwipeAnimating;
   const allowSwipeDismiss = !isEditMode && (!isEditor || Boolean(isPreviewMode));
   const allowNavigation = canNavigate && !isEditMode;
@@ -1807,10 +1840,10 @@ function Lightbox({
             : phase === 'opening' || isClosing
               ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
               : 'none',
-    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
+    pointerEvents: (isCurrentVideo || isCurrentEmbed) && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
+    touchAction: (isCurrentVideo || isCurrentEmbed) && isOpen ? 'none' : undefined,
     zIndex: 1,
-    overflow: isCurrentVideo ? 'hidden' : undefined,
+    overflow: isCurrentVideo || isCurrentEmbed ? 'hidden' : undefined,
   };
 
   const lightboxVideoStyle: React.CSSProperties = {
@@ -2056,7 +2089,18 @@ function Lightbox({
       )}
 
       {finalRect && currentItem && (
-        isCurrentVideo ? (
+        isCurrentEmbed ? (
+          <div key={`${index}-${currentItem.assetId}`} style={mediaStyle} onTransitionEnd={handleNavSwipeTransitionEnd}>
+            <EmbedMediaFrame
+              media={currentItem}
+              mode="player"
+              fit="contain"
+              lazy={false}
+              interactive={isOpen && !isHorizontalNavActive}
+              style={lightboxVideoStyle}
+            />
+          </div>
+        ) : isCurrentVideo ? (
           <LightboxVideo
             key={`${index}-${currentItem.assetId}`}
             src={currentItem.assetId}
