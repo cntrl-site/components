@@ -111,6 +111,7 @@ export type LayoutParams = {
   capLines: number;
   hyphenate?: boolean;
   charWidths?: (number[] | undefined)[];
+  hyphenPoints?: (number[] | undefined)[];
   hyphenWidth?: number;
   shapeMargin?: number;
   columns?: number;
@@ -162,45 +163,65 @@ function offsetRingsForMargin(
   });
 }
 
-const MIN_HYPHEN_PREFIX = 2;
-const MIN_HYPHEN_SUFFIX = 2;
+// Lines at least this share of a column's widest line may break a word that
+// is too wide for the column.
+const WIDE_LINE_RATIO = 0.75;
 
 type QueueItem = {
   token: Token;
   originalIndex: number;
   width: number;
   kind: 'whole' | 'fragment' | 'remainder';
+  // Chars of the original token already placed on earlier lines.
+  offset: number;
 };
 
-function tryHyphenate(
+type Split = {
+  chars: number;
+  fragmentText: string;
+  remainderText: string;
+  fragmentWidth: number;
+  remainderWidth: number;
+};
+
+// Splits the item at the last break that fits `budget`. With `points` (the
+// token's dictionary hyphenation points, as offsets into the original word)
+// only those are tried and a hyphen is added unless the break follows an
+// existing one. Without them it is the break-word fallback: any char, no
+// hyphen. A remainder can split again, so a word may run over several lines.
+function trySplit(
   item: QueueItem,
-  charWidths: (number[] | undefined)[],
+  cw: number[] | undefined,
+  points: number[] | undefined,
   budget: number,
   scale: number,
   hyphenWidth: number,
-): { fragmentText: string; remainderText: string; fragmentWidth: number; remainderWidth: number } | null {
-  if (item.kind !== 'whole') return null;
-  const cw = charWidths[item.originalIndex];
+): Split | null {
+  if (item.kind === 'fragment' || !cw) return null;
   const text = item.token.text;
-  if (!cw || text.length < MIN_HYPHEN_PREFIX + MIN_HYPHEN_SUFFIX) return null;
+  const consumed = item.offset > 0 ? cw[item.offset - 1] : 0;
+  const candidates = points
+    // Points are checked against the whole word; a remainder also keeps at
+    // least two of its own chars before a hyphen, so no lone "R-" lines.
+    ? points.map(point => point - item.offset).filter(k => k >= (item.offset > 0 ? 2 : 1) && k < text.length)
+    : Array.from({ length: text.length - 1 }, (_, index) => index + 1);
 
-  const maxK = Math.min(cw.length - MIN_HYPHEN_SUFFIX, text.length - MIN_HYPHEN_SUFFIX);
-  let bestK = -1;
-  for (let k = maxK; k >= MIN_HYPHEN_PREFIX; k -= 1) {
-    const w = cw[k - 1] * scale + hyphenWidth * scale;
-    if (w <= budget) {
-      bestK = k;
-      break;
-    }
+  for (let index = candidates.length - 1; index >= 0; index -= 1) {
+    const k = candidates[index];
+    if (item.offset + k > cw.length) continue;
+    const hyphen = Boolean(points) && text[k - 1] !== '-';
+    const prefixWidth = cw[item.offset + k - 1] - consumed;
+    const fragmentWidth = prefixWidth + (hyphen ? hyphenWidth : 0);
+    if (fragmentWidth * scale > budget) continue;
+    return {
+      chars: k,
+      fragmentText: hyphen ? `${text.slice(0, k)}-` : text.slice(0, k),
+      remainderText: text.slice(k),
+      fragmentWidth,
+      remainderWidth: Math.max(0, item.width - prefixWidth),
+    };
   }
-  if (bestK < MIN_HYPHEN_PREFIX) return null;
-
-  return {
-    fragmentText: `${text.slice(0, bestK)}-`,
-    remainderText: text.slice(bestK),
-    fragmentWidth: cw[bestK - 1] + hyphenWidth,
-    remainderWidth: Math.max(0, item.width - cw[bestK - 1]),
-  };
+  return null;
 }
 
 export function layoutText(params: LayoutParams): LayoutResult {
@@ -210,6 +231,7 @@ export function layoutText(params: LayoutParams): LayoutResult {
   } = params;
   const hyphenate = Boolean(params.hyphenate);
   const charWidths = params.charWidths ?? [];
+  const hyphenPoints = params.hyphenPoints ?? [];
   const hyphenWidth = params.hyphenWidth ?? 0;
   const lineHeight = params.lineHeight * scale;
   const spaceWidth = params.spaceWidth * scale;
@@ -221,6 +243,7 @@ export function layoutText(params: LayoutParams): LayoutResult {
     originalIndex,
     width: widths[originalIndex],
     kind: 'whole' as const,
+    offset: 0,
   }));
 
   if (!queue.length || width <= 0 || lineHeight <= 0) {
@@ -240,6 +263,12 @@ export function layoutText(params: LayoutParams): LayoutResult {
   let capTop = 0;
   let capFirstLine: number | null = null;
 
+  const bandSpans = (top: number, left: number, right: number): Span[] => (
+    spansForBand(marginRings, (top + slack) / height, (top + lineHeight - slack) / height, mode)
+      .map(span => ({ x0: Math.max(left, span.x0 * width), x1: Math.min(right, span.x1 * width) }))
+      .filter(span => span.x1 > span.x0)
+  );
+
   // Columns are vertical strips of the box: the shape is shared, each strip
   // takes the part of every band that falls inside it, and text fills the
   // strips left to right. Only the last strip may run past the box bottom.
@@ -247,6 +276,15 @@ export function layoutText(params: LayoutParams): LayoutResult {
     const columnLeft = column * (columnWidth + columnGap);
     const columnRight = columnLeft + columnWidth;
     const columnOverflows = allowOverflow && column === columnCount - 1;
+    // The widest line the shape leaves inside this column. A word too wide
+    // for any column breaks only on lines near that width, never in a sliver
+    // at the shape's edge.
+    let columnWidest = 0;
+    for (let bandTop = 0; bandTop + lineHeight <= height; bandTop += lineHeight) {
+      for (const span of bandSpans(bandTop, columnLeft, columnRight)) {
+        columnWidest = Math.max(columnWidest, span.x1 - span.x0);
+      }
+    }
     let previousPara = queue[index].token.para;
     let y = 0;
 
@@ -264,12 +302,7 @@ export function layoutText(params: LayoutParams): LayoutResult {
 
       let spans: Span[] = beyondShape
         ? [{ x0: columnLeft, x1: columnRight }]
-        : spansForBand(marginRings, (y + slack) / height, (y + lineHeight - slack) / height, mode)
-          .map(span => ({
-            x0: Math.max(columnLeft, span.x0 * width),
-            x1: Math.min(columnRight, span.x1 * width),
-          }))
-          .filter(span => span.x1 > span.x0);
+        : bandSpans(y, columnLeft, columnRight);
 
       if (capInset > 0 && capLines > 0 && column === 0 && !beyondShape && spans.length) {
         if (capFirstLine === null) {
@@ -303,33 +336,45 @@ export function layoutText(params: LayoutParams): LayoutResult {
             continue;
           }
 
-          const unbreakable = isFirst && available >= widest - 0.5 && tokenWidth > columnWidth - 0.5;
-          if (unbreakable) {
+          const budget = available - used - (isFirst ? 0 : spaceWidth);
+          // Wider than a whole column: no line anywhere can hold it, so it must
+          // break. Narrower words just move on to a wider line or column.
+          const tooWide = isFirst && tokenWidth > columnWidth - 0.5;
+          const wideLine = available >= widest - 0.5 && available >= columnWidest * WIDE_LINE_RATIO;
+          const cw = charWidths[item.originalIndex];
+          const points = hyphenPoints[item.originalIndex];
+          // Dictionary break first; a word too wide for any column then falls
+          // back to breaking at any char, so it never spills into the next one.
+          const split = (hyphenate && points ? trySplit(item, cw, points, budget, scale, hyphenWidth) : null)
+            ?? (tooWide && wideLine ? trySplit(item, cw, undefined, budget, scale, hyphenWidth) : null);
+          if (split) {
+            const fragment: QueueItem = {
+              token: { ...item.token, text: split.fragmentText },
+              originalIndex: item.originalIndex,
+              width: split.fragmentWidth,
+              kind: 'fragment',
+              offset: item.offset,
+            };
+            const remainder: QueueItem = {
+              token: { ...item.token, text: split.remainderText },
+              originalIndex: item.originalIndex,
+              width: split.remainderWidth,
+              kind: 'remainder',
+              offset: item.offset + split.chars,
+            };
+            queue.splice(index, 1, fragment, remainder);
+            used += (isFirst ? 0 : spaceWidth) + split.fragmentWidth * scale;
+            index += 1;
+            break;
+          }
+
+          // Not even one char fits. With a single column the box clips it, so
+          // place it whole rather than drop the rest of the text; with several
+          // it would run over the next column, so skip the line instead.
+          if (tooWide && columnCount === 1 && available >= columnWidest - 0.5) {
             used += advance;
             index += 1;
             continue;
-          }
-
-          if (hyphenate) {
-            const budget = available - used - (isFirst ? 0 : spaceWidth);
-            const split = tryHyphenate(item, charWidths, budget, scale, hyphenWidth);
-            if (split) {
-              const fragment: QueueItem = {
-                token: { ...item.token, text: split.fragmentText },
-                originalIndex: item.originalIndex,
-                width: split.fragmentWidth,
-                kind: 'fragment',
-              };
-              const remainder: QueueItem = {
-                token: { ...item.token, text: split.remainderText },
-                originalIndex: item.originalIndex,
-                width: split.remainderWidth,
-                kind: 'remainder',
-              };
-              queue.splice(index, 1, fragment, remainder);
-              used += (isFirst ? 0 : spaceWidth) + split.fragmentWidth * scale;
-              index += 1;
-            }
           }
           break;
         }

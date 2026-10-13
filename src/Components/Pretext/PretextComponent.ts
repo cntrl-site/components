@@ -74,7 +74,7 @@ const schema: ComponentSchemaV1 = {
         type: 'string',
         scope: 'common',
         title: 'Hyphenate',
-        tooltip: 'Breaks long words with a hyphen when they don’t fit on a line.',
+        tooltip: 'Breaks long words between syllables, using the detected language of the text.',
         display: { type: 'toggle-cycle', enum: ['off', 'on'] },
       },
       padding: {
@@ -91,8 +91,9 @@ const schema: ComponentSchemaV1 = {
         title: 'Columns',
         tooltip: 'Splits the text area into columns. Text fills them left to right.',
         min: 1,
-        max: 5,
-        display: { type: 'count-number' },
+        max: 24,
+        step: 1,
+        display: { type: 'common-numeric-input' },
       },
       columnGutter: {
         type: 'number',

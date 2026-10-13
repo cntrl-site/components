@@ -7,6 +7,7 @@ import {
   imageOffsetFromFocal,
   preserveImageTransformAcrossBoundsChange,
 } from './imageUtils';
+import { hyphenationPoints, useHyphenation } from './hyphenation';
 import { PretextImageEditor } from './PretextImageEditor';
 import { PretextPathEditor } from './PretextPathEditor';
 import {
@@ -164,6 +165,12 @@ export function PretextColumn({
   const blocks = useMemo(() => (Array.isArray(item?.text) ? item.text : []), [item]);
   const tokens = useMemo(() => tokenize(blocks), [blocks]);
   const plainParagraphs = useMemo(() => getPlainText(blocks), [blocks]);
+  const plainText = useMemo(() => plainParagraphs.join('\n'), [plainParagraphs]);
+  const { lang, hyphenateSync } = useHyphenation(hyphenate, plainText);
+  const hyphenPoints = useMemo(
+    () => (hyphenate ? tokens.map(token => hyphenationPoints(token.text, hyphenateSync)) : []),
+    [hyphenate, tokens, hyphenateSync],
+  );
   const dropCapChar = dropCapLines > 0 && dropCapSize > 1 ? (tokens[0]?.text?.charAt(0) ?? '') : '';
 
   const draftContours = pathEditor?.contours ?? null;
@@ -404,21 +411,22 @@ export function PretextColumn({
     const dashWidth = dashSpan.getBoundingClientRect().width;
     const capWidth = dropCapChar ? capSpan.getBoundingClientRect().width : 0;
 
-    const charWidths: (number[] | undefined)[] = hyphenate
-      ? spans.map((span) => {
-        const textNode = span.firstChild;
-        if (!(textNode instanceof Text) || textNode.data.length < 4) return undefined;
-        const range = document.createRange();
-        const spanLeft = span.getBoundingClientRect().left;
-        const cumulative: number[] = [];
-        for (let count = 1; count <= textNode.data.length; count += 1) {
-          range.setStart(textNode, 0);
-          range.setEnd(textNode, count);
-          cumulative.push(range.getBoundingClientRect().right - spanLeft);
-        }
-        return cumulative;
-      })
-      : [];
+    const columnWidth = (box.width - gutterPx * (columns - 1)) / columns;
+    const charWidths: (number[] | undefined)[] = spans.map((span, index) => {
+      const textNode = span.firstChild;
+      if (!(textNode instanceof Text) || textNode.data.length < 2) return undefined;
+      const tooWide = widths[index] > columnWidth - 0.5;
+      if (!tooWide && !hyphenPoints[index]?.length) return undefined;
+      const range = document.createRange();
+      const spanLeft = span.getBoundingClientRect().left;
+      const cumulative: number[] = [];
+      for (let count = 1; count <= textNode.data.length; count += 1) {
+        range.setStart(textNode, 0);
+        range.setEnd(textNode, count);
+        cumulative.push(range.getBoundingClientRect().right - spanLeft);
+      }
+      return cumulative;
+    });
 
     element.replaceChildren();
     setMetrics({
@@ -431,7 +439,7 @@ export function PretextColumn({
       dropCapFontSize,
       dropCapTopAdjust,
     });
-  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width, hyphenate]);
+  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width, hyphenate, hyphenPoints, columns, gutterPx]);
 
   const capInset = metrics && dropCapChar ? metrics.capWidth + metrics.lineHeight * DROP_CAP_GAP : 0;
   const capLineSpan = Math.max(dropCapLines, Math.ceil(dropCapSize));
@@ -455,6 +463,7 @@ export function PretextColumn({
       capLines: dropCapChar ? capLineSpan : 0,
       hyphenate,
       charWidths: metrics.charWidths,
+      hyphenPoints,
       hyphenWidth: metrics.dashWidth,
       shapeMargin: paddingPx,
       columns,
@@ -470,7 +479,7 @@ export function PretextColumn({
       else high = middle;
     }
     return low;
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan, hyphenate, paddingPx, columns, gutterPx]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan, hyphenate, hyphenPoints, paddingPx, columns, gutterPx]);
 
   useEffect(() => {
     onFitScale(naturalScale);
@@ -498,12 +507,13 @@ export function PretextColumn({
       capLines: dropCapChar ? capLineSpan : 0,
       hyphenate,
       charWidths: metrics.charWidths,
+      hyphenPoints,
       hyphenWidth: metrics.dashWidth,
       shapeMargin: paddingPx,
       columns,
       columnGap: gutterPx,
     });
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan, hyphenate, paddingPx, columns, gutterPx]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan, hyphenate, hyphenPoints, paddingPx, columns, gutterPx]);
 
   const isOverflowing = showOverflowIndicator && tokens.length > 0 && result.placed < tokens.length;
 
@@ -693,7 +703,7 @@ export function PretextColumn({
   }, [placementBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
 
   return (
-    <div className={`${P}-column`} style={{ padding, columnGap: gutter }} ref={setColumnEl}>
+    <div className={`${P}-column`} style={{ padding, columnGap: gutter }} lang={lang} ref={setColumnEl}>
       {shapeFillPath ? (
         <svg
           className={`${P}-shape-fill`}
