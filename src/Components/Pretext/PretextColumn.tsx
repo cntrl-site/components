@@ -7,6 +7,7 @@ import {
   imageOffsetFromFocal,
   preserveImageTransformAcrossBoundsChange,
 } from './imageUtils';
+import { hyphenationPoints, useHyphenation } from './hyphenation';
 import { PretextImageEditor } from './PretextImageEditor';
 import { PretextPathEditor } from './PretextPathEditor';
 import {
@@ -111,6 +112,8 @@ export function PretextColumn({
   scale,
   onFitScale,
   padding,
+  columns,
+  gutter,
   hyphenate,
   showOverflowIndicator,
   dropCapLines,
@@ -122,6 +125,7 @@ export function PretextColumn({
   imageFocalY,
   imageScale,
   imageCustomPath,
+  imagePathEdited,
   pathDragActive,
   pathCarryImage,
   onCarryImageConsumed,
@@ -133,6 +137,7 @@ export function PretextColumn({
   const measureRef = useRef<HTMLDivElement | null>(null);
   const [box, setBox] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [paddingPx, setPaddingPx] = useState(0);
+  const [gutterPx, setGutterPx] = useState(0);
   const [metrics, setMetrics] = useState<ColumnMetrics | null>(null);
   const [fontsReady, setFontsReady] = useState(0);
   const [editStage, setEditStage] = useState<EditStage>('none');
@@ -160,6 +165,12 @@ export function PretextColumn({
   const blocks = useMemo(() => (Array.isArray(item?.text) ? item.text : []), [item]);
   const tokens = useMemo(() => tokenize(blocks), [blocks]);
   const plainParagraphs = useMemo(() => getPlainText(blocks), [blocks]);
+  const plainText = useMemo(() => plainParagraphs.join('\n'), [plainParagraphs]);
+  const { lang, hyphenateSync } = useHyphenation(hyphenate, plainText);
+  const hyphenPoints = useMemo(
+    () => (hyphenate ? tokens.map(token => hyphenationPoints(token.text, hyphenateSync)) : []),
+    [hyphenate, tokens, hyphenateSync],
+  );
   const dropCapChar = dropCapLines > 0 && dropCapSize > 1 ? (tokens[0]?.text?.charAt(0) ?? '') : '';
 
   const draftContours = pathEditor?.contours ?? null;
@@ -268,8 +279,13 @@ export function PretextColumn({
     const element = columnEl;
     if (!element) return;
     const rect = element.getBoundingClientRect();
-    const pad = parseFloat(window.getComputedStyle(element).paddingTop) || 0;
+    const computed = window.getComputedStyle(element);
+    const pad = parseFloat(computed.paddingTop) || 0;
     setPaddingPx(previous => (Math.abs(previous - pad) < 0.5 ? previous : pad));
+    // The gutter rides on column-gap only to resolve the scaled CSS value to px;
+    // the column is not a flex/grid/multicol box, so it has no visual effect.
+    const gap = parseFloat(computed.columnGap) || 0;
+    setGutterPx(previous => (Math.abs(previous - gap) < 0.5 ? previous : gap));
     const next = { width: rect.width, height: rect.height };
     setBox(previous => (
       Math.abs(previous.width - next.width) < 0.5 && Math.abs(previous.height - next.height) < 0.5
@@ -289,7 +305,7 @@ export function PretextColumn({
 
   useIsomorphicLayoutEffect(() => {
     measureBox();
-  }, [padding, measureBox]);
+  }, [padding, gutter, measureBox]);
 
   useEffect(() => {
     const fonts = typeof document !== 'undefined' ? (document as any).fonts : undefined;
@@ -395,21 +411,22 @@ export function PretextColumn({
     const dashWidth = dashSpan.getBoundingClientRect().width;
     const capWidth = dropCapChar ? capSpan.getBoundingClientRect().width : 0;
 
-    const charWidths: (number[] | undefined)[] = hyphenate
-      ? spans.map((span) => {
-        const textNode = span.firstChild;
-        if (!(textNode instanceof Text) || textNode.data.length < 4) return undefined;
-        const range = document.createRange();
-        const spanLeft = span.getBoundingClientRect().left;
-        const cumulative: number[] = [];
-        for (let count = 1; count <= textNode.data.length; count += 1) {
-          range.setStart(textNode, 0);
-          range.setEnd(textNode, count);
-          cumulative.push(range.getBoundingClientRect().right - spanLeft);
-        }
-        return cumulative;
-      })
-      : [];
+    const columnWidth = (box.width - gutterPx * (columns - 1)) / columns;
+    const charWidths: (number[] | undefined)[] = spans.map((span, index) => {
+      const textNode = span.firstChild;
+      if (!(textNode instanceof Text) || textNode.data.length < 2) return undefined;
+      const tooWide = widths[index] > columnWidth - 0.5;
+      if (!tooWide && !hyphenPoints[index]?.length) return undefined;
+      const range = document.createRange();
+      const spanLeft = span.getBoundingClientRect().left;
+      const cumulative: number[] = [];
+      for (let count = 1; count <= textNode.data.length; count += 1) {
+        range.setStart(textNode, 0);
+        range.setEnd(textNode, count);
+        cumulative.push(range.getBoundingClientRect().right - spanLeft);
+      }
+      return cumulative;
+    });
 
     element.replaceChildren();
     setMetrics({
@@ -422,7 +439,7 @@ export function PretextColumn({
       dropCapFontSize,
       dropCapTopAdjust,
     });
-  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width, hyphenate]);
+  }, [tokens, typography, dropCapChar, dropCapLines, dropCapSize, fontsReady, box.width, hyphenate, hyphenPoints, columns, gutterPx]);
 
   const capInset = metrics && dropCapChar ? metrics.capWidth + metrics.lineHeight * DROP_CAP_GAP : 0;
   const capLineSpan = Math.max(dropCapLines, Math.ceil(dropCapSize));
@@ -446,8 +463,11 @@ export function PretextColumn({
       capLines: dropCapChar ? capLineSpan : 0,
       hyphenate,
       charWidths: metrics.charWidths,
+      hyphenPoints,
       hyphenWidth: metrics.dashWidth,
       shapeMargin: paddingPx,
+      columns,
+      columnGap: gutterPx,
     });
     if (run(1).placed >= tokens.length) return 1;
     if (run(MIN_FIT_SCALE).placed < tokens.length) return MIN_FIT_SCALE;
@@ -459,7 +479,7 @@ export function PretextColumn({
       else high = middle;
     }
     return low;
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan, hyphenate, paddingPx]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, fitEnabled, capInset, dropCapChar, capLineSpan, hyphenate, hyphenPoints, paddingPx, columns, gutterPx]);
 
   useEffect(() => {
     onFitScale(naturalScale);
@@ -487,10 +507,13 @@ export function PretextColumn({
       capLines: dropCapChar ? capLineSpan : 0,
       hyphenate,
       charWidths: metrics.charWidths,
+      hyphenPoints,
       hyphenWidth: metrics.dashWidth,
       shapeMargin: paddingPx,
+      columns,
+      columnGap: gutterPx,
     });
-  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan, hyphenate, paddingPx]);
+  }, [metrics, tokens, box.width, box.height, rings, mode, align, appliedScale, allowOverflow, capInset, dropCapChar, capLineSpan, hyphenate, hyphenPoints, paddingPx, columns, gutterPx]);
 
   const isOverflowing = showOverflowIndicator && tokens.length > 0 && result.placed < tokens.length;
 
@@ -546,6 +569,7 @@ export function PretextColumn({
     const anchor = imagePathAnchorRef.current;
     if (
       pathCarryImage
+      || !imagePathEdited
       || !imageEditor
       || !naturalImageSize
       || !committedShapeImageBounds
@@ -568,7 +592,14 @@ export function PretextColumn({
   })();
 
   useIsomorphicLayoutEffect(() => {
-    if (pathDragActive || !imageEditor || !naturalImageSize || !committedShapeImageBounds) return;
+    // The anchor is only valid while the image editor is live. Keeping it across
+    // a deselect lets a later layout switch read as a path edit and rescale the
+    // image by the old/new box ratio on the next select.
+    if (!imageEditor) {
+      imagePathAnchorRef.current = null;
+      return;
+    }
+    if (pathDragActive || !naturalImageSize || !committedShapeImageBounds) return;
     const anchor = imagePathAnchorRef.current;
     const pathChanged = Boolean(anchor && imageCustomPath !== anchor.customPath);
     if (pathChanged && pathPreservedTransform) {
@@ -672,7 +703,7 @@ export function PretextColumn({
   }, [placementBounds, naturalImageSize, activeImageFocalX, activeImageFocalY, activeImageScale]);
 
   return (
-    <div className={`${P}-column`} style={{ padding }} ref={setColumnEl}>
+    <div className={`${P}-column`} style={{ padding, columnGap: gutter }} lang={lang} ref={setColumnEl}>
       {shapeFillPath ? (
         <svg
           className={`${P}-shape-fill`}
