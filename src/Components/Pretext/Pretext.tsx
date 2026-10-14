@@ -67,6 +67,8 @@ export type PretextSettings = {
   fitText?: 'on' | 'off';
   hyphenate?: 'on' | 'off';
   padding?: number;
+  columns?: number;
+  columnGutter?: number;
   dropCapLines?: number;
   dropCapSize?: number;
   image?: string | null;
@@ -203,6 +205,8 @@ export type ColumnProps = {
   scale: number;
   onFitScale: (scale: number) => void;
   padding: string;
+  columns: number;
+  gutter: string;
   hyphenate: boolean;
   showOverflowIndicator: boolean;
   dropCapLines: number;
@@ -214,6 +218,7 @@ export type ColumnProps = {
   imageFocalY: number;
   imageScale: number;
   imageCustomPath: string;
+  imagePathEdited: boolean;
   pathDragActive: boolean;
   pathCarryImage: boolean;
   onCarryImageConsumed?: () => void;
@@ -550,6 +555,8 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const fitEnabled = (settings?.fitText ?? 'off') === 'on';
   const hyphenate = (settings?.hyphenate ?? 'off') === 'on';
   const paddingCss = scalingValue(settings?.padding ?? 0, editor);
+  const columns = Math.max(1, Math.round(settings?.columns ?? 1));
+  const gutterCss = scalingValue(settings?.columnGutter ?? 0, editor);
   const dropCapSize = settings?.dropCapSize ?? DROP_CAP_SIZE_DEFAULT;
   const dropCapLines = Math.max(1, Math.round(settings?.dropCapLines ?? dropCapSize));
   const showGuides = editor && selected && !isPreviewMode;
@@ -625,10 +632,11 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const onCarryImageConsumed = useCallback(() => setPathCarryImage(false), []);
 
   const liveShape = settingsRef.current.shape ?? shape;
-  const imageCustomPath = useMemo(() => {
-    if (!draft || draft.serialized === customPath) return customPath;
-    return draft.serialized;
-  }, [draft, customPath]);
+  // A draft only stands in for the path it was made from. Once customPath moves
+  // on for another reason (layout switch, undo), the draft is stale and the
+  // image must not treat that change as a path edit.
+  const imagePathEdited = Boolean(draft && (draft.base === customPath || draft.serialized === customPath));
+  const imageCustomPath = imagePathEdited && draft ? draft.serialized : customPath;
 
   useEffect(() => {
     if (!pathEditing) {
@@ -804,6 +812,8 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           scale={sharedScale}
           onFitScale={handleFitScale}
           padding={paddingCss}
+          columns={columns}
+          gutter={gutterCss}
           hyphenate={hyphenate}
           showOverflowIndicator={showOverflowIndicator}
           dropCapLines={dropCapLines}
@@ -815,6 +825,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
           imageFocalY={liveImageTransform.focalY}
           imageScale={liveImageTransform.scale}
           imageCustomPath={imageCustomPath}
+          imagePathEdited={imagePathEdited}
           pathDragActive={pathDragActive}
           pathCarryImage={pathCarryImage}
           onCarryImageConsumed={onCarryImageConsumed}
