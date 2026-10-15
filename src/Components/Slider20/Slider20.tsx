@@ -351,7 +351,7 @@ function getCSS(P: string, isEditor?: boolean): string {
   border: none;
   background-color: transparent;
   top: 50%;
-  z-index: 1;
+  z-index: 3;
   padding: 0;
   ${sizeCss('width', 30, isEditor)}
   ${sizeCss('height', 30, isEditor)}
@@ -417,7 +417,7 @@ function getCSS(P: string, isEditor?: boolean): string {
 }
 .${P}-pagination {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   border-radius: 50%;
 }
 .${P}-pagination-inner {
@@ -503,6 +503,7 @@ function getCSS(P: string, isEditor?: boolean): string {
   width: 100%;
   height: 100%;
   cursor: pointer;
+  z-index: 2;
 }
 .${P}-contain {
   object-fit: contain;
@@ -975,6 +976,12 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
               );
             })}
           </div>
+          {isClickTrigger && (
+            <div
+              className={`${P}-click-overlay`}
+              onClick={() => goBy(1)}
+            />
+          )}
         </div>
         {showControls && (
           <>
@@ -1054,12 +1061,6 @@ export function Slider20({ settings, content, isEditor, isPreviewMode, isEditMod
               </button>
             </div>
           </>
-        )}
-        {isClickTrigger && (
-          <div
-            className={`${P}-click-overlay`}
-            onClick={() => goBy(1)}
-          />
         )}
         {showClassicNav && (
           <div

@@ -2,6 +2,8 @@ import { Grid } from './Grid';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import formSourceRaw from './Grid.tsx?raw';
 
+const defaultCloseIconUrl = '01M3SBP3P8CMVMM1ZZ0QVD2PPF';
+
 const textStyleProperties = {
   fontSettings: {
     type: 'object' as const,
@@ -42,6 +44,8 @@ const paletteBookmarkItems = [
   'titleColor',
   'subtitleColor',
   'lightboxCounterColor',
+  'closeIconColor',
+  'closeIconHoverColor',
 ] as const;
 
 const schema: ComponentSchemaV1 = {
@@ -402,6 +406,46 @@ const schema: ComponentSchemaV1 = {
         title: 'Display',
         display: { type: 'toggle-cycle', enum: ['fit', 'cover'] },
       },
+      closeIcon: {
+        type: ['string', 'null'] as const,
+        scope: 'common',
+        title: '',
+        display: { type: 'settings-image-input' },
+      },
+      closeIconMaxWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Max Width',
+        display: { type: 'full-width-input' },
+        min: 0,
+        max: 1,
+      },
+      closeIconColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Default',
+        display: { type: 'settings-color-picker' },
+      },
+      closeIconHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Hover',
+        display: { type: 'settings-color-picker' },
+      },
+      contentMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Content margin top',
+        min: 0,
+        display: { type: 'range-control' },
+      },
+      iconMarginRight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Icon margin right',
+        min: 0,
+        display: { type: 'range-control' },
+      },
       slider: {
         type: 'boolean',
         scope: 'common',
@@ -591,6 +635,9 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       lightbox: 'on',
+      closeIcon: defaultCloseIconUrl,
+      closeIconColor: '#FFFFFF',
+      closeIconHoverColor: '#999999',
       imageDisplay: {
         display: 'fit',
         ratioValue: '2:3',
@@ -670,6 +717,9 @@ const schema: ComponentSchemaV1 = {
         subtitleLineHeight: 0.064,
         lightboxCounterFontSize: 0.0373,
         lightboxCounterLineHeight: 0.0373,
+        contentMarginTop: 0.0810,
+        closeIconMaxWidth: 0.0810,
+        iconMarginRight: 0.05405,
       },
       t: {
         type: 'b',
@@ -697,6 +747,9 @@ const schema: ComponentSchemaV1 = {
         subtitleLineHeight: 0.02083,
         lightboxCounterFontSize: 0.01,
         lightboxCounterLineHeight: 0.01,
+        contentMarginTop: 0.026,
+        closeIconMaxWidth: 0.03906,
+        iconMarginRight: 0.026,
       },
       d: {
         type: 'b',
@@ -724,6 +777,9 @@ const schema: ComponentSchemaV1 = {
         subtitleLineHeight: 0.01,
         lightboxCounterFontSize: 0.01,
         lightboxCounterLineHeight: 0.01,
+        contentMarginTop: 0.01,
+        closeIconMaxWidth: 0.0125,
+        iconMarginRight: 0.01,
       }
     },
     displayRules: [
@@ -734,6 +790,22 @@ const schema: ComponentSchemaV1 = {
       {
         if: { name: 'lightbox', value: 'off' },
         then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIcon.display.visible', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIconMaxWidth.display.visible', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIconColor.display.visible', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIconHoverColor.display.visible', value: false },
       },
       {
         if: { name: 'imageDisplay.display', value: 'cover' },
@@ -755,6 +827,9 @@ const schema: ComponentSchemaV1 = {
       'imageDisplay',
       'imageCorners',
       'lightboxImageDisplay',
+      'contentMarginTop',
+      'closeIconMaxWidth',
+      'iconMarginRight',
       'slider',
       'sliderTiming',
       'direction',
@@ -802,6 +877,7 @@ const schema: ComponentSchemaV1 = {
           title: 'Lightbox',
           items: ['lightbox', 'lightboxImageDisplay']
         },
+        { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
         {
           type: 'row',
           title: 'Slider',
@@ -839,9 +915,9 @@ const schema: ComponentSchemaV1 = {
   ],
   paletteBookmark: {
     items: [...paletteBookmarkItems],
-    panelIds: ['general', 'typeStyle'],
+    panelIds: ['general', 'imageSettings', 'typeStyle'],
     stateItems: {
-      default: ['titleColor', 'subtitleColor', 'lightboxCounterColor'],
+      default: ['titleColor', 'subtitleColor', 'lightboxCounterColor', 'closeIconColor', 'closeIconHoverColor'],
     },
   },
 };
@@ -865,7 +941,7 @@ export const GridComponent = {
   },
   assetsPaths: {
     content: [{ path: 'gallery.media.assetId', placeholderEnabled: true }],
-    parameters: [],
+    parameters: [{ path: 'closeIcon' }],
   },
   fontSettingsPaths: {
     content: [],

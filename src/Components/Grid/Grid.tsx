@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
+import { SvgImage } from '../helpers/SvgImage/SvgImage';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -398,6 +399,32 @@ function getCSS(P: string): string {
   z-index: 2;
   width: 100%;
 }
+.${P}-close-icon {
+  position: relative;
+  flex-shrink: 0;
+  pointer-events: auto;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  padding: 0;
+}
+.${P}-close-icon-inner {
+  all: unset;
+  position: relative;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+.${P}-close-icon-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 `;
 }
 
@@ -448,11 +475,19 @@ type LightboxProps = {
   index: number;
   imageDisplay: 'fit' | 'cover';
   isEditor?: boolean;
+  isPreviewMode?: boolean;
+  isEditMode?: boolean;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
   counterClassName: string;
   counterStyle: React.CSSProperties;
+  closeIcon?: string | null;
+  closeIconMaxWidth?: number;
+  closeIconColor?: string;
+  closeIconHoverColor?: string;
+  iconMarginRight?: number;
+  contentMarginTop?: number;
 };
 
 const LIGHTBOX_ANIM_MS = 500;
@@ -687,7 +722,153 @@ function LightboxVideo({
   );
 }
 
-function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, onPrev, onNext, counterClassName, counterStyle }: LightboxProps) {
+const DEFAULT_CLOSE_ICON_URL = 'https://cdn.cntrl.site/component-assets/defaultCloseIcon.svg';
+const CLOSE_ICON_HANDLE_MIN = 0.004;
+
+type LightboxCloseIconProps = {
+  prefix: string;
+  closeIcon?: string | null;
+  closeIconMaxWidth?: number;
+  closeIconColor?: string;
+  closeIconHoverColor?: string;
+  iconMarginRight?: number;
+  contentMarginTop?: number;
+  isEditor?: boolean;
+  isPreviewMode?: boolean;
+  isEditMode?: boolean;
+  visible: boolean;
+  onClose: () => void;
+};
+
+function LightboxCloseIcon({
+  prefix: P,
+  closeIcon = DEFAULT_CLOSE_ICON_URL,
+  closeIconMaxWidth = 0.0125,
+  closeIconColor = '#FFFFFF',
+  closeIconHoverColor = '#999999',
+  iconMarginRight = 0.01,
+  contentMarginTop = 0.01,
+  isEditor,
+  isPreviewMode,
+  isEditMode,
+  visible,
+  onClose,
+}: LightboxCloseIconProps) {
+  if (!closeIcon) return null;
+
+  const scaledSize = scalingValue(closeIconMaxWidth, isEditor);
+  const scaledMarginRight = scalingValue(iconMarginRight, isEditor);
+  const scaledMarginTop = scalingValue(contentMarginTop, isEditor);
+  const handleHeight = scalingValue(Math.max(contentMarginTop, CLOSE_ICON_HANDLE_MIN), isEditor);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10000,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        pointerEvents: 'none',
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 500ms cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: scaledMarginTop,
+          flexShrink: 0,
+        }}
+      >
+        {isEditMode && (
+          <div
+            data-controls="contentMarginTop"
+            data-controls-axis="y"
+            data-controls-min="0"
+            className={`${P}-control`}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: handleHeight,
+              pointerEvents: visible ? 'auto' : 'none',
+            }}
+          />
+        )}
+      </div>
+      <div
+        className={`${P}-close-icon`}
+        style={{
+          width: scaledSize,
+          height: scaledSize,
+          marginRight: scaledMarginRight,
+          pointerEvents: visible ? 'auto' : 'none',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          className={`${P}-close-icon-inner`}
+          aria-label="Close"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+        >
+          <SvgImage
+            url={closeIcon}
+            fill={closeIconColor}
+            hoverFill={isEditor && !isPreviewMode ? closeIconColor : closeIconHoverColor}
+            className={`${P}-close-icon-img`}
+          />
+        </button>
+        {isEditMode && (
+          <div
+            data-controls="iconMarginRight"
+            data-controls-axis="x"
+            data-controls-reverse=""
+            className={`${P}-control`}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: '100%',
+              width: scaledMarginRight,
+              height: '100%',
+              pointerEvents: visible ? 'auto' : 'none',
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Lightbox({
+  prefix: P,
+  items,
+  index,
+  imageDisplay,
+  isEditor,
+  isPreviewMode,
+  isEditMode,
+  onClose,
+  onPrev,
+  onNext,
+  counterClassName,
+  counterStyle,
+  closeIcon,
+  closeIconMaxWidth,
+  closeIconColor,
+  closeIconHoverColor,
+  iconMarginRight,
+  contentMarginTop,
+}: LightboxProps) {
   const isCover = imageDisplay === 'cover';
   const containerRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
@@ -1372,6 +1553,20 @@ function Lightbox({ prefix: P, items, index, imageDisplay, isEditor, onClose, on
           />
         </>
       )}
+      <LightboxCloseIcon
+        prefix={P}
+        closeIcon={closeIcon}
+        closeIconMaxWidth={closeIconMaxWidth}
+        closeIconColor={closeIconColor}
+        closeIconHoverColor={closeIconHoverColor}
+        iconMarginRight={iconMarginRight}
+        contentMarginTop={contentMarginTop}
+        isEditor={isEditor}
+        isPreviewMode={isPreviewMode}
+        isEditMode={isEditMode}
+        visible={isOpen}
+        onClose={handleClose}
+      />
     </div>
   );
 }
@@ -1427,6 +1622,12 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     lightboxCounterLetterSpacing,
     lightboxCounterWordSpacing,
     lightboxCounterTextAppearance,
+    closeIcon,
+    closeIconMaxWidth,
+    closeIconColor,
+    closeIconHoverColor,
+    iconMarginRight,
+    contentMarginTop,
     showText = 'always',
     alignEntries = 'off',
     align = 'top',
@@ -1968,6 +2169,14 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               index={lightboxIndex}
               imageDisplay={resolveLightboxImageDisplay(lightboxImageDisplay)}
               isEditor={isEditor}
+              isPreviewMode={isPreviewMode}
+              isEditMode={isEditMode}
+              closeIcon={closeIcon}
+              closeIconMaxWidth={closeIconMaxWidth}
+              closeIconColor={closeIconColor}
+              closeIconHoverColor={closeIconHoverColor}
+              iconMarginRight={iconMarginRight}
+              contentMarginTop={contentMarginTop}
               onClose={() => setLightboxOpen(false)}
               onPrev={() => setLightboxIndex((prev) => (prev - 1 + lightboxItems.length) % lightboxItems.length)}
               onNext={() => setLightboxIndex((prev) => (prev + 1) % lightboxItems.length)}
@@ -2037,6 +2246,12 @@ type GridSettings = {
   lightboxCounterLetterSpacing?: number;
   lightboxCounterWordSpacing?: number;
   lightboxCounterTextAppearance?: TextStyles['textAppearance'];
+  closeIcon?: string | null;
+  closeIconMaxWidth?: number;
+  closeIconColor?: string;
+  closeIconHoverColor?: string;
+  iconMarginRight?: number;
+  contentMarginTop?: number;
 };
 
 type ColorKeys =

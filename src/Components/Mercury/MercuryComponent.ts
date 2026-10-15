@@ -2,6 +2,8 @@ import { Mercury } from './Mercury';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 import mercurySourceRaw from './Mercury.tsx?raw';
 
+const defaultCloseIconUrl = '01M3SBP3P8CMVMM1ZZ0QVD2PPF';
+
 function createRangeControlLayoutProperty(title: string) {
   return {
     type: 'number' as const,
@@ -471,6 +473,46 @@ const schema: ComponentSchemaV1 = {
         title: 'Display',
         display: { type: 'toggle-cycle', enum: ['fit', 'cover'] },
       },
+      closeIcon: {
+        type: ['string', 'null'] as const,
+        scope: 'common',
+        title: '',
+        display: { type: 'settings-image-input' },
+      },
+      closeIconMaxWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Max Width',
+        display: { type: 'full-width-input' },
+        min: 0,
+        max: 1,
+      },
+      closeIconColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Default',
+        display: { type: 'settings-color-picker' },
+      },
+      closeIconHoverColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Icon Hover',
+        display: { type: 'settings-color-picker' },
+      },
+      contentMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Content margin top',
+        min: 0,
+        display: { type: 'range-control' },
+      },
+      iconMarginRight: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Icon margin right',
+        min: 0,
+        display: { type: 'range-control' },
+      },
       backgroundColor: {
         type: 'string',
         scope: 'common',
@@ -559,6 +601,9 @@ const schema: ComponentSchemaV1 = {
         fontVariant: 'normal',
       },
       lightbox: 'on',
+      closeIcon: defaultCloseIconUrl,
+      closeIconColor: '#FFFFFF',
+      closeIconHoverColor: '#999999',
       imageDisplay: {
         display: 'fit',
         ratioValue: '2:3',
@@ -602,6 +647,9 @@ const schema: ComponentSchemaV1 = {
         descriptionLineHeight: 24 / 1440,
         lightboxCounterFontSize: 0.01,
         lightboxCounterLineHeight: 0.01,
+        contentMarginTop: 0.01,
+        closeIconMaxWidth: 0.0125,
+        iconMarginRight: 0.01,
       },
       m: {
         defaultPaddingTop: 10 / 375,
@@ -624,6 +672,9 @@ const schema: ComponentSchemaV1 = {
         descriptionLineHeight: 18 / 375,
         lightboxCounterFontSize: 14 / 375,
         lightboxCounterLineHeight: 14 / 375,
+        contentMarginTop: 0.0810,
+        closeIconMaxWidth: 0.0810,
+        iconMarginRight: 0.05405,
       },
       t: {
         defaultPaddingTop: 20 / 768,
@@ -646,12 +697,31 @@ const schema: ComponentSchemaV1 = {
         descriptionLineHeight: 20 / 768,
         lightboxCounterFontSize: 8 / 768,
         lightboxCounterLineHeight: 8 / 768,
+        contentMarginTop: 0.026,
+        closeIconMaxWidth: 0.03906,
+        iconMarginRight: 0.026,
       },
     },
     displayRules: [
       {
         if: { name: 'lightbox', value: 'off' },
         then: { name: 'properties.lightboxImageDisplay.display.enabled', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIcon.display.visible', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIconMaxWidth.display.visible', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIconColor.display.visible', value: false },
+      },
+      {
+        if: { name: 'lightbox', value: 'off' },
+        then: { name: 'properties.closeIconHoverColor.display.visible', value: false },
       },
     ],
     layout: [
@@ -666,6 +736,9 @@ const schema: ComponentSchemaV1 = {
       'transition',
       'lightbox',
       'lightboxImageDisplay',
+      'contentMarginTop',
+      'closeIconMaxWidth',
+      'iconMarginRight',
     ],
   },
   panels: [
@@ -682,6 +755,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', title: 'Title', items: ['position', 'transition'] },
         'titleWidth',
         { type: 'row', title: 'Lightbox', items: ['lightbox', 'lightboxImageDisplay'] },
+        { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
         { type: 'row', items: ['backgroundColor'] },
       ],
     },
@@ -751,7 +825,7 @@ const schema: ComponentSchemaV1 = {
     },
   ],
   paletteBookmark: {
-    items: ['titleColor', 'descriptionColor', 'backgroundColor', 'lightboxCounterColor'],
+    items: ['titleColor', 'descriptionColor', 'backgroundColor', 'lightboxCounterColor', 'closeIconColor', 'closeIconHoverColor'],
     panelIds: ['general', 'typeStyle'],
   },
 };
@@ -777,7 +851,7 @@ export const MercuryComponent = {
   sourceCode: mercurySourceRaw,
   assetsPaths: {
     content: [{ path: 'gallery.media.assetId', placeholderEnabled: true }],
-    parameters: [],
+    parameters: [{ path: 'closeIcon' }],
   },
   fontSettingsPaths: {
     content: [],
