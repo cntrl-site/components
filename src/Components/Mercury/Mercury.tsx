@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import type React from 'react';
 import { CommonComponentProps } from '../props';
-import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia } from '../utils/index';
+import { EmbedMediaFrame, getEmbedAspect, getEmbedPlayback, isEmbedMedia } from '../utils/index';
 import {
   buildColorVars,
   scalingValue,
@@ -636,21 +636,15 @@ function resolveLightboxImageDisplay(
 
 function LightboxVideo({
   src,
-  phase,
   mediaRef,
   mediaStyle,
   onLoadedMetadata,
-  onClick,
-  onMouseMove,
   onTransitionEnd,
 }: {
   src: string;
-  phase: 'opening' | 'open' | 'closing';
   mediaRef: React.RefObject<HTMLVideoElement>;
   mediaStyle: React.CSSProperties;
   onLoadedMetadata: () => void;
-  onClick: (e: React.MouseEvent<HTMLVideoElement>) => void;
-  onMouseMove: (e: React.MouseEvent<HTMLVideoElement>) => void;
   onTransitionEnd: (e: React.TransitionEvent<HTMLVideoElement>) => void;
 }) {
   useEffect(() => {
@@ -666,12 +660,12 @@ function LightboxVideo({
     <video
       ref={mediaRef}
       src={src}
-      controls={phase === 'open'}
+      muted
+      autoPlay
+      loop
       playsInline
       preload="auto"
       onLoadedMetadata={onLoadedMetadata}
-      onClick={onClick}
-      onMouseMove={onMouseMove}
       onTransitionEnd={onTransitionEnd}
       style={mediaStyle}
     />
@@ -1128,46 +1122,6 @@ function Lightbox({
   const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
   const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
 
-  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
-    e.stopPropagation();
-    if (touchInteractionRef.current) {
-      touchInteractionRef.current = false;
-      return;
-    }
-    if (items.length <= 1) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-
-    if (y > rect.height - controlsZoneHeight) {
-      return;
-    }
-
-    if (e.clientX - rect.left < rect.width / 2) {
-      onPrev();
-      return;
-    }
-
-    onNext();
-  };
-
-  const handleVideoMouseMove = (e: React.MouseEvent<HTMLVideoElement>) => {
-    if (items.length <= 1) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-
-    if (y > rect.height - controlsZoneHeight) {
-      e.currentTarget.style.cursor = 'default';
-      return;
-    }
-
-    e.currentTarget.style.cursor = x < rect.width / 2 ? 'w-resize' : 'e-resize';
-  };
-
   const handleNavSwipeTransitionEnd = useCallback((e: React.TransitionEvent<HTMLElement>) => {
     if (e.propertyName !== 'transform' || !navSwipeAnimatingRef.current) return;
 
@@ -1203,13 +1157,14 @@ function Lightbox({
           : phase === 'opening' || isClosing
             ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
             : 'none',
-    pointerEvents: (isCurrentVideo || isCurrentEmbed) && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: (isCurrentVideo || isCurrentEmbed) && isOpen ? 'none' : undefined,
+    pointerEvents: 'none',
     zIndex: 9998,
   };
 
-  // over an embed the overlays stop short of the player's own control bar
-  const navOverlayInset = isCurrentEmbed && finalRect ? Math.min(52, finalRect.height * 0.2) : 0;
+  // over an embed with controls the overlays stop short of the player's own control bar
+  const navOverlayInset = isCurrentEmbed && currentItem && getEmbedPlayback(currentItem).controls && finalRect
+    ? Math.min(52, finalRect.height * 0.2)
+    : 0;
   const navOverlayBaseStyle = finalRect ? {
     position: 'fixed' as const,
     top: finalRect.top,
@@ -1317,10 +1272,9 @@ function Lightbox({
           <EmbedMediaFrame
             key={`${index}-${currentItem.assetId}`}
             media={currentItem}
-            mode="player"
             fit={imageDisplay === 'cover' ? 'cover' : 'contain'}
             lazy={false}
-            interactive={isOpen && !isHorizontalNavActive}
+            startsAtOnce
             style={mediaStyle}
             onTransitionEnd={handleNavSwipeTransitionEnd}
           />
@@ -1328,12 +1282,9 @@ function Lightbox({
           <LightboxVideo
             key={`${index}-${currentItem.assetId}`}
             src={currentItem.assetId}
-            phase={phase}
             mediaRef={mediaRef as React.RefObject<HTMLVideoElement>}
             mediaStyle={mediaStyle}
             onLoadedMetadata={computeFinalRect}
-            onClick={handleVideoClick}
-            onMouseMove={handleVideoMouseMove}
             onTransitionEnd={handleNavSwipeTransitionEnd}
           />
         ) : (
@@ -1349,7 +1300,7 @@ function Lightbox({
         )
       )}
 
-      {isOpen && navOverlayBaseStyle && items.length > 1 && !isCurrentVideo && (
+      {isOpen && navOverlayBaseStyle && items.length > 1 && (
         <>
           <div
             style={{
@@ -1414,6 +1365,7 @@ function GalleryMediaItem({
   galleryPaddingBetween = 0,
   showPaddingAfter = false,
   showControls = false,
+  hasLightbox,
   onMediaClick,
 }: {
   P: string;
@@ -1426,6 +1378,8 @@ function GalleryMediaItem({
   galleryPaddingBetween?: number;
   showPaddingAfter?: boolean;
   showControls?: boolean;
+  /** An embed then plays here as a silent loop, and as it was set to in the lightbox. */
+  hasLightbox: boolean;
   onMediaClick?: () => void;
 }) {
   const mediaClassName = `${P}-gallery-${isVideoMedia(media) ? 'video' : 'image'}`;
@@ -1479,8 +1433,8 @@ function GalleryMediaItem({
     <EmbedMediaFrame
       {...mediaProps}
       media={media}
-      mode="background"
       fit={isCover ? 'cover' : 'contain'}
+      silentLoop={hasLightbox}
     />
   ) : isVideoMedia(media) ? (
     <video
@@ -2425,6 +2379,7 @@ export function Mercury({
                             galleryPaddingBetween={galleryPaddingBetween}
                             showPaddingAfter={mediaIndex < displayItems.length - 1}
                             showControls={showControls}
+                            hasLightbox={lightbox === 'on'}
                             onMediaClick={canOpenLightbox && lightboxItemIndex >= 0
                               ? () => openLightbox(lightboxItemsForEntry, lightboxItemIndex)
                               : undefined}
@@ -2476,6 +2431,7 @@ export function Mercury({
                               galleryPaddingBetween={galleryPaddingBetween}
                               showPaddingAfter={mediaIndex < displayItems.length - 1}
                               showControls={showControls}
+                              hasLightbox={lightbox === 'on'}
                               onMediaClick={canOpenLightbox && lightboxItemIndex >= 0
                                 ? () => openLightbox(lightboxItemsForEntry, lightboxItemIndex)
                                 : undefined}

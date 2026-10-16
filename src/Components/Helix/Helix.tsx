@@ -524,7 +524,6 @@ export function Helix({
               // the frame positions itself inline, so the cover's absolute placement is given the same way
               style={isCover ? { ...coverMediaStyle, position: 'absolute', inset: 0 } : coverMediaStyle}
               media={media}
-              mode="background"
               fit={isCover ? 'cover' : 'contain'}
             />
           ) : isVideoMedia(media) ? (

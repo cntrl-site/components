@@ -199,7 +199,7 @@ function ListHoverMedia({
     return (
       <EmbedMediaFrame
         media={media.embed}
-        mode="background"
+        startsAtOnce
         fit="contain"
         className={className}
         style={style}

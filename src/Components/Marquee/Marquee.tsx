@@ -330,7 +330,6 @@ const MarqueeItemCard = ({
     (isEmbed ? (
       <EmbedMediaFrame
         media={item.image}
-        mode="background"
         fit={isCover ? 'cover' : 'contain'}
         style={embedStyle}
       />

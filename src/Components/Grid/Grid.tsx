@@ -1,7 +1,7 @@
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
-import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia } from '../utils/index';
+import { EmbedMediaFrame, getEmbedAspect, getEmbedPlayback, isEmbedMedia } from '../utils/index';
 import {
   buildColorVars,
   getFormFieldValidationError,
@@ -635,19 +635,22 @@ function GridMediaItem({
   media,
   className,
   style,
+  hasLightbox,
   onMediaClick,
 }: {
   media: GridMedia;
   className: string;
   style: React.CSSProperties;
+  /** An embed then plays here as a silent loop, and as it was set to in the lightbox. */
+  hasLightbox: boolean;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isEmbedMedia(media)) {
     return (
       <EmbedMediaFrame
         media={media}
-        mode="background"
         fit={style.objectFit === 'contain' ? 'contain' : 'cover'}
+        silentLoop={hasLightbox}
         className={className}
         style={{
           ...style,
@@ -709,20 +712,14 @@ function getContainRect(box: AnimRect, natural: { width: number; height: number 
 
 function LightboxVideo({
   src,
-  phase,
   mediaRef,
   mediaStyle,
   onLoadedMetadata,
-  onClick,
-  onMouseMove,
 }: {
   src: string;
-  phase: 'opening' | 'open' | 'closing';
   mediaRef: React.RefObject<HTMLVideoElement>;
   mediaStyle: React.CSSProperties;
   onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
-  onClick: (e: React.MouseEvent<HTMLVideoElement>) => void;
-  onMouseMove: (e: React.MouseEvent<HTMLVideoElement>) => void;
 }) {
   useEffect(() => {
     const video = mediaRef.current;
@@ -737,12 +734,12 @@ function LightboxVideo({
     <video
       ref={mediaRef}
       src={src}
-      controls={phase === 'open'}
+      muted
+      autoPlay
+      loop
       playsInline
       preload='auto'
       onLoadedMetadata={onLoadedMetadata}
-      onClick={onClick}
-      onMouseMove={onMouseMove}
       style={mediaStyle}
     />
   );
@@ -928,7 +925,6 @@ function Lightbox({
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
   const isCurrentEmbed = currentItem ? isEmbedMedia(currentItem) : false;
-  const isHorizontalNavActive = slideOffset !== 0 || slideAnimating;
   const isSliding = slideDir !== null;
 
   const handleMediaLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement>) => {
@@ -1290,46 +1286,6 @@ function Lightbox({
     ? (isCover ? finalRect : getContainRect(finalRect, naturalSize))
     : null;
 
-  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
-    e.stopPropagation();
-    if (touchInteractionRef.current) {
-      touchInteractionRef.current = false;
-      return;
-    }
-    if (items.length <= 1) return;
-
-    const rect = contentRect ?? e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-
-    if (y > rect.height - controlsZoneHeight) {
-      return;
-    }
-
-    if (e.clientX - rect.left < rect.width / 2) {
-      startProgrammaticSlide(-1);
-      return;
-    }
-
-    startProgrammaticSlide(1);
-  };
-
-  const handleVideoMouseMove = (e: React.MouseEvent<HTMLVideoElement>) => {
-    if (items.length <= 1) return;
-
-    const rect = contentRect ?? e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-
-    if (y > rect.height - controlsZoneHeight) {
-      e.currentTarget.style.cursor = 'default';
-      return;
-    }
-
-    e.currentTarget.style.cursor = x < rect.width / 2 ? 'w-resize' : 'e-resize';
-  };
-
   const backingBaseStyle: React.CSSProperties = {
     position: 'fixed',
     top: viewportRect?.top,
@@ -1374,8 +1330,7 @@ function Lightbox({
     width: contentRect?.width,
     height: contentRect?.height,
     objectFit: objectFitStyle,
-    pointerEvents: (isCurrentVideo || isCurrentEmbed) && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: (isCurrentVideo || isCurrentEmbed) && isOpen ? 'none' : undefined,
+    pointerEvents: 'none',
   };
 
   const slideWidth = viewportRect?.width ?? 0;
@@ -1398,8 +1353,10 @@ function Lightbox({
     pointerEvents: 'none',
   };
 
-  // over an embed the overlays stop short of the player's own control bar
-  const navOverlayInset = isCurrentEmbed && contentRect ? Math.min(52, contentRect.height * 0.2) : 0;
+  // over an embed with controls the overlays stop short of the player's own control bar
+  const navOverlayInset = isCurrentEmbed && currentItem && getEmbedPlayback(currentItem).controls && contentRect
+    ? Math.min(52, contentRect.height * 0.2)
+    : 0;
   const navOverlayBaseStyle = contentRect ? {
     position: 'fixed' as const,
     top: contentRect.top,
@@ -1516,6 +1473,8 @@ function Lightbox({
               key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
               src={neighborItem.assetId}
               muted
+              autoPlay
+              loop
               playsInline
               preload='auto'
               style={neighborMediaStyle}
@@ -1537,22 +1496,18 @@ function Lightbox({
             <EmbedMediaFrame
               key={`${index}-${currentItem.assetId}`}
               media={currentItem}
-              mode="player"
               fit={isCover ? 'cover' : 'contain'}
               lazy={false}
-              interactive={isOpen && !isHorizontalNavActive}
+              startsAtOnce
               style={currentMediaStyle}
             />
           ) : isCurrentVideo ? (
             <LightboxVideo
               key={`${index}-${currentItem.assetId}`}
               src={currentItem.assetId}
-              phase={phase}
               mediaRef={mediaRef as React.RefObject<HTMLVideoElement>}
               mediaStyle={currentMediaStyle}
               onLoadedMetadata={handleMediaLoad}
-              onClick={handleVideoClick}
-              onMouseMove={handleVideoMouseMove}
             />
           ) : (
             <img
@@ -1567,7 +1522,7 @@ function Lightbox({
         </div>
       )}
 
-      {isOpen && navOverlayBaseStyle && items.length > 1 && !isCurrentVideo && (
+      {isOpen && navOverlayBaseStyle && items.length > 1 && (
         <>
           <div
             style={{
@@ -2045,6 +2000,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                           media={displayMedia}
                           className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                           style={imageStyle}
+                          hasLightbox={lightbox === 'on'}
                           onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                             ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                             : undefined}
@@ -2100,6 +2056,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                               media={displayMedia}
                               className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
+                              hasLightbox={lightbox === 'on'}
                               onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                                 ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                                 : undefined}

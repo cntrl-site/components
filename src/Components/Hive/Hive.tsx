@@ -854,8 +854,9 @@ function MediaItem({
     return (
       <EmbedMediaFrame
         media={media}
-        mode="background"
         fit={style.objectFit === 'contain' ? 'contain' : 'cover'}
+        // a cell opens the lightbox, where the video plays as it was set to
+        silentLoop
         className={className}
         data-hive-grid-index={gridIndex}
         style={{
@@ -904,7 +905,6 @@ function MediaItem({
 
 function LightboxVideo({
   src,
-  phase,
   onMediaElement,
   wrapperStyle,
   videoStyle,
@@ -912,7 +912,6 @@ function LightboxVideo({
   onTransitionEnd,
 }: {
   src: string;
-  phase: 'opening' | 'open' | 'closing';
   onMediaElement?: (element: HTMLVideoElement | null) => void;
   wrapperStyle: React.CSSProperties;
   videoStyle: React.CSSProperties;
@@ -937,11 +936,12 @@ function LightboxVideo({
         key={src}
         ref={videoRef}
         src={src}
-        controls={phase === 'open'}
+        muted
+        autoPlay
+        loop
         playsInline
         preload='auto'
         onLoadedMetadata={onLoadedMetadata}
-        onClick={(e) => e.stopPropagation()}
         style={videoStyle}
       />
     </div>
@@ -968,6 +968,8 @@ function LightboxSideMedia({
       <video
         src={media.assetId}
         muted
+        autoPlay
+        loop
         playsInline
         preload='auto'
         style={style}
@@ -1840,8 +1842,7 @@ function Lightbox({
             : phase === 'opening' || isClosing
               ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
               : 'none',
-    pointerEvents: (isCurrentVideo || isCurrentEmbed) && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: (isCurrentVideo || isCurrentEmbed) && isOpen ? 'none' : undefined,
+    pointerEvents: 'none',
     zIndex: 1,
     overflow: isCurrentVideo || isCurrentEmbed ? 'hidden' : undefined,
   };
@@ -1851,7 +1852,7 @@ function Lightbox({
     height: '100%',
     display: 'block',
     objectFit: 'contain',
-    pointerEvents: isOpen && !isHorizontalNavActive ? 'auto' : 'none',
+    pointerEvents: 'none',
   };
 
   const getSideMediaStyle = (
@@ -2093,10 +2094,9 @@ function Lightbox({
           <div key={`${index}-${currentItem.assetId}`} style={mediaStyle} onTransitionEnd={handleNavSwipeTransitionEnd}>
             <EmbedMediaFrame
               media={currentItem}
-              mode="player"
               fit="contain"
               lazy={false}
-              interactive={isOpen && !isHorizontalNavActive}
+              startsAtOnce
               style={lightboxVideoStyle}
             />
           </div>
@@ -2104,7 +2104,6 @@ function Lightbox({
           <LightboxVideo
             key={`${index}-${currentItem.assetId}`}
             src={currentItem.assetId}
-            phase={phase}
             onMediaElement={setCenterMediaElement}
             wrapperStyle={mediaStyle}
             videoStyle={lightboxVideoStyle}

@@ -328,7 +328,9 @@ export function Waterfall({
     return style as React.CSSProperties;
   })();
 
-  const canOpenLightbox = (settings?.lightbox ?? 'on') === 'on' && (!isEditor || isPreviewMode || isEditMode);
+  const hasLightbox = (settings?.lightbox ?? 'on') === 'on';
+  // an embed in a cell that opens the lightbox plays there as it was set to, and here as a silent loop
+  const canOpenLightbox = hasLightbox && (!isEditor || isPreviewMode || isEditMode);
   const allLightboxEntries = useMemo(() => buildLightboxEntries(items), [items]);
   const allMedia = useMemo(() => collectAllWaterfallMedia(items), [items]);
 
@@ -440,8 +442,8 @@ export function Waterfall({
                   {isEmbedMedia(item.image) ? (
                     <EmbedMediaFrame
                       media={item.image}
-                      mode="background"
                       fit={objectFitMode}
+                      silentLoop={hasLightbox}
                       data-waterfall-index={index}
                       // placed the way the image rule above places a picture, inline since the frame positions itself inline
                       style={{ ...imageStyle, position: 'absolute', left: 0, bottom: 0, width: '100%', height: '1cap' }}
