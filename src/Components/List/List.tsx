@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
+import { buildColorVars, EmbedMediaFrame, isEmbedMedia, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import type { LayoutItem, LayoutTab } from '../../types/SchemaV1';
 
@@ -131,7 +131,10 @@ type ListMedia = {
   objectFit?: 'cover' | 'contain';
   assetId: string;
   name: string;
-  type?: 'image' | 'video';
+  type?: 'image' | 'video' | 'vimeo' | 'youtube';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 type ListContentItem = {
@@ -141,14 +144,14 @@ type ListContentItem = {
   DColumnWidth?: string;
   EColumnWidth?: string;
   image?: ListMedia;
-  link?: string;
+  link?: ContentLink;
 };
 
 type ListItemRow = {
   id: string | number;
   cells: Record<string, React.ReactNode>;
   image?: ListContentItem['image'];
-  link?: string;
+  link?: ContentLink;
 };
 
 type HoverImageState = {
@@ -156,10 +159,13 @@ type HoverImageState = {
   assetId: string;
   objectFit: 'cover' | 'contain';
   isVideo: boolean;
+  /** The media itself when it is a Vimeo or YouTube video, framed rather than drawn. */
+  embed?: ListMedia;
   widthPx: number;
 };
 
 function isVideoMedia(media: Pick<ListMedia, 'assetId' | 'type' | 'name'>): boolean {
+  if (isEmbedMedia(media)) return false;
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   const name = media.name ?? '';
@@ -172,7 +178,7 @@ function ListHoverMedia({
   className,
   style,
 }: {
-  media: Pick<HoverImageState, 'assetId' | 'objectFit' | 'isVideo'>;
+  media: Pick<HoverImageState, 'assetId' | 'objectFit' | 'isVideo' | 'embed'>;
   className: string;
   style: React.CSSProperties;
 }) {
@@ -188,6 +194,18 @@ function ListHoverMedia({
       playPromise.catch(() => {});
     }
   }, [media.isVideo, media.assetId]);
+
+  if (media.embed) {
+    return (
+      <EmbedMediaFrame
+        media={media.embed}
+        startsAtOnce
+        fit="contain"
+        className={className}
+        style={style}
+      />
+    );
+  }
 
   if (media.isVideo) {
     return (
@@ -2351,6 +2369,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
       assetId: image.assetId,
       objectFit: 'contain',
       isVideo: isVideoMedia(image),
+      embed: isEmbedMedia(image) ? image : undefined,
       widthPx,
     });
     hoverShowPositionRef.current = { x, y };
@@ -2636,7 +2655,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
         >
           <div style={{ width: '100%', position: 'relative' }}>
             {visibleRows.map((row, rowIdx) => {
-              const hasLink = (row.link?.length ?? 0) > 0;
+              const hasLink = (row.link?.value.length ?? 0) > 0;
               const RowElement = hasLink && (!isEditor || isPreviewMode) ? 'a' : 'div';
               const rowStyle = getEntryDividerWidths(
                 rowIdx,
@@ -2653,7 +2672,7 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                 key={row.id}
                 ref={rowIdx === 0 ? (el: HTMLElement | null) => { firstRowRef.current = el; } : undefined}
                 className={`${P}-list-item${hasLink || entryHoverShowOption === 'always' ? ` ${P}-list-item-has-link` : ''}${showCutLabel && rowIdx === visibleRows.length - 1 ? ` ${P}-list-item-before-cut` : ''}`}
-                {...(hasLink ? { href: row.link, target: '_blank' } : {})}
+                {...(hasLink ? { href: row.link?.value, target: row.link?.target === 'blank' ? '_blank' : '_self' } : {})}
                 style={rowStyle}
                 onMouseEnter={(event) => {
                   if (revealHoverActive && (hasLink || entryHoverShowOption === 'always')) {

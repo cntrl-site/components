@@ -1,6 +1,8 @@
 export { type Breakpoint, type Component, type ComponentDefaultSize, type ComponentDefaultNavigationPosition, type ComponentNavigationPosition, type ComponentSize, isSchemaV1 } from './types/Component';
-export type { ComponentSchemaV1, SchemaProperty, PropertyScope, LayoutItem, LayoutRow, LayoutGroup, LayoutSwitcher, LayoutTab, SchemaSection, SchemaPanel, SchemaPanelAvailability, SchemaDisplay } from './types/SchemaV1';
+export type { ComponentSchemaV1, ComponentContentSchema, ComponentContentSettings, ComponentContentProperty, ContentKey, ContentLink, SchemaProperty, PropertyScope, LayoutItem, LayoutRow, LayoutGroup, LayoutSwitcher, LayoutTab, SchemaSection, SchemaPanel, SchemaPanelAvailability, SchemaDisplay } from './types/SchemaV1';
 export { components } from './Components/components';
+export { getPostFieldBindings } from './content/postFieldBindings';
+export type { ContentValue, PostFieldBinding, PostFieldEntry, PostFieldPage } from './content/postFieldBindings';
 export {
   getAvailableStatePanels,
   getUnavailableStates,

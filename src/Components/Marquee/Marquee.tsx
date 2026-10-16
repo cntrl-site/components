@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
-import { scalingValue } from '../utils/scalingValue';
-import { useScopedStyles } from '../utils/useScopedStyles';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia, LinkWrapper, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
 
 function getCSS(P: string, setWidthPx: number): string {
   const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
@@ -227,6 +226,7 @@ const isAnyCopyOfSlotInView = (wrapper: Element, itemIndex: number): boolean => 
 };
 
 const isVideoMedia = (media: Pick<NonNullable<MarqueeItem['image']>, 'assetId' | 'type' | 'name'>): boolean => {
+  if (isEmbedMedia(media)) return false;
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   const name = media.name ?? '';
@@ -268,11 +268,13 @@ const MarqueeItemCard = ({
 }: MarqueeItemCardProps) => {
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement | null>(null);
   const isVideo = Boolean(item.image?.assetId && isVideoMedia(item.image));
+  // an embed's box is sized from what is stored, so there is nothing to wait for
+  const isEmbed = Boolean(item.image?.assetId && isEmbedMedia(item.image));
 
   useLayoutEffect(() => {
     if (!isFirstSet) return;
-    if (isMediaReady(mediaRef.current)) onFirstSetImageDone?.();
-  }, [isFirstSet, item.image?.assetId, onFirstSetImageDone]);
+    if (isEmbed || isMediaReady(mediaRef.current)) onFirstSetImageDone?.();
+  }, [isFirstSet, isEmbed, item.image?.assetId, onFirstSetImageDone]);
 
   const isCover = imageFit.display === 'cover';
   const ratioValue = imageFit.ratioValue ?? '1:1';
@@ -311,9 +313,27 @@ const MarqueeItemCard = ({
         ...radiusStyle,
       };
 
+  // a frame has no size of its own: fitted, it takes the box a video of its aspect would
+  const embedAspect = isEmbed && item.image ? getEmbedAspect(item.image) : null;
+  const embedStyle: CSSProperties | undefined = embedAspect === null
+    ? undefined
+    : isCover
+      ? mediaStyle
+      : {
+          ...mediaStyle,
+          width: scaled(imageMaxWidth / embedAspect > imageMaxHeight ? imageMaxHeight * embedAspect : imageMaxWidth),
+          height: scaled(imageMaxWidth / embedAspect > imageMaxHeight ? imageMaxHeight : imageMaxWidth / embedAspect),
+        };
+
   const imageNode =
     item.image?.assetId &&
-    (isVideo ? (
+    (isEmbed ? (
+      <EmbedMediaFrame
+        media={item.image}
+        fit={isCover ? 'cover' : 'contain'}
+        style={embedStyle}
+      />
+    ) : isVideo ? (
       <video
         ref={(el) => { mediaRef.current = el; }}
         src={item.image.assetId}
@@ -369,14 +389,11 @@ const MarqueeItemCard = ({
               }),
         }}
       >
-        {imageNode && item.link
-          ? (
-            <a href={item.link} target='_self' rel='noopener noreferrer' className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}>
-              {imageNode}
-            </a>
-          )
-          : imageNode
-        }
+        {imageNode && (
+          <LinkWrapper link={item.link} className={cn(`${P}-marquee-link`, !isCover && `${P}-marquee-link-contain`)}>
+            {imageNode}
+          </LinkWrapper>
+        )}
       </div>
     </div>
   );
@@ -774,9 +791,12 @@ export type MarqueeItem = {
   image?: {
     assetId?: string;
     name?: string;
-    type?: 'image' | 'video';
+    type?: 'image' | 'video' | 'vimeo' | 'youtube';
+    thumbnail?: string;
+    width?: number;
+    height?: number;
   };
-  link?: string;
+  link?: ContentLink;
 };
 
 export type MarqueeSettings = {

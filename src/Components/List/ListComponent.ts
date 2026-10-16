@@ -12,7 +12,7 @@ import {
   type ListSettings,
   type ListTextStylePrefix,
 } from './List';
-import { ComponentSchemaV1, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
+import { ComponentContentProperty, ComponentSchemaV1, ContentKey, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
 import formSourceRaw from './List.tsx?raw';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
@@ -177,12 +177,13 @@ const textStyleProperties = {
   },
 };
 
-function createTextInputContentProperty(label: string) {
+function createTextInputContentProperty(label: string, contentKey?: ContentKey): ComponentContentProperty {
   return {
-    type: 'string' as const,
+    type: 'string',
     label,
     placeholder: 'Add Title...',
-    display: { type: 'text-input' as const },
+    ...(contentKey && { contentKey }),
+    display: { type: 'text-input' },
   };
 }
 
@@ -197,12 +198,19 @@ function createRangeControlLayoutProperty(title: string) {
   };
 }
 
-function createContentColumnProperties(): Record<string, SchemaProperty> {
+/** The post fields the first columns take when a collection is connected; the others are typed by hand. */
+const COLUMN_CONTENT_SOURCE_KEYS: Partial<Record<typeof LIST_COLUMN_LETTERS[number], ContentKey>> = {
+  A: 'title',
+  B: 'subtitle',
+  C: 'date',
+};
+
+function createContentColumnProperties(): Record<string, ComponentContentProperty> {
   return Object.fromEntries(
     LIST_COLUMN_LETTERS.map((letter, index) => {
       const key = COLUMN_CONTENT_KEYS[index];
       const label = `${letter} column`;
-      return [key, createTextInputContentProperty(label)];
+      return [key, createTextInputContentProperty(label, COLUMN_CONTENT_SOURCE_KEYS[letter])];
     }),
   );
 }
@@ -545,7 +553,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Portland, OR',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[0],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '02',
@@ -554,7 +562,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Savannah, GA',
     EColumnWidth: 'Scheduled',
     image: DEFAULT_HOVER_IMAGES[1],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '03',
@@ -563,7 +571,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Madison, WI',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[2],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '04',
@@ -572,7 +580,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Boise, ID',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[3],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '05',
@@ -581,7 +589,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Tampa, FL',
     EColumnWidth: 'Postponed',
     image: DEFAULT_HOVER_IMAGES[4],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '06',
@@ -590,7 +598,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Albuquerque, NM',
     EColumnWidth: 'Scheduled',
     image: DEFAULT_HOVER_IMAGES[5],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
   {
     AColumn: '07',
@@ -599,7 +607,7 @@ const DEFAULT_CONTENT_ITEMS = [
     DColumnWidth: 'Pittsburgh, PA',
     EColumnWidth: 'On Display',
     image: DEFAULT_HOVER_IMAGES[6],
-    link: '',
+    link: { type: 'url', value: '', target: 'blank' },
   },
 ];
 
@@ -619,6 +627,7 @@ const schema: ComponentSchemaV1 = {
   content: {
       type: 'array',
       settings: {
+        allowsCollection: true,
         addItemWithoutImage: true,
         allowsVideo: true,
       },
@@ -636,6 +645,7 @@ const schema: ComponentSchemaV1 = {
           image: {
             type: 'object',
             label: 'Image',
+            contentKey: 'gallery',
             display: {
               isObjectFitEditable: false,
               defaultObjectFit: 'contain',
@@ -646,17 +656,17 @@ const schema: ComponentSchemaV1 = {
               name: { type: 'string' },
               type: {
                 type: 'string',
-                enum: ['image', 'video'],
+                enum: ['image', 'video', 'vimeo', 'youtube'],
               },
               objectFit: { type: 'string', enum: ['cover', 'contain'] },
             },
             required: ['assetId', 'name'],
           },
           link: {
-            type: 'string',
+            type: 'object',
             label: 'Link',
-            placeholder: 'Add link...',
-            display: { type: 'text-input' },
+            contentKey: 'link',
+            display: { type: 'link-input' },
           },
         },
         required: ['image'],
