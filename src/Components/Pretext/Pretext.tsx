@@ -95,6 +95,7 @@ export type PretextProps = {
   isPreviewMode?: boolean;
   isEditMode?: boolean;
   isSelected?: boolean;
+  isUIHidden?: boolean;
   onUpdateSettings?: (settings: PretextSettings) => void;
 } & CommonComponentProps;
 
@@ -534,7 +535,7 @@ export {
   nearestSegmentHit,
 } from './vecContours';
 
-export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode, isSelected, onUpdateSettings }: PretextProps) {
+export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode, isSelected, isUIHidden, onUpdateSettings }: PretextProps) {
   const { prefix: P } = useScopedStyles();
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const editor = isEditor ?? false;
@@ -560,7 +561,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
   const dropCapSize = settings?.dropCapSize ?? DROP_CAP_SIZE_DEFAULT;
   const dropCapLines = Math.max(1, Math.round(settings?.dropCapLines ?? dropCapSize));
   const showGuides = editor && selected && !isPreviewMode;
-  const showOverflowIndicator = editor && !isPreviewMode;
+  const showOverflowIndicator = editor && !isPreviewMode && !isUIHidden;
 
   const [isItemTransforming, setIsItemTransforming] = useState(false);
   useEffect(() => {
@@ -590,7 +591,7 @@ export function Pretext({ settings, content, isEditor, isPreviewMode, isEditMode
 
   const pathEditing = editor && selected && !isPreviewMode
     && typeof onUpdateSettings === 'function';
-  const shapeOverlayVisible = !isItemTransforming;
+  const shapeOverlayVisible = !isItemTransforming && !isUIHidden;
   const pathSnap = Math.max(0, settings?.pathSnap ?? 0);
   const settingsRef = useRef(settings ?? {});
   const settingsPropsKeyRef = useRef('');
