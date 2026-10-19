@@ -2686,7 +2686,6 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                     const columnPaddingBottom = col.paddingBottom;
                     const hasColumnText = hasListColumnText(row.cells[col.key]);
                     const showColumnPaddingBottom = isVerticalLayout
-                      && hasColumnText
                       && columnPaddingBottom > 0;
                     const columnSizeStyle = isVerticalLayout
                       ? { minHeight: scaled(resolvedCellMinHeight) }
@@ -2712,13 +2711,8 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                       );
 
                     const columnPaddingBottomOverlay = isVerticalLayout
-                      && hasColumnText
                       && showControls
                       && rowIdx === 0;
-
-                    if (isVerticalLayout && !hasColumnText) {
-                      return null;
-                    }
 
                     return (
                       <div
@@ -2759,7 +2753,9 @@ export function List({ settings, content, isEditor, isPreviewMode, isEditMode, a
                               ...(!isVerticalLayout ? vAlignToTitleStyle(vAlign.kind) : {}),
                             }}
                           >
-                            {row.cells[col.key] ?? null}
+                            {hasColumnText
+                              ? (row.cells[col.key] ?? null)
+                              : (isVerticalLayout ? '\u00a0' : null)}
                           </span>
                         </div>
                         {showColumnPaddingBottom && (
