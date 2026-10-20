@@ -29,6 +29,8 @@ const loaders: Record<string, () => Promise<ComponentElement>> = {
   'waterfall': () => import('./Components/Waterfall/Waterfall').then(m => m.Waterfall),
 };
 
+export const componentElementIds = Object.keys(loaders);
+
 const loaded = new Map<string, ComponentElement>();
 const pending = new Map<string, Promise<ComponentElement | undefined>>();
 

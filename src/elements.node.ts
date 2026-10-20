@@ -3,6 +3,8 @@ import type { ComponentElement } from './elements';
 
 const elements = new Map<string, ComponentElement>(components.map(component => [component.id, component.element]));
 
+export const componentElementIds = [...elements.keys()];
+
 export function hasComponentElement(id: string): boolean {
   return elements.has(id);
 }
