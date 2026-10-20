@@ -1,6 +1,5 @@
 import { Pretext, SHAPE_IDS, settingsForEditablePreset } from './Pretext';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import pretextSourceRaw from './Pretext.tsx?raw';
 
 const SHAPE_OPTIONS = [...SHAPE_IDS];
 
@@ -406,7 +405,6 @@ export const PretextComponent = {
     url: 'https://cdn.cntrl.site/component-assets/pretext.png',
   },
   schema,
-  sourceCode: pretextSourceRaw,
   assetsPaths: {
     content: [],
     parameters: [{ path: 'image', placeholderEnabled: true }],

@@ -20,6 +20,11 @@
       "import": "./dist/utils.mjs",
       "require": "./dist/utils.js"
     },
+    "./sources": {
+      "types": "./dist/sources.d.ts",
+      "import": "./dist/sources.mjs",
+      "require": "./dist/sources.js"
+    },
     "./style/components.css": {
       "default": "./dist/components.css"
     }
@@ -28,6 +33,9 @@
     "*": {
       "utils": [
         "./dist/Components/utils/index.d.ts"
+      ],
+      "sources": [
+        "./dist/sources.d.ts"
       ]
     }
   },
@@ -37,6 +45,8 @@
     "prebuild": "rimraf ./dist",
     "build": "vite build",
     "build:watch": "vite build --watch",
+    "postbuild": "npm run check:sources",
+    "check:sources": "node scripts/check-sources.mjs",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build"
   },
   "files": [
@@ -60,8 +70,14 @@
     "classnames": "^2.5.1"
   },
   "peerDependencies": {
+    "franc-min": "^5.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "franc-min": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.16.0",
@@ -74,7 +90,7 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.3.4",
     "cross-env": "^10.1.0",
-    "franc-min": "^6.2.0",
+    "franc-min": "^5.0.0",
     "hyphen": "^1.14.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

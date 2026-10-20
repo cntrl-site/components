@@ -1,6 +1,5 @@
 import { ClickGallerie } from './ClickGallerie';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import clickGallerieSourceRaw from './ClickGallerie.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -260,7 +259,6 @@ export const ClickGallerieComponent = {
     url: 'https://cdn.cntrl.site/component-assets/Click_Gallery.mp4',
   },
   schema,
-  sourceCode: clickGallerieSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [

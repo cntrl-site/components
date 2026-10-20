@@ -54,7 +54,7 @@ const PATTERN_LOADERS: Record<string, () => Promise<unknown>> = {
   uk: () => import('hyphen/uk'),
 };
 
-type Franc = typeof import('franc-min').franc;
+type Franc = typeof import('franc-min');
 
 // `hyphen` is CommonJS; depending on the bundler's interop its exports object
 // shows up on the namespace itself or under `default`.
@@ -66,8 +66,12 @@ const fromCjs = <T>(mod: unknown, pick: (value: any) => T | undefined): T | null
 let francPromise: Promise<Franc | null> | null = null;
 const loadFranc = (): Promise<Franc | null> => {
   francPromise ??= import('franc-min')
-    .then(mod => mod.franc)
-    .catch(() => null);
+    .then(mod => fromCjs<Franc>(mod, value => (typeof value === 'function' ? value : undefined)))
+    .catch((error) => {
+      console.warn('Pretext: failed to load franc-min, using the page language for hyphenation', error);
+      francPromise = null;
+      return null;
+    });
   return francPromise;
 };
 
@@ -77,7 +81,11 @@ const loadHyphenator = (key: string): Promise<HyphenateSync | null> => {
   if (!pending) {
     pending = PATTERN_LOADERS[key]()
       .then(mod => fromCjs<HyphenateSync>(mod, value => value?.hyphenateSync))
-      .catch(() => null);
+      .catch((error) => {
+        console.warn(`Pretext: failed to load "${key}" hyphenation patterns`, error);
+        hyphenators.delete(key);
+        return null;
+      });
     hyphenators.set(key, pending);
   }
   return pending;
