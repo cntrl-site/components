@@ -10,9 +10,13 @@ const definitionIds = new Set(components.map(component => component.id));
 for (const id of browser.componentElementIds) {
   if (!definitionIds.has(id)) problems.push(`${id}: loader in src/elements.ts has no definition`);
 }
+const browserIds = new Set(browser.componentElementIds);
 const nodeIds = new Set(node.componentElementIds);
-if (nodeIds.size !== browser.componentElementIds.length || browser.componentElementIds.some(id => !nodeIds.has(id))) {
-  problems.push('elements.node exposes different componentElementIds than src/elements.ts');
+for (const id of browserIds) {
+  if (!nodeIds.has(id)) problems.push(`${id}: loader in src/elements.ts but not elements.node`);
+}
+for (const id of nodeIds) {
+  if (!browserIds.has(id)) problems.push(`${id}: in elements.node but no loader in src/elements.ts`);
 }
 for (const component of components) {
   if (!browser.hasComponentElement(component.id)) {
