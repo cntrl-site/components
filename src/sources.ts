@@ -41,7 +41,7 @@ import testimonialGridSource from './Components/TestimonialGrid/TestimonialGrid.
 import testimonialSingleSource from './Components/TestimonialSingle/TestimonialSingle.tsx?raw';
 import waterfallSource from './Components/Waterfall/Waterfall.tsx?raw';
 
-export const componentSources: Record<string, string> = {
+export const componentSources: Partial<Record<string, string>> = {
   [BurgerComponent.id]: burgerSource,
   [ClickGallerieComponent.id]: clickGallerieSource,
   [FAQComponent.id]: faqSource,

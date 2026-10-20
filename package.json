@@ -57,6 +57,9 @@
     "prebuild": "rimraf ./dist",
     "build": "vite build",
     "build:watch": "vite build --watch",
+    "postbuild": "npm run check:chunks && npm run check:sources",
+    "check:chunks": "node scripts/check-chunks.mjs",
+    "check:sources": "node scripts/check-sources.mjs",
     "check:elements": "node scripts/check-elements.mjs",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build && npm run check:elements"
   },
@@ -78,12 +81,17 @@
     "lib": "dist"
   },
   "dependencies": {
-    "classnames": "^2.5.1",
-    "franc-min": "^5.0.0"
+    "classnames": "^2.5.1"
   },
   "peerDependencies": {
+    "franc-min": "^5.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "franc-min": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.16.0",
@@ -96,6 +104,7 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.3.4",
     "cross-env": "^10.1.0",
+    "franc-min": "^5.0.0",
     "hyphen": "^1.14.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

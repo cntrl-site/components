@@ -67,7 +67,11 @@ let francPromise: Promise<Franc | null> | null = null;
 const loadFranc = (): Promise<Franc | null> => {
   francPromise ??= import('franc-min')
     .then(mod => fromCjs<Franc>(mod, value => (typeof value === 'function' ? value : undefined)))
-    .catch(() => null);
+    .catch((error) => {
+      console.warn('Pretext: failed to load franc-min, using the page language for hyphenation', error);
+      francPromise = null;
+      return null;
+    });
   return francPromise;
 };
 
@@ -77,7 +81,11 @@ const loadHyphenator = (key: string): Promise<HyphenateSync | null> => {
   if (!pending) {
     pending = PATTERN_LOADERS[key]()
       .then(mod => fromCjs<HyphenateSync>(mod, value => value?.hyphenateSync))
-      .catch(() => null);
+      .catch((error) => {
+        console.warn(`Pretext: failed to load "${key}" hyphenation patterns`, error);
+        hyphenators.delete(key);
+        return null;
+      });
     hyphenators.set(key, pending);
   }
   return pending;
