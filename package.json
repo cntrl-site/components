@@ -25,6 +25,15 @@
       "import": "./dist/sources.mjs",
       "require": "./dist/sources.js"
     },
+    "./elements": {
+      "types": "./dist/elements.d.ts",
+      "node": {
+        "import": "./dist/elements.node.mjs",
+        "require": "./dist/elements.node.js"
+      },
+      "import": "./dist/elements.mjs",
+      "require": "./dist/elements.js"
+    },
     "./style/components.css": {
       "default": "./dist/components.css"
     }
@@ -36,6 +45,9 @@
       ],
       "sources": [
         "./dist/sources.d.ts"
+      ],
+      "elements": [
+        "./dist/elements.d.ts"
       ]
     }
   },

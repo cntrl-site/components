@@ -18,6 +18,8 @@ export default defineConfig({
         index: path.resolve(__dirname, "src/index.ts"),
         utils: path.resolve(__dirname, "src/Components/utils/index.ts"),
         sources: path.resolve(__dirname, "src/sources.ts"),
+        elements: path.resolve(__dirname, "src/elements.ts"),
+        "elements.node": path.resolve(__dirname, "src/elements.node.ts"),
       },
       formats: ["es", "cjs"],
     },
