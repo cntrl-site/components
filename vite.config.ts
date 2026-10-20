@@ -10,15 +10,28 @@ const keepDynamicImportInCjs = (): Plugin => ({
   },
 });
 
+const elementsEntry = path.resolve(__dirname, "src/elements.ts");
+
+const fetchElementChunksFirst = (): Plugin => ({
+  name: "fetch-element-chunks-first",
+  generateBundle(_, bundle) {
+    for (const chunk of Object.values(bundle)) {
+      if (chunk.type === "chunk" && chunk.facadeModuleId === elementsEntry) {
+        chunk.code = chunk.code.replace(/\bimport\(\s*(["']\.\/)/g, 'import(/* webpackFetchPriority: "high" */ $1');
+      }
+    }
+  },
+});
+
 export default defineConfig({
-  plugins: [react(), dts(), keepDynamicImportInCjs()],
+  plugins: [react(), dts(), fetchElementChunksFirst(), keepDynamicImportInCjs()],
   build: {
     lib: {
       entry: {
         index: path.resolve(__dirname, "src/index.ts"),
         utils: path.resolve(__dirname, "src/Components/utils/index.ts"),
         sources: path.resolve(__dirname, "src/sources.ts"),
-        elements: path.resolve(__dirname, "src/elements.ts"),
+        elements: elementsEntry,
         "elements.node": path.resolve(__dirname, "src/elements.node.ts"),
       },
       formats: ["es", "cjs"],
