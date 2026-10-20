@@ -17,9 +17,9 @@ for (const target of staticRequires) problems.push(`elements.js statically requi
 
 for (const file of ['elements.js', 'elements.mjs']) {
   const code = readFileSync(new URL(`../dist/${file}`, import.meta.url), 'utf8');
-  const imports = code.match(/\bimport\(/g)?.length ?? 0;
+  const imports = code.match(/\bimport\((?:\s*\/\*[^*]*\*\/)?\s*["']\.\//g)?.length ?? 0;
   const prioritized = code.match(/\bimport\(\/\* webpackFetchPriority: "high" \*\/ ["']\.\//g)?.length ?? 0;
-  if (imports !== prioritized) problems.push(`${file}: ${imports - prioritized} of ${imports} import() calls lack webpackFetchPriority "high"`);
+  if (!imports || imports !== prioritized) problems.push(`${file}: ${imports - prioritized} of ${imports} element import() calls lack webpackFetchPriority "high"`);
 }
 
 const definitionIds = new Set(components.map(component => component.id));

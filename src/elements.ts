@@ -34,10 +34,15 @@ export const componentElementIds = Object.keys(loaders);
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
 
+type LoadState = {
+  request: Promise<ComponentElement | undefined>;
+  loading: boolean;
+  failures: number;
+  retryAt: number;
+};
+
 const loaded = new Map<string, ComponentElement>();
-const requests = new Map<string, Promise<ComponentElement | undefined>>();
-const inFlight = new Set<string>();
-const failures = new Map<string, { attempts: number; retryAt: number }>();
+const states = new Map<string, LoadState>();
 
 export function hasComponentElement(id: string): boolean {
   return Object.prototype.hasOwnProperty.call(loaders, id);
@@ -48,34 +53,38 @@ export function getComponentElement(id: string): ComponentElement | undefined {
 }
 
 export function hasComponentElementFailed(id: string): boolean {
-  return failures.has(id);
+  return (states.get(id)?.failures ?? 0) > 0;
 }
+
+const canRetry = (state: LoadState): boolean =>
+  !state.loading && state.failures > 0 && state.failures < MAX_ATTEMPTS && Date.now() >= state.retryAt;
 
 export function loadComponentElement(id: string): Promise<ComponentElement | undefined> {
   if (!hasComponentElement(id)) return Promise.resolve(undefined);
-  const request = requests.get(id);
-  const failure = failures.get(id);
-  const canRetry = failure !== undefined
-    && !inFlight.has(id)
-    && failure.attempts < MAX_ATTEMPTS
-    && Date.now() >= failure.retryAt;
-  if (request && !canRetry) return request;
+  const previous = states.get(id);
+  if (previous && !canRetry(previous)) return previous.request;
 
-  inFlight.add(id);
-  const next = loaders[id]()
-    .then(
-      (element) => {
-        loaded.set(id, element);
-        failures.delete(id);
-        return element;
-      },
-      (error) => {
-        const attempts = (failures.get(id)?.attempts ?? 0) + 1;
-        failures.set(id, { attempts, retryAt: Date.now() + RETRY_DELAY_MS * 2 ** (attempts - 1) });
-        throw error;
-      },
-    )
-    .finally(() => inFlight.delete(id));
-  requests.set(id, next);
-  return next;
+  const state: LoadState = {
+    loading: true,
+    failures: previous?.failures ?? 0,
+    retryAt: 0,
+    request: loaders[id]()
+      .then(
+        (element) => {
+          loaded.set(id, element);
+          state.failures = 0;
+          return element;
+        },
+        (error) => {
+          state.failures += 1;
+          state.retryAt = Date.now() + RETRY_DELAY_MS * 2 ** (state.failures - 1);
+          throw error;
+        },
+      )
+      .finally(() => {
+        state.loading = false;
+      }),
+  };
+  states.set(id, state);
+  return state.request;
 }
