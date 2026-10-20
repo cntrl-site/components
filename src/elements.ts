@@ -31,8 +31,13 @@ const loaders: Record<string, () => Promise<ComponentElement>> = {
 
 export const componentElementIds = Object.keys(loaders);
 
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 2000;
+
 const loaded = new Map<string, ComponentElement>();
-const pending = new Map<string, Promise<ComponentElement | undefined>>();
+const requests = new Map<string, Promise<ComponentElement | undefined>>();
+const inFlight = new Set<string>();
+const failures = new Map<string, { attempts: number; retryAt: number }>();
 
 export function hasComponentElement(id: string): boolean {
   return Object.prototype.hasOwnProperty.call(loaders, id);
@@ -42,21 +47,35 @@ export function getComponentElement(id: string): ComponentElement | undefined {
   return loaded.get(id);
 }
 
+export function hasComponentElementFailed(id: string): boolean {
+  return failures.has(id);
+}
+
 export function loadComponentElement(id: string): Promise<ComponentElement | undefined> {
-  let promise = pending.get(id);
-  if (!promise) {
-    promise = hasComponentElement(id)
-      ? loaders[id]()
-        .then((element) => {
-          loaded.set(id, element);
-          return element;
-        })
-        .catch((error) => {
-          pending.delete(id);
-          throw error;
-        })
-      : Promise.resolve(undefined);
-    pending.set(id, promise);
-  }
-  return promise;
+  if (!hasComponentElement(id)) return Promise.resolve(undefined);
+  const request = requests.get(id);
+  const failure = failures.get(id);
+  const canRetry = failure !== undefined
+    && !inFlight.has(id)
+    && failure.attempts < MAX_ATTEMPTS
+    && Date.now() >= failure.retryAt;
+  if (request && !canRetry) return request;
+
+  inFlight.add(id);
+  const next = loaders[id]()
+    .then(
+      (element) => {
+        loaded.set(id, element);
+        failures.delete(id);
+        return element;
+      },
+      (error) => {
+        const attempts = (failures.get(id)?.attempts ?? 0) + 1;
+        failures.set(id, { attempts, retryAt: Date.now() + RETRY_DELAY_MS * 2 ** (attempts - 1) });
+        throw error;
+      },
+    )
+    .finally(() => inFlight.delete(id));
+  requests.set(id, next);
+  return next;
 }

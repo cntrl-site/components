@@ -13,6 +13,10 @@ export function getComponentElement(id: string): ComponentElement | undefined {
   return elements.get(id);
 }
 
+export function hasComponentElementFailed(_id: string): boolean {
+  return false;
+}
+
 export function loadComponentElement(id: string): Promise<ComponentElement | undefined> {
   return Promise.resolve(elements.get(id));
 }
