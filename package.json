@@ -25,6 +25,15 @@
       "import": "./dist/sources.mjs",
       "require": "./dist/sources.js"
     },
+    "./elements": {
+      "types": "./dist/elements.d.ts",
+      "node": {
+        "import": "./dist/elements.node.mjs",
+        "require": "./dist/elements.node.js"
+      },
+      "import": "./dist/elements.mjs",
+      "require": "./dist/elements.js"
+    },
     "./style/components.css": {
       "default": "./dist/components.css"
     }
@@ -36,6 +45,9 @@
       ],
       "sources": [
         "./dist/sources.d.ts"
+      ],
+      "elements": [
+        "./dist/elements.d.ts"
       ]
     }
   },
@@ -45,8 +57,9 @@
     "prebuild": "rimraf ./dist",
     "build": "vite build",
     "build:watch": "vite build --watch",
-    "postbuild": "npm run check:sources",
+    "postbuild": "npm run check:sources && npm run check:elements",
     "check:sources": "node scripts/check-sources.mjs",
+    "check:elements": "node scripts/check-elements.mjs",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build"
   },
   "files": [

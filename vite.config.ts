@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import dts from "vite-plugin-dts";
 import path from "path";
+import { fetchElementChunksFirst } from "./build/fetch-element-chunks-first";
 import { keepHyphenPatternsLazy } from "./build/keep-hyphen-patterns-lazy";
 
 const keepDynamicImportInCjs = (): Plugin => ({
@@ -11,14 +12,18 @@ const keepDynamicImportInCjs = (): Plugin => ({
   },
 });
 
+const elementsEntry = path.resolve(__dirname, "src/elements.ts");
+
 export default defineConfig({
-  plugins: [react(), dts(), keepDynamicImportInCjs(), keepHyphenPatternsLazy()],
+  plugins: [react(), dts(), fetchElementChunksFirst(elementsEntry), keepDynamicImportInCjs(), keepHyphenPatternsLazy()],
   build: {
     lib: {
       entry: {
         index: path.resolve(__dirname, "src/index.ts"),
         utils: path.resolve(__dirname, "src/Components/utils/index.ts"),
         sources: path.resolve(__dirname, "src/sources.ts"),
+        elements: elementsEntry,
+        "elements.node": path.resolve(__dirname, "src/elements.node.ts"),
       },
       formats: ["es", "cjs"],
     },
