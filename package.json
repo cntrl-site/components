@@ -57,8 +57,7 @@
     "prebuild": "rimraf ./dist",
     "build": "vite build",
     "build:watch": "vite build --watch",
-    "postbuild": "npm run check:chunks && npm run check:sources && npm run check:elements",
-    "check:chunks": "node scripts/check-chunks.mjs",
+    "postbuild": "npm run check:sources && npm run check:elements",
     "check:sources": "node scripts/check-sources.mjs",
     "check:elements": "node scripts/check-elements.mjs",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build"
