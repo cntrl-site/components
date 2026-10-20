@@ -38,12 +38,19 @@ const schema: ComponentSchemaV1 = {
         title: 'BG image',
         display: { type: 'toggle-cycle', enum: ['greyscale', 'blur', 'as is'] },
       },
+      origin: {
+        type: 'string',
+        scope: 'common',
+        title: 'Origin',
+        display: { type: 'toggle-cycle', enum: ['center', 'mouse', 'random'] },
+      },
     },
     defaults: {
       maxWidth: 60,
       maxHeight: 60,
       transition: 700,
       bgImage: 'greyscale',
+      origin: 'center',
     },
     layout: [
       '__componentName__',
@@ -51,6 +58,7 @@ const schema: ComponentSchemaV1 = {
       'maxHeight',
       'transition',
       'bgImage',
+      'origin',
     ],
   },
   panels: [
@@ -63,6 +71,7 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         { type: 'row', title: '', items: ['maxWidth', 'maxHeight'] },
         { type: 'row', title: '', items: ['transition', 'bgImage'] },
+        { type: 'row', title: '', items: ['origin'] },
       ],
     },
   ],
