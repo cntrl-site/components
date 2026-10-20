@@ -54,7 +54,7 @@ const PATTERN_LOADERS: Record<string, () => Promise<unknown>> = {
   uk: () => import('hyphen/uk'),
 };
 
-type Franc = typeof import('franc-min').franc;
+type Franc = (value: string, options?: { minLength?: number }) => string;
 
 // `hyphen` is CommonJS; depending on the bundler's interop its exports object
 // shows up on the namespace itself or under `default`.
@@ -66,7 +66,7 @@ const fromCjs = <T>(mod: unknown, pick: (value: any) => T | undefined): T | null
 let francPromise: Promise<Franc | null> | null = null;
 const loadFranc = (): Promise<Franc | null> => {
   francPromise ??= import('franc-min')
-    .then(mod => mod.franc)
+    .then(mod => fromCjs<Franc>(mod, value => (typeof value === 'function' ? value : undefined)))
     .catch(() => null);
   return francPromise;
 };

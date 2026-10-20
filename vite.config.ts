@@ -23,7 +23,7 @@ export default defineConfig({
     rollupOptions: {
       external: (id) =>
         !id.includes("@splidejs") &&
-        (["react", "react-dom", "classnames"].includes(id) || id.startsWith("react/")),
+        (["react", "react-dom", "classnames", "franc-min"].includes(id) || id.startsWith("react/")),
       output: {
         preserveModules: false,
         manualChunks: undefined,
