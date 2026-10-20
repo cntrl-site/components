@@ -54,7 +54,7 @@ const PATTERN_LOADERS: Record<string, () => Promise<unknown>> = {
   uk: () => import('hyphen/uk'),
 };
 
-type Franc = (value: string, options?: { minLength?: number }) => string;
+type Franc = typeof import('franc-min');
 
 // `hyphen` is CommonJS; depending on the bundler's interop its exports object
 // shows up on the namespace itself or under `default`.
