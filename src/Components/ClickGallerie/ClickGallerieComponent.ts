@@ -31,10 +31,10 @@ const schema: ComponentSchemaV1 = {
           required: ['assetId', 'name'],
         },
         link: {
+          type: 'object',
           label: 'URL',
-          placeholder: 'Enter link...',
           display: {
-            type: 'text-input',
+            type: 'link-input',
           },
         },
       },
@@ -46,49 +46,49 @@ const schema: ComponentSchemaV1 = {
           assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
           name: 'Slider-1.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
           name: 'Slider-2.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           assetId: '01M3QM74XEE2101QD8PM6E4JSA',
           name: 'Slider-3.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           assetId: '01M3QM74XE20C38X4NND20C5R4',
           name: 'Slider-4.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
           name: 'Slider-5.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           assetId: '01M3QM74XEBS5231QA4355P4VQ',
           name: 'Slider-6.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
       {
         image: {
           assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
           name: 'Slider-7.png',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'blank' },
       },
     ],
   },

@@ -1,8 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
-import { scalingValue } from '../utils/scalingValue';
-import { useScopedStyles } from '../utils/useScopedStyles';
+import { LinkWrapper, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
 import { textStylesToCss } from '../utils/textStylesToCss';
 
 function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
@@ -341,9 +340,7 @@ const MarqueeTextItemView = ({ item, prefix: P, textCss, capHeightPx, opticalOff
   );
   return (
     <div className={`${P}-item`} data-marquee-text-item style={{ gap: imageGapPx }}>
-      {item.link
-        ? <a href={item.link} className={`${P}-item-link`} style={{ gap: imageGapPx }}>{content}</a>
-        : content}
+      <LinkWrapper link={item.link} className={`${P}-item-link`} style={{ gap: imageGapPx }}>{content}</LinkWrapper>
     </div>
   );
 };
@@ -426,7 +423,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
   const [ribbonHeightPx, setRibbonHeightPx] = useState(0);
 
   const contentKey = useMemo(
-    () => (content ?? []).map((i) => `${i.text}\0${i.image?.assetId ?? ''}\0${i.link ?? ''}`).join('\0'),
+    () => (content ?? []).map((i) => `${i.text}\0${i.image?.assetId ?? ''}\0${i.link?.value ?? ''}`).join('\0'),
     [content],
   );
   const [contentSequenceRepeat, setContentSequenceRepeat] = useState(MIN_CONTENT_SEQUENCE_REPEAT);
@@ -897,7 +894,7 @@ export type MarqueeTextItem = {
     assetId?: string;
     name?: string;
   };
-  link?: string;
+  link?: ContentLink;
 };
 
 export type MarqueeTextSettings = {

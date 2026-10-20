@@ -2,6 +2,7 @@ import React from 'react';
 import { CSSProperties, FC } from 'react';
 import styles from './RichTextRenderer.module.scss';
 import { normalizeFontFamilyCssValue } from '../../utils/textStylesToCss';
+import { LinkWrapper } from '../../utils/LinkWrapper';
 
 interface Props {
   content: any[];
@@ -19,7 +20,7 @@ export const RichTextRenderer: FC<Props> = ({ content }) => {
   const getChildren = (children: any[]) => {
     return children.map((child, i) => {
       if (child.type === 'link') {
-        return <a className={styles.link} key={i} href={child.value} target={child.target}>{getChildren(child.children)}</a>;
+        return <LinkWrapper className={styles.link} key={i} link={child}>{getChildren(child.children)}</LinkWrapper>;
       }
       return <span style={getLeafCss(child)} key={i}>{child.text}</span>;
     });

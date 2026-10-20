@@ -54,6 +54,7 @@ const schema: ComponentSchemaV1 = {
   content: {
       type: 'array',
       settings: {
+        allowsCollection: true,
         addItemWithoutImage: true,
         allowsVideo: true,
       },
@@ -67,6 +68,7 @@ const schema: ComponentSchemaV1 = {
             type: 'string',
             label: 'Title',
             placeholder: 'Add Title...',
+            contentKey: 'title',
             display: {
               type: 'text-input',
             },
@@ -74,6 +76,7 @@ const schema: ComponentSchemaV1 = {
           subtitle: {
             type: 'string',
             label: 'Subtitle',
+            contentKey: 'subtitle',
             placeholder: 'Add Subtitle...',
             display: {
               type: 'text-input',
@@ -81,6 +84,7 @@ const schema: ComponentSchemaV1 = {
           },
           gallery: {
             type: 'array',
+            contentKey: 'gallery',
             label: 'Gallery',
             display: {
               type: 'media-pair-list-input',
@@ -97,7 +101,7 @@ const schema: ComponentSchemaV1 = {
                       name: { type: 'string' },
                       type: {
                         type: 'string',
-                        enum: ['image', 'video'],
+                        enum: ['image', 'video', 'vimeo', 'youtube'],
                       },
                       objectFit: {
                         type: 'string',
@@ -110,11 +114,11 @@ const schema: ComponentSchemaV1 = {
             },
           },
           link: {
-            type: 'string',
+            type: 'object',
             label: 'Link',
-            placeholder: 'Add link...',
+            contentKey: 'link',
             display: {
-              type: 'text-input',
+              type: 'link-input',
             },
           },
         },
@@ -135,7 +139,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Salton Sea from Above',
@@ -151,7 +155,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Lunar Module Pilot',
@@ -167,7 +171,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Lunar Module 3 porch',
@@ -183,7 +187,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Command Module',
@@ -219,7 +223,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'CSM and Lunar Module LM',
@@ -235,7 +239,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'David R. Scott during EVA',
@@ -251,7 +255,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Fourth day of the mission',
@@ -267,7 +271,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
         {
           title: 'Landing of the Spider1',
@@ -283,7 +287,7 @@ const schema: ComponentSchemaV1 = {
               objectFit: 'cover',
             }],
           }],
-          link: ''
+          link: { type: 'url', value: '', target: 'blank' }
         },
       ],
   },

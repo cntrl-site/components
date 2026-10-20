@@ -1,9 +1,11 @@
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
+import { EmbedMediaFrame, getEmbedAspect, getEmbedPlayback, isEmbedMedia } from '../utils/index';
 import {
   buildColorVars,
   getFormFieldValidationError,
+  LinkWrapper,
   scalingValue,
   useScopedStyles,
 } from '../utils/index';
@@ -107,6 +109,10 @@ function getCSS(P: string): string {
   height: auto;
   max-width: 100%;
   object-fit: contain;
+}
+.${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer div {
+  grid-area: 1 / 1;
+  width: 100%;
 }
 .${P}-item-image-wrapper-fit-slider > .${P}-item-slider {
   position: absolute;
@@ -501,7 +507,10 @@ type SwipeAxis = 'none' | 'horizontal' | 'vertical';
 type GridMedia = {
   assetId: string;
   name?: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'vimeo' | 'youtube';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 type GridMediaPair = {
@@ -557,8 +566,7 @@ function getGridDisplayItems(image: GridMedia[] | GridMediaPair[] | undefined): 
 }
 
 function isVideoMedia(media: GridMedia): boolean {
-  if (media.type === 'video') return true;
-  return false;
+  return !isEmbedMedia(media) && media.type === 'video';
 }
 
 function collectGridLightboxMedia(content: any[]): GridMedia[] {
@@ -580,7 +588,9 @@ function collectGridLightboxMedia(content: any[]): GridMedia[] {
 }
 
 function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
-  if (mediaList.length === 0) return null;
+  // an embed's player is only ever framed where it shows
+  const files = mediaList.filter(media => !isEmbedMedia(media));
+  if (files.length === 0) return null;
 
   return (
     <div
@@ -594,7 +604,7 @@ function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
         pointerEvents: 'none',
       }}
     >
-      {mediaList.map((media) => (
+      {files.map((media) => (
         isVideoMedia(media) ? (
           <video
             key={media.assetId}
@@ -625,13 +635,32 @@ function GridMediaItem({
   media,
   className,
   style,
+  hasLightbox,
   onMediaClick,
 }: {
   media: GridMedia;
   className: string;
   style: React.CSSProperties;
+  /** An embed then plays here as a silent loop, and as it was set to in the lightbox. */
+  hasLightbox: boolean;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
+  if (isEmbedMedia(media)) {
+    return (
+      <EmbedMediaFrame
+        media={media}
+        fit={style.objectFit === 'contain' ? 'contain' : 'cover'}
+        silentLoop={hasLightbox}
+        className={className}
+        style={{
+          ...style,
+          cursor: onMediaClick ? 'pointer' : 'default',
+        }}
+        onClick={onMediaClick}
+      />
+    );
+  }
+
   if (isVideoMedia(media)) {
     return (
       <video
@@ -683,20 +712,14 @@ function getContainRect(box: AnimRect, natural: { width: number; height: number 
 
 function LightboxVideo({
   src,
-  phase,
   mediaRef,
   mediaStyle,
   onLoadedMetadata,
-  onClick,
-  onMouseMove,
 }: {
   src: string;
-  phase: 'opening' | 'open' | 'closing';
   mediaRef: React.RefObject<HTMLVideoElement>;
   mediaStyle: React.CSSProperties;
   onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => void;
-  onClick: (e: React.MouseEvent<HTMLVideoElement>) => void;
-  onMouseMove: (e: React.MouseEvent<HTMLVideoElement>) => void;
 }) {
   useEffect(() => {
     const video = mediaRef.current;
@@ -711,12 +734,12 @@ function LightboxVideo({
     <video
       ref={mediaRef}
       src={src}
-      controls={phase === 'open'}
+      muted
+      autoPlay
+      loop
       playsInline
       preload='auto'
       onLoadedMetadata={onLoadedMetadata}
-      onClick={onClick}
-      onMouseMove={onMouseMove}
       style={mediaStyle}
     />
   );
@@ -901,7 +924,7 @@ function Lightbox({
   const prevItemUrlRef = useRef<string | undefined>(undefined);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
-  const isHorizontalNavActive = slideOffset !== 0 || slideAnimating;
+  const isCurrentEmbed = currentItem ? isEmbedMedia(currentItem) : false;
   const isSliding = slideDir !== null;
 
   const handleMediaLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement>) => {
@@ -1255,49 +1278,13 @@ function Lightbox({
   const swipeBackdropOpacity = swipeOffset > 0 ? Math.max(0, 1 - swipeOffset / 500) : 1;
   const swipeMediaOpacity = swipeOffset > 0 ? Math.max(0.35, 1 - swipeOffset / 500) : 1;
 
+  // an embed's player reports no size of its own, so its stored aspect stands in
+  const naturalSize = isCurrentEmbed && currentItem
+    ? { width: getEmbedAspect(currentItem), height: 1 }
+    : mediaNaturalSize;
   const contentRect = finalRect
-    ? (isCover ? finalRect : getContainRect(finalRect, mediaNaturalSize))
+    ? (isCover ? finalRect : getContainRect(finalRect, naturalSize))
     : null;
-
-  const handleVideoClick = (e: React.MouseEvent<HTMLVideoElement>) => {
-    e.stopPropagation();
-    if (touchInteractionRef.current) {
-      touchInteractionRef.current = false;
-      return;
-    }
-    if (items.length <= 1) return;
-
-    const rect = contentRect ?? e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-
-    if (y > rect.height - controlsZoneHeight) {
-      return;
-    }
-
-    if (e.clientX - rect.left < rect.width / 2) {
-      startProgrammaticSlide(-1);
-      return;
-    }
-
-    startProgrammaticSlide(1);
-  };
-
-  const handleVideoMouseMove = (e: React.MouseEvent<HTMLVideoElement>) => {
-    if (items.length <= 1) return;
-
-    const rect = contentRect ?? e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const controlsZoneHeight = Math.min(52, rect.height * 0.2);
-
-    if (y > rect.height - controlsZoneHeight) {
-      e.currentTarget.style.cursor = 'default';
-      return;
-    }
-
-    e.currentTarget.style.cursor = x < rect.width / 2 ? 'w-resize' : 'e-resize';
-  };
 
   const backingBaseStyle: React.CSSProperties = {
     position: 'fixed',
@@ -1343,8 +1330,7 @@ function Lightbox({
     width: contentRect?.width,
     height: contentRect?.height,
     objectFit: objectFitStyle,
-    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
+    pointerEvents: 'none',
   };
 
   const slideWidth = viewportRect?.width ?? 0;
@@ -1367,10 +1353,14 @@ function Lightbox({
     pointerEvents: 'none',
   };
 
+  // over an embed with controls the overlays stop short of the player's own control bar
+  const navOverlayInset = isCurrentEmbed && currentItem && getEmbedPlayback(currentItem).controls && contentRect
+    ? Math.min(52, contentRect.height * 0.2)
+    : 0;
   const navOverlayBaseStyle = contentRect ? {
     position: 'fixed' as const,
     top: contentRect.top,
-    height: contentRect.height,
+    height: contentRect.height - navOverlayInset,
     width: contentRect.width / 2,
     zIndex: 9999,
   } : null;
@@ -1471,11 +1461,20 @@ function Lightbox({
 
       {finalRect && viewportRect && neighborItem && (
         <div style={neighborBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
-          {isVideoMedia(neighborItem) ? (
+          {isEmbedMedia(neighborItem) ? (
+            <img
+              key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
+              src={neighborItem.thumbnail}
+              alt={neighborItem.name}
+              style={neighborMediaStyle}
+            />
+          ) : isVideoMedia(neighborItem) ? (
             <video
               key={`neighbor-${neighborIndex}-${neighborItem.assetId}`}
               src={neighborItem.assetId}
               muted
+              autoPlay
+              loop
               playsInline
               preload='auto'
               style={neighborMediaStyle}
@@ -1493,16 +1492,22 @@ function Lightbox({
 
       {finalRect && viewportRect && currentItem && (
         <div style={currentBackingStyle} onTransitionEnd={handleSlideTransitionEnd}>
-          {isCurrentVideo ? (
+          {isCurrentEmbed ? (
+            <EmbedMediaFrame
+              key={`${index}-${currentItem.assetId}`}
+              media={currentItem}
+              fit={isCover ? 'cover' : 'contain'}
+              lazy={false}
+              startsAtOnce
+              style={currentMediaStyle}
+            />
+          ) : isCurrentVideo ? (
             <LightboxVideo
               key={`${index}-${currentItem.assetId}`}
               src={currentItem.assetId}
-              phase={phase}
               mediaRef={mediaRef as React.RefObject<HTMLVideoElement>}
               mediaStyle={currentMediaStyle}
               onLoadedMetadata={handleMediaLoad}
-              onClick={handleVideoClick}
-              onMouseMove={handleVideoMouseMove}
             />
           ) : (
             <img
@@ -1517,7 +1522,7 @@ function Lightbox({
         </div>
       )}
 
-      {isOpen && navOverlayBaseStyle && items.length > 1 && !isCurrentVideo && (
+      {isOpen && navOverlayBaseStyle && items.length > 1 && (
         <>
           <div
             style={{
@@ -1865,7 +1870,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
           {cropContent.map((item: any, index: number) => {
             const hasTitle = hasText(item.title);
             const hasSubtitle = hasText(item.subtitle);
-            const itemLink = (item.link?.length ?? 0) > 0 && lightbox === 'off' ? item.link : undefined;
+            const itemLink = lightbox === 'off' && item.link?.value ? item.link : undefined;
             const isLastRow = Math.floor(index / columnsCount)
               === Math.ceil(cropContent.length / columnsCount) - 1;
             const gridColumn = isPartialLastRow && index >= lastRowStartIndex
@@ -1967,16 +1972,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </div>
             ) : null;
 
-            const alignedTextRows = itemLink ? (
-              <a href={itemLink} target="_blank" className={`${P}-item-text-link`}>
+            const alignedTextRows = (
+              <LinkWrapper link={itemLink} className={`${P}-item-text-link`}>
                 {titleRow}
                 {subtitleRow}
-              </a>
-            ) : (
-              <>
-                {titleRow}
-                {subtitleRow}
-              </>
+              </LinkWrapper>
             );
 
             const displayItems = getGridDisplayItems(item.gallery);
@@ -2000,6 +2000,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                           media={displayMedia}
                           className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                           style={imageStyle}
+                          hasLightbox={lightbox === 'on'}
                           onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                             ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                             : undefined}
@@ -2011,7 +2012,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     {isFitSlider && (
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
                         {displayItems.map(({ displayMedia }) => (
-                          isVideoMedia(displayMedia) ? (
+                          isEmbedMedia(displayMedia) ? (
+                            <div key={`sizer-${displayMedia.assetId}`} style={{ aspectRatio: `${getEmbedAspect(displayMedia)}` }} />
+                          ) : isVideoMedia(displayMedia) ? (
                             <video key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} muted playsInline />
                           ) : (
                             <img key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} alt="" />
@@ -2053,6 +2056,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                               media={displayMedia}
                               className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
+                              hasLightbox={lightbox === 'on'}
                               onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                                 ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                                 : undefined}
@@ -2099,6 +2103,15 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </>
             ) : null;
 
+            // the aligned layout sizes this box whether or not it links anywhere
+            const alignedImage = itemLink ? (
+              <LinkWrapper link={itemLink} className={`${P}-item-image-link`}>
+                {imageContent}
+              </LinkWrapper>
+            ) : (
+              <a className={`${P}-item-image-link`}>{imageContent}</a>
+            );
+
             return (
             <div
               key={index}
@@ -2121,29 +2134,25 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     {isTextBeforeImage ? (
                       <>
                         {alignedTextRows}
-                        <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
-                          {imageContent}
-                        </a>
+                        {alignedImage}
                       </>
                     ) : (
                       <>
-                        <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
-                          {imageContent}
-                        </a>
+                        {alignedImage}
                         {alignedTextRows}
                       </>
                     )}
                   </>
                 ) : itemLink ? (
                   <>
-                    <a href={itemLink} target="_blank" className={`${P}-item-image-link`}>
+                    <LinkWrapper link={itemLink} className={`${P}-item-image-link`}>
                       {typeCTextBlock}
                       {imageContent}
-                    </a>
+                    </LinkWrapper>
                     {!isTextBeforeImage && (
-                      <a href={itemLink} target="_blank" className={`${P}-item-text-link`}>
+                      <LinkWrapper link={itemLink} className={`${P}-item-text-link`}>
                         {typeABText}
-                      </a>
+                      </LinkWrapper>
                     )}
                   </>
                 ) : (
