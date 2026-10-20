@@ -57,7 +57,8 @@
     "prebuild": "rimraf ./dist",
     "build": "vite build",
     "build:watch": "vite build --watch",
-    "prepublishOnly": "cross-env NODE_ENV=production npm run build"
+    "check:elements": "node scripts/check-elements.mjs",
+    "prepublishOnly": "cross-env NODE_ENV=production npm run build && npm run check:elements"
   },
   "files": [
     "dist",
