@@ -1,3 +1,24 @@
+import { BurgerComponent } from './Components/Burger/BurgerComponent';
+import { ClickGallerieComponent } from './Components/ClickGallerie/ClickGallerieComponent';
+import { FAQComponent } from './Components/FAQ/FAQComponent';
+import { FormComponent } from './Components/Form/FormComponent';
+import { GridComponent } from './Components/Grid/GridComponent';
+import { HelixComponent } from './Components/Helix/HelixComponent';
+import { HiveComponent } from './Components/Hive/HiveComponent';
+import { LightboxJournalComponent } from './Components/LightboxJournal/LightboxJournalComponent';
+import { LightboxStripComponent } from './Components/LightboxStrip/LightboxStripComponent';
+import { ListComponent } from './Components/List/ListComponent';
+import { MarqueeComponent } from './Components/Marquee/MarqueeComponent';
+import { MarqueeTextComponent } from './Components/MarqueeText/MarqueeTextComponent';
+import { MercuryComponent } from './Components/Mercury/MercuryComponent';
+import { OnelinerFormComponent } from './Components/OnelinerForm/OnelinerFormComponent';
+import { PretextComponent } from './Components/Pretext/PretextComponent';
+import { ScaleComponent } from './Components/Scale/ScaleComponent';
+import { SimpleButtonComponent } from './Components/SimpleButton/SimpleButtonComponent';
+import { Slider20Component } from './Components/Slider20/Slider20Component';
+import { TestimonialGridComponent } from './Components/TestimonialGrid/TestimonialGridComponent';
+import { TestimonialSingleComponent } from './Components/TestimonialSingle/TestimonialSingleComponent';
+import { WaterfallComponent } from './Components/Waterfall/WaterfallComponent';
 import burgerSource from './Components/Burger/Burger.tsx?raw';
 import clickGallerieSource from './Components/ClickGallerie/ClickGallerie.tsx?raw';
 import faqSource from './Components/FAQ/FAQ.tsx?raw';
@@ -21,25 +42,25 @@ import testimonialSingleSource from './Components/TestimonialSingle/TestimonialS
 import waterfallSource from './Components/Waterfall/Waterfall.tsx?raw';
 
 export const componentSources: Record<string, string> = {
-  'basic-burger': burgerSource,
-  'click-gallerie': clickGallerieSource,
-  'faq': faqSource,
-  'form': formSource,
-  'grid': gridSource,
-  'helix': helixSource,
-  'hive': hiveSource,
-  'lightbox-journal': lightboxJournalSource,
-  'lightbox-strip': lightboxStripSource,
-  'list': listSource,
-  'marquee': marqueeSource,
-  'marquee-text': marqueeTextSource,
-  'mercury': mercurySource,
-  'oneliner-form': onelinerFormSource,
-  'pretext': pretextSource,
-  'scale': scaleSource,
-  'simple-button': simpleButtonSource,
-  'slider-2-0': slider20Source,
-  'testimonials': testimonialGridSource,
-  'testimonial-single': testimonialSingleSource,
-  'waterfall': waterfallSource,
+  [BurgerComponent.id]: burgerSource,
+  [ClickGallerieComponent.id]: clickGallerieSource,
+  [FAQComponent.id]: faqSource,
+  [FormComponent.id]: formSource,
+  [GridComponent.id]: gridSource,
+  [HelixComponent.id]: helixSource,
+  [HiveComponent.id]: hiveSource,
+  [LightboxJournalComponent.id]: lightboxJournalSource,
+  [LightboxStripComponent.id]: lightboxStripSource,
+  [ListComponent.id]: listSource,
+  [MarqueeComponent.id]: marqueeSource,
+  [MarqueeTextComponent.id]: marqueeTextSource,
+  [MercuryComponent.id]: mercurySource,
+  [OnelinerFormComponent.id]: onelinerFormSource,
+  [PretextComponent.id]: pretextSource,
+  [ScaleComponent.id]: scaleSource,
+  [SimpleButtonComponent.id]: simpleButtonSource,
+  [Slider20Component.id]: slider20Source,
+  [TestimonialGridComponent.id]: testimonialGridSource,
+  [TestimonialSingleComponent.id]: testimonialSingleSource,
+  [WaterfallComponent.id]: waterfallSource,
 };
