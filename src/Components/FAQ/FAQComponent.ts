@@ -1,6 +1,5 @@
 import { FAQ } from './FAQ';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import formSourceRaw from './FAQ.tsx?raw';
 
 function createRangeControlLayoutProperty(title: string) {
   return {
@@ -563,5 +562,4 @@ export const FAQComponent = {
     answerFontSettings: 'answerFontFamily',
   },
   schema,
-  sourceCode: formSourceRaw,
 };

@@ -1,6 +1,5 @@
 import { SimpleButton } from './SimpleButton';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import simpleButtonSourceRaw from './SimpleButton.tsx?raw';
 
 const textStyleProperties = {
   fontSettings: {
@@ -662,7 +661,6 @@ export const SimpleButtonComponent = {
     url: 'https://cdn.cntrl.site/component-assets/button-preview.png',
   },
   schema,
-  sourceCode: simpleButtonSourceRaw,
   assetsPaths: {
     content: [],
     parameters: [{ path: 'icon' }],

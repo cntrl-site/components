@@ -13,7 +13,6 @@ import {
   type ListTextStylePrefix,
 } from './List';
 import { ComponentSchemaV1, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
-import formSourceRaw from './List.tsx?raw';
 
 type ListFontSettings = { fontWeight: number; fontStyle: string };
 
@@ -1103,5 +1102,4 @@ export const ListComponent = {
     }), {}),
   },
   schema,
-  sourceCode: formSourceRaw,
 };

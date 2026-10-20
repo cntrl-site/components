@@ -1,6 +1,5 @@
 import { Grid } from './Grid';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import formSourceRaw from './Grid.tsx?raw';
 
 const defaultCloseIconUrl = '01M3SBP3P8CMVMM1ZZ0QVD2PPF';
 
@@ -953,5 +952,4 @@ export const GridComponent = {
     lightboxCounterFontSettings: 'lightboxCounterFontFamily',
   },
   schema,
-  sourceCode: formSourceRaw,
 };

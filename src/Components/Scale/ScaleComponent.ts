@@ -1,6 +1,5 @@
 import { Scale } from './Scale';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import scaleSourceRaw from './Scale.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -153,7 +152,6 @@ export const ScaleComponent = {
     url: 'https://cdn.cntrl.site/component-assets/Scale.mp4',
   },
   schema,
-  sourceCode: scaleSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],
