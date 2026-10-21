@@ -16,6 +16,13 @@ type ScaleSettings = {
   maxHeight?: number;
   transition?: number;
   bgImage?: 'greyscale' | 'blur' | 'as is';
+  origin?: 'center' | 'mouse' | 'random';
+  position?: 'center' | 'mouse' | 'random';
+};
+
+type Point = {
+  x: number;
+  y: number;
 };
 
 const GREYSCALE_EFFECT_AMOUNT = 100;
@@ -48,11 +55,8 @@ function getCSS(P: string): string {
   overflow: hidden;
 }
 .${P}-background {
-  position: absolute;
-  inset: 0;
   z-index: 1;
   pointer-events: none;
-  overflow: hidden;
 }
 .${P}-effect-image {
   width: 100%;
@@ -86,11 +90,17 @@ function getCSS(P: string): string {
 }
 .${P}-outgoing-next {
   z-index: 3;
-  transition: transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
+  transition:
+    transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION},
+    left var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION},
+    top var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-outgoing-prev {
   z-index: 3;
-  transition: transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
+  transition:
+    transform var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION},
+    left var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION},
+    top var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
 }
 .${P}-outgoing-next .${P}-effect-image {
   transition: filter var(--${P}-transition-ms) ${TRANSITION_TIMING_FUNCTION};
@@ -216,6 +226,28 @@ function computeFitSize(
   };
 }
 
+function clampPoint(point: Point, size: SizePercents): Point {
+  const halfW = size.widthPercent / 2;
+  const halfH = size.heightPercent / 2;
+  const minX = halfW;
+  const maxX = 100 - halfW;
+  const minY = halfH;
+  const maxY = 100 - halfH;
+
+  return {
+    x: minX > maxX ? 50 : Math.min(maxX, Math.max(minX, point.x)),
+    y: minY > maxY ? 50 : Math.min(maxY, Math.max(minY, point.y)),
+  };
+}
+
+function centerPoint(): Point {
+  return { x: 50, y: 50 };
+}
+
+function randomPoint(): Point {
+  return { x: Math.random() * 100, y: Math.random() * 100 };
+}
+
 function computeCoverScale(
   containerWidth: number,
   containerHeight: number,
@@ -237,9 +269,16 @@ function toSizeStyle(size: SizePercents): React.CSSProperties {
   };
 }
 
-function toStageStyle(size: SizePercents, scale: number, prefix: string): React.CSSProperties {
+function toStageStyle(
+  size: SizePercents,
+  scale: number,
+  prefix: string,
+  position: Point,
+): React.CSSProperties {
   return {
     ...toSizeStyle(size),
+    left: `${position.x}%`,
+    top: `${position.y}%`,
     [`--${prefix}-stage-scale`]: scale,
   } as React.CSSProperties;
 }
@@ -269,7 +308,10 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
     maxHeight,
     transition = 1000,
     bgImage = 'greyscale',
+    origin: originSetting,
+    position: legacyOrigin,
   } = settings;
+  const origin = originSetting ?? legacyOrigin ?? 'center';
   const items = content ?? [];
   const initialIndices = getInitialIndices(items.length);
   const [activeIndex, setActiveIndex] = useState(initialIndices.activeIndex);
@@ -281,17 +323,19 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
   const [incomingScale, setIncomingScale] = useState(0);
   const [outgoingScale, setOutgoingScale] = useState(1);
   const [outgoingFilter, setOutgoingFilter] = useState('none');
+  const [outgoingPointOverride, setOutgoingPointOverride] = useState<Point | null>(null);
   const [transitionDirection, setTransitionDirection] = useState<'next' | 'prev'>('next');
   const [imageDimensions, setImageDimensions] = useState<Record<string, ImageDimensions>>({});
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [imagePositions, setImagePositions] = useState<Record<number, Point>>({});
   const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const imagePositionsRef = useRef<Record<number, Point>>({});
   const isInteractive = !isEditor || Boolean(isPreviewMode);
   const legacyImageSize = imageSize ?? 60;
   const maxWidthPercent = Math.max(10, Math.min(100, maxWidth ?? legacyImageSize));
   const maxHeightPercent = Math.max(10, Math.min(100, maxHeight ?? legacyImageSize));
   const transitionMs = Math.max(100, transition);
-  const backgroundFilter = getBackgroundFilter(bgImage);
 
   const getImageSizePercents = useCallback((url: string | undefined): SizePercents => {
     const aspectRatio = getImageAspectRatio(url ? imageDimensions[url] : undefined);
@@ -339,8 +383,18 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
     setIncomingScale(0);
     setOutgoingScale(1);
     setOutgoingFilter('none');
+    setOutgoingPointOverride(null);
     setTransitionDirection('next');
   }, [items.length, content]);
+
+  useEffect(() => {
+    const nextPositions: Record<number, Point> = {};
+    for (let index = 0; index < items.length; index += 1) {
+      nextPositions[index] = origin === 'random' ? randomPoint() : centerPoint();
+    }
+    imagePositionsRef.current = nextPositions;
+    setImagePositions(nextPositions);
+  }, [items.length, content, origin]);
 
   useEffect(() => () => {
     if (transitionTimeoutRef.current) {
@@ -348,7 +402,23 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
     }
   }, []);
 
-  const startTransition = useCallback((direction: 'next' | 'prev') => {
+  const resolvePosition = useCallback((event?: React.MouseEvent): Point => {
+    if (origin === 'random') return randomPoint();
+    if (origin !== 'mouse') return centerPoint();
+
+    const wrapper = wrapperRef.current;
+    if (!wrapper || !event) return centerPoint();
+
+    const rect = wrapper.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return centerPoint();
+
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((event.clientY - rect.top) / rect.height) * 100,
+    };
+  }, [origin]);
+
+  const startTransition = useCallback((direction: 'next' | 'prev', event?: React.MouseEvent) => {
     if (!isInteractive || isAnimating || items.length <= 1) return;
 
     const targetIndex = direction === 'next'
@@ -356,8 +426,21 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
       : (activeIndex - 1 + items.length) % items.length;
     const activeSize = getImageSizePercents(items[activeIndex]?.image?.assetId);
     const targetSize = getImageSizePercents(items[targetIndex]?.image?.assetId);
-    const activeCoverScale = computeCoverScale(containerSize.width, containerSize.height, activeSize);
-    const targetCoverScale = computeCoverScale(containerSize.width, containerSize.height, targetSize);
+    const activePoint = clampPoint(imagePositionsRef.current[activeIndex] ?? centerPoint(), activeSize);
+    const targetPoint = clampPoint(resolvePosition(event), targetSize);
+    const nextPositions = { ...imagePositionsRef.current, [targetIndex]: targetPoint };
+    imagePositionsRef.current = nextPositions;
+    setImagePositions(nextPositions);
+    const activeCoverScale = computeCoverScale(
+      containerSize.width,
+      containerSize.height,
+      activeSize,
+    );
+    const targetCoverScale = computeCoverScale(
+      containerSize.width,
+      containerSize.height,
+      targetSize,
+    );
 
     if (transitionTimeoutRef.current) {
       clearTimeout(transitionTimeoutRef.current);
@@ -368,6 +451,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
     setIsAnimating(true);
 
     if (direction === 'next') {
+      setOutgoingPointOverride(activePoint);
       setOutgoingIndex(activeIndex);
       setIncomingIndex(targetIndex);
       setIncomingScale(0);
@@ -378,6 +462,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
       setOutgoingIndex(targetIndex);
       setIncomingIndex(activeIndex);
       setIncomingScale(1);
+      setOutgoingPointOverride(centerPoint());
       setOutgoingScale(targetCoverScale);
       setOutgoingFilter(getBackgroundFilter(bgImage, 1, targetCoverScale));
     }
@@ -387,10 +472,12 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
       requestAnimationFrame(() => {
         if (direction === 'next') {
           setIncomingScale(1);
+          setOutgoingPointOverride(centerPoint());
           setOutgoingScale(activeCoverScale);
           setOutgoingFilter(getBackgroundFilter(bgImage, 1, activeCoverScale));
         } else {
           setIncomingScale(0);
+          setOutgoingPointOverride(targetPoint);
           setOutgoingScale(1);
           setOutgoingFilter(getBackgroundFilter(bgImage, 0, 1));
         }
@@ -404,6 +491,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
       setActiveIndex(targetIndex);
       setOutgoingIndex(null);
       setIncomingIndex(null);
+      setOutgoingPointOverride(null);
       setIsAnimating(false);
     }, transitionMs);
   }, [
@@ -415,6 +503,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
     isAnimating,
     isInteractive,
     items,
+    resolvePosition,
     transitionMs,
   ]);
 
@@ -427,6 +516,22 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
   const foregroundSize = getImageSizePercents(foregroundItem?.image?.assetId);
   const outgoingFitSize = getImageSizePercents(outgoingItem?.image?.assetId);
   const incomingFitSize = getImageSizePercents(incomingItem?.image?.assetId);
+  const backgroundSize = getImageSizePercents(backgroundItem?.image?.assetId);
+  const backgroundCoverScale = computeCoverScale(
+    containerSize.width,
+    containerSize.height,
+    backgroundSize,
+  );
+  const backgroundFilter = getBackgroundFilter(bgImage, 1, backgroundCoverScale);
+  const foregroundPoint = clampPoint(imagePositions[activeIndex] ?? centerPoint(), foregroundSize);
+  const outgoingPoint = outgoingPointOverride ?? clampPoint(
+    outgoingIndex !== null ? (imagePositions[outgoingIndex] ?? centerPoint()) : centerPoint(),
+    outgoingFitSize,
+  );
+  const incomingPoint = clampPoint(
+    incomingIndex !== null ? (imagePositions[incomingIndex] ?? centerPoint()) : centerPoint(),
+    incomingFitSize,
+  );
   const wrapperStyle = {
     [`--${P}-transition-ms`]: `${transitionMs}ms`,
   } as React.CSSProperties;
@@ -441,7 +546,11 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
         aria-label="Zoom gallery"
       >
         {backgroundItem?.image?.assetId && (
-          <div className={`${P}-background`} aria-hidden="true">
+          <div
+            className={cn(`${P}-stage`, `${P}-background`)}
+            style={toStageStyle(backgroundSize, backgroundCoverScale, P, centerPoint())}
+            aria-hidden="true"
+          >
             <img
               className={`${P}-effect-image`}
               src={backgroundItem.image.assetId}
@@ -457,7 +566,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
               `${P}-outgoing`,
               `${P}-outgoing-${transitionDirection}`,
             )}
-            style={toStageStyle(outgoingFitSize, outgoingScale, P)}
+            style={toStageStyle(outgoingFitSize, outgoingScale, P, outgoingPoint)}
             aria-hidden="true"
           >
             <img
@@ -475,7 +584,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
               `${P}-incoming`,
               `${P}-incoming-${transitionDirection}`,
             )}
-            style={toStageStyle(incomingFitSize, incomingScale, P)}
+            style={toStageStyle(incomingFitSize, incomingScale, P, incomingPoint)}
             aria-hidden="true"
           >
             <img
@@ -488,7 +597,7 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
         {!isAnimating && foregroundItem?.image?.assetId && (
           <div
             className={cn(`${P}-stage`, `${P}-foreground`)}
-            style={toSizeStyle(foregroundSize)}
+            style={toStageStyle(foregroundSize, 1, P, foregroundPoint)}
           >
             <img
               className={`${P}-image`}
@@ -502,13 +611,13 @@ export function Scale({ settings, content, isEditor, isPreviewMode }: ScaleProps
             <button
               type="button"
               className={cn(`${P}-nav`, `${P}-nav-prev`)}
-              onClick={() => startTransition('prev')}
+              onClick={(event) => startTransition('prev', event)}
               aria-label={`Show previous image (${prevIndex + 1} of ${items.length})`}
             />
             <button
               type="button"
               className={cn(`${P}-nav`, `${P}-nav-next`)}
-              onClick={() => startTransition('next')}
+              onClick={(event) => startTransition('next', event)}
               aria-label={`Show next image (${nextIndex + 1} of ${items.length})`}
             />
           </>
