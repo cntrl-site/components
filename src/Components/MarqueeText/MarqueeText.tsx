@@ -4,6 +4,7 @@ import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { textStylesToCss } from '../utils/textStylesToCss';
+import { observeIntersection } from '../utils/observeIntersection';
 
 function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
   const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
@@ -603,9 +604,11 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
+    const canObserve = typeof IntersectionObserver !== 'undefined';
     const wave = {
       raf: 0,
       cancelled: false,
+      isOnScreen: !canObserve,
       lut: null as WaveArcLut | null,
       lutKey: '',
       itemsCache: [] as WaveItemCache[],
@@ -692,18 +695,24 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       if (wave.cancelled) return;
       wave.raf = 0;
       applyWave();
-      if (waveShouldLoopRef.current && !document.hidden) {
+      if (waveShouldLoopRef.current && wave.isOnScreen && !document.hidden) {
         wave.raf = requestAnimationFrame(tick);
       }
     };
 
     const kick = () => {
-      if (wave.cancelled || wave.raf) return;
+      if (wave.cancelled || wave.raf || !wave.isOnScreen) return;
       wave.raf = requestAnimationFrame(tick);
+    };
+
+    const stop = () => {
+      cancelAnimationFrame(wave.raf);
+      wave.raf = 0;
     };
 
     const invalidate = () => {
       wave.cacheDirty = true;
+      if (!wave.isOnScreen) return;
       applyWave();
       kick();
     };
@@ -712,15 +721,16 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
     waveInvalidateRef.current = invalidate;
     applyWave();
     kick();
+    const stopObserving = canObserve
+      ? observeIntersection(wrapper, '0px', (isIntersecting) => {
+        wave.isOnScreen = isIntersecting;
+        if (isIntersecting) invalidate();
+        else stop();
+      })
+      : null;
     const onVisibility = () => {
-      if (document.hidden) {
-        cancelAnimationFrame(wave.raf);
-        wave.raf = 0;
-        return;
-      }
-      cancelAnimationFrame(wave.raf);
-      wave.raf = 0;
-      invalidate();
+      stop();
+      if (!document.hidden) invalidate();
     };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pageshow', onVisibility);
@@ -730,6 +740,7 @@ export const MarqueeText = ({ settings, content, isEditor, isPreviewMode }: Marq
       wave.cancelled = true;
       waveKickRef.current = null;
       waveInvalidateRef.current = null;
+      stopObserving?.();
       cancelAnimationFrame(wave.raf);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pageshow', onVisibility);

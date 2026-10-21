@@ -3,7 +3,8 @@ import cn from 'classnames';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
-import { NEAR_VIEWPORT_MARGIN, observeIntersection, pauseVideo, playVideo, raisePreload } from '../utils/useLazyVideos';
+import { NEAR_VIEWPORT_MARGIN, observeIntersection } from '../utils/observeIntersection';
+import { pauseVideo, playVideo, raisePreload } from '../utils/useLazyVideos';
 
 function getCSS(P: string, setWidthPx: number): string {
   const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
