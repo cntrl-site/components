@@ -630,9 +630,11 @@ const SPLIDE_SLIDE_VIDEOS = '.splide__slide video';
 
 function shouldPlaySlideVideo(video: HTMLVideoElement): boolean {
   if (video.closest('.splide--fade, .splide__slide.is-active:not(.splide__slide--clone), .splide__slide.is-next')) return true;
-  if (video.closest('.splide__slide--clone')) return false;
-  const upcomingVideo = video.closest('.splide__list')?.querySelector<HTMLVideoElement>('.splide__slide.is-next video');
-  return upcomingVideo?.getAttribute('src') === video.getAttribute('src');
+  const slide = video.closest<HTMLElement>('.splide__slide');
+  if (!slide || slide.classList.contains('splide__slide--clone')) return false;
+  const slideIndex = slide.dataset.slideIndex;
+  const upcomingSlide = slide.parentElement?.querySelector<HTMLElement>('.splide__slide.is-next');
+  return slideIndex !== undefined && upcomingSlide?.dataset.slideIndex === slideIndex;
 }
 
 function GridMediaItem({
@@ -2083,7 +2085,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                           ? lightboxItemsForEntry.findIndex(item => item.assetId === lightboxMedia.assetId)
                           : -1;
                         return (
-                          <SplideSlide key={imgIndex}>
+                          <SplideSlide key={imgIndex} data-slide-index={imgIndex}>
                             <GridMediaItem
                               media={displayMedia}
                               className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
