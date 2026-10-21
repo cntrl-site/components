@@ -5,12 +5,14 @@ import {
   buildColorVars,
   getFormFieldValidationError,
   scalingValue,
+  useLazyVideos,
   useScopedStyles,
 } from '../utils/index';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -580,10 +582,13 @@ function collectGridLightboxMedia(content: any[]): GridMedia[] {
 }
 
 function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
+  const [pool, setPool] = useState<HTMLDivElement | null>(null);
+  useLazyVideos(pool, { preload: 'metadata' });
   if (mediaList.length === 0) return null;
 
   return (
     <div
+      ref={setPool}
       aria-hidden
       style={{
         position: 'absolute',
@@ -599,7 +604,7 @@ function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
           <video
             key={media.assetId}
             src={media.assetId}
-            preload='auto'
+            preload='none'
             muted
             playsInline
           />
@@ -625,29 +630,31 @@ function GridMediaItem({
   media,
   className,
   style,
+  isSlide = false,
   onMediaClick,
 }: {
   media: GridMedia;
   className: string;
   style: React.CSSProperties;
+  isSlide?: boolean;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isVideoMedia(media)) {
-    return (
-      <video
-        src={media.assetId}
-        className={className}
-        style={{
-          ...style,
-          cursor: onMediaClick ? 'pointer' : 'default',
-        }}
-        muted
-        autoPlay
-        loop
-        playsInline
-        onClick={onMediaClick}
-      />
-    );
+    const videoProps = {
+      src: media.assetId,
+      className,
+      style: {
+        ...style,
+        cursor: onMediaClick ? 'pointer' : 'default',
+      },
+      muted: true,
+      loop: true,
+      playsInline: true,
+      onClick: onMediaClick,
+    };
+    return isSlide
+      ? <video {...videoProps} preload='none' />
+      : <LazyVideo {...videoProps} autoPlay />;
   }
 
   return (
@@ -661,6 +668,28 @@ function GridMediaItem({
       }}
       onClick={onMediaClick}
     />
+  );
+}
+
+function GridItemMediaWrapper({
+  prefix: P,
+  className,
+  style,
+  children,
+}: {
+  prefix: string;
+  className: string;
+  style: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const [wrapper, setWrapper] = useState<HTMLDivElement | null>(null);
+  useLazyVideos(wrapper, { autoPlay: true, selector: '.splide__slide video' });
+  useLazyVideos(wrapper, { preload: 'metadata', selector: `.${P}-item-image-wrapper-sizer video` });
+
+  return (
+    <div ref={setWrapper} className={className} style={style}>
+      {children}
+    </div>
   );
 }
 
@@ -1985,7 +2014,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               .map(entry => entry.lightboxMedia!);
 
             const imageContent = (
-              <div className={imageWrapperClassName} style={imageWrapperStyle}>
+              <GridItemMediaWrapper prefix={P} className={imageWrapperClassName} style={imageWrapperStyle}>
                 {displayItems.length === 0
                   ? null
                   : slider === 'off'
@@ -2012,7 +2041,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                       <div className={`${P}-item-image-wrapper-sizer`} aria-hidden="true">
                         {displayItems.map(({ displayMedia }) => (
                           isVideoMedia(displayMedia) ? (
-                            <video key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} muted playsInline />
+                            <video key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} preload='none' muted playsInline />
                           ) : (
                             <img key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} alt="" />
                           )
@@ -2053,6 +2082,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                               media={displayMedia}
                               className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
+                              isSlide
                               onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                                 ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                                 : undefined}
@@ -2063,7 +2093,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     </Splide>
                     </>
                 }
-              </div>
+              </GridItemMediaWrapper>
             );
 
             const typeABText = !isTextBeforeImage ? (

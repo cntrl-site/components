@@ -1,5 +1,6 @@
 import { CommonComponentProps } from '../props';
-import { scalingValue, useScopedStyles } from '../utils/index';
+import { scalingValue, useLazyVideos, useScopedStyles } from '../utils/index';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -603,10 +604,13 @@ function collectAllHiveMedia(content: HiveContentItem[]): HiveMedia[] {
 }
 
 function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
+  const [pool, setPool] = useState<HTMLDivElement | null>(null);
+  useLazyVideos(pool, { preload: 'metadata' });
   if (mediaList.length === 0) return null;
 
   return (
     <div
+      ref={setPool}
       aria-hidden
       style={{
         position: 'absolute',
@@ -622,7 +626,7 @@ function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
           <video
             key={media.assetId}
             src={media.assetId}
-            preload='auto'
+            preload='none'
             muted
             playsInline
           />
@@ -841,7 +845,7 @@ function MediaItem({
 }) {
   if (isVideoMedia(media)) {
     return (
-      <video
+      <LazyVideo
         src={media.assetId}
         className={className}
         data-hive-grid-index={gridIndex}
@@ -853,7 +857,6 @@ function MediaItem({
         autoPlay
         loop
         playsInline
-        preload='auto'
         onClick={onMediaClick}
       />
     );

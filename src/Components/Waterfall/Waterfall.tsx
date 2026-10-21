@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { CommonComponentProps } from '../props';
 import { getContainedMediaTransformOrigin } from '../utils/getImageRect';
 import { scalingValue, useScopedStyles } from '../utils/index';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 import {
   Lightbox,
@@ -432,7 +433,7 @@ export function Waterfall({
                   ].filter(Boolean).join(' ')}
                 >
                   {item.image.type === 'video' ? (
-                    <video
+                    <LazyVideo
                       ref={syncFitMediaLayout}
                       src={item.image.assetId}
                       data-waterfall-index={index}
@@ -442,7 +443,7 @@ export function Waterfall({
                       loop
                       autoPlay
                       onClick={handleOpen}
-                      onLoadedData={(e) => syncFitMediaLayout(e.currentTarget)}
+                      onLoadedMetadata={(e) => syncFitMediaLayout(e.currentTarget)}
                     />
                   ) : (
                     <img

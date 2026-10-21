@@ -9,6 +9,7 @@ import {
 } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 
 const DEFAULT_IMG_WIDTH = 300 / 1440;
 const DEFAULT_CORNER_RADIUS = 8 / 1440;
@@ -1454,7 +1455,7 @@ function GalleryMediaItem({
   const galleryPaddingBetweenHeight = Math.max(galleryPaddingBetween, PADDING_HANDLE_SIZE);
 
   const mediaNode = isVideoMedia(media) ? (
-    <video
+    <LazyVideo
       {...mediaProps}
       src={media.assetId}
       muted

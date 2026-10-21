@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type CSSProperties } from 'react';
 import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 
 const DEG_PER_SEC_PER_SPEED_UNIT = 10;
 const MAX_TOTAL_ITEMS = 400;
@@ -514,7 +515,7 @@ export function Helix({
               }
             : mediaStyle;
           const mediaNode = isVideoMedia(media) ? (
-            <video
+            <LazyVideo
               className={`${P}-media`}
               style={coverMediaStyle}
               src={media.assetId}
@@ -522,7 +523,6 @@ export function Helix({
               loop
               autoPlay
               playsInline
-              preload="auto"
             />
           ) : (
             <img
