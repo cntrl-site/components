@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
-import { observeIntersection } from './observeIntersection';
-
-export const NEAR_VIEWPORT_MARGIN = '100% 0px';
+import { NEAR_VIEWPORT_MARGIN, observeIntersection } from './observeIntersection';
 
 type VideoPreload = 'none' | 'metadata' | 'auto';
 

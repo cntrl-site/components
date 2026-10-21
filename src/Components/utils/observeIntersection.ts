@@ -1,3 +1,5 @@
+export const NEAR_VIEWPORT_MARGIN = '100% 0px';
+
 type IntersectionListener = (isIntersecting: boolean) => void;
 
 type SharedObserver = {
