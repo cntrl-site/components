@@ -28,7 +28,6 @@ export type Component = {
     type: 'image' | 'video';
     url: string;
   };
-  sourceCode?: string;
   fontRelations?: Record<string, string>;
   assetsPaths?: {
     content: Path[];

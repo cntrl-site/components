@@ -1,6 +1,5 @@
 import { Burger } from './Burger';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import burgerSourceRaw from './Burger.tsx?raw';
 
 function createRangeControlLayoutProperty(title: string) {
   return {
@@ -975,7 +974,6 @@ export const BurgerComponent = {
     m: 'stickyTop',
   } as const,
   schema,
-  sourceCode: burgerSourceRaw,
   assetsPaths: {
     content: [],
     parameters: [{ path: 'logo.icon', placeholderEnabled: true }],

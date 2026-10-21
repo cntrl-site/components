@@ -1,6 +1,6 @@
 {
   "name": "@cntrl-site/components",
-  "version": "1.0.101",
+  "version": "1.0.102",
   "description": "Custom components for control editor and public websites.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -20,6 +20,20 @@
       "import": "./dist/utils.mjs",
       "require": "./dist/utils.js"
     },
+    "./sources": {
+      "types": "./dist/sources.d.ts",
+      "import": "./dist/sources.mjs",
+      "require": "./dist/sources.js"
+    },
+    "./elements": {
+      "types": "./dist/elements.d.ts",
+      "node": {
+        "import": "./dist/elements.node.mjs",
+        "require": "./dist/elements.node.js"
+      },
+      "import": "./dist/elements.mjs",
+      "require": "./dist/elements.js"
+    },
     "./style/components.css": {
       "default": "./dist/components.css"
     }
@@ -28,6 +42,12 @@
     "*": {
       "utils": [
         "./dist/Components/utils/index.d.ts"
+      ],
+      "sources": [
+        "./dist/sources.d.ts"
+      ],
+      "elements": [
+        "./dist/elements.d.ts"
       ]
     }
   },
@@ -37,6 +57,9 @@
     "prebuild": "rimraf ./dist",
     "build": "vite build",
     "build:watch": "vite build --watch",
+    "postbuild": "npm run check:sources && npm run check:elements",
+    "check:sources": "node scripts/check-sources.mjs",
+    "check:elements": "node scripts/check-elements.mjs",
     "prepublishOnly": "cross-env NODE_ENV=production npm run build"
   },
   "files": [
@@ -60,8 +83,14 @@
     "classnames": "^2.5.1"
   },
   "peerDependencies": {
+    "franc-min": "^5.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "franc-min": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.16.0",
@@ -74,7 +103,7 @@
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.3.4",
     "cross-env": "^10.1.0",
-    "franc-min": "^6.2.0",
+    "franc-min": "^5.0.0",
     "hyphen": "^1.14.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
