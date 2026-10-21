@@ -4,7 +4,7 @@ import { CommonComponentProps } from '../props';
 import { scalingValue } from '../utils/scalingValue';
 import { useScopedStyles } from '../utils/useScopedStyles';
 import { textStylesToCss } from '../utils/textStylesToCss';
-import { observeIntersection } from '../utils/useLazyVideos';
+import { observeIntersection } from '../utils/observeIntersection';
 
 function getCSS(P: string, setWidthPx: number, isCurve: boolean): string {
   const distance = setWidthPx > 0 ? `${setWidthPx}px` : '0px';
