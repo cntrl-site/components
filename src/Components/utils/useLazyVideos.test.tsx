@@ -138,6 +138,14 @@ describe('LazyVideo', () => {
     expect(playSpy).not.toHaveBeenCalled();
   });
 
+  it('only fetches metadata when asked to', () => {
+    render(<LazyVideo src="a.mp4" nearPreload="metadata" />);
+    const video = container.querySelector('video')!;
+    emit(NEAR, video, true);
+    expect(video.preload).toBe('metadata');
+    expect(playSpy).not.toHaveBeenCalled();
+  });
+
   it('forwards callback refs', () => {
     const ref = vi.fn();
     render(<LazyVideo ref={ref} src="a.mp4" />);
@@ -179,14 +187,15 @@ describe('LazyVideo', () => {
   });
 });
 
-function VideoGroup({ children, autoPlay, preload, selector }: {
+function VideoGroup({ children, autoPlay, preload, selector, shouldPlay }: {
   children: ReactNode;
   autoPlay?: boolean;
   preload?: 'auto' | 'metadata';
   selector?: string;
+  shouldPlay?: (video: HTMLVideoElement) => boolean;
 }) {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
-  useLazyVideos(element, { autoPlay, preload, selector });
+  useLazyVideos(element, { autoPlay, preload, selector, shouldPlay });
   return <div ref={setElement}>{children}</div>;
 }
 
@@ -218,6 +227,33 @@ describe('useLazyVideos on a container', () => {
         expect(cloneVideo.preload).toBe('auto');
         expect(cloneVideo.muted).toBe(true);
         expect(playSpy).toHaveBeenCalledWith(cloneVideo);
+        resolve();
+      });
+    });
+  });
+
+  it('plays only the videos shouldPlay accepts and follows class changes', () => {
+    const isActiveSlideVideo = (video: HTMLVideoElement) => Boolean(video.closest('.slide.is-active'));
+    render(
+      <VideoGroup autoPlay selector=".slide video" shouldPlay={isActiveSlideVideo}>
+        <div className="slide is-active"><video preload="none" /></div>
+        <div className="slide"><video preload="none" /></div>
+      </VideoGroup>,
+    );
+    const group = container.firstElementChild!;
+    const [first, second] = Array.from(group.querySelectorAll('video'));
+    emit(NEAR, group, true);
+    emit(VISIBLE, group, true);
+    expect(second.preload).toBe('auto');
+    expect(first.paused).toBe(false);
+    expect(second.paused).toBe(true);
+
+    return new Promise<void>((resolve) => {
+      first.parentElement!.classList.remove('is-active');
+      second.parentElement!.classList.add('is-active');
+      setTimeout(() => {
+        expect(first.paused).toBe(true);
+        expect(second.paused).toBe(false);
         resolve();
       });
     });

@@ -69,13 +69,14 @@ type LazyVideosOptions = {
   autoPlay?: boolean;
   preload?: Exclude<VideoPreload, 'none'>;
   selector?: string;
+  shouldPlay?: (video: HTMLVideoElement) => boolean;
 };
 
 function isVideoElement(element: Element): element is HTMLVideoElement {
   return element.localName === 'video';
 }
 
-export function useLazyVideos(element: Element | null, { autoPlay = false, preload = 'auto', selector = 'video' }: LazyVideosOptions = {}) {
+export function useLazyVideos(element: Element | null, { autoPlay = false, preload = 'auto', selector = 'video', shouldPlay }: LazyVideosOptions = {}) {
   useEffect(() => {
     if (!element) return;
     const isSingleVideo = isVideoElement(element);
@@ -97,7 +98,7 @@ export function useLazyVideos(element: Element | null, { autoPlay = false, prelo
       getVideos().forEach((video) => {
         if (isNear) raisePreload(video, preload);
         if (!autoPlay) return;
-        if (isVisible) {
+        if (isVisible && (!shouldPlay || shouldPlay(video))) {
           video.muted = true;
           if (video.paused) playVideo(video);
         } else {
@@ -116,11 +117,15 @@ export function useLazyVideos(element: Element | null, { autoPlay = false, prelo
       })
       : null;
     const mutationObserver = isSingleVideo ? null : new MutationObserver(apply);
-    mutationObserver?.observe(element, { childList: true, subtree: true });
+    mutationObserver?.observe(element, {
+      childList: true,
+      subtree: true,
+      ...(shouldPlay ? { attributes: true, attributeFilter: ['class'] } : {}),
+    });
     return () => {
       stopNear();
       stopVisible?.();
       mutationObserver?.disconnect();
     };
-  }, [element, autoPlay, preload, selector]);
+  }, [element, autoPlay, preload, selector, shouldPlay]);
 }
