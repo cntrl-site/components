@@ -1,6 +1,5 @@
 import { MarqueeText } from './MarqueeText';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import marqueeTextSourceRaw from './MarqueeText.tsx?raw';
 
 const marqueeTextFontStyleProperties = {
   fontSettings: {
@@ -291,7 +290,6 @@ export const MarqueeTextComponent = {
     url: 'https://cdn.cntrl.site/component-assets/Text_Marquee.mp4',
   },
   schema,
-  sourceCode: marqueeTextSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],

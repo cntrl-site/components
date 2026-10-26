@@ -1,6 +1,5 @@
 import { Scale } from './Scale';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import scaleSourceRaw from './Scale.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -38,12 +37,19 @@ const schema: ComponentSchemaV1 = {
         title: 'BG image',
         display: { type: 'toggle-cycle', enum: ['greyscale', 'blur', 'as is'] },
       },
+      origin: {
+        type: 'string',
+        scope: 'common',
+        title: 'Origin',
+        display: { type: 'toggle-cycle', enum: ['center', 'mouse', 'random'] },
+      },
     },
     defaults: {
       maxWidth: 60,
       maxHeight: 60,
       transition: 700,
       bgImage: 'greyscale',
+      origin: 'center',
     },
     layout: [
       '__componentName__',
@@ -51,6 +57,7 @@ const schema: ComponentSchemaV1 = {
       'maxHeight',
       'transition',
       'bgImage',
+      'origin',
     ],
   },
   panels: [
@@ -63,6 +70,7 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         { type: 'row', title: '', items: ['maxWidth', 'maxHeight'] },
         { type: 'row', title: '', items: ['transition', 'bgImage'] },
+        { type: 'row', title: '', items: ['origin'] },
       ],
     },
   ],
@@ -155,7 +163,6 @@ export const ScaleComponent = {
     url: 'https://cdn.cntrl.site/component-assets/Scale.mp4',
   },
   schema,
-  sourceCode: scaleSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],

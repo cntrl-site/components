@@ -1,6 +1,5 @@
 import { ClickGallerie } from './ClickGallerie';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import clickGallerieSourceRaw from './ClickGallerie.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -132,10 +131,10 @@ const schema: ComponentSchemaV1 = {
         title: 'Target',
         display: { type: 'toggle-cycle', enum: ['area', 'image'] },
       },
-      position: {
+      origin: {
         type: 'string',
         scope: 'common',
-        title: 'Position',
+        title: 'Origin',
         display: { type: 'toggle-cycle', enum: ['random', 'same', 'on Click'] },
       },
       visible: {
@@ -166,7 +165,7 @@ const schema: ComponentSchemaV1 = {
       },
       cursor: 'system',
       target: 'area',
-      position: 'random',
+      origin: 'random',
       visible: 'all',
       defaultCursor: null,
       hoverCursor: null,
@@ -212,7 +211,7 @@ const schema: ComponentSchemaV1 = {
       'imageSize',
       'cursor',
       'target',
-      'position',
+      'origin',
       'visible',
       'defaultCursor',
       'hoverCursor',
@@ -228,7 +227,7 @@ const schema: ComponentSchemaV1 = {
         '__componentName__',
         { type: 'row', title: '', items: ['imageSize'] },
         { type: 'row', title: '', items: ['cursor', 'target'] },
-        { type: 'row', title: '', items: ['position', 'visible'] },
+        { type: 'row', title: '', items: ['origin', 'visible'] },
         { type: 'row', title: 'Custom Cursor', items: ['defaultCursor', 'hoverCursor'] },
       ],
     },
@@ -260,7 +259,6 @@ export const ClickGallerieComponent = {
     url: 'https://cdn.cntrl.site/component-assets/Click_Gallery.mp4',
   },
   schema,
-  sourceCode: clickGallerieSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [

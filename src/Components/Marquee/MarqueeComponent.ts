@@ -1,6 +1,5 @@
 import { Marquee } from './Marquee';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import marqueeSourceRaw from './Marquee.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -266,7 +265,6 @@ export const MarqueeComponent = {
     url: 'https://cdn.cntrl.site/component-assets/Simple-Marquee.mp4',
   },
   schema,
-  sourceCode: marqueeSourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [],

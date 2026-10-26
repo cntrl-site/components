@@ -21,6 +21,7 @@ type ClickGallerieSettings = {
   imageSize?: ImageSizeSettings;
   cursor?: 'system' | 'custom';
   target?: 'area' | 'image';
+  origin?: 'random' | 'same' | 'on Click';
   position?: 'random' | 'same' | 'on Click';
   visible?: 'all' | 'last One';
   defaultCursor?: string | null;
@@ -248,11 +249,13 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
     imageSize = DEFAULT_IMAGE_SIZE,
     cursor: cursorMode = 'system',
     target = 'area',
-    position = 'random',
+    origin: originSetting,
+    position: legacyOrigin,
     visible = 'all',
     defaultCursor = null,
     hoverCursor = null,
   } = settings;
+  const origin = originSetting ?? legacyOrigin ?? 'random';
 
   const validContent = content.filter(
     (item): item is ClickGallerieItem => Boolean(item?.image?.assetId),
@@ -352,7 +355,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
 
     let x = 0;
     let y = 0;
-    if (position === 'same') {
+    if (origin === 'same') {
       ({ x, y } = getSamePosition(containerWidth, containerHeight, widthPx, aspectRatio));
     } else {
       x = clickPosition.x ?? Math.random() * containerWidth;
@@ -391,7 +394,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
           : resolveImageWidthPx(img.assetId, imageSize, imageMetaByUrlRef.current);
         const { heightPx } = getImageDimensions(widthPx, img.aspectRatio);
 
-        if (position === 'same') {
+        if (origin === 'same') {
           const { x, y } = getSamePosition(containerWidth, containerHeight, widthPx, img.aspectRatio);
           return { ...img, x, y, widthPx };
         }
@@ -422,7 +425,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
 
     setPlacedImages([newImg]);
     setCounter(validContent.length > 1 ? 1 : 0);
-  }, [imageSize, position, divRef, content, imagesReady]);
+  }, [imageSize, origin, divRef, content, imagesReady]);
 
   useEffect(() => {
     if (!divRef) return;
@@ -437,7 +440,7 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
       ro.disconnect();
       window.removeEventListener('resize', repositionPlacedImages);
     };
-  }, [divRef, position, imageSize, placedImages.length]);
+  }, [divRef, origin, imageSize, placedImages.length]);
 
   useEffect(() => {
     if (visible === 'last One') {
@@ -456,10 +459,10 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
 
     let x = 0;
     let y = 0;
-    if (position === 'on Click') {
+    if (origin === 'on Click') {
       x = clickX;
       y = clickY;
-    } else if (position === 'same') {
+    } else if (origin === 'same') {
       x = rect.width / 2;
       y = rect.height / 2;
     } else {

@@ -9,3 +9,4 @@ export {
   isPanelAvailable,
 } from './Components/utils/panelAvailability';
 export type { PanelAvailabilityContext } from './Components/utils/panelAvailability';
+export { nonForkableComponentIds } from './forking';

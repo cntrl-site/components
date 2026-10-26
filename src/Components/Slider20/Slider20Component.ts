@@ -1,6 +1,5 @@
 import { Slider20 } from './Slider20';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import slider20SourceRaw from './Slider20.tsx?raw';
 
 const schema: ComponentSchemaV1 = {
   type: 'object',
@@ -473,7 +472,6 @@ export const Slider20Component = {
     url: 'https://cdn.cntrl.site/component-assets/Slider.mp4',
   },
   schema,
-  sourceCode: slider20SourceRaw,
   assetsPaths: {
     content: [{ path: 'image.assetId', placeholderEnabled: true }],
     parameters: [{ path: 'controls' }],

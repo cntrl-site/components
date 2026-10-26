@@ -7,12 +7,14 @@ import {
   getFormFieldValidationError,
   LinkWrapper,
   scalingValue,
+  useLazyVideos,
   useScopedStyles,
 } from '../utils/index';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -588,12 +590,15 @@ function collectGridLightboxMedia(content: any[]): GridMedia[] {
 }
 
 function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
+  const [pool, setPool] = useState<HTMLDivElement | null>(null);
+  useLazyVideos(pool, { preload: 'metadata' });
   // an embed's player is only ever framed where it shows
   const files = mediaList.filter(media => !isEmbedMedia(media));
   if (files.length === 0) return null;
 
   return (
     <div
+      ref={setPool}
       aria-hidden
       style={{
         position: 'absolute',
@@ -609,7 +614,7 @@ function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
           <video
             key={media.assetId}
             src={media.assetId}
-            preload='auto'
+            preload='none'
             muted
             playsInline
           />
@@ -631,11 +636,23 @@ function unloadVideoElement(video: HTMLVideoElement) {
   video.load();
 }
 
+const SPLIDE_SLIDE_VIDEOS = '.splide__slide video';
+
+function shouldPlaySlideVideo(video: HTMLVideoElement): boolean {
+  if (video.closest('.splide--fade, .splide__slide.is-active:not(.splide__slide--clone), .splide__slide.is-next')) return true;
+  const slide = video.closest<HTMLElement>('.splide__slide');
+  if (!slide || slide.classList.contains('splide__slide--clone')) return false;
+  const slideIndex = slide.dataset.slideIndex;
+  const upcomingSlide = slide.parentElement?.querySelector<HTMLElement>('.splide__slide.is-next');
+  return slideIndex !== undefined && upcomingSlide?.dataset.slideIndex === slideIndex;
+}
+
 function GridMediaItem({
   media,
   className,
   style,
   hasLightbox,
+  isSplideSlide = false,
   onMediaClick,
 }: {
   media: GridMedia;
@@ -643,6 +660,7 @@ function GridMediaItem({
   style: React.CSSProperties;
   /** An embed then plays here as a silent loop, and as it was set to in the lightbox. */
   hasLightbox: boolean;
+  isSplideSlide?: boolean;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isEmbedMedia(media)) {
@@ -662,21 +680,21 @@ function GridMediaItem({
   }
 
   if (isVideoMedia(media)) {
-    return (
-      <video
-        src={media.assetId}
-        className={className}
-        style={{
-          ...style,
-          cursor: onMediaClick ? 'pointer' : 'default',
-        }}
-        muted
-        autoPlay
-        loop
-        playsInline
-        onClick={onMediaClick}
-      />
-    );
+    const videoProps = {
+      src: media.assetId,
+      className,
+      style: {
+        ...style,
+        cursor: onMediaClick ? 'pointer' : 'default',
+      },
+      muted: true,
+      loop: true,
+      playsInline: true,
+      onClick: onMediaClick,
+    };
+    return isSplideSlide
+      ? <video {...videoProps} preload='none' />
+      : <LazyVideo {...videoProps} autoPlay />;
   }
 
   return (
@@ -690,6 +708,25 @@ function GridMediaItem({
       }}
       onClick={onMediaClick}
     />
+  );
+}
+
+function GridItemMediaWrapper({
+  className,
+  style,
+  children,
+}: {
+  className: string;
+  style: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const [wrapper, setWrapper] = useState<HTMLDivElement | null>(null);
+  useLazyVideos(wrapper, { autoPlay: true, selector: SPLIDE_SLIDE_VIDEOS, shouldPlay: shouldPlaySlideVideo });
+
+  return (
+    <div ref={setWrapper} className={className} style={style}>
+      {children}
+    </div>
   );
 }
 
@@ -1985,7 +2022,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               .map(entry => entry.lightboxMedia!);
 
             const imageContent = (
-              <div className={imageWrapperClassName} style={imageWrapperStyle}>
+              <GridItemMediaWrapper className={imageWrapperClassName} style={imageWrapperStyle}>
                 {displayItems.length === 0
                   ? null
                   : slider === 'off'
@@ -2015,7 +2052,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                           isEmbedMedia(displayMedia) ? (
                             <div key={`sizer-${displayMedia.assetId}`} style={{ aspectRatio: `${getEmbedAspect(displayMedia)}` }} />
                           ) : isVideoMedia(displayMedia) ? (
-                            <video key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} muted playsInline />
+                            <LazyVideo key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} nearPreload='metadata' muted playsInline />
                           ) : (
                             <img key={`sizer-${displayMedia.assetId}`} src={displayMedia.assetId} alt="" />
                           )
@@ -2051,12 +2088,13 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                           ? lightboxItemsForEntry.findIndex(item => item.assetId === lightboxMedia.assetId)
                           : -1;
                         return (
-                          <SplideSlide key={imgIndex}>
+                          <SplideSlide key={imgIndex} data-slide-index={imgIndex}>
                             <GridMediaItem
                               media={displayMedia}
                               className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
                               style={imageStyle}
                               hasLightbox={lightbox === 'on'}
+                              isSplideSlide
                               onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                                 ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
                                 : undefined}
@@ -2067,7 +2105,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                     </Splide>
                     </>
                 }
-              </div>
+              </GridItemMediaWrapper>
             );
 
             const typeABText = !isTextBeforeImage ? (

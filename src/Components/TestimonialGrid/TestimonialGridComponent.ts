@@ -1,6 +1,5 @@
 import { TestimonialGrid } from './TestimonialGrid';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import testimonialGridSourceRaw from './TestimonialGrid.tsx?raw';
 
 const testimonialCaptionTextStyleProperties = {
   fontSettings: {
@@ -496,7 +495,6 @@ export const TestimonialGridComponent = {
     }    
   },
   schema,
-  sourceCode: testimonialGridSourceRaw,
   assetsPaths: {
     content: [{ path: 'logo.assetId', placeholderEnabled: true }],
     parameters: []

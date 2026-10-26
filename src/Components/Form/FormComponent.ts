@@ -1,6 +1,5 @@
 import { Form } from './Form';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
-import formSourceRaw from './Form.tsx?raw';
 
 const defaultFieldsItems = [
   { name: 'name', type: 'text' as const, placeholder: 'Enter your name', label: 'Name', isRequired: false, error: 'Please, enter your name.' },
@@ -704,7 +703,6 @@ export const FormComponent = {
     }
   },
   schema,
-  sourceCode: formSourceRaw,
   fontRelations: {
     inputFontSettings: 'fontFamily',
     buttonFontSettings: 'fontFamily',

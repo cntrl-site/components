@@ -1,5 +1,6 @@
 import { CommonComponentProps } from '../props';
-import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia, scalingValue, useScopedStyles } from '../utils/index';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia, scalingValue, useLazyVideos, useScopedStyles } from '../utils/index';
+import { LazyVideo } from '../helpers/LazyVideo/LazyVideo';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -611,12 +612,15 @@ function collectAllHiveMedia(content: HiveContentItem[]): HiveMedia[] {
 }
 
 function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
+  const [pool, setPool] = useState<HTMLDivElement | null>(null);
+  useLazyVideos(pool, { preload: 'metadata' });
   // an embed's player is only ever framed where it shows
   const files = mediaList.filter(media => !isEmbedMedia(media));
   if (files.length === 0) return null;
 
   return (
     <div
+      ref={setPool}
       aria-hidden
       style={{
         position: 'absolute',
@@ -632,7 +636,7 @@ function PreloadedMediaPool({ mediaList }: { mediaList: HiveMedia[] }) {
           <video
             key={media.assetId}
             src={media.assetId}
-            preload='auto'
+            preload='none'
             muted
             playsInline
           />
@@ -870,7 +874,7 @@ function MediaItem({
 
   if (isVideoMedia(media)) {
     return (
-      <video
+      <LazyVideo
         src={media.assetId}
         className={className}
         data-hive-grid-index={gridIndex}
@@ -882,7 +886,6 @@ function MediaItem({
         autoPlay
         loop
         playsInline
-        preload='auto'
         onClick={onMediaClick}
       />
     );
