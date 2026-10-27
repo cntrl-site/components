@@ -155,6 +155,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: true,
       allowsVideo: true,
     },
@@ -164,6 +165,7 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             isObjectFitEditable: false,
             type: 'media-input',
@@ -173,15 +175,16 @@ const schema: ComponentSchemaV1 = {
             name: { type: 'string' },
             type: {
               type: 'string',
-              enum: ['image', 'video'],
+              enum: ['image', 'video', 'vimeo', 'youtube'],
             },
           },
         },
         link: {
+          type: 'object',
           label: 'URL',
-          placeholder: 'Enter link...',
+          contentKey: 'link',
           display: {
-            type: 'text-input',
+            type: 'link-input',
           },
         },
       },
@@ -192,49 +195,49 @@ const schema: ComponentSchemaV1 = {
           assetId: '01M3QM74XESYN1HRYH9VRTZ5CK',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           assetId: '01M3QM74XEVZ9F59FC7M9BA63Q',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           assetId: '01M3QM74XEE2101QD8PM6E4JSA',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           assetId: '01M3QM74XE20C38X4NND20C5R4',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           assetId: '01M3QM74XEGBJMJ7Q63KMZY6NA',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           assetId: '01M3QM74XEBS5231QA4355P4VQ',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
       {
         image: {
           assetId: '01M3QM74XEWT5YM43KF6PEYRCV',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       },
     ],
   },

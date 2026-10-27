@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommonComponentProps } from '../props';
-import { useScopedStyles } from '../utils/index';
+import { LinkWrapper, useScopedStyles, type ContentLink } from '../utils/index';
 
 type ClickGallerieItem = {
   image: {
     assetId: string;
     name: string;
   };
-  link: string;
+  link?: ContentLink;
 };
 
 type ImageSizeSettings = {
@@ -42,7 +42,7 @@ type ImageMeta = {
 interface PlacedImage {
   id: number;
   assetId: string;
-  link: string;
+  link?: ContentLink;
   name: string;
   x: number;
   y: number;
@@ -505,13 +505,9 @@ export function ClickGallerie({ settings, content = [], isEditor }: ClickGalleri
               cursor: useCustomCursor ? 'none' : 'default',
             }}
           >
-            {target === 'area' && img.link ? (
-              <a href={img.link} target="_blank" rel="noreferrer" className={`${P}-link`}>
-                <img src={img.assetId} alt={img.name} className={`${P}-image`} />
-              </a>
-            ) : (
+            <LinkWrapper link={target === 'area' ? img.link : undefined} className={`${P}-link`}>
               <img src={img.assetId} alt={img.name} className={`${P}-image`} />
-            )}
+            </LinkWrapper>
           </div>
         ))}
         {isInside && useCustomCursor && (

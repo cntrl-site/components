@@ -368,6 +368,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: true,
     },
     items: {
@@ -376,6 +377,7 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             type: 'media-input',
           },
@@ -389,6 +391,7 @@ const schema: ComponentSchemaV1 = {
         imageCaption: {
           placeholder: 'Add Caption...',
           label: 'Description',
+          contentKey: 'title',
           display: { type: 'rich-text' },
         },
       },

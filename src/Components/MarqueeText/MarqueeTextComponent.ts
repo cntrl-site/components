@@ -225,6 +225,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: false,
     },
     items: {
@@ -233,6 +234,7 @@ const schema: ComponentSchemaV1 = {
         text: {
           placeholder: 'Add text...',
           label: 'Text',
+          contentKey: 'title',
           display: {
             type: 'text-input',
           },
@@ -240,15 +242,16 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             type: 'media-input',
           },
         },
         link: {
-          type: 'string',
+          type: 'object',
           label: 'Link',
-          placeholder: 'Add link...',
-          display: { type: 'text-input' },
+          contentKey: 'link',
+          display: { type: 'link-input' },
         },
       },
     },
@@ -259,7 +262,7 @@ const schema: ComponentSchemaV1 = {
           assetId: '01M3QM74XF10Z2N5P1Y0J0XDQQ',
           name: '',
         },
-        link: '',
+        link: { type: 'url', value: '', target: 'self' },
       }
     ],
   },
