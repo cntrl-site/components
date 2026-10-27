@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { getDisplayedImageRect } from '../utils/getImageRect';
+import { EmbedMediaFrame, getEmbedAspect, isEmbedMedia } from '../utils/index';
 import { useLazyVideos } from '../utils/useLazyVideos';
 import {
   HiveLightboxTitles,
@@ -12,7 +13,10 @@ export type WaterfallMedia = {
   assetId: string;
   name?: string;
   objectFit?: 'cover' | 'contain';
-  type?: 'image' | 'video';
+  type?: 'image' | 'video' | 'vimeo' | 'youtube';
+  thumbnail?: string;
+  width?: number;
+  height?: number;
 };
 
 export type WaterfallLightboxContentItem = {
@@ -387,6 +391,11 @@ function preloadMediaDimensions(
   media: WaterfallMedia,
   onDimensions: (url: string, width: number, height: number) => void,
 ) {
+  if (isEmbedMedia(media)) {
+    onDimensions(media.assetId, getEmbedAspect(media), 1);
+    return;
+  }
+
   if (isVideoMedia(media)) {
     const video = document.createElement('video');
     const handleMetadata = () => {
@@ -426,7 +435,9 @@ export function collectAllWaterfallMedia(content: WaterfallLightboxContentItem[]
 export function PreloadedMediaPool({ mediaList }: { mediaList: WaterfallMedia[] }) {
   const [pool, setPool] = useState<HTMLDivElement | null>(null);
   useLazyVideos(pool, { preload: 'metadata' });
-  if (mediaList.length === 0) return null;
+  // an embed's player is only ever framed where it shows
+  const files = mediaList.filter(media => !isEmbedMedia(media));
+  if (files.length === 0) return null;
 
   return (
     <div
@@ -441,7 +452,7 @@ export function PreloadedMediaPool({ mediaList }: { mediaList: WaterfallMedia[] 
         pointerEvents: 'none',
       }}
     >
-      {mediaList.map((media) => (
+      {files.map((media) => (
         isVideoMedia(media) ? (
           <video
             key={media.assetId}
@@ -582,13 +593,13 @@ function getSideOpenTransform(
 }
 
 function isVideoMedia(media: WaterfallMedia): boolean {
+  if (isEmbedMedia(media)) return false;
   if (media.type === 'video') return true;
   return /\.(mp4|webm|ogg|mov)(\?|#|$)/i.test(media.assetId);
 }
 
 function LightboxVideo({
   src,
-  phase,
   onMediaElement,
   wrapperStyle,
   videoStyle,
@@ -596,7 +607,6 @@ function LightboxVideo({
   onTransitionEnd,
 }: {
   src: string;
-  phase: 'opening' | 'open' | 'closing';
   onMediaElement?: (element: HTMLVideoElement | null) => void;
   wrapperStyle: React.CSSProperties;
   videoStyle: React.CSSProperties;
@@ -621,11 +631,12 @@ function LightboxVideo({
         key={src}
         ref={videoRef}
         src={src}
-        controls={phase === 'open'}
+        muted
+        autoPlay
+        loop
         playsInline
         preload='auto'
         onLoadedMetadata={onLoadedMetadata}
-        onClick={(e) => e.stopPropagation()}
         style={videoStyle}
       />
     </div>
@@ -643,11 +654,17 @@ function LightboxSideMedia({
   onTransitionEnd?: (e: React.TransitionEvent<HTMLElement>) => void;
   onMeasure?: (url: string, width: number, height: number) => void;
 }) {
+  if (isEmbedMedia(media)) {
+    return <img src={media.thumbnail} alt={media.name} style={style} onTransitionEnd={onTransitionEnd} />;
+  }
+
   if (isVideoMedia(media)) {
     return (
       <video
         src={media.assetId}
         muted
+        autoPlay
+        loop
         playsInline
         preload='auto'
         style={style}
@@ -755,6 +772,7 @@ export function Lightbox({
   const prevItemUrlRef = useRef<string | undefined>(undefined);
   const currentItem = items[index];
   const isCurrentVideo = currentItem ? isVideoMedia(currentItem) : false;
+  const isCurrentEmbed = currentItem ? isEmbedMedia(currentItem) : false;
   const isHorizontalNavActive = navSwipeOffset !== 0 || navSwipeAnimating;
   const allowSwipeDismiss = !isEditMode && (!isEditor || Boolean(isPreviewMode));
   const allowNavigation = canNavigate && !isEditMode;
@@ -1519,10 +1537,9 @@ export function Lightbox({
             : phase === 'opening' || isClosing
               ? `opacity ${LIGHTBOX_ANIM_MS}ms ${LIGHTBOX_EASING}`
               : 'none',
-    pointerEvents: isCurrentVideo && isOpen && !isHorizontalNavActive ? 'auto' : 'none',
-    touchAction: isCurrentVideo && isOpen ? 'none' : undefined,
+    pointerEvents: 'none',
     zIndex: 1,
-    overflow: isCurrentVideo ? 'hidden' : undefined,
+    overflow: isCurrentVideo || isCurrentEmbed ? 'hidden' : undefined,
   };
 
   const lightboxVideoStyle: React.CSSProperties = {
@@ -1530,7 +1547,7 @@ export function Lightbox({
     height: '100%',
     display: 'block',
     objectFit: 'contain',
-    pointerEvents: isOpen && !isHorizontalNavActive ? 'auto' : 'none',
+    pointerEvents: 'none',
   };
 
   const getSideMediaStyle = (
@@ -1768,11 +1785,20 @@ export function Lightbox({
       )}
 
       {finalRect && currentItem && (
-        isCurrentVideo ? (
+        isCurrentEmbed ? (
+          <div key={`${index}-${currentItem.assetId}`} style={mediaStyle} onTransitionEnd={handleNavSwipeTransitionEnd}>
+            <EmbedMediaFrame
+              media={currentItem}
+              fit="contain"
+              lazy={false}
+              startsAtOnce
+              style={lightboxVideoStyle}
+            />
+          </div>
+        ) : isCurrentVideo ? (
           <LightboxVideo
             key={`${index}-${currentItem.assetId}`}
             src={currentItem.assetId}
-            phase={phase}
             onMediaElement={setCenterMediaElement}
             wrapperStyle={mediaStyle}
             videoStyle={lightboxVideoStyle}

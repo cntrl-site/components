@@ -279,10 +279,10 @@ export const ControlImageRevealSliderComponent: Component = {
               required: ['assetId', 'name']
             },
             link: {
+              type: 'object',
               label: 'URL',
-              placeholder: 'Enter link...',
               display: {
-                type: 'text-input',
+                type: 'link-input',
               }
             }
           },
@@ -295,7 +295,7 @@ export const ControlImageRevealSliderComponent: Component = {
               assetId: "01M3QM74XGWBJY3AQQ71GC2Z6Q",
               name: "Slider-1.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           },
           {
             image: {
@@ -303,7 +303,7 @@ export const ControlImageRevealSliderComponent: Component = {
               assetId: "01M3QM74XGMXS1Z5ZY2RFGS3T4",
               name: "Slider-2.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           },
           {
             image: {
@@ -311,7 +311,7 @@ export const ControlImageRevealSliderComponent: Component = {
               assetId: "01M3QM74XGWG6VCHNEXKVKAJGT",
               name: "Slider-3.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           },
           {
             image: {
@@ -319,7 +319,7 @@ export const ControlImageRevealSliderComponent: Component = {
               assetId: "01M3QM74XGCVMTPNHFHMR98RPZ",
               name: "Slider-4.png"
             },
-            link: "",
+            link: { type: 'url', value: '', target: 'blank' },
           }
         ]
       },

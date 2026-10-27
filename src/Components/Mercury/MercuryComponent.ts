@@ -61,6 +61,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemWithoutImage: true,
       allowsVideo: true,
     },
@@ -73,6 +74,7 @@ const schema: ComponentSchemaV1 = {
         title: {
           type: 'string',
           label: 'Title',
+          contentKey: 'title',
           placeholder: 'Add Title...',
           display: {
             type: 'text-input',
@@ -81,6 +83,7 @@ const schema: ComponentSchemaV1 = {
         description: {
           type: 'string',
           label: 'Description',
+          contentKey: 'subtitle',
           placeholder: 'Add Description...',
           display: {
             type: 'text-input',
@@ -89,6 +92,7 @@ const schema: ComponentSchemaV1 = {
         gallery: {
           type: 'array',
           label: 'Gallery',
+          contentKey: 'gallery',
           display: {
             type: 'media-pair-list-input',
           },
@@ -104,7 +108,7 @@ const schema: ComponentSchemaV1 = {
                     name: { type: 'string' },
                     type: {
                       type: 'string',
-                      enum: ['image', 'video'],
+                      enum: ['image', 'video', 'vimeo', 'youtube'],
                     },
                     objectFit: {
                       type: 'string',

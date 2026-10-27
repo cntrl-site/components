@@ -37,7 +37,7 @@ const schema: ComponentSchemaV1 = {
             name: { type: 'string' },
             type: {
               type: 'string',
-              enum: ['image', 'video'],
+              enum: ['image', 'video', 'vimeo', 'youtube'],
             },
           },
         },

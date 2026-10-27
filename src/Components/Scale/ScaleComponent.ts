@@ -77,6 +77,7 @@ const schema: ComponentSchemaV1 = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemFromFileExplorer: true,
       deleteImageDeletesEntry: true,
     },
@@ -86,6 +87,7 @@ const schema: ComponentSchemaV1 = {
         image: {
           type: 'object',
           label: 'Image',
+          contentKey: 'gallery',
           display: {
             type: 'media-input',
             isObjectFitEditable: false,
