@@ -19,6 +19,10 @@ export const ARCHIVE_POPUP_MIN_COLUMNS = 2;
 export const ARCHIVE_POPUP_MAX_COLUMNS = 5;
 /** The fields of the columns after the title, in order; `columns` decides how many of them a row shows. */
 export const ARCHIVE_POPUP_EXTRA_TITLE_KEYS = ['title2', 'title3', 'title4'] as const;
+/** Every column but the last has a width of its own, like Programme's; the last takes what is left of the row. */
+export const ARCHIVE_POPUP_COLUMN_WIDTH_KEYS = ['column1Width', 'column2Width', 'column3Width', 'column4Width'] as const;
+
+type ArchivePopupColumnWidthKey = typeof ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[number];
 
 /**
  * Where A's panel sits on the screen, as `left`/`top` of the screen and of the panel alike, so 0% is flush with
@@ -90,6 +94,10 @@ type ArchivePopupSettings = PrefixedTextStyle<'trigger'>
   /** Every column of a row, the group column included. */
   columns?: number;
   columnGap?: number;
+  column1Width?: number;
+  column2Width?: number;
+  column3Width?: number;
+  column4Width?: number;
   /** A only: B's panel stays where it is placed on the page. */
   panelPosition?: string;
   panelWidth?: number;
@@ -152,6 +160,12 @@ const STATE_KEYS = ['hover', 'open'] as const;
 const OVERLAY_ANIM_MS = 300;
 // The least a padding handle is drawn at, so a zero padding can still be grabbed.
 const PADDING_HANDLE_SIZE = 0.004;
+const COLUMN_RESIZE_HANDLE_WIDTH = 0.004;
+// The least a column is dragged down to, in pixels of the layout.
+const MIN_COLUMN_WIDTH_PX = 20;
+const DEFAULT_COLUMN_GAP = 0.0139;
+const DEFAULT_PANEL_WIDTH = 0.3194;
+const DEFAULT_PANEL_PADDING: Padding = { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 };
 const IMAGE_FADE_MS = 800;
 
 const LIGHTBOX_CSS_VARS = [
@@ -162,6 +176,60 @@ const LIGHTBOX_CSS_VARS = [
 ] as const;
 
 // A row with an empty group continues the group above it, so the label only has to be typed once.
+type ColumnLayoutSettings = Pick<ArchivePopupSettings, 'columns' | 'columnGap' | 'panelWidth' | 'panelPadding'>
+  & Partial<Record<ArchivePopupColumnWidthKey, number>>;
+
+function getColumnCount(columns: number | undefined): number {
+  return Math.min(Math.max(Math.round(columns ?? ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MAX_COLUMNS);
+}
+
+/** The width a row's columns share: the panel's, less its padding and the gaps between them. */
+function getColumnsSpace(settings: ColumnLayoutSettings): number {
+  const { panelWidth = DEFAULT_PANEL_WIDTH, panelPadding = DEFAULT_PANEL_PADDING, columnGap = DEFAULT_COLUMN_GAP } = settings;
+  const gaps = (getColumnCount(settings.columns) - 1) * columnGap;
+  return Math.max(0, panelWidth - panelPadding.left - panelPadding.right - gaps);
+}
+
+export function getArchivePopupEqualColumnWidths(settings: ColumnLayoutSettings): Partial<Record<ArchivePopupColumnWidthKey, number>> {
+  const count = getColumnCount(settings.columns);
+  const width = getColumnsSpace(settings) / count;
+  return Object.fromEntries(ARCHIVE_POPUP_COLUMN_WIDTH_KEYS.slice(0, count - 1).map((key) => [key, width]));
+}
+
+/**
+ * Every column's width, the last taking what the others leave. A column with no width of its own gets an equal share,
+ * and widths that no longer fit, after the panel narrows or a column is added, shrink together until they do.
+ */
+export function resolveArchivePopupColumnWidths(settings: ColumnLayoutSettings): number[] {
+  const count = getColumnCount(settings.columns);
+  const space = getColumnsSpace(settings);
+  const sized = ARCHIVE_POPUP_COLUMN_WIDTH_KEYS.slice(0, count - 1).map((key) => {
+    const width = settings[key];
+    return typeof width === 'number' ? Math.max(0, width) : space / count;
+  });
+  const sizedTotal = sized.reduce((sum, width) => sum + width, 0);
+  const scale = sizedTotal > space ? space / sizedTotal : 1;
+  const fitted = sized.map((width) => width * scale);
+  return [...fitted, Math.max(0, space - sizedTotal * scale)];
+}
+
+/** Like Programme, a new column count starts the columns over at equal widths. */
+export function applyArchivePopupColumnCountChange(
+  nextSettings: Record<string, any>,
+  prevSettings: Record<string, any>,
+): Record<string, any> {
+  if (typeof nextSettings.columns !== 'number' || nextSettings.columns === prevSettings.columns) {
+    return nextSettings;
+  }
+  return { ...nextSettings, ...getArchivePopupEqualColumnWidths({ ...prevSettings, ...nextSettings }) };
+}
+
+// The columns stay in proportion when the panel is drawn narrower than its width, on a small screen.
+function getGridTemplateColumns(widths: number[]): string {
+  const total = widths.reduce((sum, width) => sum + width, 0);
+  return widths.map((width) => `minmax(0, ${total > 0 ? (width / total) * 100 : 1}fr)`).join(' ');
+}
+
 export function groupArchiveRows(items: ArchivePopupContentItem[]): ArchivePopupGroup[] {
   const groups: ArchivePopupGroup[] = [];
   items.forEach((item, index) => {
@@ -379,7 +447,7 @@ function getCSS(P: string): string {
 }
 .${P}-row {
   display: grid;
-  grid-template-columns: repeat(var(--${P}-columns), minmax(0, 1fr));
+  grid-template-columns: var(--${P}-grid-columns);
   column-gap: var(--${P}-column-gap);
   align-items: baseline;
 }
@@ -462,6 +530,35 @@ function ArchivePopupMediaItem({
   );
 }
 
+// A line in each gap, at the right edge of the column it sizes, as Programme's are.
+function renderColumnWidthControls(
+  P: string,
+  widths: number[],
+  paddingLeft: number,
+  columnGap: number,
+  scaled: (value: number) => string,
+) {
+  const lastWidth = widths[widths.length - 1];
+  let columnLeft = paddingLeft;
+  return widths.slice(0, -1).map((width, index) => {
+    const gapCenter = columnLeft + width + columnGap / 2;
+    columnLeft += width + columnGap;
+    return (
+      <div
+        key={ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[index]}
+        data-controls={ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[index]}
+        data-controls-axis="x"
+        data-controls-variant="column-width"
+        data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
+        // a column grows into the last one, which the editor keeps from going under its own least
+        data-controls-max-fraction={String(width + lastWidth)}
+        className={`${P}-control-anchor`}
+        style={{ top: 0, left: scaled(gapCenter - COLUMN_RESIZE_HANDLE_WIDTH / 2), width: scaled(COLUMN_RESIZE_HANDLE_WIDTH), height: '100%' }}
+      />
+    );
+  });
+}
+
 function renderPanelPaddingControls(
   P: string,
   panelWidth: number,
@@ -528,10 +625,10 @@ export function ArchivePopup({
     triggerLabel = 'Archive',
     closeLabel = 'Close',
     columns = ARCHIVE_POPUP_MIN_COLUMNS,
-    columnGap = 0.0139,
+    columnGap = DEFAULT_COLUMN_GAP,
     panelPosition,
-    panelWidth = 0.3194,
-    panelPadding = { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 },
+    panelWidth = DEFAULT_PANEL_WIDTH,
+    panelPadding = DEFAULT_PANEL_PADDING,
     panelRadius = 0,
     groupGap = 0.0139,
     triggerColor = '#000000',
@@ -572,7 +669,8 @@ export function ArchivePopup({
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const groups = useMemo(() => groupArchiveRows(content ?? []), [content]);
   const panelOffset = PANEL_POSITION_OFFSETS[panelPosition as ArchivePopupPanelPosition] ?? PANEL_POSITION_OFFSETS.center;
-  const columnCount = Math.min(Math.max(Math.round(columns), ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MAX_COLUMNS);
+  const columnCount = getColumnCount(columns);
+  const columnWidths = resolveArchivePopupColumnWidths(settings);
   // the group takes the first column, the titles the rest
   const titleKeys = ['title', ...ARCHIVE_POPUP_EXTRA_TITLE_KEYS].slice(0, columnCount - 1) as Array<'title' | typeof ARCHIVE_POPUP_EXTRA_TITLE_KEYS[number]>;
 
@@ -760,7 +858,7 @@ export function ArchivePopup({
         [`--${P}-group-gap`]: scaled(groupGap),
         [`--${P}-panel-x`]: panelOffset.x,
         [`--${P}-panel-y`]: panelOffset.y,
-        [`--${P}-columns`]: columnCount,
+        [`--${P}-grid-columns`]: getGridTemplateColumns(columnWidths),
         [`--${P}-column-gap`]: scaled(columnGap),
         ...(isCopy && copyRect ? { top: copyRect.top, left: copyRect.left, width: copyRect.width } : {}),
       } as CSSProperties}
@@ -770,6 +868,7 @@ export function ArchivePopup({
       onClickCapture={isCopy ? undefined : onPanelClickCapture}
     >
       {!isCopy && showPanelControls && renderPanelPaddingControls(P, panelWidth, panelPadding, scaled)}
+      {!isCopy && showPanelControls && renderColumnWidthControls(P, columnWidths, panelPadding.left, columnGap, scaled)}
       {groups.map((group, groupIndex) => (
         <Fragment key={groupIndex}>
           {!isCopy && showPanelControls && groupIndex > 0 && (

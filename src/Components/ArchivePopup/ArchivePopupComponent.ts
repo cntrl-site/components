@@ -7,12 +7,15 @@ import {
   SchemaProperty,
 } from '../../types/SchemaV1';
 import {
+  applyArchivePopupColumnCountChange,
   ArchivePopup,
   ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES,
+  ARCHIVE_POPUP_COLUMN_WIDTH_KEYS,
   ARCHIVE_POPUP_EXTRA_TITLE_KEYS,
   ARCHIVE_POPUP_MAX_COLUMNS,
   ARCHIVE_POPUP_MIN_COLUMNS,
   ARCHIVE_POPUP_PANEL_POSITIONS,
+  getArchivePopupEqualColumnWidths,
 } from './ArchivePopup';
 
 type TextStylePrefix = 'trigger' | typeof ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES[number];
@@ -173,6 +176,15 @@ function createExtraTitleDisplayRules(): SchemaDisplayRule[] {
   return rules;
 }
 
+// Sized by dragging on the canvas only, as Programme's are, so no panel lists them.
+const columnWidthProperties: Record<string, SchemaProperty> = Object.fromEntries(
+  ARCHIVE_POPUP_COLUMN_WIDTH_KEYS.map((key, index) => [key, createLayoutSizeProperty(`Column ${index + 1} Width`)]),
+);
+
+function withEqualColumnWidths<T extends Parameters<typeof getArchivePopupEqualColumnWidths>[0]>(layoutDefaults: T) {
+  return { ...layoutDefaults, ...getArchivePopupEqualColumnWidths(layoutDefaults) };
+}
+
 const DEFAULT_IMAGES = [
   '01M3QM74XESYN1HRYH9VRTZ5CK',
   '01M3QM74XEVZ9F59FC7M9BA63Q',
@@ -309,6 +321,7 @@ const schema = {
         max: ARCHIVE_POPUP_MAX_COLUMNS,
       },
       columnGap: createLayoutSizeProperty('Column Gap'),
+      ...columnWidthProperties,
       panelPosition: {
         type: 'string',
         scope: 'layout',
@@ -361,7 +374,7 @@ const schema = {
       }),
     },
     layoutDefaults: {
-      m: {
+      m: withEqualColumnWidths({
         type: 'a',
         panelPosition: 'center',
         columns: ARCHIVE_POPUP_MIN_COLUMNS,
@@ -373,8 +386,8 @@ const schema = {
         triggerFontSize: 0.0347,
         triggerLineHeight: 0.0427,
         ...createColumnTextStyleDefaults({ FontSize: 0.0347, LineHeight: 0.0427 }),
-      },
-      t: {
+      }),
+      t: withEqualColumnWidths({
         type: 'a',
         panelPosition: 'center',
         columns: ARCHIVE_POPUP_MIN_COLUMNS,
@@ -386,8 +399,8 @@ const schema = {
         triggerFontSize: 0.0169,
         triggerLineHeight: 0.0208,
         ...createColumnTextStyleDefaults({ FontSize: 0.0169, LineHeight: 0.0208 }),
-      },
-      d: {
+      }),
+      d: withEqualColumnWidths({
         type: 'a',
         panelPosition: 'center',
         columns: ARCHIVE_POPUP_MIN_COLUMNS,
@@ -399,7 +412,7 @@ const schema = {
         triggerFontSize: 0.00833,
         triggerLineHeight: 0.0104,
         ...createColumnTextStyleDefaults({ FontSize: 0.00833, LineHeight: 0.00972 }),
-      },
+      }),
     },
     displayRules: [
       ...TYPE_A_ONLY_PROPERTIES.map((name) => ({
@@ -455,6 +468,7 @@ export const ArchivePopupComponent = {
   id: 'archive-popup',
   name: 'Archive Popup',
   category: 'ui-elements',
+  normalizeLayoutSettingsUpdate: applyArchivePopupColumnCountChange,
     preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/Journal.png',

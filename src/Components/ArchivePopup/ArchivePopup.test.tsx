@@ -1,7 +1,13 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ArchivePopup, groupArchiveRows, type ArchivePopupContentItem } from './ArchivePopup';
+import {
+  applyArchivePopupColumnCountChange,
+  ArchivePopup,
+  groupArchiveRows,
+  resolveArchivePopupColumnWidths,
+  type ArchivePopupContentItem,
+} from './ArchivePopup';
 import { ArchivePopupComponent } from './ArchivePopupComponent';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -61,6 +67,22 @@ describe('ArchivePopupComponent schema', () => {
 });
 
 describe('ArchivePopupComponent columns', () => {
+  it('starts the columns over at equal widths when their count changes, and only then', () => {
+    expect(ArchivePopupComponent.normalizeLayoutSettingsUpdate).toBe(applyArchivePopupColumnCountChange);
+    const prev = { columns: 2, column1Width: 0.05, panelWidth: 0.5, panelPadding: { top: 0, right: 0.05, bottom: 0, left: 0.05 }, columnGap: 0.02 };
+    const next = applyArchivePopupColumnCountChange({ ...prev, columns: 3 }, prev);
+    expect(next.column1Width).toBeCloseTo(0.12);
+    expect(next.column2Width).toBeCloseTo(0.12);
+    const unchanged = { ...prev, columnGap: 0.03 };
+    expect(applyArchivePopupColumnCountChange(unchanged, prev)).toBe(unchanged);
+  });
+
+  it('gives a new popup equal columns on every layout', () => {
+    const { m, d } = ArchivePopupComponent.schema.settings.layoutDefaults;
+    expect(d.column1Width).toBeCloseTo((0.3194 - 2 * 0.00972 - 0.0139) / 2);
+    expect(m.column1Width).toBeCloseTo((0.9147 - 2 * 0.0427 - 0.0427) / 2);
+  });
+
   it('styles each column in a tab of its own, like Programme, and the label in another', () => {
     const tabs = textStyleTabs();
     expect(Object.keys(tabs).sort()).toEqual(['1', '2', '3', '4', '5', 'Label']);
@@ -202,7 +224,7 @@ describe('ArchivePopup', () => {
     act(() => {
       vi.advanceTimersByTime(300);
     });
-    expect(anchors()).toEqual(['panelPadding.top', 'panelPadding.bottom', 'panelPadding.left', 'panelPadding.right', 'groupGap']);
+    expect(anchors()).toEqual(['panelPadding.top', 'panelPadding.bottom', 'panelPadding.left', 'panelPadding.right', 'column1Width', 'groupGap']);
     const gapAnchor = document.querySelector('[data-controls="groupGap"]')!;
     expect(gapAnchor.previousElementSibling?.className).toMatch(/-group$/);
     expect(gapAnchor.nextElementSibling?.textContent).toBe('(2025)Three' + 'Four');
@@ -239,7 +261,7 @@ describe('ArchivePopup', () => {
       vi.advanceTimersByTime(300);
     });
     expect(dialog()).not.toBeNull();
-    expect(document.querySelectorAll('[data-controls]')).toHaveLength(5);
+    expect(document.querySelectorAll('[data-controls]')).toHaveLength(6);
 
     render({ isEditor: true });
     act(() => {
@@ -267,7 +289,39 @@ describe('ArchivePopup', () => {
     const row = document.querySelector('[role="dialog"] div[class$="-row"]')!;
     expect([...row.children].map(cell => cell.textContent)).toEqual(['(2026)', 'One', 'Client', 'Type']);
     const panel = row.closest('[class*="-panel"]') as HTMLElement;
-    expect(panel.style.getPropertyValue(`--${panel.className.split('-panel')[0]}-columns`)).toBe('4');
+    expect(panel.style.getPropertyValue(`--${panel.className.split('-panel')[0]}-grid-columns`).split(') ').length).toBe(4);
+  });
+
+  it('sizes each column but the last from its width, the last taking what is left, like Programme', () => {
+    const layout = { panelWidth: 0.5, panelPadding: { top: 0, right: 0.05, bottom: 0, left: 0.05 }, columnGap: 0.02 };
+    // 0.4 across, less two gaps, leaves 0.36 for three columns
+    const widths = (settings: object) => resolveArchivePopupColumnWidths({ ...layout, columns: 3, ...settings }).map(w => +w.toFixed(4));
+    expect(widths({ column1Width: 0.06, column2Width: 0.1 })).toEqual([0.06, 0.1, 0.2]);
+    expect(widths({})).toEqual([0.12, 0.12, 0.12]);
+    // widths that no longer fit shrink together, the last column left with nothing
+    expect(widths({ column1Width: 0.3, column2Width: 0.3 })).toEqual([0.18, 0.18, 0]);
+  });
+
+  it('offers a column width line in each gap, between the columns it sizes', () => {
+    act(() => {
+      root.render(<ArchivePopup
+        settings={{ columns: 3, column1Width: 0.06, column2Width: 0.1, panelWidth: 0.5, panelPadding: { top: 0, right: 0.05, bottom: 0, left: 0.05 }, columnGap: 0.02 }}
+        content={content}
+        isEditor
+        isEditMode
+        currentState="open"
+      />);
+    });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    const lines = [...document.querySelectorAll('[data-controls-variant="column-width"]')];
+    expect(lines.map(line => line.getAttribute('data-controls'))).toEqual(['column1Width', 'column2Width']);
+    // each may grow into the last column, which has 0.2
+    expect(lines.map(line => Number(line.getAttribute('data-controls-max-fraction')).toFixed(2))).toEqual(['0.26', '0.30']);
   });
 
   it('places the panel at the set position, centred when none is set', () => {
@@ -380,7 +434,7 @@ describe('ArchivePopup', () => {
     it('ignores the pinned open state and offers its controls in edit mode straight away', () => {
       renderB({ isEditor: true, isEditMode: true, currentState: 'open' });
       expect(dialog()).toBeNull();
-      expect(container.querySelectorAll('[data-controls]')).toHaveLength(5);
+      expect(container.querySelectorAll('[data-controls]')).toHaveLength(6);
     });
   });
 });
