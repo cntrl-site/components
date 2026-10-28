@@ -23,6 +23,7 @@ import { MercuryComponent } from './Mercury/MercuryComponent';
 import { HelixComponent } from './Helix/HelixComponent';
 import { BurgerComponent } from './Burger/BurgerComponent';
 import { PretextComponent } from './Pretext/PretextComponent';
+import { ArchivePopupComponent } from './ArchivePopup/ArchivePopupComponent';
 
 export const components: Component[] = [
   ControlSliderComponent,
@@ -49,4 +50,5 @@ export const components: Component[] = [
   HelixComponent,
   BurgerComponent,
   PretextComponent,
+  ArchivePopupComponent,
 ];

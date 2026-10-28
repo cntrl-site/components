@@ -1,3 +1,4 @@
+import { ArchivePopupComponent } from './Components/ArchivePopup/ArchivePopupComponent';
 import { BurgerComponent } from './Components/Burger/BurgerComponent';
 import { ClickGallerieComponent } from './Components/ClickGallerie/ClickGallerieComponent';
 import { FAQComponent } from './Components/FAQ/FAQComponent';
@@ -19,6 +20,7 @@ import { Slider20Component } from './Components/Slider20/Slider20Component';
 import { TestimonialGridComponent } from './Components/TestimonialGrid/TestimonialGridComponent';
 import { TestimonialSingleComponent } from './Components/TestimonialSingle/TestimonialSingleComponent';
 import { WaterfallComponent } from './Components/Waterfall/WaterfallComponent';
+import archivePopupSource from './Components/ArchivePopup/ArchivePopup.tsx?raw';
 import burgerSource from './Components/Burger/Burger.tsx?raw';
 import clickGallerieSource from './Components/ClickGallerie/ClickGallerie.tsx?raw';
 import faqSource from './Components/FAQ/FAQ.tsx?raw';
@@ -42,6 +44,7 @@ import testimonialSingleSource from './Components/TestimonialSingle/TestimonialS
 import waterfallSource from './Components/Waterfall/Waterfall.tsx?raw';
 
 export const componentSources: Partial<Record<string, string>> = {
+  [ArchivePopupComponent.id]: archivePopupSource,
   [BurgerComponent.id]: burgerSource,
   [ClickGallerieComponent.id]: clickGallerieSource,
   [FAQComponent.id]: faqSource,
