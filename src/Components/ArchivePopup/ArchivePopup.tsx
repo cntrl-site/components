@@ -41,6 +41,11 @@ export type ArchivePopupPanelPosition = keyof typeof PANEL_POSITION_OFFSETS;
 
 export const ARCHIVE_POPUP_PANEL_POSITIONS = Object.keys(PANEL_POSITION_OFFSETS) as ArchivePopupPanelPosition[];
 
+/** Each column of a row has a text style of its own, the group column's being `column1`. */
+export const ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES = ['column1', 'column2', 'column3', 'column4', 'column5'] as const;
+
+type ArchivePopupColumnStylePrefix = typeof ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES[number];
+
 type ArchivePopupTitle = any[] | string;
 
 export type ArchivePopupContentItem = {
@@ -57,7 +62,27 @@ type FontSettings = { fontWeight: number; fontStyle: string };
 
 type Padding = { top: number; right: number; bottom: number; left: number };
 
-type ArchivePopupSettings = {
+/** A text style as settings hold it, each field under the name of what it styles, e.g. `triggerFontSize`. */
+type TextStyleFields = {
+  FontFamily?: string;
+  FontSettings?: FontSettings;
+  FontSize?: number;
+  LineHeight?: number;
+  LetterSpacing?: number;
+  WordSpacing?: number;
+  TextAlign?: TextStyles['textAlign'];
+  TextAppearance?: TextStyles['textAppearance'];
+};
+
+type PrefixedTextStyle<Prefix extends string> = {
+  [Key in keyof TextStyleFields as `${Prefix}${Key}`]?: TextStyleFields[Key];
+};
+
+type ArchivePopupSettings = PrefixedTextStyle<'trigger'>
+  & PrefixedTextStyle<ArchivePopupColumnStylePrefix>
+  // One style every column shared before each had its own; a column with no style of its own still shows it.
+  & PrefixedTextStyle<'list'>
+  & {
   /** `a` opens from a label; `b` is always open, in place on the page. */
   type?: 'a' | 'b';
   triggerLabel?: string;
@@ -79,20 +104,6 @@ type ArchivePopupSettings = {
   textColor?: string;
   textHoverColor?: string;
   overlayColor?: string;
-  triggerFontFamily?: string;
-  triggerFontSettings?: FontSettings;
-  triggerFontSize?: number;
-  triggerLineHeight?: number;
-  triggerLetterSpacing?: number;
-  triggerWordSpacing?: number;
-  triggerTextAppearance?: TextStyles['textAppearance'];
-  listFontFamily?: string;
-  listFontSettings?: FontSettings;
-  listFontSize?: number;
-  listLineHeight?: number;
-  listLetterSpacing?: number;
-  listWordSpacing?: number;
-  listTextAppearance?: TextStyles['textAppearance'];
 };
 
 type ArchivePopupProps = {
@@ -196,26 +207,24 @@ function getLightboxLayoutStyle(container: HTMLElement | null): CSSProperties {
   return style;
 }
 
-function resolveTextStyle(
-  fontFamily: string | undefined,
-  fontSettings: FontSettings | undefined,
-  fontSize: number | undefined,
-  lineHeight: number | undefined,
-  letterSpacing: number | undefined,
-  wordSpacing: number | undefined,
-  textAppearance: TextStyles['textAppearance'],
-): TextStyles {
+function resolveTextStyle(settings: ArchivePopupSettings, prefix: string, fallbackPrefix?: string): TextStyles {
+  const values = settings as Record<string, unknown>;
+  const read = <Key extends keyof TextStyleFields>(key: Key) => (
+    values[`${prefix}${key}`] ?? (fallbackPrefix ? values[`${fallbackPrefix}${key}`] : undefined)
+  ) as TextStyleFields[Key];
+  const fontSettings = read('FontSettings');
   return {
     fontSettings: {
-      fontFamily,
+      fontFamily: read('FontFamily'),
       fontWeight: fontSettings?.fontWeight ?? 400,
       fontStyle: fontSettings?.fontStyle ?? 'normal',
     },
-    fontSize: fontSize ?? 0.01,
-    lineHeight,
-    letterSpacing: letterSpacing ?? 0,
-    wordSpacing: wordSpacing ?? 0,
-    textAppearance,
+    fontSize: read('FontSize') ?? 0.01,
+    lineHeight: read('LineHeight'),
+    letterSpacing: read('LetterSpacing') ?? 0,
+    wordSpacing: read('WordSpacing') ?? 0,
+    textAlign: read('TextAlign'),
+    textAppearance: read('TextAppearance'),
     color: '#000000',
   };
 }
@@ -533,20 +542,6 @@ export function ArchivePopup({
     textColor = '#333132',
     textHoverColor = '#BBBBBB',
     overlayColor = '#FFFFFFE6',
-    triggerFontFamily,
-    triggerFontSettings,
-    triggerFontSize,
-    triggerLineHeight,
-    triggerLetterSpacing,
-    triggerWordSpacing,
-    triggerTextAppearance,
-    listFontFamily,
-    listFontSettings,
-    listFontSize,
-    listLineHeight,
-    listLetterSpacing,
-    listWordSpacing,
-    listTextAppearance,
   } = settings;
   const items = content ?? [];
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -708,29 +703,9 @@ export function ArchivePopup({
     }
   };
 
-  const triggerTypographyCss = omitTextColors(textStylesToCss(
-    resolveTextStyle(
-      triggerFontFamily,
-      triggerFontSettings,
-      triggerFontSize,
-      triggerLineHeight,
-      triggerLetterSpacing,
-      triggerWordSpacing,
-      triggerTextAppearance,
-    ),
-    isEditor,
-  ));
-  const listTypographyCss = omitTextColors(textStylesToCss(
-    resolveTextStyle(
-      listFontFamily,
-      listFontSettings,
-      listFontSize,
-      listLineHeight,
-      listLetterSpacing,
-      listWordSpacing,
-      listTextAppearance,
-    ),
-    isEditor,
+  const triggerTypographyCss = omitTextColors(textStylesToCss(resolveTextStyle(settings, 'trigger'), isEditor));
+  const columnTypographyCss = ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.slice(0, columnCount).map((prefix) => (
+    omitTextColors(textStylesToCss(resolveTextStyle(settings, prefix, 'list'), isEditor))
   ));
 
   const colorVars = buildColorVars(P, {
@@ -776,7 +751,6 @@ export function ArchivePopup({
         isCopy && `${P}-panel-copy`,
       )}
       style={{
-        ...listTypographyCss,
         width: scaled(panelWidth),
         paddingTop: scaled(panelPadding.top),
         paddingRight: scaled(panelPadding.right),
@@ -822,11 +796,13 @@ export function ArchivePopup({
                   onBlur: () => hideRowMedia(index),
                 })}
               >
-                <span className={`${P}-group-label`}>{rowIndex === 0 ? group.label : ''}</span>
-                {titleKeys.map((key) => {
+                <span className={`${P}-group-label`} style={columnTypographyCss[0]}>
+                  {rowIndex === 0 ? group.label : ''}
+                </span>
+                {titleKeys.map((key, titleIndex) => {
                   const title = item[key];
                   return (
-                    <div key={key} className={`${P}-title`}>
+                    <div key={key} className={`${P}-title`} style={columnTypographyCss[titleIndex + 1]}>
                       {Array.isArray(title) ? <RichTextRenderer content={title} /> : title}
                     </div>
                   );

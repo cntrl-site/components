@@ -30,20 +30,24 @@ describe('groupArchiveRows', () => {
   });
 });
 
+const textStyleTabs = () => {
+  const typeStyle = ArchivePopupComponent.schema.panels.find(panel => panel.id === 'typeStyle')!;
+  const tab = typeStyle.layout.find(item => typeof item === 'object' && item.type === 'tab');
+  return (tab as { tabs: Record<string, unknown[]> }).tabs;
+};
+
 describe('ArchivePopupComponent schema', () => {
   it('hides the label, close and overlay settings for type b, along with the whole Label type style', () => {
     const hiddenInB = ArchivePopupComponent.schema.settings.displayRules
       .filter(rule => rule.if.value === 'b' && rule.then.value === false)
       .map(rule => rule.then.name.split('.')[1]);
-    const typeStyle = ArchivePopupComponent.schema.panels.find(panel => panel.id === 'typeStyle')!;
-    const labelGroup = typeStyle.layout.find(item => typeof item === 'object' && 'title' in item && item.title === 'Label');
-    const labelGroupKeys = JSON.stringify(labelGroup).match(/trigger\w+/g)!;
+    const labelTabKeys = JSON.stringify(textStyleTabs().Label).match(/trigger\w+/g)!;
     expect(hiddenInB).toEqual(expect.arrayContaining([
       'triggerLabel', 'closeLabel', 'triggerColor', 'triggerHoverColor', 'closeColor', 'closeHoverColor', 'overlayColor',
-      ...labelGroupKeys,
+      ...labelTabKeys,
     ]));
     expect(hiddenInB).not.toContain('panelColor');
-    expect(hiddenInB.some(name => name.startsWith('list'))).toBe(false);
+    expect(hiddenInB.some(name => name.startsWith('column'))).toBe(false);
   });
 
   it('offers the panel position for type a only, starting at the centre old popups were saved in', () => {
@@ -57,6 +61,30 @@ describe('ArchivePopupComponent schema', () => {
 });
 
 describe('ArchivePopupComponent columns', () => {
+  it('styles each column in a tab of its own, like Programme, and the label in another', () => {
+    const tabs = textStyleTabs();
+    expect(Object.keys(tabs).sort()).toEqual(['1', '2', '3', '4', '5', 'Label']);
+    expect(tabs['3']).toEqual([
+      'column3FontFamily',
+      'column3FontSettings',
+      { type: 'row', items: ['column3FontSize', 'column3LineHeight', 'column3LetterSpacing', 'column3WordSpacing'] },
+      'column3TextAlign',
+      'column3TextAppearance',
+    ]);
+    const { properties } = ArchivePopupComponent.schema.settings;
+    expect(properties.column3FontFamily.display).toEqual({ type: 'font-family-select', hideLabel: true });
+    expect(ArchivePopupComponent.fontRelations.column3FontSettings).toBe('column3FontFamily');
+  });
+
+  it('hides the text style tabs of the columns a row does not show', () => {
+    const hiddenStylesAt = (columns: number) => [...new Set(ArchivePopupComponent.schema.settings.displayRules
+      .filter(rule => !Array.isArray(rule.if) && rule.if.name === 'columns' && rule.if.value === columns)
+      .map(rule => rule.then.name.match(/properties\.(column\d)/)![1]))];
+    expect(hiddenStylesAt(2)).toEqual(['column3', 'column4', 'column5']);
+    expect(hiddenStylesAt(4)).toEqual(['column5']);
+    expect(hiddenStylesAt(5)).toEqual([]);
+  });
+
   const contentRules = ArchivePopupComponent.schema.content.display.rules;
   const hiddenFields = (columns: number) => contentRules
     .filter(rule => !Array.isArray(rule.if) && rule.if.name === 'columns' && rule.if.value === columns)
@@ -255,6 +283,24 @@ describe('ArchivePopup', () => {
     expect(panelOffset('right-bottom')).toEqual(['100%', '100%']);
     expect(panelOffset('left-center')).toEqual(['0%', '50%']);
     expect(panelOffset('nowhere')).toEqual(['50%', '50%']);
+  });
+
+  it('styles each column with its own text style, falling back to the style every column used to share', () => {
+    act(() => {
+      root.render(<ArchivePopup
+        settings={{ columns: 3, listFontSize: 0.02, column1FontSize: 0.01, column3TextAlign: 'right' }}
+        content={[{ group: '(2026)', title: 'One', title2: 'Client' }]}
+        currentState="open"
+        isEditor
+      />);
+    });
+    const cells = [...document.querySelector('[role="dialog"] div[class$="-row"]')!.children] as HTMLElement[];
+    expect(cells.map(cell => cell.style.fontSize)).toEqual([
+      'calc(var(--cntrl-article-width) * 0.01)',
+      'calc(var(--cntrl-article-width) * 0.02)',
+      'calc(var(--cntrl-article-width) * 0.02)',
+    ]);
+    expect(cells.map(cell => cell.style.textAlign)).toEqual(['', '', 'right']);
   });
 
   describe('type b', () => {

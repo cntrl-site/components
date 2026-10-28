@@ -1,13 +1,21 @@
-import { ComponentContentProperty, ComponentSchemaV1, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
+import {
+  ComponentContentProperty,
+  ComponentSchemaV1,
+  LayoutItem,
+  LayoutTab,
+  SchemaDisplayRule,
+  SchemaProperty,
+} from '../../types/SchemaV1';
 import {
   ArchivePopup,
+  ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES,
   ARCHIVE_POPUP_EXTRA_TITLE_KEYS,
   ARCHIVE_POPUP_MAX_COLUMNS,
   ARCHIVE_POPUP_MIN_COLUMNS,
   ARCHIVE_POPUP_PANEL_POSITIONS,
 } from './ArchivePopup';
 
-type TextStylePrefix = 'trigger' | 'list';
+type TextStylePrefix = 'trigger' | typeof ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES[number];
 
 function createLayoutSizeProperty(title: string): SchemaProperty {
   return {
@@ -29,19 +37,22 @@ function createColorProperty(title: string): SchemaProperty {
   };
 }
 
+// The label is a single line sized to its text, so only the columns have an alignment.
+const hasTextAlign = (prefix: TextStylePrefix) => prefix !== 'trigger';
+
 function createTextStyleProperties(prefix: TextStylePrefix): Record<string, SchemaProperty> {
   return {
     [`${prefix}FontFamily`]: {
       type: 'string',
       scope: 'common',
-      title: 'Font family',
-      display: { type: 'font-family-select' },
+      title: '',
+      display: { type: 'font-family-select', hideLabel: true },
     },
     [`${prefix}FontSettings`]: {
       type: 'object',
       scope: 'common',
       title: '',
-      display: { type: 'font-settings-weight' },
+      display: { type: 'font-settings-weight', hideLabel: true },
       properties: {
         fontWeight: { type: 'number' },
         fontStyle: { type: 'string' },
@@ -50,31 +61,40 @@ function createTextStyleProperties(prefix: TextStylePrefix): Record<string, Sche
     [`${prefix}FontSize`]: {
       type: 'number',
       scope: 'layout',
-      title: 'Font Size',
+      title: '',
       display: { type: 'font-size' },
     },
     [`${prefix}LineHeight`]: {
       type: 'number',
       scope: 'layout',
-      title: 'Line Height',
+      title: '',
       display: { type: 'line-height-input' },
     },
     [`${prefix}LetterSpacing`]: {
       type: 'number',
       scope: 'layout',
-      title: 'Letter Spacing',
+      title: '',
       display: { type: 'letter-spacing-input' },
     },
     [`${prefix}WordSpacing`]: {
       type: 'number',
       scope: 'layout',
-      title: 'Word Spacing',
+      title: '',
       display: { type: 'word-spacing-input' },
     },
+    ...(hasTextAlign(prefix) && {
+      [`${prefix}TextAlign`]: {
+        type: 'string',
+        scope: 'layout',
+        title: '',
+        enum: ['left', 'center', 'right', 'justify'],
+        display: { type: 'vertical-text-aligh-options' },
+      },
+    }),
     [`${prefix}TextAppearance`]: {
       type: 'object',
       scope: 'layout',
-      title: 'Text Appearance',
+      title: '',
       display: { type: 'text-appearance' },
       properties: {
         textTransform: { type: 'string', enum: ['none', 'uppercase', 'lowercase', 'capitalize'] },
@@ -85,13 +105,53 @@ function createTextStyleProperties(prefix: TextStylePrefix): Record<string, Sche
   };
 }
 
-function createTextStyleLayout(prefix: TextStylePrefix) {
+function createTextStyleLayout(prefix: TextStylePrefix): LayoutItem[] {
   return [
     `${prefix}FontFamily`,
     `${prefix}FontSettings`,
-    { type: 'row' as const, items: [`${prefix}FontSize`, `${prefix}LineHeight`, `${prefix}LetterSpacing`, `${prefix}WordSpacing`] },
+    { type: 'row', items: [`${prefix}FontSize`, `${prefix}LineHeight`, `${prefix}LetterSpacing`, `${prefix}WordSpacing`] },
+    ...(hasTextAlign(prefix) ? [`${prefix}TextAlign`] : []),
     `${prefix}TextAppearance`,
   ];
+}
+
+const columnTextStyleProperties: Record<string, SchemaProperty> = Object.assign(
+  {},
+  ...ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.map(createTextStyleProperties),
+);
+
+/** A tab per text style like Programme's, named as the columns are in the content panel. */
+function createTextStylePanelTab(): LayoutTab {
+  return {
+    type: 'tab',
+    id: 'archivePopupTextStyle',
+    tabs: {
+      Label: createTextStyleLayout('trigger'),
+      ...Object.fromEntries(ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.map((prefix, index) => [
+        String(index + 1),
+        createTextStyleLayout(prefix),
+      ])),
+    },
+  };
+}
+
+// A column's tab goes with the column, so only the columns a row shows can be styled.
+function createColumnTextStyleDisplayRules(): SchemaDisplayRule[] {
+  const rules: SchemaDisplayRule[] = [];
+  for (let columns = ARCHIVE_POPUP_MIN_COLUMNS; columns < ARCHIVE_POPUP_MAX_COLUMNS; columns += 1) {
+    ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.slice(columns).forEach((prefix) => {
+      Object.keys(createTextStyleProperties(prefix)).forEach((name) => {
+        rules.push({ if: { name: 'columns', value: columns }, then: { name: `properties.${name}.display.visible`, value: false } });
+      });
+    });
+  }
+  return rules;
+}
+
+function createColumnTextStyleDefaults(values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.flatMap((prefix) => (
+    Object.entries(values).map(([key, value]) => [`${prefix}${key}`, value])
+  )));
 }
 
 // Group and Title are the first two columns; each one after is a title field of its own, shown in the content panel only while the columns reach it.
@@ -273,7 +333,7 @@ const schema = {
       panelColor: createColorProperty('Panel BG'),
       overlayColor: createColorProperty('Overlay'),
       ...createTextStyleProperties('trigger'),
-      ...createTextStyleProperties('list'),
+      ...columnTextStyleProperties,
     },
     defaults: {
       triggerLabel: 'Archive',
@@ -291,11 +351,14 @@ const schema = {
       triggerLetterSpacing: 0,
       triggerWordSpacing: 0,
       triggerTextAppearance: { ...textAppearanceDefault, textTransform: 'uppercase' },
-      listFontFamily: 'Goudy Bookletter 1911',
-      listFontSettings: { fontWeight: 400, fontStyle: 'normal' },
-      listLetterSpacing: 0,
-      listWordSpacing: 0,
-      listTextAppearance: textAppearanceDefault,
+      ...createColumnTextStyleDefaults({
+        FontFamily: 'Goudy Bookletter 1911',
+        FontSettings: { fontWeight: 400, fontStyle: 'normal' },
+        LetterSpacing: 0,
+        WordSpacing: 0,
+        TextAlign: 'left',
+        TextAppearance: textAppearanceDefault,
+      }),
     },
     layoutDefaults: {
       m: {
@@ -309,8 +372,7 @@ const schema = {
         groupGap: 0.0427,
         triggerFontSize: 0.0347,
         triggerLineHeight: 0.0427,
-        listFontSize: 0.0347,
-        listLineHeight: 0.0427,
+        ...createColumnTextStyleDefaults({ FontSize: 0.0347, LineHeight: 0.0427 }),
       },
       t: {
         type: 'a',
@@ -323,8 +385,7 @@ const schema = {
         groupGap: 0.0234,
         triggerFontSize: 0.0169,
         triggerLineHeight: 0.0208,
-        listFontSize: 0.0169,
-        listLineHeight: 0.0208,
+        ...createColumnTextStyleDefaults({ FontSize: 0.0169, LineHeight: 0.0208 }),
       },
       d: {
         type: 'a',
@@ -337,14 +398,16 @@ const schema = {
         groupGap: 0.0139,
         triggerFontSize: 0.00833,
         triggerLineHeight: 0.0104,
-        listFontSize: 0.00833,
-        listLineHeight: 0.00972,
+        ...createColumnTextStyleDefaults({ FontSize: 0.00833, LineHeight: 0.00972 }),
       },
     },
-    displayRules: TYPE_A_ONLY_PROPERTIES.map((name) => ({
-      if: { name: 'type', value: 'b' },
-      then: { name: `properties.${name}.display.visible`, value: false },
-    })),
+    displayRules: [
+      ...TYPE_A_ONLY_PROPERTIES.map((name) => ({
+        if: { name: 'type', value: 'b' },
+        then: { name: `properties.${name}.display.visible`, value: false },
+      })),
+      ...createColumnTextStyleDisplayRules(),
+    ],
   },
   panels: [
     {
@@ -370,8 +433,7 @@ const schema = {
       tooltip: 'Typography',
       layout: [
         '__componentName__',
-        { type: 'group', title: 'Label', items: createTextStyleLayout('trigger') },
-        { type: 'group', title: 'List', items: createTextStyleLayout('list') },
+        createTextStylePanelTab(),
       ],
     },
   ],
@@ -405,10 +467,9 @@ export const ArchivePopupComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [{ path: 'triggerFontFamily' }, { path: 'listFontFamily' }],
+    parameters: (['trigger', ...ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES] as const).map((prefix) => ({ path: `${prefix}FontFamily` })),
   },
-  fontRelations: {
-    triggerFontSettings: 'triggerFontFamily',
-    listFontSettings: 'listFontFamily',
-  },
+  fontRelations: Object.fromEntries(
+    (['trigger', ...ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES] as const).map((prefix) => [`${prefix}FontSettings`, `${prefix}FontFamily`]),
+  ),
 };
