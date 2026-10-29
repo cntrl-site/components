@@ -211,6 +211,20 @@ describe('ArchivePopup', () => {
     expect(shown()).toEqual(['three-a.jpg']);
   });
 
+  it('fetches every row\'s images once opened, so a first hover need not wait for one to load', () => {
+    const fetched: string[] = [];
+    vi.stubGlobal('Image', class {
+      set src(value: string) {
+        fetched.push(value);
+      }
+    });
+    render();
+    expect(fetched).toEqual([]);
+    act(() => trigger().click());
+    expect(fetched).toEqual(['one.jpg', 'two.jpg', 'three-a.jpg', 'three-b.jpg', 'three-c.jpg']);
+    vi.unstubAllGlobals();
+  });
+
   it('still shows a hover image saved on its own, before rows could have several', () => {
     render({ content: [{ title: 'Old', image: { assetId: 'old.jpg' } }] });
     act(() => trigger().click());
@@ -335,8 +349,26 @@ describe('ArchivePopup', () => {
   it('renders group labels once per group', () => {
     render();
     act(() => trigger().click());
-    const rows = [...document.querySelectorAll('[role="dialog"] div[class$="-row"]')];
-    expect(rows.map(row => row.textContent)).toEqual(['(2026)One', 'See Two', '(2025)Three', 'Four']);
+    const groups = [...document.querySelectorAll('[role="dialog"] div[class$="-group"]')];
+    expect(groups.map(group => [...group.children].map(cell => cell.textContent))).toEqual([
+      ['(2026)', 'One', 'See Two'],
+      ['(2025)', 'Three', 'Four'],
+    ]);
+  });
+
+  it('spans each group label over its rows, set on the first title line, so its line height never spaces the rows', () => {
+    act(() => {
+      root.render(<ArchivePopup
+        settings={{ column1LineHeight: 0.02, column2LineHeight: 0.01 }}
+        content={content}
+        isEditor
+        currentState="open"
+      />);
+    });
+    const label = document.querySelector('[role="dialog"] [class$="-group-label"]') as HTMLElement;
+    expect(label.style.gridRow).toBe('1 / span 3');
+    expect(label.style.marginTop).toBe('calc((calc(var(--cntrl-article-width) * 0.01) - calc(var(--cntrl-article-width) * 0.02)) / 2)');
+    expect((label.parentElement as HTMLElement).style.gridTemplateRows).toBe('repeat(2, auto) 1fr');
   });
 
   it('shows as many text columns as set, each from its own field', () => {
@@ -349,7 +381,7 @@ describe('ArchivePopup', () => {
       />);
     });
     const row = document.querySelector('[role="dialog"] div[class$="-row"]')!;
-    expect([...row.children].map(cell => cell.textContent)).toEqual(['(2026)', 'One', 'Client', 'Type']);
+    expect([row.previousElementSibling!, ...row.children].map(cell => cell.textContent)).toEqual(['(2026)', 'One', 'Client', 'Type']);
     const panel = row.closest('[class*="-panel"]') as HTMLElement;
     expect(panel.style.getPropertyValue(`--${panel.className.split('-panel')[0]}-grid-columns`).split(') ').length).toBe(4);
   });
@@ -410,7 +442,8 @@ describe('ArchivePopup', () => {
         isEditor
       />);
     });
-    const cells = [...document.querySelector('[role="dialog"] div[class$="-row"]')!.children] as HTMLElement[];
+    const row = document.querySelector('[role="dialog"] div[class$="-row"]')!;
+    const cells = [row.previousElementSibling!, ...row.children] as HTMLElement[];
     expect(cells.map(cell => cell.style.fontSize)).toEqual([
       'calc(var(--cntrl-article-width) * 0.01)',
       'calc(var(--cntrl-article-width) * 0.02)',
@@ -433,7 +466,7 @@ describe('ArchivePopup', () => {
       expect(container.textContent).not.toContain('Archive');
       expect(container.textContent).not.toContain('Close');
       const rows = [...container.querySelectorAll('div[class$="-row"]')];
-      expect(rows.map(row => row.textContent)).toEqual(['(2026)One', 'See Two', '(2025)Three', 'Four']);
+      expect(rows.map(row => row.textContent)).toEqual(['One', 'See Two', 'Three', 'Four']);
     });
 
     const hoverOne = () => act(() => {
@@ -453,7 +486,7 @@ describe('ArchivePopup', () => {
       });
       expect(image.className).toMatch(/-media-visible/);
       expect(copy()?.getAttribute('aria-hidden')).toBe('true');
-      expect(copy()?.querySelector('[class*="-row-active"]')?.textContent).toBe('(2026)One');
+      expect(copy()?.querySelector('[class*="-row-active"]')?.textContent).toBe('One');
     });
 
     it('keeps the copy over the list while the media fades out', () => {

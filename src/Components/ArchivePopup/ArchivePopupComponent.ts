@@ -325,7 +325,7 @@ const schema = {
         scope: 'common',
         title: 'Interval (ms)',
         display: { type: 'common-numeric-input' },
-        min: 100,
+        min: 1000,
         step: 100,
         max: 10000,
       },

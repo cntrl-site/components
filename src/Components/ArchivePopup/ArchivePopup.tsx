@@ -169,7 +169,7 @@ const MIN_COLUMN_WIDTH_PX = 20;
 const DEFAULT_COLUMN_GAP = 0.0139;
 const DEFAULT_PANEL_WIDTH = 0.3194;
 const DEFAULT_PANEL_PADDING: Padding = { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 };
-const IMAGE_FADE_MS = 800;
+const IMAGE_FADE_MS = 300;
 const DEFAULT_HOVER_INTERVAL_MS = 1000;
 
 const LIGHTBOX_CSS_VARS = [
@@ -458,13 +458,20 @@ function getCSS(P: string): string {
 .${P}-group ~ .${P}-group {
   margin-top: var(--${P}-group-gap);
 }
-.${P}-row {
+.${P}-group {
   display: grid;
   grid-template-columns: var(--${P}-grid-columns);
   column-gap: var(--${P}-column-gap);
+}
+.${P}-row {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
   align-items: baseline;
 }
 .${P}-group-label {
+  grid-column: 1;
+  align-self: start;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -483,7 +490,7 @@ function getCSS(P: string): string {
 }
 .${P}-interactive .${P}-row:hover .${P}-title,
 .${P}-row:focus-within .${P}-title,
-.${P}-state-hover .${P}-row:first-child .${P}-title {
+.${P}-state-hover .${P}-group-label + .${P}-row .${P}-title {
   color: var(--${P}-text-hover-color, var(--${P}-text-color));
 }
 `;
@@ -795,6 +802,16 @@ export function ArchivePopup({
     triggerRef.current?.focus({ preventScroll: true });
   };
 
+  // Every row's images are fetched once the list can be hovered, so a row's first hover shows its image at once
+  // rather than after it loads; videos are left to load on hover.
+  const isListShown = isInteractive && (isInline || isOpen);
+  useEffect(() => {
+    if (!isListShown) return;
+    (content ?? []).forEach((item) => getArchivePopupRowMedia(item).forEach((media) => {
+      if (!isVideoMedia(media)) new Image().src = media.assetId;
+    }));
+  }, [isListShown, content]);
+
   // A hovered row with several images shows them in turn, round and round, for as long as it stays hovered.
   const activeRowMediaCount = activeIndex === null ? 0 : getArchivePopupRowMedia(items[activeIndex]).length;
   useEffect(() => {
@@ -833,6 +850,13 @@ export function ArchivePopup({
   const columnTypographyCss = ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.slice(0, columnCount).map((prefix) => (
     omitTextColors(textStylesToCss(resolveTextStyle(settings, prefix, 'list'), isEditor))
   ));
+  // Half the difference of the two line heights sets the label's first line on the first title's, exactly
+  // while both columns share a font size.
+  const labelLineHeight = columnTypographyCss[0].lineHeight;
+  const titleLineHeight = columnTypographyCss[1]?.lineHeight;
+  const groupLabelOffset = labelLineHeight !== undefined && titleLineHeight !== undefined
+    ? `calc((${titleLineHeight} - ${labelLineHeight}) / 2)`
+    : undefined;
 
   const colorVars = buildColorVars(P, {
     triggerColor,
@@ -907,8 +931,16 @@ export function ArchivePopup({
               style={{ left: 0, width: '100%', height: scaled(Math.max(groupGap, PADDING_HANDLE_SIZE)) }}
             />
           )}
-          <div className={`${P}-group`}>
-            {group.rows.map(({ item, index }, rowIndex) => (
+          {/* The label spans its group's rows, so its line height spaces only its own lines, never the rows beside it;
+              a label longer than its rows grows the last track, below them. */}
+          <div className={`${P}-group`} style={{ gridTemplateRows: `repeat(${group.rows.length}, auto) 1fr` }}>
+            <span
+              className={`${P}-group-label`}
+              style={{ ...columnTypographyCss[0], gridRow: `1 / span ${group.rows.length + 1}`, marginTop: groupLabelOffset }}
+            >
+              {group.label}
+            </span>
+            {group.rows.map(({ item, index }) => (
               <div
                 key={index}
                 className={cn(`${P}-row`, isCopy && index === activeIndex && `${P}-row-active`)}
@@ -919,9 +951,6 @@ export function ArchivePopup({
                   onBlur: () => hideRowMedia(index),
                 })}
               >
-                <span className={`${P}-group-label`} style={columnTypographyCss[0]}>
-                  {rowIndex === 0 ? group.label : ''}
-                </span>
                 {titleKeys.map((key, titleIndex) => {
                   const title = item[key];
                   return (
