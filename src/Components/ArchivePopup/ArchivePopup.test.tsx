@@ -18,7 +18,7 @@ const linkNode = (text: string, value: string, target: 'self' | 'blank') => ({ t
 const content: ArchivePopupContentItem[] = [
   { group: '(2026)', title: paragraph(linkNode('One', '/one', 'self')), image: { assetId: 'one.jpg' } },
   { group: '', title: paragraph({ text: 'See ' }, linkNode('Two', '/two', 'blank')), image: { assetId: 'two.jpg' } },
-  { group: '(2025)', title: paragraph({ text: 'Three' }), image: { assetId: 'three.jpg' } },
+  { group: '(2025)', title: paragraph({ text: 'Three' }), image: [{ assetId: 'three-a.jpg' }, { assetId: 'three-b.jpg' }, { assetId: 'three-c.jpg' }] },
   { title: 'Four' },
 ];
 
@@ -43,9 +43,9 @@ const textStyleTabs = () => {
 };
 
 describe('ArchivePopupComponent schema', () => {
-  it('hides the label, close and overlay settings for type b, along with the whole Label type style', () => {
+  it('hides the label, close and overlay settings for type a, along with the whole Label type style', () => {
     const hiddenInB = ArchivePopupComponent.schema.settings.displayRules
-      .filter(rule => rule.if.value === 'b' && rule.then.value === false)
+      .filter(rule => rule.if.value === 'a' && rule.then.value === false)
       .map(rule => rule.then.name.split('.')[1]);
     const labelTabKeys = JSON.stringify(textStyleTabs().Label).match(/trigger\w+/g)!;
     expect(hiddenInB).toEqual(expect.arrayContaining([
@@ -56,13 +56,17 @@ describe('ArchivePopupComponent schema', () => {
     expect(hiddenInB.some(name => name.startsWith('column'))).toBe(false);
   });
 
-  it('offers the panel position for type a only, starting at the centre old popups were saved in', () => {
+  it('offers the panel position for type b only, starting at the centre old popups were saved in', () => {
     const { properties, displayRules, layoutDefaults } = ArchivePopupComponent.schema.settings;
     const positions = properties.panelPosition.display!.enum as string[];
     expect(positions[0]).toBe('center');
     expect(positions).toHaveLength(9);
-    expect(displayRules).toContainEqual({ if: { name: 'type', value: 'b' }, then: { name: 'properties.panelPosition.display.visible', value: false } });
+    expect(displayRules).toContainEqual({ if: { name: 'type', value: 'a' }, then: { name: 'properties.panelPosition.display.visible', value: false } });
     expect(Object.values(layoutDefaults!).map(defaults => defaults.panelPosition)).toEqual(['center', 'center', 'center']);
+  });
+
+  it('starts a new component as a, in place on the page, while one saved with no type still opens as a popup', () => {
+    expect(Object.values(ArchivePopupComponent.schema.settings.layoutDefaults).map(defaults => defaults.type)).toEqual(['a', 'a', 'a']);
   });
 });
 
@@ -173,6 +177,50 @@ describe('ArchivePopup', () => {
     expect(image.className).toMatch(/-media-visible/);
   });
 
+  it('shows a row\'s images in turn while it is hovered, from the first again on the next hover', () => {
+    render({ settings: { triggerLabel: 'Archive', closeLabel: 'Close', hoverInterval: 500 } });
+    act(() => trigger().click());
+    const row = [...document.querySelectorAll('[role="dialog"] [class*="-row"]')].find(el => el.textContent?.includes('Three'))!;
+    const hover = (type: 'mouseover' | 'mouseout') => act(() => {
+      row.dispatchEvent(new MouseEvent(type, { bubbles: true, relatedTarget: document.body }));
+    });
+    const images = ['three-a.jpg', 'three-b.jpg', 'three-c.jpg'].map(src => document.querySelector(`img[src="${src}"]`));
+    hover('mouseover');
+    const shown = () => ['three-a.jpg', 'three-b.jpg', 'three-c.jpg'].filter(src => (
+      document.querySelector(`img[src="${src}"]`)!.className.match(/-media-visible/)
+    ));
+    expect(images.every(image => image === null)).toBe(true);
+    act(() => {
+      document.querySelectorAll('[role="dialog"] img').forEach(image => image.dispatchEvent(new Event('load')));
+    });
+    expect(shown()).toEqual(['three-a.jpg']);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(shown()).toEqual(['three-b.jpg']);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(shown()).toEqual(['three-a.jpg']);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    hover('mouseout');
+    expect(shown()).toEqual([]);
+    hover('mouseover');
+    expect(shown()).toEqual(['three-a.jpg']);
+  });
+
+  it('still shows a hover image saved on its own, before rows could have several', () => {
+    render({ content: [{ title: 'Old', image: { assetId: 'old.jpg' } }] });
+    act(() => trigger().click());
+    const row = document.querySelector('[role="dialog"] [class*="-row"]')!;
+    act(() => {
+      row.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }));
+    });
+    expect(document.querySelector('img[src="old.jpg"]')).not.toBeNull();
+  });
+
   it('closes on Escape after the fade-out', () => {
     render();
     act(() => trigger().click());
@@ -184,6 +232,20 @@ describe('ArchivePopup', () => {
       vi.runAllTimers();
     });
     expect(dialog()).toBeNull();
+  });
+
+  it('fades the label out with the overlay so the close does not sit over it, and back in on close', () => {
+    render();
+    expect(trigger().className).not.toMatch(/-trigger-hidden/);
+    act(() => trigger().click());
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(trigger().className).toMatch(/-trigger-hidden/);
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(trigger().className).not.toMatch(/-trigger-hidden/);
   });
 
   it('ignores trigger clicks on the editor canvas but shows the pinned open state', () => {
@@ -357,10 +419,10 @@ describe('ArchivePopup', () => {
     expect(cells.map(cell => cell.style.textAlign)).toEqual(['', '', 'right']);
   });
 
-  describe('type b', () => {
+  describe('type a', () => {
     const renderB = (props: Partial<Parameters<typeof ArchivePopup>[0]> = {}) => {
       act(() => {
-        root.render(<ArchivePopup settings={{ type: 'b', triggerLabel: 'Archive', closeLabel: 'Close' }} content={content} {...props} />);
+        root.render(<ArchivePopup settings={{ type: 'a', triggerLabel: 'Archive', closeLabel: 'Close' }} content={content} {...props} />);
       });
     };
 

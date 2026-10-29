@@ -203,14 +203,15 @@ const DEFAULT_ROWS: Array<[string, string]> = [
   ['', 'Still Life with Lemons'],
 ];
 
+// Two images a row, so a new popup shows the images turning over.
 const DEFAULT_CONTENT = DEFAULT_ROWS.map(([group, title], index) => ({
   group,
   title: [{ type: 'paragraph', children: [{ text: title }] }],
-  image: {
-    assetId: DEFAULT_IMAGES[index % DEFAULT_IMAGES.length],
+  image: [index, index + 1].map((imageIndex) => ({
+    assetId: DEFAULT_IMAGES[imageIndex % DEFAULT_IMAGES.length],
     name: '',
     objectFit: 'cover' as const,
-  },
+  })),
 }));
 
 const textAppearanceDefault = {
@@ -230,8 +231,8 @@ const paletteBookmarkItems = [
   'overlayColor',
 ] as const;
 
-// B is always open in place: it has no label to open it, close label to dismiss it or overlay behind it.
-const TYPE_A_ONLY_PROPERTIES = [
+// A is always open in place: it has no label to open it, close label to dismiss it or overlay behind it.
+const TYPE_B_ONLY_PROPERTIES = [
   'triggerLabel',
   'closeLabel',
   'triggerColor',
@@ -271,14 +272,11 @@ const schema = {
           display: { type: 'rich-text' },
         },
         ...createExtraTitleProperties(),
+        // A list, each image shown in turn while the row is hovered; the key stays `image` so rows saved with one keep it.
         image: {
           type: 'object',
-          label: 'Hover Image',
-          display: {
-            type: 'media-input',
-            isObjectFitEditable: true,
-            defaultObjectFit: 'cover',
-          },
+          label: 'Hover Images',
+          display: { type: 'media-list-input' },
           properties: {
             assetId: { type: 'string' },
             name: { type: 'string' },
@@ -322,6 +320,15 @@ const schema = {
       },
       columnGap: createLayoutSizeProperty('Column Gap'),
       ...columnWidthProperties,
+      hoverInterval: {
+        type: 'number',
+        scope: 'common',
+        title: 'Interval (ms)',
+        display: { type: 'common-numeric-input' },
+        min: 100,
+        step: 100,
+        max: 10000,
+      },
       panelPosition: {
         type: 'string',
         scope: 'layout',
@@ -351,6 +358,7 @@ const schema = {
     defaults: {
       triggerLabel: 'Archive',
       closeLabel: 'Close',
+      hoverInterval: 1000,
       triggerColor: '#000000',
       triggerHoverColor: '#666666',
       closeColor: '#000000',
@@ -415,8 +423,8 @@ const schema = {
       }),
     },
     displayRules: [
-      ...TYPE_A_ONLY_PROPERTIES.map((name) => ({
-        if: { name: 'type', value: 'b' },
+      ...TYPE_B_ONLY_PROPERTIES.map((name) => ({
+        if: { name: 'type', value: 'a' },
         then: { name: `properties.${name}.display.visible`, value: false },
       })),
       ...createColumnTextStyleDisplayRules(),
@@ -437,6 +445,7 @@ const schema = {
         // { type: 'row', title: '', items: [ 'panelPadding', 'groupGap'] },
         'triggerLabel',
         'closeLabel',
+        'hoverInterval',
       ],
     },
     {

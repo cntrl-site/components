@@ -25,7 +25,7 @@ export const ARCHIVE_POPUP_COLUMN_WIDTH_KEYS = ['column1Width', 'column2Width', 
 type ArchivePopupColumnWidthKey = typeof ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[number];
 
 /**
- * Where A's panel sits on the screen, as `left`/`top` of the screen and of the panel alike, so 0% is flush with
+ * Where B's panel sits on the screen, as `left`/`top` of the screen and of the panel alike, so 0% is flush with
  * one edge and 100% with the other. Named like Mercury's title position; center comes first because the editor
  * puts the first value into a popup saved before there was a position, and those were centred.
  */
@@ -59,7 +59,8 @@ export type ArchivePopupContentItem = {
   title2?: ArchivePopupTitle;
   title3?: ArchivePopupTitle;
   title4?: ArchivePopupTitle;
-  image?: ArchivePopupMedia;
+  /** The row's hover images, shown in turn while it is hovered; a row saved before there could be several holds just one. */
+  image?: ArchivePopupMedia | ArchivePopupMedia[];
 };
 
 type FontSettings = { fontWeight: number; fontStyle: string };
@@ -87,7 +88,7 @@ type ArchivePopupSettings = PrefixedTextStyle<'trigger'>
   // One style every column shared before each had its own; a column with no style of its own still shows it.
   & PrefixedTextStyle<'list'>
   & {
-  /** `a` opens from a label; `b` is always open, in place on the page. */
+  /** `a` is always open, in place on the page; `b` opens from a label. */
   type?: 'a' | 'b';
   triggerLabel?: string;
   closeLabel?: string;
@@ -98,7 +99,9 @@ type ArchivePopupSettings = PrefixedTextStyle<'trigger'>
   column2Width?: number;
   column3Width?: number;
   column4Width?: number;
-  /** A only: B's panel stays where it is placed on the page. */
+  /** How long each of a hovered row's images shows before the next, in ms. */
+  hoverInterval?: number;
+  /** B only: A's panel stays where it is placed on the page. */
   panelPosition?: string;
   panelWidth?: number;
   panelPadding?: Padding;
@@ -167,6 +170,7 @@ const DEFAULT_COLUMN_GAP = 0.0139;
 const DEFAULT_PANEL_WIDTH = 0.3194;
 const DEFAULT_PANEL_PADDING: Padding = { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 };
 const IMAGE_FADE_MS = 800;
+const DEFAULT_HOVER_INTERVAL_MS = 1000;
 
 const LIGHTBOX_CSS_VARS = [
   '--cntrl-article-width',
@@ -244,6 +248,11 @@ export function groupArchiveRows(items: ArchivePopupContentItem[]): ArchivePopup
   return groups;
 }
 
+export function getArchivePopupRowMedia(item: ArchivePopupContentItem | undefined): ArchivePopupMedia[] {
+  const { image } = item ?? {};
+  return (Array.isArray(image) ? image : image ? [image] : []).filter((media) => Boolean(media?.assetId));
+}
+
 function isVideoMedia(media: ArchivePopupMedia): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
@@ -315,6 +324,10 @@ function getCSS(P: string): string {
 }
 .${P}-trigger {
   color: var(--${P}-trigger-color);
+  transition: color 150ms ease, opacity ${OVERLAY_ANIM_MS}ms ease;
+}
+.${P}-trigger-hidden {
+  opacity: 0;
 }
 .${P}-close {
   color: var(--${P}-close-color);
@@ -621,11 +634,12 @@ export function ArchivePopup({
 }: ArchivePopupProps) {
   const { prefix: P } = useScopedStyles();
   const {
-    type = 'a',
+    type = 'b',
     triggerLabel = 'Archive',
     closeLabel = 'Close',
     columns = ARCHIVE_POPUP_MIN_COLUMNS,
     columnGap = DEFAULT_COLUMN_GAP,
+    hoverInterval = DEFAULT_HOVER_INTERVAL_MS,
     panelPosition,
     panelWidth = DEFAULT_PANEL_WIDTH,
     panelPadding = DEFAULT_PANEL_PADDING,
@@ -652,6 +666,8 @@ export function ArchivePopup({
   const [isOverlayActive, setIsOverlayActive] = useState(false);
   const [isOverlaySettled, setIsOverlaySettled] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // Which of the hovered row's images shows, counted afresh on every hover.
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [mountedMedia, setMountedMedia] = useState<Set<number>>(() => new Set());
   const [closePosition, setClosePosition] = useState<{ top: number; left: number } | null>(null);
   const [layoutStyle, setLayoutStyle] = useState<CSSProperties>({});
@@ -660,8 +676,8 @@ export function ArchivePopup({
 
   const isEditorCanvas = Boolean(isEditor && !isPreviewMode);
   const isInteractive = !isEditor || Boolean(isPreviewMode);
-  // B has no popup to open: its panel is always shown in place of the label.
-  const isInline = type === 'b';
+  // A has no popup to open: its panel is always shown in place of the label.
+  const isInline = type === 'a';
   const isOpenPinned = isEditorCanvas && currentState === 'open' && !unavailableStates?.includes('open');
   // Escape from preview lands in edit mode: a popup opened there stays open, with its controls.
   const isOpen = !isInline && (isOpenPinned || ((isInteractive || Boolean(isEditMode)) && isOpenUser));
@@ -737,7 +753,7 @@ export function ArchivePopup({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen, isInteractive]);
 
-  // B's media fills the screen above the page, so a copy of the panel is laid exactly over the real one to stay readable.
+  // A's media fills the screen above the page, so a copy of the panel is laid exactly over the real one to stay readable.
   useLayoutEffect(() => {
     if (!isInline || activeIndex === null) return;
     const panelEl = panelRef.current;
@@ -779,13 +795,25 @@ export function ArchivePopup({
     triggerRef.current?.focus({ preventScroll: true });
   };
 
+  // A hovered row with several images shows them in turn, round and round, for as long as it stays hovered.
+  const activeRowMediaCount = activeIndex === null ? 0 : getArchivePopupRowMedia(items[activeIndex]).length;
+  useEffect(() => {
+    if (activeRowMediaCount < 2) return;
+    const timer = window.setInterval(() => {
+      setActiveMediaIndex((current) => (current + 1) % activeRowMediaCount);
+    }, Math.max(100, hoverInterval));
+    return () => window.clearInterval(timer);
+  }, [activeIndex, activeRowMediaCount, hoverInterval]);
+
   const showRowMedia = (index: number) => {
-    if (!isInteractive || !items[index]?.image?.assetId) {
+    if (!isInteractive || getArchivePopupRowMedia(items[index]).length === 0) {
       setActiveIndex(null);
       return;
     }
+    // A row's images all load on its first hover, so the next is ready by the time it shows.
     setMountedMedia((prev) => (prev.has(index) ? prev : new Set(prev).add(index)));
     if (isInline && activeIndex === null) setLayoutStyle(getLightboxLayoutStyle(wrapperRef.current));
+    if (activeIndex !== index) setActiveMediaIndex(0);
     setIsMediaCut(false);
     setActiveIndex(index);
   };
@@ -821,18 +849,14 @@ export function ArchivePopup({
 
   const mediaLayer = (
     <div className={cn(`${P}-media-layer`, isMediaCut && `${P}-media-layer-instant`)} aria-hidden="true">
-      {[...mountedMedia].map((index) => {
-        const media = items[index]?.image;
-        if (!media?.assetId) return null;
-        return (
-          <ArchivePopupMediaItem
-            key={`${index}-${media.assetId}`}
-            P={P}
-            media={media}
-            isVisible={activeIndex === index}
-          />
-        );
-      })}
+      {[...mountedMedia].flatMap((index) => getArchivePopupRowMedia(items[index]).map((media, mediaIndex) => (
+        <ArchivePopupMediaItem
+          key={`${index}-${mediaIndex}-${media.assetId}`}
+          P={P}
+          media={media}
+          isVisible={activeIndex === index && activeMediaIndex === mediaIndex}
+        />
+      )))}
     </div>
   );
   // Inline there is no slide-in to wait for, so the canvas controls can measure straight away.
@@ -974,10 +998,12 @@ export function ArchivePopup({
         style={colorVars}
       >
         {isInline ? renderPanel(false) : (
+          // The overlay lets the page show through, so the label fades out with it rather than sit under the close.
+          // Only faded, it keeps the component's size and can still take focus back on close.
           <button
             ref={triggerRef}
             type="button"
-            className={`${P}-trigger`}
+            className={cn(`${P}-trigger`, isOverlayActive && `${P}-trigger-hidden`)}
             style={triggerTypographyCss}
             aria-haspopup="dialog"
             aria-expanded={isOpen}
