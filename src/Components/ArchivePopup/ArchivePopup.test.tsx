@@ -106,6 +106,7 @@ describe('ArchivePopupComponent columns', () => {
     const hiddenStylesAt = (columns: number) => [...new Set(ArchivePopupComponent.schema.settings.displayRules
       .filter(rule => !Array.isArray(rule.if) && rule.if.name === 'columns' && rule.if.value === columns)
       .map(rule => rule.then.name.match(/properties\.(column\d)/)![1]))];
+    expect(hiddenStylesAt(1)).toEqual(['column2', 'column3', 'column4', 'column5']);
     expect(hiddenStylesAt(2)).toEqual(['column3', 'column4', 'column5']);
     expect(hiddenStylesAt(4)).toEqual(['column5']);
     expect(hiddenStylesAt(5)).toEqual([]);
@@ -117,6 +118,7 @@ describe('ArchivePopupComponent columns', () => {
     .map(rule => rule.then.name);
 
   it('counts the group as the first column and shows a content field per column after the title', () => {
+    expect(hiddenFields(1)).toEqual(['title', 'title2', 'title3', 'title4']);
     expect(hiddenFields(2)).toEqual(['title2', 'title3', 'title4']);
     expect(hiddenFields(3)).toEqual(['title3', 'title4']);
     expect(hiddenFields(4)).toEqual(['title4']);
@@ -384,6 +386,26 @@ describe('ArchivePopup', () => {
     expect([row.previousElementSibling!, ...row.children].map(cell => cell.textContent)).toEqual(['(2026)', 'One', 'Client', 'Type']);
     const panel = row.closest('[class*="-panel"]') as HTMLElement;
     expect(panel.style.getPropertyValue(`--${panel.className.split('-panel')[0]}-grid-columns`).split(') ').length).toBe(4);
+  });
+
+  it('shows only the first column in a single column, each row its own, styled as the first column', () => {
+    act(() => {
+      root.render(<ArchivePopup
+        settings={{ columns: 1, column1FontSize: 0.01, column2FontSize: 0.02 }}
+        content={content}
+        isEditor
+        currentState="open"
+      />);
+    });
+    expect(document.querySelector('[role="dialog"] [class$="-group-label"]')).toBeNull();
+    const rows = [...document.querySelectorAll('[role="dialog"] div[class$="-row"]')];
+    expect(rows.map(row => row.children.length)).toEqual([1, 1, 1, 1]);
+    expect(rows.map(row => row.textContent)).toEqual(['(2026)', '', '(2025)', '']);
+    // all the rows are one list, with no group gaps between them
+    expect(new Set(rows.map(row => row.parentElement)).size).toBe(1);
+    expect((rows[0].firstElementChild as HTMLElement).style.fontSize).toBe('calc(var(--cntrl-article-width) * 0.01)');
+    const panel = rows[0].closest('[class*="-panel"]') as HTMLElement;
+    expect(panel.style.getPropertyValue(`--${panel.className.split('-panel')[0]}-grid-columns`)).toBe('minmax(0, 100fr)');
   });
 
   it('sizes each column but the last from its width, the last taking what is left, like Programme', () => {

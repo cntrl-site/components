@@ -11,6 +11,7 @@ import {
   ArchivePopup,
   ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES,
   ARCHIVE_POPUP_COLUMN_WIDTH_KEYS,
+  ARCHIVE_POPUP_DEFAULT_COLUMNS,
   ARCHIVE_POPUP_EXTRA_TITLE_KEYS,
   ARCHIVE_POPUP_MAX_COLUMNS,
   ARCHIVE_POPUP_MIN_COLUMNS,
@@ -158,9 +159,11 @@ function createColumnTextStyleDefaults(values: Record<string, unknown>): Record<
 }
 
 // Group and Title are the first two columns; each one after is a title field of its own, shown in the content panel only while the columns reach it.
+const NAMED_COLUMNS = 2;
+
 function createExtraTitleProperties(): Record<string, ComponentContentProperty> {
   return Object.fromEntries(ARCHIVE_POPUP_EXTRA_TITLE_KEYS.map((key, index) => [key, {
-    label: `Column ${index + ARCHIVE_POPUP_MIN_COLUMNS + 1}`,
+    label: `Column ${index + NAMED_COLUMNS + 1}`,
     placeholder: 'Add text...',
     display: { type: 'rich-text' },
   }]));
@@ -169,10 +172,12 @@ function createExtraTitleProperties(): Record<string, ComponentContentProperty> 
 function createExtraTitleDisplayRules(): SchemaDisplayRule[] {
   const rules: SchemaDisplayRule[] = [];
   for (let columns = ARCHIVE_POPUP_MIN_COLUMNS; columns < ARCHIVE_POPUP_MAX_COLUMNS; columns += 1) {
-    ARCHIVE_POPUP_EXTRA_TITLE_KEYS.slice(columns - ARCHIVE_POPUP_MIN_COLUMNS).forEach((key) => {
+    ARCHIVE_POPUP_EXTRA_TITLE_KEYS.slice(Math.max(0, columns - NAMED_COLUMNS)).forEach((key) => {
       rules.push({ if: { name: 'columns', value: columns }, then: { name: key, value: false } });
     });
   }
+  // A single column is the first column alone, so there is no title to fill in.
+  rules.unshift({ if: { name: 'columns', value: 1 }, then: { name: 'title', value: false } });
   return rules;
 }
 
@@ -385,7 +390,7 @@ const schema = {
       m: withEqualColumnWidths({
         type: 'a',
         panelPosition: 'center',
-        columns: ARCHIVE_POPUP_MIN_COLUMNS,
+        columns: ARCHIVE_POPUP_DEFAULT_COLUMNS,
         columnGap: 0.0427,
         panelWidth: 0.9147,
         panelPadding: { top: 0.0427, right: 0.0427, bottom: 0.0427, left: 0.0427 },
@@ -398,7 +403,7 @@ const schema = {
       t: withEqualColumnWidths({
         type: 'a',
         panelPosition: 'center',
-        columns: ARCHIVE_POPUP_MIN_COLUMNS,
+        columns: ARCHIVE_POPUP_DEFAULT_COLUMNS,
         columnGap: 0.0234,
         panelWidth: 0.5469,
         panelPadding: { top: 0.0182, right: 0.0182, bottom: 0.0182, left: 0.0182 },
@@ -411,7 +416,7 @@ const schema = {
       d: withEqualColumnWidths({
         type: 'a',
         panelPosition: 'center',
-        columns: ARCHIVE_POPUP_MIN_COLUMNS,
+        columns: ARCHIVE_POPUP_DEFAULT_COLUMNS,
         columnGap: 0.0139,
         panelWidth: 0.3194,
         panelPadding: { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 },

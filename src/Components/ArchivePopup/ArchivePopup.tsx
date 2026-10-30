@@ -14,8 +14,10 @@ type ArchivePopupMedia = {
   objectFit?: 'cover' | 'contain';
 };
 
-/** Columns count the group column too, so the least is the group and its title. */
-export const ARCHIVE_POPUP_MIN_COLUMNS = 2;
+/** Columns count the group column too; a single column is that column alone, each row showing its own text. */
+export const ARCHIVE_POPUP_MIN_COLUMNS = 1;
+/** A new popup shows the group and its title. */
+export const ARCHIVE_POPUP_DEFAULT_COLUMNS = 2;
 export const ARCHIVE_POPUP_MAX_COLUMNS = 5;
 /** The fields of the columns after the title, in order; `columns` decides how many of them a row shows. */
 export const ARCHIVE_POPUP_EXTRA_TITLE_KEYS = ['title2', 'title3', 'title4'] as const;
@@ -184,7 +186,7 @@ type ColumnLayoutSettings = Pick<ArchivePopupSettings, 'columns' | 'columnGap' |
   & Partial<Record<ArchivePopupColumnWidthKey, number>>;
 
 function getColumnCount(columns: number | undefined): number {
-  return Math.min(Math.max(Math.round(columns ?? ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MAX_COLUMNS);
+  return Math.min(Math.max(Math.round(columns ?? ARCHIVE_POPUP_DEFAULT_COLUMNS), ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MAX_COLUMNS);
 }
 
 /** The width a row's columns share: the panel's, less its padding and the gaps between them. */
@@ -469,6 +471,9 @@ function getCSS(P: string): string {
   grid-template-columns: subgrid;
   align-items: baseline;
 }
+.${P}-group-unlabeled .${P}-row {
+  grid-column: 1 / -1;
+}
 .${P}-group-label {
   grid-column: 1;
   align-self: start;
@@ -490,7 +495,7 @@ function getCSS(P: string): string {
 }
 .${P}-interactive .${P}-row:hover .${P}-title,
 .${P}-row:focus-within .${P}-title,
-.${P}-state-hover .${P}-group-label + .${P}-row .${P}-title {
+.${P}-state-hover .${P}-row:first-of-type .${P}-title {
   color: var(--${P}-text-hover-color, var(--${P}-text-color));
 }
 `;
@@ -644,7 +649,7 @@ export function ArchivePopup({
     type = 'b',
     triggerLabel = 'Archive',
     closeLabel = 'Close',
-    columns = ARCHIVE_POPUP_MIN_COLUMNS,
+    columns = ARCHIVE_POPUP_DEFAULT_COLUMNS,
     columnGap = DEFAULT_COLUMN_GAP,
     hoverInterval = DEFAULT_HOVER_INTERVAL_MS,
     panelPosition,
@@ -690,12 +695,18 @@ export function ArchivePopup({
   const isOpen = !isInline && (isOpenPinned || ((isInteractive || Boolean(isEditMode)) && isOpenUser));
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const scopedCss = useMemo(() => getCSS(P), [P]);
-  const groups = useMemo(() => groupArchiveRows(content ?? []), [content]);
   const panelOffset = PANEL_POSITION_OFFSETS[panelPosition as ArchivePopupPanelPosition] ?? PANEL_POSITION_OFFSETS.center;
   const columnCount = getColumnCount(columns);
   const columnWidths = resolveArchivePopupColumnWidths(settings);
   // the group takes the first column, the titles the rest
   const titleKeys = ['title', ...ARCHIVE_POPUP_EXTRA_TITLE_KEYS].slice(0, columnCount - 1) as Array<'title' | typeof ARCHIVE_POPUP_EXTRA_TITLE_KEYS[number]>;
+  // With the first column alone there is nothing for a group to span, so every row shows its own first column, as one list.
+  const hasGroupColumn = columnCount > 1;
+  const groups = useMemo<ArchivePopupGroup[]>(() => (
+    hasGroupColumn
+      ? groupArchiveRows(content ?? [])
+      : [{ label: '', rows: (content ?? []).map((item, index) => ({ item, index })) }]
+  ), [content, hasGroupColumn]);
 
   useLightboxScrollLock(isOpen && !isEditorCanvas);
 
@@ -933,13 +944,18 @@ export function ArchivePopup({
           )}
           {/* The label spans its group's rows, so its line height spaces only its own lines, never the rows beside it;
               a label longer than its rows grows the last track, below them. */}
-          <div className={`${P}-group`} style={{ gridTemplateRows: `repeat(${group.rows.length}, auto) 1fr` }}>
-            <span
-              className={`${P}-group-label`}
-              style={{ ...columnTypographyCss[0], gridRow: `1 / span ${group.rows.length + 1}`, marginTop: groupLabelOffset }}
-            >
-              {group.label}
-            </span>
+          <div
+            className={cn(`${P}-group`, !hasGroupColumn && `${P}-group-unlabeled`)}
+            style={{ gridTemplateRows: `repeat(${group.rows.length}, auto) 1fr` }}
+          >
+            {hasGroupColumn && (
+              <span
+                className={`${P}-group-label`}
+                style={{ ...columnTypographyCss[0], gridRow: `1 / span ${group.rows.length + 1}`, marginTop: groupLabelOffset }}
+              >
+                {group.label}
+              </span>
+            )}
             {group.rows.map(({ item, index }) => (
               <div
                 key={index}
@@ -951,6 +967,9 @@ export function ArchivePopup({
                   onBlur: () => hideRowMedia(index),
                 })}
               >
+                {!hasGroupColumn && (
+                  <div className={`${P}-title`} style={columnTypographyCss[0]}>{item.group}</div>
+                )}
                 {titleKeys.map((key, titleIndex) => {
                   const title = item[key];
                   return (
