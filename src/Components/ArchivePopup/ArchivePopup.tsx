@@ -2,8 +2,8 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { createPortal } from 'react-dom';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, scalingValue, useScopedStyles } from '../utils/index';
-import { RichTextRenderer } from '../helpers/RichTextRenderer/RichTextRenderer';
+import { buildColorVars, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
+import { buildValidUrl } from '../utils/LinkWrapper';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 
@@ -52,17 +52,19 @@ export const ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES = ['column1', 'column2', 'colum
 
 type ArchivePopupColumnStylePrefix = typeof ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES[number];
 
-type ArchivePopupTitle = any[] | string;
+// Plain text; a row saved while titles were rich text still holds its nodes.
+type ArchivePopupTitle = string | any[];
 
 export type ArchivePopupContentItem = {
   group?: string;
-  /** Rich text, so parts of a title can be linked; a plain string is still shown as is. */
+  /** Plain text, so the entry's `link` is the only link a row has. */
   title?: ArchivePopupTitle;
   title2?: ArchivePopupTitle;
   title3?: ArchivePopupTitle;
   title4?: ArchivePopupTitle;
-  /** The row's hover images, shown in turn while it is hovered; a row saved before there could be several holds just one. */
   image?: ArchivePopupMedia | ArchivePopupMedia[];
+  /** The whole row links here. */
+  link?: ContentLink;
 };
 
 type FontSettings = { fontWeight: number; fontStyle: string };
@@ -255,6 +257,17 @@ export function getArchivePopupRowMedia(item: ArchivePopupContentItem | undefine
   return (Array.isArray(image) ? image : image ? [image] : []).filter((media) => Boolean(media?.assetId));
 }
 
+// A title saved as rich text shows its words alone, a line to each paragraph, its links and styling dropped.
+function getTitleText(title: ArchivePopupTitle | undefined): string {
+  if (!Array.isArray(title)) return title ?? '';
+  const getNodeText = (node: any): string => node.text ?? (node.children ?? []).map(getNodeText).join('');
+  return title.map(getNodeText).join('\n');
+}
+
+function getMediaKey(rowIndex: number, mediaIndex: number, assetId: string): string {
+  return `${rowIndex}-${mediaIndex}-${assetId}`;
+}
+
 function isVideoMedia(media: ArchivePopupMedia): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
@@ -401,13 +414,25 @@ function getCSS(P: string): string {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity ${IMAGE_FADE_MS}ms cubic-bezier(0, 0, 0.58, 1);
 }
 .${P}-media-contain {
   object-fit: contain;
 }
+/* The image replaced stays whole under the next until that is in, then goes at once, so neither the page nor an older
+   image shows between them; only the image coming in and, as the list is left, those on screen fade. */
+.${P}-media-visible,
+.${P}-media-fading {
+  transition: opacity ${IMAGE_FADE_MS}ms cubic-bezier(0, 0, 0.58, 1);
+}
 .${P}-media-visible {
+  z-index: 1;
   opacity: 1;
+}
+.${P}-media-covered {
+  opacity: 1;
+}
+.${P}-media-fading {
+  opacity: 0;
 }
 .${P}-close {
   position: absolute;
@@ -449,9 +474,6 @@ function getCSS(P: string): string {
   position: absolute;
   pointer-events: none;
 }
-.${P}-panel-copy .${P}-row-active .${P}-title {
-  color: var(--${P}-text-hover-color, var(--${P}-text-color));
-}
 @media (prefers-reduced-motion: reduce) {
   .${P}-panel {
     transition: none;
@@ -471,6 +493,10 @@ function getCSS(P: string): string {
   grid-template-columns: subgrid;
   align-items: baseline;
 }
+a.${P}-row {
+  color: inherit;
+  text-decoration: none;
+}
 .${P}-group-unlabeled .${P}-row {
   grid-column: 1 / -1;
 }
@@ -483,6 +509,7 @@ function getCSS(P: string): string {
 .${P}-title {
   min-width: 0;
   overflow-wrap: anywhere;
+  white-space: pre-line;
   transition: color 150ms cubic-bezier(0, 0, 0.58, 1);
 }
 .${P}-control-anchor {
@@ -490,11 +517,9 @@ function getCSS(P: string): string {
   pointer-events: none;
   z-index: 2;
 }
-.${P}-title a {
-  text-decoration: inherit;
-}
 .${P}-interactive .${P}-row:hover .${P}-title,
-.${P}-row:focus-within .${P}-title,
+.${P}-row:focus-visible .${P}-title,
+.${P}-panel-copy .${P}-row-active .${P}-title,
 .${P}-state-hover .${P}-row:first-of-type .${P}-title {
   color: var(--${P}-text-hover-color, var(--${P}-text-color));
 }
@@ -505,18 +530,27 @@ function ArchivePopupMediaItem({
   P,
   media,
   isVisible,
+  isLoaded,
+  isCovered,
+  isFading,
+  onLoad,
 }: {
   P: string;
   media: ArchivePopupMedia;
   isVisible: boolean;
+  isLoaded: boolean;
+  isCovered: boolean;
+  isFading: boolean;
+  onLoad: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
   const isVideo = isVideoMedia(media);
   const className = cn(
     `${P}-media`,
     media.objectFit === 'contain' && `${P}-media-contain`,
     isVisible && isLoaded && `${P}-media-visible`,
+    isCovered && `${P}-media-covered`,
+    isFading && `${P}-media-fading`,
   );
 
   useEffect(() => {
@@ -539,7 +573,7 @@ function ArchivePopupMediaItem({
         loop
         playsInline
         preload="auto"
-        onLoadedData={() => setIsLoaded(true)}
+        onLoadedData={onLoad}
       />
     );
   }
@@ -550,7 +584,7 @@ function ArchivePopupMediaItem({
       src={media.assetId}
       alt=""
       decoding="async"
-      onLoad={() => setIsLoaded(true)}
+      onLoad={onLoad}
     />
   );
 }
@@ -681,6 +715,11 @@ export function ArchivePopup({
   // Which of the hovered row's images shows, counted afresh on every hover.
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [mountedMedia, setMountedMedia] = useState<Set<number>>(() => new Set());
+  // The image just replaced, kept whole under the next while it fades in, and the last one shown, to fade out on leave.
+  const [loadedMedia, setLoadedMedia] = useState<Set<string>>(() => new Set());
+  const [coveredMedia, setCoveredMedia] = useState<string | null>(null);
+  const [lastShownMedia, setLastShownMedia] = useState<string | null>(null);
+  const shownMediaRef = useRef<string | null>(null);
   const [closePosition, setClosePosition] = useState<{ top: number; left: number } | null>(null);
   const [layoutStyle, setLayoutStyle] = useState<CSSProperties>({});
   const [copyRect, setCopyRect] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -833,6 +872,26 @@ export function ArchivePopup({
     return () => window.clearInterval(timer);
   }, [activeIndex, activeRowMediaCount, hoverInterval]);
 
+  // Before paint, or the replaced image would drop out for a frame before it is kept.
+  const shownAssetId = activeIndex === null ? undefined : getArchivePopupRowMedia(items[activeIndex])[activeMediaIndex]?.assetId;
+  const shownMedia = activeIndex !== null && shownAssetId !== undefined ? getMediaKey(activeIndex, activeMediaIndex, shownAssetId) : null;
+  const isShownMediaLoaded = shownMedia !== null && loadedMedia.has(shownMedia);
+  useLayoutEffect(() => {
+    const previous = shownMediaRef.current;
+    shownMediaRef.current = shownMedia;
+    // Leaving keeps both, to fade out together: the one under the last is still on screen while the last fades in.
+    if (shownMedia === null) return;
+    setLastShownMedia(shownMedia);
+    setCoveredMedia(previous);
+  }, [shownMedia]);
+
+  // The replaced image goes once the next has loaded and faded in over it, however long the load takes.
+  useEffect(() => {
+    if (!isShownMediaLoaded || coveredMedia === null) return;
+    const timer = window.setTimeout(() => setCoveredMedia(null), IMAGE_FADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [isShownMediaLoaded, coveredMedia]);
+
   const showRowMedia = (index: number) => {
     if (!isInteractive || getArchivePopupRowMedia(items[index]).length === 0) {
       setActiveIndex(null);
@@ -850,7 +909,7 @@ export function ArchivePopup({
     setActiveIndex((current) => (current === index ? null : current));
   };
 
-  // Title links only navigate on a live page or in preview, not on the editor canvas.
+  // Row links only navigate on a live page or in preview, not on the editor canvas.
   const onPanelClickCapture = (event: MouseEvent<HTMLDivElement>) => {
     if (!isInteractive && (event.target as HTMLElement).closest('a')) {
       event.preventDefault();
@@ -884,14 +943,21 @@ export function ArchivePopup({
 
   const mediaLayer = (
     <div className={cn(`${P}-media-layer`, isMediaCut && `${P}-media-layer-instant`)} aria-hidden="true">
-      {[...mountedMedia].flatMap((index) => getArchivePopupRowMedia(items[index]).map((media, mediaIndex) => (
-        <ArchivePopupMediaItem
-          key={`${index}-${mediaIndex}-${media.assetId}`}
-          P={P}
-          media={media}
-          isVisible={activeIndex === index && activeMediaIndex === mediaIndex}
-        />
-      )))}
+      {[...mountedMedia].flatMap((index) => getArchivePopupRowMedia(items[index]).map((media, mediaIndex) => {
+        const mediaKey = getMediaKey(index, mediaIndex, media.assetId);
+        return (
+          <ArchivePopupMediaItem
+            key={mediaKey}
+            P={P}
+            media={media}
+            isVisible={mediaKey === shownMedia}
+            isLoaded={loadedMedia.has(mediaKey)}
+            isCovered={mediaKey === coveredMedia}
+            isFading={shownMedia === null && (mediaKey === lastShownMedia || mediaKey === coveredMedia)}
+            onLoad={() => setLoadedMedia((prev) => (prev.has(mediaKey) ? prev : new Set(prev).add(mediaKey)))}
+          />
+        );
+      }))}
     </div>
   );
   // Inline there is no slide-in to wait for, so the canvas controls can measure straight away.
@@ -956,30 +1022,33 @@ export function ArchivePopup({
                 {group.label}
               </span>
             )}
-            {group.rows.map(({ item, index }) => (
-              <div
-                key={index}
-                className={cn(`${P}-row`, isCopy && index === activeIndex && `${P}-row-active`)}
-                {...(isCopy ? {} : {
-                  onMouseEnter: () => showRowMedia(index),
-                  onMouseLeave: () => hideRowMedia(index),
-                  onFocus: () => showRowMedia(index),
-                  onBlur: () => hideRowMedia(index),
-                })}
-              >
-                {!hasGroupColumn && (
-                  <div className={`${P}-title`} style={columnTypographyCss[0]}>{item.group}</div>
-                )}
-                {titleKeys.map((key, titleIndex) => {
-                  const title = item[key];
-                  return (
-                    <div key={key} className={`${P}-title`} style={columnTypographyCss[titleIndex + 1]}>
-                      {Array.isArray(title) ? <RichTextRenderer content={title} /> : title}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+            {group.rows.map(({ item, index }) => {
+              const rowLink = !isCopy && item.link?.value ? item.link : undefined;
+              const RowElement = rowLink ? 'a' : 'div';
+              return (
+                <RowElement
+                  key={index}
+                  className={cn(`${P}-row`, isCopy && index === activeIndex && `${P}-row-active`)}
+                  {...(rowLink ? {
+                    href: buildValidUrl(rowLink.value),
+                    ...(rowLink.target === 'blank' && { target: '_blank', rel: 'noreferrer' }),
+                  } : {})}
+                  {...(isCopy ? {} : {
+                    onMouseEnter: () => showRowMedia(index),
+                    onMouseLeave: () => hideRowMedia(index),
+                    onFocus: () => showRowMedia(index),
+                    onBlur: () => hideRowMedia(index),
+                  })}
+                >
+                  {!hasGroupColumn && (
+                    <div className={`${P}-title`} style={columnTypographyCss[0]}>{item.group}</div>
+                  )}
+                  {titleKeys.map((key, titleIndex) => (
+                    <div key={key} className={`${P}-title`} style={columnTypographyCss[titleIndex + 1]}>{getTitleText(item[key])}</div>
+                  ))}
+                </RowElement>
+              );
+            })}
           </div>
         </Fragment>
       ))}

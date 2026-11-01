@@ -163,9 +163,10 @@ const NAMED_COLUMNS = 2;
 
 function createExtraTitleProperties(): Record<string, ComponentContentProperty> {
   return Object.fromEntries(ARCHIVE_POPUP_EXTRA_TITLE_KEYS.map((key, index) => [key, {
+    type: 'string',
     label: `Column ${index + NAMED_COLUMNS + 1}`,
     placeholder: 'Add text...',
-    display: { type: 'rich-text' },
+    display: { type: 'text-input' },
   }]));
 }
 
@@ -211,7 +212,8 @@ const DEFAULT_ROWS: Array<[string, string]> = [
 // Two images a row, so a new popup shows the images turning over.
 const DEFAULT_CONTENT = DEFAULT_ROWS.map(([group, title], index) => ({
   group,
-  title: [{ type: 'paragraph', children: [{ text: title }] }],
+  title,
+  link: { type: 'url' as const, value: '', target: 'self' as const },
   image: [index, index + 1].map((imageIndex) => ({
     assetId: DEFAULT_IMAGES[imageIndex % DEFAULT_IMAGES.length],
     name: '',
@@ -272,11 +274,18 @@ const schema = {
           display: { type: 'text-input' },
         },
         title: {
+          type: 'string',
           label: 'Column 2',
           placeholder: 'Add title...',
-          display: { type: 'rich-text' },
+          display: { type: 'text-input' },
         },
         ...createExtraTitleProperties(),
+        link: {
+          type: 'object',
+          label: 'Link',
+          contentKey: 'link',
+          display: { type: 'link-input' },
+        },
         // A list, each image shown in turn while the row is hovered; the key stays `image` so rows saved with one keep it.
         image: {
           type: 'object',
@@ -480,10 +489,10 @@ const schema = {
 export const ArchivePopupComponent = {
   element: ArchivePopup,
   id: 'archive-popup',
-  name: 'Archive Popup',
+  name: 'Chronicles',
   category: 'ui-elements',
   normalizeLayoutSettingsUpdate: applyArchivePopupColumnCountChange,
-    preview: {
+  preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/Journal.png',
   },
