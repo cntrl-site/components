@@ -42,6 +42,14 @@ export type Component = {
     prevSettings: Record<string, any>,
     options?: any,
   ) => Record<string, any>;
+  /**
+   * Extra panel availability context derived from the component settings,
+   * matched against schema panels' `availableWhen`.
+   */
+  getPanelAvailabilityContext?: (
+    settings: Record<string, any>,
+    layoutId?: string,
+  ) => Record<string, string | undefined>;
 };
 
 type Path = {

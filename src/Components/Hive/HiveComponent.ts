@@ -188,6 +188,51 @@ const textStylePanelTab = {
   ),
 };
 
+const entryTitleTextStyleProperties: Record<string, SchemaProperty> = {
+  entryTitleFontFamily: {
+    type: 'string',
+    scope: 'common',
+    title: 'Font family',
+    display: { type: 'font-family-select' },
+  },
+  entryTitleFontSettings: {
+    ...textStyleProperties.fontSettings,
+    scope: 'common',
+    title: '',
+  },
+  entryTitleFontSize: {
+    ...textStyleProperties.fontSize,
+    scope: 'layout',
+    title: 'Font Size',
+  },
+  entryTitleLineHeight: {
+    ...textStyleProperties.lineHeight,
+    scope: 'layout',
+    title: 'Line Height',
+  },
+  entryTitleLetterSpacing: {
+    ...textStyleProperties.letterSpacing,
+    scope: 'layout',
+    title: 'Letter Spacing',
+  },
+  entryTitleWordSpacing: {
+    ...textStyleProperties.wordSpacing,
+    scope: 'layout',
+    title: 'Word Spacing',
+  },
+  entryTitleTextAlign: {
+    ...textStyleProperties.textAlign,
+    scope: 'layout',
+    title: '',
+  },
+  entryTitleTextAppearance: {
+    ...textStyleProperties.textAppearance,
+    scope: 'layout',
+    title: 'Text Appearance',
+    display: { type: 'text-appearance' },
+  },
+};
+
 const HIVE_DEFAULT_TITLES = {
   title1: 'NASA',
   title2: 'Ames Research Center',
@@ -318,6 +363,13 @@ const schema: ComponentSchemaV1 = {
   settings: {
     sizing: 'auto auto',
     properties: {
+      type: {
+        type: 'string',
+        scope: 'layout',
+        title: '',
+        display: { type: 'radio-group' },
+        enum: ['a', 'b'],
+      },
       gridLayout: {
         type: 'grid-layout',
         scope: 'layout',
@@ -349,6 +401,21 @@ const schema: ComponentSchemaV1 = {
             },
           },
         },
+      },
+      textBoxWidth: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text Width (%)',
+        display: { type: 'percentage-input' },
+        min: 0,
+      },
+      textMarginTop: {
+        type: 'number',
+        scope: 'layout',
+        title: 'Text margin top',
+        min: 0,
+        max: 100,
+        display: { type: 'range-control' },
       },
       verticalGap: {
         type: 'number',
@@ -438,6 +505,12 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         display: { type: 'range-control' },
       },
+      entryTitleColor: {
+        type: 'string',
+        scope: 'common',
+        title: 'Title Entry',
+        display: { type: 'palette-color-picker' },
+      },
       title1Color: {
         type: 'string',
         scope: 'common',
@@ -502,6 +575,7 @@ const schema: ComponentSchemaV1 = {
         min: 0,
         display: { type: 'range-control' },
       },
+      ...entryTitleTextStyleProperties,
       ...textStylePropertiesByPrefix,
     },
     defaults: {
@@ -511,6 +585,20 @@ const schema: ComponentSchemaV1 = {
         reversed: false,
       },
       align: 'top',
+      entryTitleColor: '#000000',
+      entryTitleFontFamily: 'Arial',
+      entryTitleFontSettings: {
+        fontWeight: 400,
+        fontStyle: 'normal',
+      },
+      entryTitleLetterSpacing: 0,
+      entryTitleWordSpacing: 0,
+      entryTitleTextAlign: 'left',
+      entryTitleTextAppearance: {
+        textTransform: 'none',
+        textDecoration: 'none',
+        fontVariant: 'normal',
+      },
       title1Color: '#000000',
       title2Color: '#000000',
       title3Color: '#000000',
@@ -522,6 +610,9 @@ const schema: ComponentSchemaV1 = {
     },
     layoutDefaults: {
       m: {
+        type: 'a',
+        textBoxWidth: 100,
+        textMarginTop: 0.02,
         gridLayout: {
           entryWidth: 0.37837,
           horizontalGap: 0.0810,
@@ -541,6 +632,8 @@ const schema: ComponentSchemaV1 = {
         contentMarginTop: 0.0810,
         closeIconMaxWidth: 0.0810,
         iconMarginRight: 0.05405,
+        entryTitleFontSize: 0.04864,
+        entryTitleLineHeight: 0.056756,
         ...createTextStyleLayoutDefaults({
           title1FontSize: 0.04864,
           title1LineHeight: 0.056756,
@@ -551,6 +644,9 @@ const schema: ComponentSchemaV1 = {
         }),
       },
       t: {
+        type: 'a',
+        textBoxWidth: 100,
+        textMarginTop: 0.01953125,
         gridLayout: {
           entryWidth: 0.10416,
           horizontalGap: 0.013,
@@ -570,6 +666,8 @@ const schema: ComponentSchemaV1 = {
         contentMarginTop: 0.026,
         closeIconMaxWidth: 0.039,
         iconMarginRight: 0.026,
+        entryTitleFontSize: 0.02083,
+        entryTitleLineHeight: 0.02734,
         ...createTextStyleLayoutDefaults({
           title1FontSize: 0.02083,
           title1LineHeight: 0.02734,
@@ -580,6 +678,9 @@ const schema: ComponentSchemaV1 = {
         }),
       },
       d: {
+        type: 'a',
+        textBoxWidth: 100,
+        textMarginTop: 0.008,
         gridLayout: {
           entryWidth: 0.06944,
           horizontalGap: 0.006944,
@@ -599,6 +700,8 @@ const schema: ComponentSchemaV1 = {
         contentMarginTop: 0.01,
         closeIconMaxWidth: 0.0125,
         iconMarginRight: 0.01,
+        entryTitleFontSize: 0.0098,
+        entryTitleLineHeight: 0.0098,
         ...createTextStyleLayoutDefaults({
           title1FontSize: 0.0098,
           title1LineHeight: 0.0098,
@@ -611,13 +714,20 @@ const schema: ComponentSchemaV1 = {
     },
     displayRules: [
       {
+        if: { name: 'type', value: 'b', isNotEqual: true },
+        then: { name: 'properties.textBoxWidth.display.visible', value: false },
+      },
+      {
         if: { name: 'imageDisplay.display', value: 'cover' },
         then: { name: 'properties.align.display.enabled', value: false },
       },
     ],
     layout: [
       '__componentName__',
+      'type',
       'gridLayout',
+      'textBoxWidth',
+      'textMarginTop',
       'verticalGap',
       'align',
       'imageDisplay',
@@ -642,6 +752,7 @@ const schema: ComponentSchemaV1 = {
       tooltip: 'General Settings',
       layout: [
         '__componentName__',
+        'type',
         {
           type: 'row',
           title: '',
@@ -649,7 +760,7 @@ const schema: ComponentSchemaV1 = {
             { type: 'group', title: '', items: ['gridLayout'] },
           ],
         },
-        { type: 'row', title: '', items: ['verticalGap'] },
+        { type: 'row', title: '', items: ['textBoxWidth', 'verticalGap'] },
         { type: 'row', title: '', items: ['imageDisplay', 'align'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
       ],
@@ -660,12 +771,30 @@ const schema: ComponentSchemaV1 = {
       title: 'Type Style',
       tooltip: 'Typography',
       layout: [
-        textStylePanelTab,
+        {
+          type: 'group',
+          title: 'Title',
+          items: [
+            'entryTitleFontFamily',
+            'entryTitleFontSettings',
+            {
+              type: 'row',
+              items: ['entryTitleFontSize', 'entryTitleLineHeight', 'entryTitleLetterSpacing', 'entryTitleWordSpacing'],
+            },
+            'entryTitleTextAlign',
+            'entryTitleTextAppearance',
+          ],
+        },
+        {
+          type: 'group',
+          title: 'Lightbox',
+          items: [textStylePanelTab],
+        },
       ],
     },
   ],
   paletteBookmark: {
-    items: ['title1Color', 'title2Color', 'title3Color', 'backgroundColor', 'closeIconColor', 'closeIconHoverColor'],
+    items: ['entryTitleColor', 'title1Color', 'title2Color', 'title3Color', 'backgroundColor', 'closeIconColor', 'closeIconHoverColor'],
     panelIds: ['general', 'typeStyle'],
   },
 };
@@ -693,9 +822,13 @@ export const HiveComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: [...HIVE_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}` }))],
+    parameters: [
+      { path: 'entryTitleFontFamily' },
+      ...HIVE_TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}` })),
+    ],
   },
   fontRelations: {
+    entryTitleFontSettings: 'entryTitleFontFamily',
     ...HIVE_TEXT_STYLE_PREFIXES.reduce((acc, prefix) => ({
       ...acc,
       [`${prefix}FontSettings`]: `${getJournalTextStyleSettingKey(prefix, 'fontFamily')}`,
