@@ -103,16 +103,19 @@ type PrefixedTextStyle<Prefix extends string> = {
   [Key in keyof TextStyleFields as `${Prefix}${Key}`]: TextStyleFields[Key];
 };
 
-type ChroniclesSettings = PrefixedTextStyle<TextStylePrefix> & Partial<Record<ColumnWidthKey, number>> & {
+type ColumnLayoutSettings = Partial<Record<ColumnWidthKey, number>> & {
+  columns: number;
+  columnGap: number;
+  panelWidth: number;
+  panelPadding: Padding;
+};
+
+type ChroniclesSettings = PrefixedTextStyle<TextStylePrefix> & ColumnLayoutSettings & {
   type: 'a' | 'b';
   triggerLabel: string;
   closeLabel: string;
-  columns: number;
-  columnGap: number;
   hoverInterval: number;
   panelPosition: ChroniclesPanelPosition;
-  panelWidth: number;
-  panelPadding: Padding;
   panelRadius: number;
   groupGap: number;
   triggerColor: string;
@@ -124,8 +127,6 @@ type ChroniclesSettings = PrefixedTextStyle<TextStylePrefix> & Partial<Record<Co
   textHoverColor: string;
   overlayColor: string;
 };
-
-type ColumnLayoutSettings = Pick<ChroniclesSettings, 'columns' | 'columnGap' | 'panelWidth' | 'panelPadding' | ColumnWidthKey>;
 
 type ChroniclesProps = {
   settings: ChroniclesSettings;
@@ -156,7 +157,6 @@ export function applyChroniclesColumnCountChange(
   return { ...nextSettings, ...getChroniclesEqualColumnWidths({ ...prevSettings, ...nextSettings } as ColumnLayoutSettings) };
 }
 
-// The last column takes the remaining space; sized columns shrink together when they no longer fit.
 function resolveColumnWidths(settings: ColumnLayoutSettings): number[] {
   const space = getColumnsSpace(settings);
   const sized = CHRONICLES_COLUMN_WIDTH_KEYS.slice(0, settings.columns - 1).map((key) => {
@@ -596,11 +596,11 @@ export function Chronicles({
   const [copyRect, setCopyRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [isMediaCut, setIsMediaCut] = useState(false);
 
-  const isEditorCanvas = Boolean(isEditor && !isPreviewMode);
+  const isEditorCanvas = isEditor && !isPreviewMode;
   const isInteractive = !isEditorCanvas;
   const isInline = type === 'a';
   const isOpenPinned = isEditorCanvas && currentState === 'open' && !unavailableStates?.includes('open');
-  const isOpen = !isInline && (isOpenPinned || ((isInteractive || Boolean(isEditMode)) && isUserOpen));
+  const isOpen = !isInline && (isOpenPinned || ((isInteractive || isEditMode) && isUserOpen));
   const isListShown = isInteractive && (isInline || isOpen);
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const scopedCss = useMemo(() => getCSS(P), [P]);
@@ -635,7 +635,6 @@ export function Chronicles({
     return () => window.clearTimeout(timer);
   }, [isOpen]);
 
-  // Activate a frame after mount so the appear transition has a start state.
   useEffect(() => {
     if (!isOpen || !isOverlayMounted) return;
     overlayRef.current?.getBoundingClientRect();
@@ -661,7 +660,6 @@ export function Chronicles({
     setClosePosition({ top: triggerRect.top - overlayRect.top, left: triggerRect.left - overlayRect.left });
   }, []);
 
-  // The editor switches layouts by changing the article vars, so the copied vars must follow them.
   const isLayerMounted = isOverlayMounted || (isInline && mountedRows.size > 0);
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -695,7 +693,6 @@ export function Chronicles({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen, isInteractive]);
 
-  // Inline media covers the page, so a copy of the panel is laid over the real one.
   useLayoutEffect(() => {
     if (!isInline || activeIndex === null) return;
     const panelEl = panelRef.current;
@@ -743,7 +740,6 @@ export function Chronicles({
     return () => window.clearInterval(timer);
   }, [activeIndex, activeMedia.length, hoverInterval]);
 
-  // Keep the replaced media under the next one until it has faded in; runs before paint to avoid a gap frame.
   useLayoutEffect(() => {
     const previous = shownMediaRef.current;
     shownMediaRef.current = shownMedia;
@@ -923,8 +919,6 @@ export function Chronicles({
     );
   };
 
-  // The overlay and the inline list both render the panel with panelRef; keeping a closing overlay
-  // around after switching to type A would detach the ref from the inline panel when it unmounts.
   const overlay = isOverlayMounted && !isInline ? (
     <div
       ref={overlayRef}
