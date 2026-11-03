@@ -2,7 +2,6 @@ import {
   ComponentContentProperty,
   ComponentSchemaV1,
   LayoutItem,
-  LayoutTab,
   SchemaDisplayRule,
   SchemaProperty,
 } from '../../types/SchemaV1';
@@ -11,15 +10,62 @@ import {
   Chronicles,
   CHRONICLES_COLUMN_STYLE_PREFIXES,
   CHRONICLES_COLUMN_WIDTH_KEYS,
-  CHRONICLES_DEFAULT_COLUMNS,
   CHRONICLES_EXTRA_TITLE_KEYS,
-  CHRONICLES_MAX_COLUMNS,
-  CHRONICLES_MIN_COLUMNS,
   CHRONICLES_PANEL_POSITIONS,
   getChroniclesEqualColumnWidths,
 } from './Chronicles';
 
-type TextStylePrefix = 'trigger' | typeof CHRONICLES_COLUMN_STYLE_PREFIXES[number];
+const MIN_COLUMNS = 1;
+const DEFAULT_COLUMNS = 2;
+const MAX_COLUMNS = 5;
+
+const TEXT_STYLE_PREFIXES = ['trigger', ...CHRONICLES_COLUMN_STYLE_PREFIXES] as const;
+
+type TextStylePrefix = typeof TEXT_STYLE_PREFIXES[number];
+
+// Group and Title are the first two columns; the extra title keys fill the rest.
+const NAMED_COLUMNS = 2;
+
+// Column counts below the max, i.e. the ones that hide something.
+const PARTIAL_COLUMN_COUNTS = Array.from(
+  { length: MAX_COLUMNS - MIN_COLUMNS },
+  (_, index) => MIN_COLUMNS + index,
+);
+
+const DEFAULT_IMAGES = [
+  '01M3QM74XESYN1HRYH9VRTZ5CK',
+  '01M3QM74XEVZ9F59FC7M9BA63Q',
+  '01M3QM74XEE2101QD8PM6E4JSA',
+  '01M3QM74XE20C38X4NND20C5R4',
+  '01M3QM74XEGBJMJ7Q63KMZY6NA',
+];
+
+const DEFAULT_ROWS: Array<[string, string]> = [
+  ['(2026)', 'Midnight Atlas'],
+  ['', 'Echoes in Vermilion'],
+  ['', 'Paper and Scissors'],
+  ['', 'Salt, Studio Edition'],
+  ['(2025)', 'Quiet Rooms'],
+  ['', 'Harbour Light'],
+  ['', 'Still Life with Lemons'],
+];
+
+const DEFAULT_CONTENT = DEFAULT_ROWS.map(([group, title], index) => ({
+  group,
+  title,
+  link: { type: 'url' as const, value: '', target: 'self' as const },
+  image: [index, index + 1].map((imageIndex) => ({
+    assetId: DEFAULT_IMAGES[imageIndex % DEFAULT_IMAGES.length],
+    name: '',
+    objectFit: 'cover' as const,
+  })),
+}));
+
+const textAppearanceDefault = {
+  textTransform: 'none',
+  textDecoration: 'none',
+  fontVariant: 'normal',
+};
 
 function createLayoutSizeProperty(title: string): SchemaProperty {
   return {
@@ -40,8 +86,6 @@ function createColorProperty(title: string): SchemaProperty {
     display: { type: 'palette-color-picker' },
   };
 }
-
-const hasTextAlign = (prefix: TextStylePrefix) => prefix !== 'trigger';
 
 function createTextStyleProperties(prefix: TextStylePrefix): Record<string, SchemaProperty> {
   return {
@@ -85,7 +129,7 @@ function createTextStyleProperties(prefix: TextStylePrefix): Record<string, Sche
       title: '',
       display: { type: 'word-spacing-input' },
     },
-    ...(hasTextAlign(prefix) && {
+    ...(prefix !== 'trigger' && {
       [`${prefix}TextAlign`]: {
         type: 'string',
         scope: 'layout',
@@ -113,42 +157,9 @@ function createTextStyleLayout(prefix: TextStylePrefix): LayoutItem[] {
     `${prefix}FontFamily`,
     `${prefix}FontSettings`,
     { type: 'row', items: [`${prefix}FontSize`, `${prefix}LineHeight`, `${prefix}LetterSpacing`, `${prefix}WordSpacing`] },
-    ...(hasTextAlign(prefix) ? [`${prefix}TextAlign`] : []),
+    ...(prefix !== 'trigger' ? [`${prefix}TextAlign`] : []),
     `${prefix}TextAppearance`,
   ];
-}
-
-const columnTextStyleProperties: Record<string, SchemaProperty> = Object.assign(
-  {},
-  ...CHRONICLES_COLUMN_STYLE_PREFIXES.map(createTextStyleProperties),
-);
-
-/** A tab per text style like Programme's, named as the columns are in the content panel. */
-function createTextStylePanelTab(): LayoutTab {
-  return {
-    type: 'tab',
-    id: 'chroniclesTextStyle',
-    tabs: {
-      Label: createTextStyleLayout('trigger'),
-      ...Object.fromEntries(CHRONICLES_COLUMN_STYLE_PREFIXES.map((prefix, index) => [
-        String(index + 1),
-        createTextStyleLayout(prefix),
-      ])),
-    },
-  };
-}
-
-// A column's tab goes with the column, so only the columns a row shows can be styled.
-function createColumnTextStyleDisplayRules(): SchemaDisplayRule[] {
-  const rules: SchemaDisplayRule[] = [];
-  for (let columns = CHRONICLES_MIN_COLUMNS; columns < CHRONICLES_MAX_COLUMNS; columns += 1) {
-    CHRONICLES_COLUMN_STYLE_PREFIXES.slice(columns).forEach((prefix) => {
-      Object.keys(createTextStyleProperties(prefix)).forEach((name) => {
-        rules.push({ if: { name: 'columns', value: columns }, then: { name: `properties.${name}.display.visible`, value: false } });
-      });
-    });
-  }
-  return rules;
 }
 
 function createColumnTextStyleDefaults(values: Record<string, unknown>): Record<string, unknown> {
@@ -157,87 +168,48 @@ function createColumnTextStyleDefaults(values: Record<string, unknown>): Record<
   )));
 }
 
-// Group and Title are the first two columns; each one after is a title field of its own, shown in the content panel only while the columns reach it.
-const NAMED_COLUMNS = 2;
-
-function createExtraTitleProperties(): Record<string, ComponentContentProperty> {
-  return Object.fromEntries(CHRONICLES_EXTRA_TITLE_KEYS.map((key, index) => [key, {
-    type: 'string',
-    label: `Column ${index + NAMED_COLUMNS + 1}`,
-    placeholder: 'Add text...',
-    display: { type: 'text-input' },
-  }]));
-}
-
-function createExtraTitleDisplayRules(): SchemaDisplayRule[] {
-  const rules: SchemaDisplayRule[] = [];
-  for (let columns = CHRONICLES_MIN_COLUMNS; columns < CHRONICLES_MAX_COLUMNS; columns += 1) {
-    CHRONICLES_EXTRA_TITLE_KEYS.slice(Math.max(0, columns - NAMED_COLUMNS)).forEach((key) => {
-      rules.push({ if: { name: 'columns', value: columns }, then: { name: key, value: false } });
-    });
-  }
-  // A single column is the first column alone, so there is no title to fill in.
-  rules.unshift({ if: { name: 'columns', value: 1 }, then: { name: 'title', value: false } });
-  return rules;
-}
-
-// Sized by dragging on the canvas only, as Programme's are, so no panel lists them.
-const columnWidthProperties: Record<string, SchemaProperty> = Object.fromEntries(
-  CHRONICLES_COLUMN_WIDTH_KEYS.map((key, index) => [key, createLayoutSizeProperty(`Column ${index + 1} Width`)]),
-);
-
 function withEqualColumnWidths<T extends Parameters<typeof getChroniclesEqualColumnWidths>[0]>(layoutDefaults: T) {
   return { ...layoutDefaults, ...getChroniclesEqualColumnWidths(layoutDefaults) };
 }
 
-const DEFAULT_IMAGES = [
-  '01M3QM74XESYN1HRYH9VRTZ5CK',
-  '01M3QM74XEVZ9F59FC7M9BA63Q',
-  '01M3QM74XEE2101QD8PM6E4JSA',
-  '01M3QM74XE20C38X4NND20C5R4',
-  '01M3QM74XEGBJMJ7Q63KMZY6NA',
+const textStyleProperties: Record<string, SchemaProperty> = Object.assign(
+  {},
+  ...TEXT_STYLE_PREFIXES.map(createTextStyleProperties),
+);
+
+const extraTitleProperties: Record<string, ComponentContentProperty> = Object.fromEntries(
+  CHRONICLES_EXTRA_TITLE_KEYS.map((key, index) => [key, {
+    type: 'string',
+    label: `Column ${index + NAMED_COLUMNS + 1}`,
+    placeholder: 'Add text...',
+    display: { type: 'text-input' },
+  }]),
+);
+
+// Sized by dragging on the canvas only, so no panel lists them.
+const columnWidthProperties: Record<string, SchemaProperty> = Object.fromEntries(
+  CHRONICLES_COLUMN_WIDTH_KEYS.map((key, index) => [key, createLayoutSizeProperty(`Column ${index + 1} Width`)]),
+);
+
+const contentDisplayRules: SchemaDisplayRule[] = [
+  { if: { name: 'columns', value: 1 }, then: { name: 'title', value: false } },
+  ...PARTIAL_COLUMN_COUNTS.flatMap((columns) => (
+    CHRONICLES_EXTRA_TITLE_KEYS.slice(Math.max(0, columns - NAMED_COLUMNS)).map((key) => ({
+      if: { name: 'columns', value: columns },
+      then: { name: key, value: false },
+    }))
+  )),
 ];
 
-const DEFAULT_ROWS: Array<[string, string]> = [
-  ['(2026)', 'Midnight Atlas'],
-  ['', 'Echoes in Vermilion'],
-  ['', 'Paper and Scissors'],
-  ['', 'Salt, Studio Edition'],
-  ['(2025)', 'Quiet Rooms'],
-  ['', 'Harbour Light'],
-  ['', 'Still Life with Lemons'],
-];
+const columnTextStyleDisplayRules: SchemaDisplayRule[] = PARTIAL_COLUMN_COUNTS.flatMap((columns) => (
+  CHRONICLES_COLUMN_STYLE_PREFIXES.slice(columns).flatMap((prefix) => (
+    Object.keys(createTextStyleProperties(prefix)).map((name) => ({
+      if: { name: 'columns', value: columns },
+      then: { name: `properties.${name}.display.visible`, value: false },
+    }))
+  ))
+));
 
-// Two images a row, so a new popup shows the images turning over.
-const DEFAULT_CONTENT = DEFAULT_ROWS.map(([group, title], index) => ({
-  group,
-  title,
-  link: { type: 'url' as const, value: '', target: 'self' as const },
-  image: [index, index + 1].map((imageIndex) => ({
-    assetId: DEFAULT_IMAGES[imageIndex % DEFAULT_IMAGES.length],
-    name: '',
-    objectFit: 'cover' as const,
-  })),
-}));
-
-const textAppearanceDefault = {
-  textTransform: 'none',
-  textDecoration: 'none',
-  fontVariant: 'normal',
-};
-
-const paletteBookmarkItems = [
-  'triggerColor',
-  'triggerHoverColor',
-  'closeColor',
-  'closeHoverColor',
-  'panelColor',
-  'textColor',
-  'textHoverColor',
-  'overlayColor',
-] as const;
-
-// A is always open in place: it has no label to open it, close label to dismiss it or overlay behind it.
 const TYPE_B_ONLY_PROPERTIES = [
   'triggerLabel',
   'closeLabel',
@@ -261,7 +233,7 @@ const schema = {
     },
     display: {
       type: 'array',
-      rules: createExtraTitleDisplayRules(),
+      rules: contentDisplayRules,
     },
     items: {
       type: 'object',
@@ -278,14 +250,13 @@ const schema = {
           placeholder: 'Add title...',
           display: { type: 'text-input' },
         },
-        ...createExtraTitleProperties(),
+        ...extraTitleProperties,
         link: {
           type: 'object',
           label: 'Link',
           contentKey: 'link',
           display: { type: 'link-input' },
         },
-        // A list, each image shown in turn while the row is hovered; the key stays `image` so rows saved with one keep it.
         image: {
           type: 'object',
           label: 'Hover Images',
@@ -328,8 +299,8 @@ const schema = {
         scope: 'layout',
         title: 'Columns',
         display: { type: 'count-number' },
-        min: CHRONICLES_MIN_COLUMNS,
-        max: CHRONICLES_MAX_COLUMNS,
+        min: MIN_COLUMNS,
+        max: MAX_COLUMNS,
       },
       columnGap: createLayoutSizeProperty('Column Gap'),
       ...columnWidthProperties,
@@ -361,12 +332,11 @@ const schema = {
       triggerHoverColor: createColorProperty('Label Hover'),
       closeColor: createColorProperty('Close Default'),
       closeHoverColor: createColorProperty('Close Hover'),
-         panelColor: createColorProperty('BG Panel'),
+      panelColor: createColorProperty('BG Panel'),
       textColor: createColorProperty('Text Default'),
       textHoverColor: createColorProperty('Text Hover'),
       overlayColor: createColorProperty('Popup Overlay'),
-      ...createTextStyleProperties('trigger'),
-      ...columnTextStyleProperties,
+      ...textStyleProperties,
     },
     defaults: {
       triggerLabel: 'Click me!',
@@ -398,7 +368,7 @@ const schema = {
       m: withEqualColumnWidths({
         type: 'b',
         panelPosition: 'center',
-        columns: CHRONICLES_DEFAULT_COLUMNS,
+        columns: DEFAULT_COLUMNS,
         columnGap: 0.0427,
         panelWidth: 0.9147,
         panelPadding: { top: 0.0427, right: 0.0427, bottom: 0.0427, left: 0.0427 },
@@ -411,7 +381,7 @@ const schema = {
       t: withEqualColumnWidths({
         type: 'b',
         panelPosition: 'center',
-        columns: CHRONICLES_DEFAULT_COLUMNS,
+        columns: DEFAULT_COLUMNS,
         columnGap: 0.0234,
         panelWidth: 0.5469,
         panelPadding: { top: 0.0182, right: 0.0182, bottom: 0.0182, left: 0.0182 },
@@ -424,7 +394,7 @@ const schema = {
       d: withEqualColumnWidths({
         type: 'b',
         panelPosition: 'center',
-        columns: CHRONICLES_DEFAULT_COLUMNS,
+        columns: DEFAULT_COLUMNS,
         columnGap: 0.0139,
         panelWidth: 0.3194,
         panelPadding: { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 },
@@ -440,7 +410,7 @@ const schema = {
         if: { name: 'type', value: 'a' },
         then: { name: `properties.${name}.display.visible`, value: false },
       })),
-      ...createColumnTextStyleDisplayRules(),
+      ...columnTextStyleDisplayRules,
     ],
   },
   panels: [
@@ -452,11 +422,11 @@ const schema = {
       layout: [
         '__componentName__',
         'type',
-        { type: 'row', title: '', items: ['panelWidth',  'panelRadius',] },
+        { type: 'row', title: '', items: ['panelWidth', 'panelRadius'] },
         { type: 'row', title: '', items: ['columns', 'columnGap'] },
         { type: 'row', title: '', items: ['panelPosition', 'hoverInterval'] },
         'triggerLabel',
-        'closeLabel'
+        'closeLabel',
       ],
     },
     {
@@ -466,12 +436,31 @@ const schema = {
       tooltip: 'Typography',
       layout: [
         '__componentName__',
-        createTextStylePanelTab(),
+        {
+          type: 'tab',
+          id: 'chroniclesTextStyle',
+          tabs: {
+            Label: createTextStyleLayout('trigger'),
+            ...Object.fromEntries(CHRONICLES_COLUMN_STYLE_PREFIXES.map((prefix, index) => [
+              String(index + 1),
+              createTextStyleLayout(prefix),
+            ])),
+          },
+        },
       ],
     },
   ],
   paletteBookmark: {
-    items: [...paletteBookmarkItems],
+    items: [
+      'triggerColor',
+      'triggerHoverColor',
+      'closeColor',
+      'closeHoverColor',
+      'panelColor',
+      'textColor',
+      'textHoverColor',
+      'overlayColor',
+    ],
     panelIds: ['default', 'open'],
     stateItems: {
       default: ['triggerColor'],
@@ -501,9 +490,9 @@ export const ChroniclesComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: (['trigger', ...CHRONICLES_COLUMN_STYLE_PREFIXES] as const).map((prefix) => ({ path: `${prefix}FontFamily` })),
+    parameters: TEXT_STYLE_PREFIXES.map((prefix) => ({ path: `${prefix}FontFamily` })),
   },
   fontRelations: Object.fromEntries(
-    (['trigger', ...CHRONICLES_COLUMN_STYLE_PREFIXES] as const).map((prefix) => [`${prefix}FontSettings`, `${prefix}FontFamily`]),
+    TEXT_STYLE_PREFIXES.map((prefix) => [`${prefix}FontSettings`, `${prefix}FontFamily`]),
   ),
 };
