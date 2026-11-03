@@ -2,8 +2,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { createPortal } from 'react-dom';
 import cn from 'classnames';
 import { CommonComponentProps } from '../props';
-import { buildColorVars, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
-import { buildValidUrl } from '../utils/LinkWrapper';
+import { buildColorVars, buildValidUrl, scalingValue, useScopedStyles, type ContentLink } from '../utils/index';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 
@@ -687,7 +686,9 @@ export function Chronicles({
     if (!isOpen || !isInteractive) return;
     closeRef.current?.focus({ preventScroll: true });
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsUserOpen(false);
+      if (event.key !== 'Escape') return;
+      setIsUserOpen(false);
+      triggerRef.current?.focus({ preventScroll: true });
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -890,7 +891,9 @@ export function Chronicles({
                   href: buildValidUrl(rowLink.value),
                   ...(rowLink.target === 'blank' && { target: '_blank', rel: 'noreferrer' }),
                 } : {};
+                const isFocusable = !rowLink && isInteractive && getRowMedia(item).length > 0;
                 const hoverProps = isCopy ? {} : {
+                  tabIndex: isFocusable ? 0 : undefined,
                   onMouseEnter: () => showRowMedia(index),
                   onMouseLeave: () => hideRowMedia(index),
                   onFocus: () => showRowMedia(index),

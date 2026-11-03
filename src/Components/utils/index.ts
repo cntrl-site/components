@@ -19,6 +19,7 @@ export {
 } from './panelAvailability';
 export type { PanelAvailabilityContext } from './panelAvailability';
 export { LinkWrapper } from './LinkWrapper';
+export { buildValidUrl } from './buildValidUrl';
 export type { ContentLink } from '../../types/SchemaV1';
 export { getEmbedAspect, getEmbedPlayback, getEmbedPlayerSrc, getEmbedProvider, isEmbedMedia, postEmbedCommand } from './embedMedia';
 export type { EmbedCommand, EmbedMediaLike, EmbedPlayback, EmbedPlayMode, EmbedProvider } from './embedMedia';
