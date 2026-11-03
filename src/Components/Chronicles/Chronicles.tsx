@@ -661,12 +661,29 @@ export function Chronicles({
     setClosePosition({ top: triggerRect.top - overlayRect.top, left: triggerRect.left - overlayRect.left });
   }, []);
 
+  // The editor switches layouts by changing the article vars, so the copied vars must follow them.
+  const isLayerMounted = isOverlayMounted || (isInline && mountedRows.size > 0);
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!isLayerMounted || !wrapper || typeof ResizeObserver === 'undefined') return;
+    const update = () => setLayoutStyle((prev) => {
+      const next = getLayoutStyle(wrapper);
+      const isSame = LIGHTBOX_CSS_VARS.every((name) => (prev as Record<string, unknown>)[name] === (next as Record<string, unknown>)[name]);
+      return isSame ? prev : next;
+    });
+    const observer = new ResizeObserver(update);
+    observer.observe(wrapper);
+    const layoutContainer = findLayoutContainer(wrapper);
+    if (layoutContainer && layoutContainer !== wrapper) observer.observe(layoutContainer);
+    return () => observer.disconnect();
+  }, [isLayerMounted]);
+
   useLayoutEffect(() => {
     if (!isOverlayMounted) return;
     updateClosePosition();
     window.addEventListener('resize', updateClosePosition);
     return () => window.removeEventListener('resize', updateClosePosition);
-  }, [isOverlayMounted, updateClosePosition]);
+  }, [isOverlayMounted, layoutStyle, updateClosePosition]);
 
   useEffect(() => {
     if (!isOpen || !isInteractive) return;
@@ -906,7 +923,9 @@ export function Chronicles({
     );
   };
 
-  const overlay = isOverlayMounted ? (
+  // The overlay and the inline list both render the panel with panelRef; keeping a closing overlay
+  // around after switching to type A would detach the ref from the inline panel when it unmounts.
+  const overlay = isOverlayMounted && !isInline ? (
     <div
       ref={overlayRef}
       className={cn(
