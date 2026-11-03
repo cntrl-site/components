@@ -133,7 +133,6 @@ type ChroniclesProps = {
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
-  activeEvent?: string;
   portalId?: string;
 } & CommonComponentProps;
 
@@ -200,11 +199,17 @@ function isVideoMedia({ type, name, assetId }: ChroniclesMedia): boolean {
   return VIDEO_EXTENSION_RE.test(name ?? '') || VIDEO_EXTENSION_RE.test(assetId);
 }
 
+// The element that sets the article variables rather than one that inherits them, so it can be watched for
+// their changes: the editor sets them on its page container when the layout changes.
 function findLayoutContainer(element: HTMLElement | null): HTMLElement | null {
-  for (let el = element; el; el = el.parentElement) {
-    if (getComputedStyle(el).getPropertyValue('--cntrl-article-width').trim()) return el;
+  const width = element ? getComputedStyle(element).getPropertyValue('--cntrl-article-width').trim() : '';
+  if (!width) return element;
+  let container = element!;
+  for (let el = container.parentElement; el; el = el.parentElement) {
+    if (getComputedStyle(el).getPropertyValue('--cntrl-article-width').trim() !== width) break;
+    container = el;
   }
-  return element;
+  return container;
 }
 
 function getLayoutStyle(container: HTMLElement | null): CSSProperties {
@@ -271,8 +276,7 @@ function getCSS(P: string): string {
   outline: 1px solid currentColor;
   outline-offset: 2px;
 }
-.${P}-interactive .${P}-trigger:hover,
-.${P}-state-hover .${P}-trigger {
+.${P}-interactive .${P}-trigger:hover {
   color: var(--${P}-trigger-hover-color, var(--${P}-trigger-color));
 }
 .${P}-close:hover {
@@ -423,8 +427,7 @@ a.${P}-row {
 }
 .${P}-interactive .${P}-row:hover .${P}-title,
 .${P}-row:focus-visible .${P}-title,
-.${P}-panel-copy .${P}-row-active .${P}-title,
-.${P}-state-hover .${P}-row:first-of-type .${P}-title {
+.${P}-panel-copy .${P}-row-active .${P}-title {
   color: var(--${P}-text-hover-color, var(--${P}-text-color));
 }
 .${P}-control-anchor {
@@ -545,7 +548,6 @@ export function Chronicles({
   isEditor,
   isEditMode,
   isPreviewMode,
-  activeEvent,
   portalId,
   currentState,
   unavailableStates,
@@ -670,9 +672,17 @@ export function Chronicles({
     });
     const observer = new ResizeObserver(update);
     observer.observe(wrapper);
+    // the editor changes the variables a frame after a layout switch, without resizing either element then
+    const styleObserver = new MutationObserver(update);
     const layoutContainer = findLayoutContainer(wrapper);
-    if (layoutContainer && layoutContainer !== wrapper) observer.observe(layoutContainer);
-    return () => observer.disconnect();
+    if (layoutContainer && layoutContainer !== wrapper) {
+      observer.observe(layoutContainer);
+      styleObserver.observe(layoutContainer, { attributes: true, attributeFilter: ['style'] });
+    }
+    return () => {
+      observer.disconnect();
+      styleObserver.disconnect();
+    };
   }, [isLayerMounted]);
 
   useLayoutEffect(() => {
@@ -803,7 +813,6 @@ export function Chronicles({
     textHoverColor,
     overlayColor,
   }, COLOR_VAR_MAP, []);
-  const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
   const interactiveClass = isInteractive ? `${P}-interactive` : '';
   const showPanelControls = Boolean(isEditMode) && (isInline || isOverlaySettled);
 
@@ -931,7 +940,6 @@ export function Chronicles({
         isEditMode && `${P}-overlay-edit-mode`,
         isOverlayActive && `${P}-overlay-active`,
         interactiveClass,
-        stateClass,
       )}
       style={{ ...colorVars, ...layoutStyle }}
       role="dialog"
@@ -962,7 +970,7 @@ export function Chronicles({
   const inlineLayer = isInline && mountedRows.size > 0 ? (
     <div
       ref={inlineLayerRef}
-      className={cn(`${P}-inline-layer`, isEditor && `${P}-overlay-editor`, interactiveClass, stateClass)}
+      className={cn(`${P}-inline-layer`, isEditor && `${P}-overlay-editor`, interactiveClass)}
       style={{ ...colorVars, ...layoutStyle }}
       aria-hidden="true"
       data-selection="none"
@@ -978,7 +986,7 @@ export function Chronicles({
       <style dangerouslySetInnerHTML={{ __html: scopedCss }} />
       <div
         ref={wrapperRef}
-        className={cn(isEditorCanvas && `${P}-editor`, interactiveClass, stateClass)}
+        className={cn(isEditorCanvas && `${P}-editor`, interactiveClass)}
         style={colorVars}
       >
         {isInline ? renderPanel(false) : (

@@ -53,6 +53,8 @@ const DEFAULT_ROWS: Array<[string, string]> = [
 const DEFAULT_CONTENT = DEFAULT_ROWS.map(([group, title], index) => ({
   group,
   title,
+  // every column a row can show, in the schema's order, so the content panel draws a field for each
+  ...Object.fromEntries(CHRONICLES_EXTRA_TITLE_KEYS.map((key) => [key, ''])),
   link: { type: 'url' as const, value: '', target: 'self' as const },
   image: [index, index + 1].map((imageIndex) => ({
     assetId: DEFAULT_IMAGES[imageIndex % DEFAULT_IMAGES.length],
@@ -461,15 +463,9 @@ const schema = {
       'textHoverColor',
       'overlayColor',
     ],
-    panelIds: ['default', 'open'],
-    stateItems: {
-      default: ['triggerColor'],
-      hover: ['triggerHoverColor'],
-      open: ['closeColor', 'closeHoverColor', 'panelColor', 'textColor', 'textHoverColor', 'overlayColor'],
-    },
+    panelIds: ['open'],
   },
-  states: ['default', 'hover'],
-  statePanels: ['default', 'open'],
+  statePanels: ['open'],
 } satisfies ComponentSchemaV1;
 
 export const ChroniclesComponent = {
