@@ -7,19 +7,19 @@ import {
   SchemaProperty,
 } from '../../types/SchemaV1';
 import {
-  applyArchivePopupColumnCountChange,
-  ArchivePopup,
-  ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES,
-  ARCHIVE_POPUP_COLUMN_WIDTH_KEYS,
-  ARCHIVE_POPUP_DEFAULT_COLUMNS,
-  ARCHIVE_POPUP_EXTRA_TITLE_KEYS,
-  ARCHIVE_POPUP_MAX_COLUMNS,
-  ARCHIVE_POPUP_MIN_COLUMNS,
-  ARCHIVE_POPUP_PANEL_POSITIONS,
-  getArchivePopupEqualColumnWidths,
-} from './ArchivePopup';
+  applyChroniclesColumnCountChange,
+  Chronicles,
+  CHRONICLES_COLUMN_STYLE_PREFIXES,
+  CHRONICLES_COLUMN_WIDTH_KEYS,
+  CHRONICLES_DEFAULT_COLUMNS,
+  CHRONICLES_EXTRA_TITLE_KEYS,
+  CHRONICLES_MAX_COLUMNS,
+  CHRONICLES_MIN_COLUMNS,
+  CHRONICLES_PANEL_POSITIONS,
+  getChroniclesEqualColumnWidths,
+} from './Chronicles';
 
-type TextStylePrefix = 'trigger' | typeof ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES[number];
+type TextStylePrefix = 'trigger' | typeof CHRONICLES_COLUMN_STYLE_PREFIXES[number];
 
 function createLayoutSizeProperty(title: string): SchemaProperty {
   return {
@@ -41,7 +41,6 @@ function createColorProperty(title: string): SchemaProperty {
   };
 }
 
-// The label is a single line sized to its text, so only the columns have an alignment.
 const hasTextAlign = (prefix: TextStylePrefix) => prefix !== 'trigger';
 
 function createTextStyleProperties(prefix: TextStylePrefix): Record<string, SchemaProperty> {
@@ -121,17 +120,17 @@ function createTextStyleLayout(prefix: TextStylePrefix): LayoutItem[] {
 
 const columnTextStyleProperties: Record<string, SchemaProperty> = Object.assign(
   {},
-  ...ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.map(createTextStyleProperties),
+  ...CHRONICLES_COLUMN_STYLE_PREFIXES.map(createTextStyleProperties),
 );
 
 /** A tab per text style like Programme's, named as the columns are in the content panel. */
 function createTextStylePanelTab(): LayoutTab {
   return {
     type: 'tab',
-    id: 'archivePopupTextStyle',
+    id: 'chroniclesTextStyle',
     tabs: {
       Label: createTextStyleLayout('trigger'),
-      ...Object.fromEntries(ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.map((prefix, index) => [
+      ...Object.fromEntries(CHRONICLES_COLUMN_STYLE_PREFIXES.map((prefix, index) => [
         String(index + 1),
         createTextStyleLayout(prefix),
       ])),
@@ -142,8 +141,8 @@ function createTextStylePanelTab(): LayoutTab {
 // A column's tab goes with the column, so only the columns a row shows can be styled.
 function createColumnTextStyleDisplayRules(): SchemaDisplayRule[] {
   const rules: SchemaDisplayRule[] = [];
-  for (let columns = ARCHIVE_POPUP_MIN_COLUMNS; columns < ARCHIVE_POPUP_MAX_COLUMNS; columns += 1) {
-    ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.slice(columns).forEach((prefix) => {
+  for (let columns = CHRONICLES_MIN_COLUMNS; columns < CHRONICLES_MAX_COLUMNS; columns += 1) {
+    CHRONICLES_COLUMN_STYLE_PREFIXES.slice(columns).forEach((prefix) => {
       Object.keys(createTextStyleProperties(prefix)).forEach((name) => {
         rules.push({ if: { name: 'columns', value: columns }, then: { name: `properties.${name}.display.visible`, value: false } });
       });
@@ -153,7 +152,7 @@ function createColumnTextStyleDisplayRules(): SchemaDisplayRule[] {
 }
 
 function createColumnTextStyleDefaults(values: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.flatMap((prefix) => (
+  return Object.fromEntries(CHRONICLES_COLUMN_STYLE_PREFIXES.flatMap((prefix) => (
     Object.entries(values).map(([key, value]) => [`${prefix}${key}`, value])
   )));
 }
@@ -162,7 +161,7 @@ function createColumnTextStyleDefaults(values: Record<string, unknown>): Record<
 const NAMED_COLUMNS = 2;
 
 function createExtraTitleProperties(): Record<string, ComponentContentProperty> {
-  return Object.fromEntries(ARCHIVE_POPUP_EXTRA_TITLE_KEYS.map((key, index) => [key, {
+  return Object.fromEntries(CHRONICLES_EXTRA_TITLE_KEYS.map((key, index) => [key, {
     type: 'string',
     label: `Column ${index + NAMED_COLUMNS + 1}`,
     placeholder: 'Add text...',
@@ -172,8 +171,8 @@ function createExtraTitleProperties(): Record<string, ComponentContentProperty> 
 
 function createExtraTitleDisplayRules(): SchemaDisplayRule[] {
   const rules: SchemaDisplayRule[] = [];
-  for (let columns = ARCHIVE_POPUP_MIN_COLUMNS; columns < ARCHIVE_POPUP_MAX_COLUMNS; columns += 1) {
-    ARCHIVE_POPUP_EXTRA_TITLE_KEYS.slice(Math.max(0, columns - NAMED_COLUMNS)).forEach((key) => {
+  for (let columns = CHRONICLES_MIN_COLUMNS; columns < CHRONICLES_MAX_COLUMNS; columns += 1) {
+    CHRONICLES_EXTRA_TITLE_KEYS.slice(Math.max(0, columns - NAMED_COLUMNS)).forEach((key) => {
       rules.push({ if: { name: 'columns', value: columns }, then: { name: key, value: false } });
     });
   }
@@ -184,11 +183,11 @@ function createExtraTitleDisplayRules(): SchemaDisplayRule[] {
 
 // Sized by dragging on the canvas only, as Programme's are, so no panel lists them.
 const columnWidthProperties: Record<string, SchemaProperty> = Object.fromEntries(
-  ARCHIVE_POPUP_COLUMN_WIDTH_KEYS.map((key, index) => [key, createLayoutSizeProperty(`Column ${index + 1} Width`)]),
+  CHRONICLES_COLUMN_WIDTH_KEYS.map((key, index) => [key, createLayoutSizeProperty(`Column ${index + 1} Width`)]),
 );
 
-function withEqualColumnWidths<T extends Parameters<typeof getArchivePopupEqualColumnWidths>[0]>(layoutDefaults: T) {
-  return { ...layoutDefaults, ...getArchivePopupEqualColumnWidths(layoutDefaults) };
+function withEqualColumnWidths<T extends Parameters<typeof getChroniclesEqualColumnWidths>[0]>(layoutDefaults: T) {
+  return { ...layoutDefaults, ...getChroniclesEqualColumnWidths(layoutDefaults) };
 }
 
 const DEFAULT_IMAGES = [
@@ -316,21 +315,21 @@ const schema = {
         type: 'string',
         scope: 'common',
         title: 'Label',
-        display: { type: 'text-input' },
+        display: { type: 'label-input' },
       },
       closeLabel: {
         type: 'string',
         scope: 'common',
         title: 'Close',
-        display: { type: 'text-input' },
+        display: { type: 'label-input' },
       },
       columns: {
         type: 'number',
         scope: 'layout',
         title: 'Columns',
         display: { type: 'count-number' },
-        min: ARCHIVE_POPUP_MIN_COLUMNS,
-        max: ARCHIVE_POPUP_MAX_COLUMNS,
+        min: CHRONICLES_MIN_COLUMNS,
+        max: CHRONICLES_MAX_COLUMNS,
       },
       columnGap: createLayoutSizeProperty('Column Gap'),
       ...columnWidthProperties,
@@ -347,7 +346,7 @@ const schema = {
         type: 'string',
         scope: 'layout',
         title: 'Position',
-        display: { type: 'toggle-cycle', enum: ARCHIVE_POPUP_PANEL_POSITIONS },
+        display: { type: 'toggle-cycle', enum: CHRONICLES_PANEL_POSITIONS },
       },
       panelWidth: createLayoutSizeProperty('Width'),
       panelPadding: {
@@ -358,27 +357,27 @@ const schema = {
       },
       panelRadius: createLayoutSizeProperty('Corners'),
       groupGap: createLayoutSizeProperty('Groups Gap'),
-      triggerColor: createColorProperty('Label'),
+      triggerColor: createColorProperty('Label Default'),
       triggerHoverColor: createColorProperty('Label Hover'),
-      closeColor: createColorProperty('Close'),
+      closeColor: createColorProperty('Close Default'),
       closeHoverColor: createColorProperty('Close Hover'),
-      textColor: createColorProperty('Text'),
+         panelColor: createColorProperty('BG Panel'),
+      textColor: createColorProperty('Text Default'),
       textHoverColor: createColorProperty('Text Hover'),
-      panelColor: createColorProperty('Panel BG'),
-      overlayColor: createColorProperty('Overlay'),
+      overlayColor: createColorProperty('Popup Overlay'),
       ...createTextStyleProperties('trigger'),
       ...columnTextStyleProperties,
     },
     defaults: {
-      triggerLabel: 'Archive',
+      triggerLabel: 'Click me!',
       closeLabel: 'Close',
       hoverInterval: 1000,
       triggerColor: '#000000',
       triggerHoverColor: '#666666',
       closeColor: '#000000',
       closeHoverColor: '#666666',
-      panelColor: '#FFFFFF',
-      textColor: '#333132',
+      panelColor: '#000000',
+      textColor: '#FFFFFF',
       textHoverColor: '#BBBBBB',
       overlayColor: '#FFFFFFE6',
       triggerFontFamily: 'Goudy Bookletter 1911',
@@ -397,9 +396,9 @@ const schema = {
     },
     layoutDefaults: {
       m: withEqualColumnWidths({
-        type: 'a',
+        type: 'b',
         panelPosition: 'center',
-        columns: ARCHIVE_POPUP_DEFAULT_COLUMNS,
+        columns: CHRONICLES_DEFAULT_COLUMNS,
         columnGap: 0.0427,
         panelWidth: 0.9147,
         panelPadding: { top: 0.0427, right: 0.0427, bottom: 0.0427, left: 0.0427 },
@@ -410,9 +409,9 @@ const schema = {
         ...createColumnTextStyleDefaults({ FontSize: 0.0347, LineHeight: 0.0427 }),
       }),
       t: withEqualColumnWidths({
-        type: 'a',
+        type: 'b',
         panelPosition: 'center',
-        columns: ARCHIVE_POPUP_DEFAULT_COLUMNS,
+        columns: CHRONICLES_DEFAULT_COLUMNS,
         columnGap: 0.0234,
         panelWidth: 0.5469,
         panelPadding: { top: 0.0182, right: 0.0182, bottom: 0.0182, left: 0.0182 },
@@ -423,9 +422,9 @@ const schema = {
         ...createColumnTextStyleDefaults({ FontSize: 0.0169, LineHeight: 0.0208 }),
       }),
       d: withEqualColumnWidths({
-        type: 'a',
+        type: 'b',
         panelPosition: 'center',
-        columns: ARCHIVE_POPUP_DEFAULT_COLUMNS,
+        columns: CHRONICLES_DEFAULT_COLUMNS,
         columnGap: 0.0139,
         panelWidth: 0.3194,
         panelPadding: { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 },
@@ -456,7 +455,6 @@ const schema = {
         'panelPosition',
         { type: 'row', title: '', items: ['panelWidth',  'panelRadius',] },
         { type: 'row', title: '', items: ['columns', 'columnGap'] },
-        // { type: 'row', title: '', items: [ 'panelPadding', 'groupGap'] },
         'triggerLabel',
         'closeLabel',
         'hoverInterval',
@@ -486,15 +484,15 @@ const schema = {
   statePanels: ['default', 'open'],
 } satisfies ComponentSchemaV1;
 
-export const ArchivePopupComponent = {
-  element: ArchivePopup,
-  id: 'archive-popup',
+export const ChroniclesComponent = {
+  element: Chronicles,
+  id: 'chronicles',
   name: 'Chronicles',
   category: 'ui-elements',
-  normalizeLayoutSettingsUpdate: applyArchivePopupColumnCountChange,
+  normalizeLayoutSettingsUpdate: applyChroniclesColumnCountChange,
   preview: {
     type: 'image' as const,
-    url: 'https://cdn.cntrl.site/component-assets/Journal.png',
+    url: 'https://cdn.cntrl.site/component-assets/Chronicles.png',
   },
   version: 1,
   schema,
@@ -504,9 +502,9 @@ export const ArchivePopupComponent = {
   },
   fontSettingsPaths: {
     content: [],
-    parameters: (['trigger', ...ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES] as const).map((prefix) => ({ path: `${prefix}FontFamily` })),
+    parameters: (['trigger', ...CHRONICLES_COLUMN_STYLE_PREFIXES] as const).map((prefix) => ({ path: `${prefix}FontFamily` })),
   },
   fontRelations: Object.fromEntries(
-    (['trigger', ...ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES] as const).map((prefix) => [`${prefix}FontSettings`, `${prefix}FontFamily`]),
+    (['trigger', ...CHRONICLES_COLUMN_STYLE_PREFIXES] as const).map((prefix) => [`${prefix}FontSettings`, `${prefix}FontFamily`]),
   ),
 };

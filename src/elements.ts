@@ -3,8 +3,8 @@ import type { ComponentType } from 'react';
 export type ComponentElement = ComponentType<any>;
 
 const loaders: Record<string, () => Promise<ComponentElement>> = {
-  'archive-popup': () => import('./Components/ArchivePopup/ArchivePopup').then(m => m.ArchivePopup),
   'basic-burger': () => import('./Components/Burger/Burger').then(m => m.Burger),
+  'chronicles': () => import('./Components/Chronicles/Chronicles').then(m => m.Chronicles),
   'click-gallerie': () => import('./Components/ClickGallerie/ClickGallerie').then(m => m.ClickGallerie),
   'control-slider': () => import('./Components/ControlSlider/ControlSlider').then(m => m.ControlSlider),
   'faq': () => import('./Components/FAQ/FAQ').then(m => m.FAQ),

@@ -7,7 +7,7 @@ import { buildValidUrl } from '../utils/LinkWrapper';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 
-type ArchivePopupMedia = {
+type ChroniclesMedia = {
   assetId: string;
   name?: string;
   type?: 'image' | 'video';
@@ -15,16 +15,16 @@ type ArchivePopupMedia = {
 };
 
 /** Columns count the group column too; a single column is that column alone, each row showing its own text. */
-export const ARCHIVE_POPUP_MIN_COLUMNS = 1;
+export const CHRONICLES_MIN_COLUMNS = 1;
 /** A new popup shows the group and its title. */
-export const ARCHIVE_POPUP_DEFAULT_COLUMNS = 2;
-export const ARCHIVE_POPUP_MAX_COLUMNS = 5;
+export const CHRONICLES_DEFAULT_COLUMNS = 2;
+export const CHRONICLES_MAX_COLUMNS = 5;
 /** The fields of the columns after the title, in order; `columns` decides how many of them a row shows. */
-export const ARCHIVE_POPUP_EXTRA_TITLE_KEYS = ['title2', 'title3', 'title4'] as const;
+export const CHRONICLES_EXTRA_TITLE_KEYS = ['title2', 'title3', 'title4'] as const;
 /** Every column but the last has a width of its own, like Programme's; the last takes what is left of the row. */
-export const ARCHIVE_POPUP_COLUMN_WIDTH_KEYS = ['column1Width', 'column2Width', 'column3Width', 'column4Width'] as const;
+export const CHRONICLES_COLUMN_WIDTH_KEYS = ['column1Width', 'column2Width', 'column3Width', 'column4Width'] as const;
 
-type ArchivePopupColumnWidthKey = typeof ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[number];
+type ChroniclesColumnWidthKey = typeof CHRONICLES_COLUMN_WIDTH_KEYS[number];
 
 /**
  * Where B's panel sits on the screen, as `left`/`top` of the screen and of the panel alike, so 0% is flush with
@@ -43,26 +43,26 @@ const PANEL_POSITION_OFFSETS = {
   'right-bottom': { x: '100%', y: '100%' },
 } as const;
 
-export type ArchivePopupPanelPosition = keyof typeof PANEL_POSITION_OFFSETS;
+export type ChroniclesPanelPosition = keyof typeof PANEL_POSITION_OFFSETS;
 
-export const ARCHIVE_POPUP_PANEL_POSITIONS = Object.keys(PANEL_POSITION_OFFSETS) as ArchivePopupPanelPosition[];
+export const CHRONICLES_PANEL_POSITIONS = Object.keys(PANEL_POSITION_OFFSETS) as ChroniclesPanelPosition[];
 
 /** Each column of a row has a text style of its own, the group column's being `column1`. */
-export const ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES = ['column1', 'column2', 'column3', 'column4', 'column5'] as const;
+export const CHRONICLES_COLUMN_STYLE_PREFIXES = ['column1', 'column2', 'column3', 'column4', 'column5'] as const;
 
-type ArchivePopupColumnStylePrefix = typeof ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES[number];
+type ChroniclesColumnStylePrefix = typeof CHRONICLES_COLUMN_STYLE_PREFIXES[number];
 
 // Plain text; a row saved while titles were rich text still holds its nodes.
-type ArchivePopupTitle = string | any[];
+type ChroniclesTitle = string | any[];
 
-export type ArchivePopupContentItem = {
+export type ChroniclesContentItem = {
   group?: string;
   /** Plain text, so the entry's `link` is the only link a row has. */
-  title?: ArchivePopupTitle;
-  title2?: ArchivePopupTitle;
-  title3?: ArchivePopupTitle;
-  title4?: ArchivePopupTitle;
-  image?: ArchivePopupMedia | ArchivePopupMedia[];
+  title?: ChroniclesTitle;
+  title2?: ChroniclesTitle;
+  title3?: ChroniclesTitle;
+  title4?: ChroniclesTitle;
+  image?: ChroniclesMedia | ChroniclesMedia[];
   /** The whole row links here. */
   link?: ContentLink;
 };
@@ -87,8 +87,8 @@ type PrefixedTextStyle<Prefix extends string> = {
   [Key in keyof TextStyleFields as `${Prefix}${Key}`]?: TextStyleFields[Key];
 };
 
-type ArchivePopupSettings = PrefixedTextStyle<'trigger'>
-  & PrefixedTextStyle<ArchivePopupColumnStylePrefix>
+type ChroniclesSettings = PrefixedTextStyle<'trigger'>
+  & PrefixedTextStyle<ChroniclesColumnStylePrefix>
   // One style every column shared before each had its own; a column with no style of its own still shows it.
   & PrefixedTextStyle<'list'>
   & {
@@ -121,9 +121,9 @@ type ArchivePopupSettings = PrefixedTextStyle<'trigger'>
   overlayColor?: string;
 };
 
-type ArchivePopupProps = {
-  settings: ArchivePopupSettings;
-  content?: ArchivePopupContentItem[];
+type ChroniclesProps = {
+  settings: ChroniclesSettings;
+  content?: ChroniclesContentItem[];
   isEditor?: boolean;
   isEditMode?: boolean;
   isPreviewMode?: boolean;
@@ -131,14 +131,14 @@ type ArchivePopupProps = {
   portalId?: string;
 } & CommonComponentProps;
 
-export type ArchivePopupRow = {
-  item: ArchivePopupContentItem;
+export type ChroniclesRow = {
+  item: ChroniclesContentItem;
   index: number;
 };
 
-export type ArchivePopupGroup = {
+export type ChroniclesGroup = {
   label: string;
-  rows: ArchivePopupRow[];
+  rows: ChroniclesRow[];
 };
 
 type ColorKeys =
@@ -184,11 +184,11 @@ const LIGHTBOX_CSS_VARS = [
 ] as const;
 
 // A row with an empty group continues the group above it, so the label only has to be typed once.
-type ColumnLayoutSettings = Pick<ArchivePopupSettings, 'columns' | 'columnGap' | 'panelWidth' | 'panelPadding'>
-  & Partial<Record<ArchivePopupColumnWidthKey, number>>;
+type ColumnLayoutSettings = Pick<ChroniclesSettings, 'columns' | 'columnGap' | 'panelWidth' | 'panelPadding'>
+  & Partial<Record<ChroniclesColumnWidthKey, number>>;
 
 function getColumnCount(columns: number | undefined): number {
-  return Math.min(Math.max(Math.round(columns ?? ARCHIVE_POPUP_DEFAULT_COLUMNS), ARCHIVE_POPUP_MIN_COLUMNS), ARCHIVE_POPUP_MAX_COLUMNS);
+  return Math.min(Math.max(Math.round(columns ?? CHRONICLES_DEFAULT_COLUMNS), CHRONICLES_MIN_COLUMNS), CHRONICLES_MAX_COLUMNS);
 }
 
 /** The width a row's columns share: the panel's, less its padding and the gaps between them. */
@@ -198,20 +198,20 @@ function getColumnsSpace(settings: ColumnLayoutSettings): number {
   return Math.max(0, panelWidth - panelPadding.left - panelPadding.right - gaps);
 }
 
-export function getArchivePopupEqualColumnWidths(settings: ColumnLayoutSettings): Partial<Record<ArchivePopupColumnWidthKey, number>> {
+export function getChroniclesEqualColumnWidths(settings: ColumnLayoutSettings): Partial<Record<ChroniclesColumnWidthKey, number>> {
   const count = getColumnCount(settings.columns);
   const width = getColumnsSpace(settings) / count;
-  return Object.fromEntries(ARCHIVE_POPUP_COLUMN_WIDTH_KEYS.slice(0, count - 1).map((key) => [key, width]));
+  return Object.fromEntries(CHRONICLES_COLUMN_WIDTH_KEYS.slice(0, count - 1).map((key) => [key, width]));
 }
 
 /**
  * Every column's width, the last taking what the others leave. A column with no width of its own gets an equal share,
  * and widths that no longer fit, after the panel narrows or a column is added, shrink together until they do.
  */
-export function resolveArchivePopupColumnWidths(settings: ColumnLayoutSettings): number[] {
+export function resolveChroniclesColumnWidths(settings: ColumnLayoutSettings): number[] {
   const count = getColumnCount(settings.columns);
   const space = getColumnsSpace(settings);
-  const sized = ARCHIVE_POPUP_COLUMN_WIDTH_KEYS.slice(0, count - 1).map((key) => {
+  const sized = CHRONICLES_COLUMN_WIDTH_KEYS.slice(0, count - 1).map((key) => {
     const width = settings[key];
     return typeof width === 'number' ? Math.max(0, width) : space / count;
   });
@@ -222,14 +222,14 @@ export function resolveArchivePopupColumnWidths(settings: ColumnLayoutSettings):
 }
 
 /** Like Programme, a new column count starts the columns over at equal widths. */
-export function applyArchivePopupColumnCountChange(
+export function applyChroniclesColumnCountChange(
   nextSettings: Record<string, any>,
   prevSettings: Record<string, any>,
 ): Record<string, any> {
   if (typeof nextSettings.columns !== 'number' || nextSettings.columns === prevSettings.columns) {
     return nextSettings;
   }
-  return { ...nextSettings, ...getArchivePopupEqualColumnWidths({ ...prevSettings, ...nextSettings }) };
+  return { ...nextSettings, ...getChroniclesEqualColumnWidths({ ...prevSettings, ...nextSettings }) };
 }
 
 // The columns stay in proportion when the panel is drawn narrower than its width, on a small screen.
@@ -238,8 +238,8 @@ function getGridTemplateColumns(widths: number[]): string {
   return widths.map((width) => `minmax(0, ${total > 0 ? (width / total) * 100 : 1}fr)`).join(' ');
 }
 
-export function groupArchiveRows(items: ArchivePopupContentItem[]): ArchivePopupGroup[] {
-  const groups: ArchivePopupGroup[] = [];
+export function groupArchiveRows(items: ChroniclesContentItem[]): ChroniclesGroup[] {
+  const groups: ChroniclesGroup[] = [];
   items.forEach((item, index) => {
     const label = item.group?.trim() ?? '';
     const current = groups[groups.length - 1];
@@ -252,13 +252,13 @@ export function groupArchiveRows(items: ArchivePopupContentItem[]): ArchivePopup
   return groups;
 }
 
-export function getArchivePopupRowMedia(item: ArchivePopupContentItem | undefined): ArchivePopupMedia[] {
+export function getChroniclesRowMedia(item: ChroniclesContentItem | undefined): ChroniclesMedia[] {
   const { image } = item ?? {};
   return (Array.isArray(image) ? image : image ? [image] : []).filter((media) => Boolean(media?.assetId));
 }
 
 // A title saved as rich text shows its words alone, a line to each paragraph, its links and styling dropped.
-function getTitleText(title: ArchivePopupTitle | undefined): string {
+function getTitleText(title: ChroniclesTitle | undefined): string {
   if (!Array.isArray(title)) return title ?? '';
   const getNodeText = (node: any): string => node.text ?? (node.children ?? []).map(getNodeText).join('');
   return title.map(getNodeText).join('\n');
@@ -268,7 +268,7 @@ function getMediaKey(rowIndex: number, mediaIndex: number, assetId: string): str
   return `${rowIndex}-${mediaIndex}-${assetId}`;
 }
 
-function isVideoMedia(media: ArchivePopupMedia): boolean {
+function isVideoMedia(media: ChroniclesMedia): boolean {
   if (media.type === 'video') return true;
   if (media.type === 'image') return false;
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.name ?? '') || /\.(mp4|webm|ogg|mov)(\?|$)/i.test(media.assetId);
@@ -299,7 +299,7 @@ function getLightboxLayoutStyle(container: HTMLElement | null): CSSProperties {
   return style;
 }
 
-function resolveTextStyle(settings: ArchivePopupSettings, prefix: string, fallbackPrefix?: string): TextStyles {
+function resolveTextStyle(settings: ChroniclesSettings, prefix: string, fallbackPrefix?: string): TextStyles {
   const values = settings as Record<string, unknown>;
   const read = <Key extends keyof TextStyleFields>(key: Key) => (
     values[`${prefix}${key}`] ?? (fallbackPrefix ? values[`${fallbackPrefix}${key}`] : undefined)
@@ -526,7 +526,7 @@ a.${P}-row {
 `;
 }
 
-function ArchivePopupMediaItem({
+function ChroniclesMediaItem({
   P,
   media,
   isVisible,
@@ -536,7 +536,7 @@ function ArchivePopupMediaItem({
   onLoad,
 }: {
   P: string;
-  media: ArchivePopupMedia;
+  media: ChroniclesMedia;
   isVisible: boolean;
   isLoaded: boolean;
   isCovered: boolean;
@@ -604,8 +604,8 @@ function renderColumnWidthControls(
     columnLeft += width + columnGap;
     return (
       <div
-        key={ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[index]}
-        data-controls={ARCHIVE_POPUP_COLUMN_WIDTH_KEYS[index]}
+        key={CHRONICLES_COLUMN_WIDTH_KEYS[index]}
+        data-controls={CHRONICLES_COLUMN_WIDTH_KEYS[index]}
         data-controls-axis="x"
         data-controls-variant="column-width"
         data-controls-min={String(MIN_COLUMN_WIDTH_PX)}
@@ -667,7 +667,7 @@ function renderPanelPaddingControls(
   );
 }
 
-export function ArchivePopup({
+export function Chronicles({
   settings,
   content,
   isEditor,
@@ -677,13 +677,13 @@ export function ArchivePopup({
   portalId,
   currentState,
   unavailableStates,
-}: ArchivePopupProps) {
+}: ChroniclesProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'b',
     triggerLabel = 'Archive',
     closeLabel = 'Close',
-    columns = ARCHIVE_POPUP_DEFAULT_COLUMNS,
+    columns = CHRONICLES_DEFAULT_COLUMNS,
     columnGap = DEFAULT_COLUMN_GAP,
     hoverInterval = DEFAULT_HOVER_INTERVAL_MS,
     panelPosition,
@@ -734,14 +734,14 @@ export function ArchivePopup({
   const isOpen = !isInline && (isOpenPinned || ((isInteractive || Boolean(isEditMode)) && isOpenUser));
   const scaled = (value: number) => scalingValue(value, isEditor ?? false);
   const scopedCss = useMemo(() => getCSS(P), [P]);
-  const panelOffset = PANEL_POSITION_OFFSETS[panelPosition as ArchivePopupPanelPosition] ?? PANEL_POSITION_OFFSETS.center;
+  const panelOffset = PANEL_POSITION_OFFSETS[panelPosition as ChroniclesPanelPosition] ?? PANEL_POSITION_OFFSETS.center;
   const columnCount = getColumnCount(columns);
-  const columnWidths = resolveArchivePopupColumnWidths(settings);
+  const columnWidths = resolveChroniclesColumnWidths(settings);
   // the group takes the first column, the titles the rest
-  const titleKeys = ['title', ...ARCHIVE_POPUP_EXTRA_TITLE_KEYS].slice(0, columnCount - 1) as Array<'title' | typeof ARCHIVE_POPUP_EXTRA_TITLE_KEYS[number]>;
+  const titleKeys = ['title', ...CHRONICLES_EXTRA_TITLE_KEYS].slice(0, columnCount - 1) as Array<'title' | typeof CHRONICLES_EXTRA_TITLE_KEYS[number]>;
   // With the first column alone there is nothing for a group to span, so every row shows its own first column, as one list.
   const hasGroupColumn = columnCount > 1;
-  const groups = useMemo<ArchivePopupGroup[]>(() => (
+  const groups = useMemo<ChroniclesGroup[]>(() => (
     hasGroupColumn
       ? groupArchiveRows(content ?? [])
       : [{ label: '', rows: (content ?? []).map((item, index) => ({ item, index })) }]
@@ -857,13 +857,13 @@ export function ArchivePopup({
   const isListShown = isInteractive && (isInline || isOpen);
   useEffect(() => {
     if (!isListShown) return;
-    (content ?? []).forEach((item) => getArchivePopupRowMedia(item).forEach((media) => {
+    (content ?? []).forEach((item) => getChroniclesRowMedia(item).forEach((media) => {
       if (!isVideoMedia(media)) new Image().src = media.assetId;
     }));
   }, [isListShown, content]);
 
   // A hovered row with several images shows them in turn, round and round, for as long as it stays hovered.
-  const activeRowMediaCount = activeIndex === null ? 0 : getArchivePopupRowMedia(items[activeIndex]).length;
+  const activeRowMediaCount = activeIndex === null ? 0 : getChroniclesRowMedia(items[activeIndex]).length;
   useEffect(() => {
     if (activeRowMediaCount < 2) return;
     const timer = window.setInterval(() => {
@@ -873,7 +873,7 @@ export function ArchivePopup({
   }, [activeIndex, activeRowMediaCount, hoverInterval]);
 
   // Before paint, or the replaced image would drop out for a frame before it is kept.
-  const shownAssetId = activeIndex === null ? undefined : getArchivePopupRowMedia(items[activeIndex])[activeMediaIndex]?.assetId;
+  const shownAssetId = activeIndex === null ? undefined : getChroniclesRowMedia(items[activeIndex])[activeMediaIndex]?.assetId;
   const shownMedia = activeIndex !== null && shownAssetId !== undefined ? getMediaKey(activeIndex, activeMediaIndex, shownAssetId) : null;
   const isShownMediaLoaded = shownMedia !== null && loadedMedia.has(shownMedia);
   useLayoutEffect(() => {
@@ -893,7 +893,7 @@ export function ArchivePopup({
   }, [isShownMediaLoaded, coveredMedia]);
 
   const showRowMedia = (index: number) => {
-    if (!isInteractive || getArchivePopupRowMedia(items[index]).length === 0) {
+    if (!isInteractive || getChroniclesRowMedia(items[index]).length === 0) {
       setActiveIndex(null);
       return;
     }
@@ -917,7 +917,7 @@ export function ArchivePopup({
   };
 
   const triggerTypographyCss = omitTextColors(textStylesToCss(resolveTextStyle(settings, 'trigger'), isEditor));
-  const columnTypographyCss = ARCHIVE_POPUP_COLUMN_STYLE_PREFIXES.slice(0, columnCount).map((prefix) => (
+  const columnTypographyCss = CHRONICLES_COLUMN_STYLE_PREFIXES.slice(0, columnCount).map((prefix) => (
     omitTextColors(textStylesToCss(resolveTextStyle(settings, prefix, 'list'), isEditor))
   ));
   // Half the difference of the two line heights sets the label's first line on the first title's, exactly
@@ -943,10 +943,10 @@ export function ArchivePopup({
 
   const mediaLayer = (
     <div className={cn(`${P}-media-layer`, isMediaCut && `${P}-media-layer-instant`)} aria-hidden="true">
-      {[...mountedMedia].flatMap((index) => getArchivePopupRowMedia(items[index]).map((media, mediaIndex) => {
+      {[...mountedMedia].flatMap((index) => getChroniclesRowMedia(items[index]).map((media, mediaIndex) => {
         const mediaKey = getMediaKey(index, mediaIndex, media.assetId);
         return (
-          <ArchivePopupMediaItem
+          <ChroniclesMediaItem
             key={mediaKey}
             P={P}
             media={media}
