@@ -9,6 +9,7 @@ import {
   type HiveLightboxTitleSettings,
 } from './HiveLightboxTitles';
 import { getDisplayedImageRect } from '../utils/getImageRect';
+import { textStylesToCss, type TextStyles } from '../utils/textStylesToCss';
 
 function sv(px: number): string {
   return `calc(var(--cntrl-article-width, 100vw) * ${px / 1440})`;
@@ -335,6 +336,13 @@ function getCSS(P: string): string {
   pointer-events: auto;
   flex-shrink: 0;
 }
+.${P}-item-text {
+  flex-shrink: 0;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 `;
 }
 
@@ -347,8 +355,20 @@ type GridLayoutConfig = {
 };
 
 type HiveSettings = {
+  type?: 'a' | 'b';
   gridLayout: GridLayoutConfig;
   verticalGap: number;
+  textBoxWidth?: number;
+  textMarginTop?: number;
+  entryTitleColor?: string;
+  entryTitleFontFamily?: string;
+  entryTitleFontSettings?: { fontWeight: number; fontStyle: string };
+  entryTitleFontSize?: number;
+  entryTitleLineHeight?: number;
+  entryTitleLetterSpacing?: number;
+  entryTitleWordSpacing?: number;
+  entryTitleTextAlign?: TextStyles['textAlign'];
+  entryTitleTextAppearance?: TextStyles['textAppearance'];
   align?: 'top' | 'center' | 'bottom';
   imageDisplay: {
     display: 'fit' | 'cover';
@@ -2139,7 +2159,16 @@ export function Hive({
   portalId,
 }: HiveProps) {
   const { prefix: P } = useScopedStyles();
-  const { gridLayout, verticalGap, align = 'top', imageDisplay } = settings;
+  const {
+    type = 'a',
+    gridLayout,
+    verticalGap,
+    textBoxWidth = 100,
+    textMarginTop = 0,
+    align = 'top',
+    imageDisplay,
+  } = settings;
+  const showEntryText = type === 'b';
 
   const isCover = imageDisplay?.display === 'cover';
   const ratioValue = imageDisplay?.ratioValue ?? '1:1';
@@ -2155,6 +2184,27 @@ export function Hive({
   const horizontalGapScaled = scalingValue(gridLayout.horizontalGap ?? 0, isEditor);
   const imageWrapperWidth = entryWidthScaled;
   const controlWidthStyle = entryWidthScaled;
+  const textBoxWidthStyle = `calc(${entryWidthScaled} * (${textBoxWidth} / 100))`;
+  const textControlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
+  // like Neptune, a text box wider than the entry widens the whole cell so the image stays centered
+  const itemInnerWidth = showEntryText && textBoxWidth > 100 ? textBoxWidthStyle : entryWidthScaled;
+  const entryTextStyle = useMemo(
+    () => textStylesToCss({
+      fontSettings: {
+        fontFamily: settings.entryTitleFontFamily ?? 'Arial',
+        fontWeight: settings.entryTitleFontSettings?.fontWeight ?? 400,
+        fontStyle: settings.entryTitleFontSettings?.fontStyle ?? 'normal',
+      },
+      fontSize: settings.entryTitleFontSize ?? 0.0098,
+      lineHeight: settings.entryTitleLineHeight,
+      letterSpacing: settings.entryTitleLetterSpacing ?? 0,
+      wordSpacing: settings.entryTitleWordSpacing ?? 0,
+      textAlign: settings.entryTitleTextAlign ?? 'left',
+      textAppearance: settings.entryTitleTextAppearance,
+      color: settings.entryTitleColor ?? '#000000',
+    }, isEditor),
+    [settings, isEditor],
+  );
 
   const imageWrapperStyle: React.CSSProperties = {
     width: imageWrapperWidth,
@@ -2339,7 +2389,7 @@ export function Hive({
                   isLastRow ? `${P}-item-inner-last-row` : '',
                 ].filter(Boolean).join(' ')}
                 style={{
-                  width: entryWidthScaled,
+                  width: itemInnerWidth,
                   ...(gridColumn ? { gridColumn } : {}),
                 }}
               >
@@ -2350,7 +2400,20 @@ export function Hive({
                   {imageContent}
                 </a>
                 <div className={`${P}-item-subtitle-row`}>
-                  <div style={{ height: 0, width: controlWidthStyle }} />
+                  {showEntryText && item.title1?.trim() ? (
+                    <>
+                      <div
+                        data-controls={isEditMode ? 'textMarginTop' : undefined}
+                        className={isEditMode ? `${P}-control` : undefined}
+                        style={{ height: scalingValue(textMarginTop, isEditor), width: textControlWidthStyle }}
+                      />
+                      <p className={`${P}-item-text`} style={{ ...entryTextStyle, width: textBoxWidthStyle }}>
+                        {item.title1}
+                      </p>
+                    </>
+                  ) : (
+                    <div style={{ height: 0, width: controlWidthStyle }} />
+                  )}
                 </div>
               </div>
             </div>

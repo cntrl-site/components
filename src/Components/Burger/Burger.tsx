@@ -57,6 +57,7 @@ type BurgerPosition =
 type BurgerSettings = {
   link?: BurgerLink[];
   logo?: BurgerLogo | null;
+  logoLink?: string;
   logoMaxWidth?: number;
   logoMaxHeight?: number;
   logoPosition?: BurgerLogoPosition;
@@ -150,7 +151,7 @@ function resolveCurrentState(value?: string | null): BurgerVisualState | undefin
   return undefined;
 }
 
-type BurgerShowIn = 'always' | 'open only' | 'open and compact' | 'default and open' | 'default and compact';
+type BurgerShowIn = 'always' | 'open only' | 'default only' | 'open and compact' | 'default and open' | 'default and compact';
 
 function resolveLogoPosition(value?: string): BurgerLogoPosition {
   if (value === 'center' || value === 'right') return value;
@@ -188,6 +189,7 @@ function pickShowIn(value?: BurgerShowInValue, layoutId?: string): string | unde
 function resolveShowIn(value?: BurgerShowInValue, layoutId?: string): BurgerShowIn {
   const showIn = (pickShowIn(value, layoutId) ?? 'always').trim().toLowerCase().replace(/[_-]+/g, ' ');
   if (showIn === 'open only' || showIn === 'openonly') return 'open only';
+  if (showIn === 'default only' || showIn === 'defaultonly') return 'default only';
   if (showIn === 'open and compact' || showIn === 'openandcompact') return 'open and compact';
   if (showIn === 'default and open' || showIn === 'defaultandopen') return 'default and open';
   if (showIn === 'default and compact' || showIn === 'defaultandcompact') return 'default and compact';
@@ -198,6 +200,8 @@ function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigatio
   switch (resolveShowIn(item.showIn, layoutId)) {
     case 'open only':
       return false;
+    case 'default only':
+      return navigationState === 'default';
     case 'open and compact':
       return navigationState === 'compact';
     case 'default and compact':
@@ -211,11 +215,18 @@ function isVisibleInClosedNav(item: BurgerLink, navigationState: BurgerNavigatio
 
 function isVisibleInOpenNav(item: BurgerLink, layoutId?: string): boolean {
   switch (resolveShowIn(item.showIn, layoutId)) {
+    case 'default only':
     case 'default and compact':
       return false;
     default:
       return true;
   }
+}
+
+/** The open menu is unavailable when every link is shown in the default state only. */
+export function isBurgerOpenMenuAvailable(links: unknown, layoutId?: string): boolean {
+  if (!Array.isArray(links) || links.length === 0) return true;
+  return (links as BurgerLink[]).some((item) => resolveShowIn(item?.showIn, layoutId) !== 'default only');
 }
 
 type BurgerPageRef = {
@@ -271,6 +282,13 @@ function getBurgerDest(item: BurgerLink): {
     return { type: 'url', value: item.url ?? '', target };
   }
   return { type: 'page', value: item.page ?? '', target, anchor: item.anchor };
+}
+
+function normalizeLogoHref(value: string): string {
+  if (/^[a-z][a-z\d+\-.]*:/i.test(value) || value.startsWith('/') || value.startsWith('#')) {
+    return value;
+  }
+  return `https://${value}`;
 }
 
 function resolveBurgerLink(item: BurgerLink, pages?: BurgerPageRef[]): {
@@ -1301,6 +1319,14 @@ function getCSS(P: string): string {
   right: 0;
   transform: none;
 }
+.${P}-nav-logo-link {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
 .${P}-nav-logo-inner {
   position: relative;
   flex-shrink: 0;
@@ -1897,8 +1923,9 @@ export function Burger({
   const pinnedState = resolveCurrentState(currentStateProp);
   const unavailableStateSet = useMemo(() => new Set(unavailableStates), [unavailableStates]);
   const isStateUnavailable = (state?: string | null) => Boolean(state && unavailableStateSet.has(state));
+  const isOpenMenuAvailable = isBurgerOpenMenuAvailable(settingsProp.link, layoutId);
   const isOpenPinned = Boolean(isEditor && !isPreviewMode && pinnedState === 'open' && !isStateUnavailable('open'));
-  const isOpen = isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser);
+  const isOpen = isOpenMenuAvailable && (isOpenPinned || (!(isEditor && !isPreviewMode) && isOpenUser));
   const isEditorCanvas = Boolean(isEditor && !isPreviewMode);
   const shouldLockScroll = isOpen && !isEditorCanvas;
   useLightboxScrollLock(shouldLockScroll);
@@ -1931,6 +1958,7 @@ export function Burger({
 
   const {
     logo,
+    logoLink = '',
     logoMaxHeight = 120 / 1440,
     logoPosition = 'left',
     panelHeight = 60 / 1440,
@@ -2024,7 +2052,7 @@ export function Burger({
   const closedNavPaddingRight = isCompactNav ? compactNavPaddingRight : navPaddingRight;
 
   const resolvedNavTextWidth = closedNavTextWidth ?? textWidth;
-  const showBurgerButton = isOpen || (isCompactNav ? compactShowIcon : showIcon) !== 'off';
+  const showBurgerButton = isOpen || (isOpenMenuAvailable && (isCompactNav ? compactShowIcon : showIcon) !== 'off');
 
   const colorVars = buildColorVars(P, {
     iconColor,
@@ -2211,6 +2239,9 @@ export function Burger({
   const tintLogo = Boolean(logoMaskUrl);
   const logoHeight = scaled(Math.min(closedLogoMaxHeight, closedPanelHeight));
   const isLogoOnRight = Boolean(showLogo && logoSrc && closedLogoPosition === 'right');
+  const logoLinkItem: BurgerLink | null = logoLink.trim()
+    ? { link: { type: 'url', value: normalizeLogoHref(logoLink.trim()), target: 'self' } }
+    : null;
   const toggleSide = isLogoOnRight ? 'left' : 'right';
 
   const items = Array.isArray(linkItems) ? linkItems : [];
@@ -2561,6 +2592,23 @@ export function Burger({
     );
   };
 
+  const logoNode = (
+    <div
+      className={`${P}-nav-logo-inner${tintLogo ? ` ${P}-nav-logo-tinted` : ''}`}
+      style={{
+        height: logoHeight,
+        ...(tintLogo && logoMaskUrl ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoMaskUrl) } : {}),
+      } as CSSProperties}
+    >
+      <img
+        src={tintLogo && logoMaskUrl ? logoMaskUrl : logoSrc}
+        alt=""
+        className={`${P}-nav-logo-img`}
+      />
+      {tintLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
+    </div>
+  );
+
   const navBarStyle: CSSProperties = {
     ...colorVars,
     height: scalingValue(closedPanelHeight, isEditor),
@@ -2595,20 +2643,16 @@ export function Burger({
           {showLogo && logoSrc ? (
             <div className={`${P}-nav-logo ${P}-nav-logo-${closedLogoPosition}`}>
               {closedLogoPosition === 'left' ? renderNavEdgePadding('left') : null}
-              <div
-                className={`${P}-nav-logo-inner${tintLogo ? ` ${P}-nav-logo-tinted` : ''}`}
-                style={{
-                  height: logoHeight,
-                  ...(tintLogo && logoMaskUrl ? { [`--${P}-logo-image`]: cssMaskImageUrl(logoMaskUrl) } : {}),
-                } as CSSProperties}
-              >
-                <img
-                  src={tintLogo && logoMaskUrl ? logoMaskUrl : logoSrc}
-                  alt=""
-                  className={`${P}-nav-logo-img`}
-                />
-                {tintLogo ? <span className={`${P}-nav-logo-tint`} aria-hidden="true" /> : null}
-              </div>
+              {logoLinkItem ? (
+                <a
+                  href={logoLinkItem.link?.value}
+                  className={`${P}-nav-logo-link`}
+                  aria-label="Home"
+                  onClick={(event) => onNavLinkClick(event, logoLinkItem)}
+                >
+                  {logoNode}
+                </a>
+              ) : logoNode}
               {closedLogoPosition === 'right' ? renderNavEdgePadding('right') : null}
             </div>
           ) : null}

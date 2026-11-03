@@ -1,4 +1,4 @@
-import { Burger } from './Burger';
+import { Burger, isBurgerOpenMenuAvailable } from './Burger';
 import { ComponentSchemaV1 } from '../../types/SchemaV1';
 
 function createRangeControlLayoutProperty(title: string) {
@@ -210,7 +210,7 @@ const schema = {
               },
             },
             label: { type: 'string' },
-            showIn: { type: 'string', scope: 'layout', enum: ['Always', 'Open Only', 'Open and Compact', 'Default and Open', 'Default and Compact'] },
+            showIn: { type: 'string', scope: 'layout', enum: ['Always', 'Open Only', 'Default Only', 'Open and Compact', 'Default and Open', 'Default and Compact'] },
           },
         },
       },
@@ -230,6 +230,13 @@ const schema = {
             display: { type: 'settings-image-input' },
           },
         },
+      },
+      logoLink: {
+        type: 'string',
+        scope: 'common',
+        title: 'Logo Link',
+        message: 'Paste URL here...',
+        display: { type: 'label-input' },
       },
       logoMaxHeight: {
         type: 'number',
@@ -561,6 +568,7 @@ const schema = {
         mode: 'On',
         icon: '01M3QM74XE09DSJCWGD1XM6Y45',
       },
+      logoLink: '',
       backgroundColor: '#ffffff',
       logoColor: '#000000',
       iconColor: '#000000',
@@ -605,6 +613,10 @@ const schema = {
       },
     },
     displayRules: [
+      {
+        if: { name: 'logo.mode', value: 'Off' },
+        then: { name: 'properties.logoLink.display.visible', value: false },
+      },
       {
         if: { name: 'logo.mode', value: 'Off' },
         then: { name: 'properties.logoMaxHeight.display.visible', value: false },
@@ -812,6 +824,7 @@ const schema = {
       '__componentName__',
       'link',
       'logo',
+      'logoLink',
       'logoMaxHeight',
       'logoPosition',
       'panelHeight',
@@ -890,6 +903,7 @@ const schema = {
       layout: [
         '__componentName__',
         'logo',
+        'logoLink',
       ],
     },
     {
@@ -915,6 +929,9 @@ const schema = {
       title: 'Open',
       tooltip: 'Open State',
       layout: openNavStateLayout,
+      availableWhen: {
+        openMenu: ['on'],
+      },
     },
     {
       id: 'links',
@@ -987,4 +1004,7 @@ export const BurgerComponent = {
     openFontSettings: 'openFontFamily',
     compactFontSettings: 'compactFontFamily',
   },
+  getPanelAvailabilityContext: (settings: Record<string, any>, layoutId?: string) => ({
+    openMenu: isBurgerOpenMenuAvailable(settings.link, layoutId) ? 'on' : 'off',
+  }),
 };
