@@ -452,12 +452,11 @@ const schema = {
       layout: [
         '__componentName__',
         'type',
-        'panelPosition',
         { type: 'row', title: '', items: ['panelWidth',  'panelRadius',] },
         { type: 'row', title: '', items: ['columns', 'columnGap'] },
+        { type: 'row', title: '', items: ['panelPosition', 'hoverInterval'] },
         'triggerLabel',
-        'closeLabel',
-        'hoverInterval',
+        'closeLabel'
       ],
     },
     {
