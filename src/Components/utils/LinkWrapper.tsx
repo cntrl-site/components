@@ -1,4 +1,5 @@
 import React, { CSSProperties, FC, ReactNode } from 'react';
+import { buildValidUrl } from './buildValidUrl';
 
 interface Props {
   /**
@@ -9,12 +10,6 @@ interface Props {
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
-}
-
-const URL_PREFIXES = ['http://', 'https://', '/', 'mailto:', 'tel:', 'file:', 'ftp:', 'javascript', '#'];
-
-function buildValidUrl(url: string): string {
-  return URL_PREFIXES.some(prefix => url.startsWith(prefix)) ? url : `//${url}`;
 }
 
 export const LinkWrapper: FC<Props> = ({ link, className, style, children }) => {

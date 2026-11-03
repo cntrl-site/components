@@ -1,4 +1,5 @@
 import { BurgerComponent } from './Components/Burger/BurgerComponent';
+import { ChroniclesComponent } from './Components/Chronicles/ChroniclesComponent';
 import { ClickGallerieComponent } from './Components/ClickGallerie/ClickGallerieComponent';
 import { FAQComponent } from './Components/FAQ/FAQComponent';
 import { FormComponent } from './Components/Form/FormComponent';
@@ -20,6 +21,7 @@ import { TestimonialGridComponent } from './Components/TestimonialGrid/Testimoni
 import { TestimonialSingleComponent } from './Components/TestimonialSingle/TestimonialSingleComponent';
 import { WaterfallComponent } from './Components/Waterfall/WaterfallComponent';
 import burgerSource from './Components/Burger/Burger.tsx?raw';
+import chroniclesSource from './Components/Chronicles/Chronicles.tsx?raw';
 import clickGallerieSource from './Components/ClickGallerie/ClickGallerie.tsx?raw';
 import faqSource from './Components/FAQ/FAQ.tsx?raw';
 import formSource from './Components/Form/Form.tsx?raw';
@@ -43,6 +45,7 @@ import waterfallSource from './Components/Waterfall/Waterfall.tsx?raw';
 
 export const componentSources: Partial<Record<string, string>> = {
   [BurgerComponent.id]: burgerSource,
+  [ChroniclesComponent.id]: chroniclesSource,
   [ClickGallerieComponent.id]: clickGallerieSource,
   [FAQComponent.id]: faqSource,
   [FormComponent.id]: formSource,
