@@ -160,7 +160,7 @@ const schema: ComponentSchemaV1 = {
         type: 'number',
         scope: 'layout',
         title: 'Width',
-        display: { type: 'numeric-input' },
+        display: { type: 'numeric-input', omitInContentBased: true },
         min: 0,
         max: 9999,
       },
