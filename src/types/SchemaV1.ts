@@ -140,6 +140,7 @@ export type ComponentContentSchema = {
 export type SchemaSection = {
   sizing?: string;
   hasLinkParameter?: boolean;
+  hideOpacityParameter?: boolean;
   properties: Record<string, SchemaProperty>;
   layout?: LayoutItem[];
   defaults: Record<string, unknown>;
