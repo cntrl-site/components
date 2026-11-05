@@ -155,6 +155,7 @@ const schema: ComponentSchemaV1 = {
   },
   settings: {
     sizing: 'auto',
+    hideOpacityParameter: true,
     properties: {
       wrapperWidth: {
         type: 'number',
@@ -185,12 +186,6 @@ const schema: ComponentSchemaV1 = {
         scope: 'common',
         title: 'Style',
         display: { type: 'toggle-cycle', enum: ['solid', 'dashed', 'dotted'] },
-      },
-      entryHoverEffect: {
-        type: 'string',
-        scope: 'common',
-        title: 'Effect',
-        display: { type: 'toggle-cycle', enum: ['none', 'default'] },
       },
       autoclose: {
         type: 'string',
@@ -360,7 +355,6 @@ const schema: ComponentSchemaV1 = {
     },
     defaults: {
       dividerStyle: 'dotted',
-      entryHoverEffect: 'default',
       autoclose: 'off',
       icon: '01M3QM74XGFBPMXNEQB1BXSD9E',
       iconAnimation: 'rotate 45',
@@ -462,7 +456,6 @@ const schema: ComponentSchemaV1 = {
       'cellMinHeight',
       'dividerWidth',
       'dividerStyle',
-      'entryHoverEffect',
       'autoclose',
       'icon',
       'iconMaxWidth',
@@ -478,7 +471,7 @@ const schema: ComponentSchemaV1 = {
       layout: [
         '__componentName__',
         { type: 'row', title: '', items: ['wrapperWidth', 'cellMinHeight'] },
-        { type: 'row', title: '', items: ['entryHoverEffect', 'autoclose'] },
+        { type: 'row', title: '', items: ['autoclose'] },
         { type: 'row', title: 'Divider', items: ['dividerWidth', 'dividerStyle'] },
         { type: 'row', title: 'Icon', items: ['icon', 'iconMaxWidth'] },
         { type: 'row', title: '', items: ['iconAnimation'] },
