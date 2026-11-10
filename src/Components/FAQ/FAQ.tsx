@@ -16,7 +16,6 @@ type FAQSettings = {
   cellMinHeight?: number;
   dividerWidth?: number;
   dividerStyle?: 'solid' | 'dashed' | 'dotted';
-  entryHoverEffect?: 'none' | 'default';
   autoclose?: 'on' | 'off';
   icon?: string | null;
   iconMaxWidth?: number;
@@ -326,7 +325,6 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
     cellMinHeight = 0,
     dividerWidth = 0.000694,
     dividerStyle = 'solid',
-    entryHoverEffect = 'default',
     autoclose = 'off',
     icon,
     iconMaxWidth = 0.00833,
@@ -398,9 +396,7 @@ export function FAQ({ settings, content, isEditor, isPreviewMode, isEditMode, ac
   }, [openIndices]);
 
   const isItemOpen = useCallback((index: number) => openIndices.has(index), [openIndices]);
-  const entryHoverClass = isInteractive && entryHoverEffect === 'default'
-    ? `${P}-entry-hover-default`
-    : '';
+  const entryHoverClass = isInteractive ? `${P}-entry-hover-default` : '';
   const iconSrc = icon ?? '';
   const useCustomIcon = iconSrc !== '';
   const iconAnimSuffix = iconAnimation.replace(/^rotate /, '');
