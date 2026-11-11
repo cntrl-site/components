@@ -55,6 +55,12 @@ function getGridTextLeadingVars(
   } as React.CSSProperties;
 }
 
+const HOVER_ANIM_MS = 400;
+const HOVER_EASING = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+const HOVER_ZOOM = 1.1;
+const HOVER_ZOOM_INSET = `${(((1 - 1 / HOVER_ZOOM) / 2) * 100).toFixed(4)}%`;
+const MEDIA_RADIUS_VAR = '--grid-media-radius';
+
 function getCSS(P: string): string {
   return `
 .${P}-wrapper {
@@ -197,6 +203,31 @@ function getCSS(P: string): string {
 .${P}-show-text-hover .${P}-item-inner-hidden:hover .${P}-item-title,
 .${P}-show-text-hover .${P}-item-inner-hidden:hover .${P}-item-subtitle {
   opacity: 1;
+}
+.${P}-hover-zoom-in .${P}-item-image,
+.${P}-hover-zoom-in .${P}-item-video {
+  clip-path: inset(0 round var(${MEDIA_RADIUS_VAR}, 0px));
+  transition: transform ${HOVER_ANIM_MS}ms ${HOVER_EASING}, clip-path ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+.${P}-hover-scale-down .${P}-item-image,
+.${P}-hover-scale-down .${P}-item-video {
+  transition: transform ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+.${P}-hover-greyscale .${P}-item-image-wrapper {
+  transition: filter ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+@media (hover: hover) {
+  .${P}-hover-zoom-in .${P}-item-image-wrapper:has(.${P}-item-image:hover, .${P}-item-video:hover) :is(.${P}-item-image, .${P}-item-video) {
+    transform: scale(${HOVER_ZOOM});
+    clip-path: inset(${HOVER_ZOOM_INSET} round calc(var(${MEDIA_RADIUS_VAR}, 0px) / ${HOVER_ZOOM}));
+  }
+  .${P}-hover-scale-down .${P}-item-image-wrapper:hover .${P}-item-image,
+  .${P}-hover-scale-down .${P}-item-image-wrapper:hover .${P}-item-video {
+    transform: scale(0.9);
+  }
+  .${P}-hover-greyscale:has(.${P}-item-image:hover, .${P}-item-video:hover) .${P}-item-image-wrapper:not(:has(.${P}-item-image:hover, .${P}-item-video:hover)) {
+    filter: grayscale(1);
+  }
 }
 .${P}-type-a .${P}-item-inner,
 .${P}-type-a .${P}-item-inner-hidden,
@@ -1671,6 +1702,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     iconMarginRight,
     contentMarginTop,
     showText = 'always',
+    hover = 'none',
     alignEntries = 'off',
     align = 'top',
   } = settings;
@@ -1759,7 +1791,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
   const showTextOnHover = showText === 'on hover' && (!isEditor || isPreviewMode);
-  const wrapperStateClasses = `${stateClass}${showTextOnHover ? ` ${P}-show-text-hover` : ''}`.trim();
+  const hoverEffectClass = hover !== 'none' && (!isEditor || isPreviewMode) ? ` ${P}-hover-${hover}` : '';
+  const wrapperStateClasses = `${stateClass}${showTextOnHover ? ` ${P}-show-text-hover` : ''}${hoverEffectClass}`.trim();
 
   const resEntriesCount = entriesCount === 0 ? Infinity : entriesCount;
 
@@ -1807,6 +1840,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
   const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
 
+  const imageRadiusStyle = imageBorderRadius
+    ? { borderRadius: imageBorderRadius, [MEDIA_RADIUS_VAR]: imageBorderRadius } as React.CSSProperties
+    : {};
   const imageStyle: React.CSSProperties = isCover
     ? {
         objectFit: 'cover',
@@ -1814,7 +1850,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         width: '100%',
         height: '100%',
         maxWidth: '100%',
-        ...(imageBorderRadius ? { borderRadius: imageBorderRadius } : {}),
+        ...imageRadiusStyle,
       }
     : {
         objectFit: 'contain',
@@ -1822,7 +1858,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         width: 'auto',
         height: 'auto',
         maxWidth: '100%',
-        ...(imageBorderRadius ? { borderRadius: imageBorderRadius } : {}),
+        ...imageRadiusStyle,
       };
 
   const [containerWidth, setContainerWidth] = useState(0);
@@ -2265,6 +2301,7 @@ type GridSettings = {
   direction: 'horizontal' | 'vertical' | 'random',
   transition: 'fade' | 'slide',
   showText: 'always' | 'on hover';
+  hover?: 'none' | 'zoom-in' | 'greyscale' | 'scale-down';
   alignEntries: 'on' | 'off';
   align?: 'top' | 'center' | 'bottom';
   titleMarginTop: number;

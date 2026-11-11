@@ -396,6 +396,12 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      hover: {
+        type: 'string',
+        scope: 'common',
+        title: 'Hover',
+        display: { type: 'toggle-cycle', enum: ['none', 'zoom-in', 'greyscale', 'scale-down'] },
+      },
       imageCorners: {
         type: 'number',
         scope: 'layout',
@@ -647,6 +653,7 @@ const schema: ComponentSchemaV1 = {
         reversed: false,
       },
       lightboxImageDisplay: 'fit',
+      hover: 'none',
       slider: 'on',
       sliderTiming: 3,
       direction: 'horizontal',
@@ -829,6 +836,7 @@ const schema: ComponentSchemaV1 = {
       'lightbox',
       'imageDisplay',
       'imageCorners',
+      'hover',
       'lightboxImageDisplay',
       'contentMarginTop',
       'closeIconMaxWidth',
@@ -875,6 +883,7 @@ const schema: ComponentSchemaV1 = {
       layout: [
         '__componentName__',
         {type: 'row', title: 'Image', items: ['imageDisplay', 'imageCorners']},
+        {type: 'row', title: '', items: ['hover']},
         {
           type: 'row',
           title: 'Lightbox',

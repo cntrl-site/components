@@ -184,6 +184,7 @@ const extraTitleProperties: Record<string, ComponentContentProperty> = Object.fr
     type: 'string',
     label: `Column ${index + NAMED_COLUMNS + 1}`,
     placeholder: 'Add text...',
+    ...(key === 'title2' ? { contentKey: 'subtitle' } : {}),
     display: { type: 'text-input' },
   }]),
 );
@@ -230,6 +231,7 @@ const schema = {
   content: {
     type: 'array',
     settings: {
+      allowsCollection: true,
       addItemWithoutImage: true,
       allowsVideo: true,
     },
@@ -243,12 +245,14 @@ const schema = {
         group: {
           type: 'string',
           label: 'Column 1',
+          contentKey: 'date',
           placeholder: 'Leave empty to continue the group above...',
           display: { type: 'text-input' },
         },
         title: {
           type: 'string',
           label: 'Column 2',
+          contentKey: 'title',
           placeholder: 'Add title...',
           display: { type: 'text-input' },
         },
@@ -262,6 +266,7 @@ const schema = {
         image: {
           type: 'object',
           label: 'Hover Images',
+          contentKey: 'gallery',
           display: { type: 'media-list-input' },
           properties: {
             assetId: { type: 'string' },
