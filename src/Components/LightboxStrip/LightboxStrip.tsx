@@ -26,7 +26,6 @@ export type {
 const HOVER_ANIM_MS = 400;
 const HOVER_EASING = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 const HOVER_ZOOM = 1.1;
-const HOVER_ZOOM_INSET = `${(((1 - 1 / HOVER_ZOOM) / 2) * 100).toFixed(4)}%`;
 
 function getCSS(P: string): string {
   return `
@@ -74,9 +73,16 @@ function getCSS(P: string): string {
   max-width: 100%;
 }
 
+@property --${P}-hover-zoom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
 .${P}-hover-zoom-in .${P}-cover-image {
-  clip-path: inset(0);
-  transition: transform ${HOVER_ANIM_MS}ms ${HOVER_EASING}, clip-path ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+  transform: scale(var(--${P}-hover-zoom));
+  clip-path: inset(calc(50% - 50% / var(--${P}-hover-zoom)));
+  transition: --${P}-hover-zoom ${HOVER_ANIM_MS}ms ${HOVER_EASING};
 }
 
 .${P}-hover-scale-down .${P}-cover-image {
@@ -89,8 +95,7 @@ function getCSS(P: string): string {
 
 @media (hover: hover) {
   .${P}-hover-zoom-in .${P}-cover:hover .${P}-cover-image {
-    transform: scale(${HOVER_ZOOM});
-    clip-path: inset(${HOVER_ZOOM_INSET});
+    --${P}-hover-zoom: ${HOVER_ZOOM};
   }
   .${P}-hover-scale-down .${P}-cover:hover .${P}-cover-image {
     transform: scale(0.9);
