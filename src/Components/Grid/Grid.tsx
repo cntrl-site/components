@@ -137,6 +137,10 @@ function getCSS(P: string): string {
   flex-direction: column;
   align-items: center;
 }
+.${P}-custom-layout .${P}-item-image-link {
+  flex: 1 1 0%;
+  min-height: 0;
+}
 .${P}-item-text-link {
   display: flex;
   flex-direction: column;
@@ -1653,11 +1657,38 @@ function resolveLightboxImageDisplay(
   return value?.display === 'cover' ? 'cover' : 'fit';
 }
 
+function getCustomGridSpanWidth(layout: CustomGridLayout, span: number): number {
+  return layout.columnWidth * span + layout.gutterWidth * Math.max(0, span - 1);
+}
+
+type CustomGridSlot = {
+  width: number;
+  top: number;
+  height: number;
+  gridColumn: string;
+  gridRow: string;
+};
+
+// entries fill the layout's blocks in order, one repeat after another
+function getCustomGridSlot(layout: CustomGridLayout, index: number): CustomGridSlot {
+  const block = layout.blocks[index % layout.blocks.length];
+  const span = Math.min(Math.max(1, Math.round(block.span)), layout.columnsCount);
+  const column = Math.min(Math.max(0, Math.round(block.column)), layout.columnsCount - span);
+  return {
+    width: getCustomGridSpanWidth(layout, span),
+    top: Math.max(0, block.top),
+    height: Math.max(0, block.height),
+    gridColumn: `${column + 1} / span ${span}`,
+    gridRow: `${Math.floor(index / layout.blocks.length) + 1}`,
+  };
+}
+
 export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId, portalId }: GridProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'a',
     gridLayout,
+    customGrid,
     textBoxWidth = 100,
     verticalGap,
     entriesCount,
@@ -1794,7 +1825,11 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const hoverEffectClass = hover !== 'none' && (!isEditor || isPreviewMode) ? ` ${P}-hover-${hover}` : '';
   const wrapperStateClasses = `${stateClass}${showTextOnHover ? ` ${P}-show-text-hover` : ''}${hoverEffectClass}`.trim();
 
-  const resEntriesCount = entriesCount === 0 ? Infinity : entriesCount;
+  // a custom layout places entries itself, in place of the columns, gap and entries count
+  const customLayout = customGrid && customGrid.blocks.length > 0 ? customGrid : undefined;
+  const resEntriesCount = customLayout
+    ? customLayout.blocks.length * Math.max(1, customLayout.repeat)
+    : entriesCount === 0 ? Infinity : entriesCount;
 
   const cropContent = (content ?? []).slice(0, resEntriesCount);
   const lightboxMediaToPreload = useMemo(
@@ -1802,23 +1837,24 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     [cropContent, lightbox],
   );
 
-  const size = gridLayout.entryWidth ?? 0.2;
+  const size = gridLayout?.entryWidth ?? 0.2;
 
-  const isCover = imageDisplay?.display === 'cover';
-  const ratioValue = imageDisplay?.ratioValue ?? '1:1';
-  const ratioReversed = imageDisplay?.reversed ?? false;
+  const imageDisplaySettings = typeof imageDisplay === 'string' ? { display: imageDisplay } : imageDisplay;
+  const isCover = imageDisplaySettings?.display === 'cover';
+  const ratioValue = imageDisplaySettings?.ratioValue ?? '1:1';
+  const ratioReversed = imageDisplaySettings?.reversed ?? false;
   const [rW, rH] = ratioValue.split(':').map(Number);
   const effW = ratioReversed ? rH : rW;
   const effH = ratioReversed ? rW : rH;
   const aspectRatio = `${effW} / ${effH}`;
 
-  const columnsCount = gridLayout.columnsCount;
+  const columnsCount = gridLayout?.columnsCount ?? 1;
   const entryWidthScaled = scalingValue(size ?? 0, isEditor);
-  const imageWrapperWidth = entryWidthScaled;
-  const isFitSlider = !isCover && slider !== 'off';
+  // a custom block sets the entry's height, so the fit slider has nothing to size it by
+  const isFitSlider = !customLayout && !isCover && slider !== 'off';
 
   const itemsInLastRow = cropContent.length % columnsCount || columnsCount;
-  const isPartialLastRow = itemsInLastRow < columnsCount && cropContent.length > 0;
+  const isPartialLastRow = !customLayout && itemsInLastRow < columnsCount && cropContent.length > 0;
   const lastRowStartIndex = cropContent.length - itemsInLastRow;
   const lastRowStartColumn = isPartialLastRow
     ? Math.floor((columnsCount - itemsInLastRow) / 2) + 1
@@ -1826,19 +1862,20 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const imageBorderRadius = imageCorners ? scalingValue(imageCorners, isEditor) : undefined;
 
-  const imageWrapperStyle: React.CSSProperties = {
-    width: imageWrapperWidth,
-    ...(isCover
-      ? { aspectRatio, height: 'auto', overflow: 'hidden' }
-      : { height: 'auto' }),
+  const getImageWrapperStyle = (entryWidth: string, slot?: CustomGridSlot): React.CSSProperties => ({
+    width: entryWidth,
+    // in a custom block the media takes whatever the entry's text leaves of the block's height
+    ...(slot
+      ? { flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }
+      : isCover
+        ? { aspectRatio, height: 'auto', overflow: 'hidden' }
+        : { height: 'auto' }),
     ...(imageBorderRadius ? { borderRadius: imageBorderRadius, overflow: 'hidden' } : {}),
-  };
+  });
 
   const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
   const isTextBeforeImage = type === 'd' || type === 'e' || type === 'f';
-  const shouldAlignEntries = alignEntries === 'on';
-  const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
-  const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
+  const shouldAlignEntries = !customLayout && alignEntries === 'on';
 
   const imageRadiusStyle = imageBorderRadius
     ? { borderRadius: imageBorderRadius, [MEDIA_RADIUS_VAR]: imageBorderRadius } as React.CSSProperties
@@ -1858,7 +1895,31 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         width: 'auto',
         height: 'auto',
         maxWidth: '100%',
+        ...(customLayout ? { maxHeight: '100%' } : {}),
         ...imageRadiusStyle,
+      };
+
+  const customRowsCount = customLayout ? Math.ceil(cropContent.length / customLayout.blocks.length) : 0;
+  const customRepeatHeight = customLayout ? scalingValue(customLayout.repeatHeight, isEditor) : '';
+  const wrapperLayoutStyle: React.CSSProperties = customLayout
+    ? {
+        gridTemplateColumns: `repeat(${customLayout.columnsCount}, ${scalingValue(customLayout.columnWidth, isEditor)})`,
+        // every repeat keeps its height but the last, which ends where its entries do
+        gridTemplateRows: customRowsCount > 1
+          ? `repeat(${customRowsCount - 1}, minmax(${customRepeatHeight}, auto)) auto`
+          : 'auto',
+        rowGap: 0,
+        columnGap: scalingValue(customLayout.gutterWidth, isEditor),
+        width: scalingValue(getCustomGridSpanWidth(customLayout, customLayout.columnsCount), isEditor),
+      }
+    : {
+        gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
+        rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
+        columnGap: scalingValue(gridLayout?.horizontalGap ?? 0, isEditor),
+        width: scalingValue(gridLayout?.wrapperWidth ?? 0, isEditor),
+        ...(shouldAlignEntries
+          ? { [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor) }
+          : {}),
       };
 
   const [containerWidth, setContainerWidth] = useState(0);
@@ -1930,16 +1991,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
-          style={{
-            gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
-            rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
-            columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
-            width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor),
-            ...(shouldAlignEntries
-              ? { [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor) }
-              : {}),
-          }}>
+          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''}${customLayout ? ` ${P}-custom-layout` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
+          style={wrapperLayoutStyle}>
           {cropContent.map((item: any, index: number) => {
             const hasTitle = hasText(item.title);
             const hasSubtitle = hasText(item.subtitle);
@@ -1949,6 +2002,20 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             const gridColumn = isPartialLastRow && index >= lastRowStartIndex
               ? `${lastRowStartColumn + (index - lastRowStartIndex)}`
               : undefined;
+            const customSlot = customLayout ? getCustomGridSlot(customLayout, index) : undefined;
+            const itemSize = customSlot?.width ?? size;
+            const itemWidthScaled = scalingValue(itemSize, isEditor);
+            const textBoxWidthStyle = `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`;
+            const controlWidthStyle = scalingValue(itemSize * textBoxWidth / 100, isEditor);
+            const imageWrapperStyle = getImageWrapperStyle(itemWidthScaled, customSlot);
+            const itemStyle: React.CSSProperties | undefined = customSlot
+              ? {
+                  gridColumn: customSlot.gridColumn,
+                  gridRow: customSlot.gridRow,
+                  alignSelf: 'start',
+                  marginTop: scalingValue(customSlot.top, isEditor),
+                }
+              : gridColumn && !shouldAlignEntries ? { gridColumn } : undefined;
 
             const typeCTextBlock = isTextBeforeImage ? (
               <div className={`${P}-item-text-block`}>
@@ -2096,7 +2163,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                       </div>
                     )}
                     <Splide
-                      key={`${transition}-${size}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
+                      key={`${transition}-${itemSize}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
                       className={`${P}-item-slider`}
                       options={{
                         arrows: false,
@@ -2190,16 +2257,17 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             <div
               key={index}
               className={`${P}-item`.trim()}
-              style={gridColumn && !shouldAlignEntries ? { gridColumn } : undefined}
+              style={itemStyle}
             >
               <div
-                className={`${isEditMode 
-                  ? `${P}-item-inner` 
+                className={`${isEditMode
+                  ? `${P}-item-inner`
                   : `${P}-item-inner-hidden`}${shouldAlignEntries && isLastRow ? ` ${P}-item-inner-last-row` : ''}`.trim()}
                 style={{
                   width: (textBoxWidth ?? 0) > 100
-                    ? `calc(${entryWidthScaled} * (${textBoxWidth} / 100))`
-                    : entryWidthScaled,
+                    ? `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`
+                    : itemWidthScaled,
+                  ...(customSlot ? { height: scalingValue(customSlot.height, isEditor) } : {}),
                   ...(gridColumn && shouldAlignEntries ? { gridColumn } : {}),
                 }}
               >
@@ -2282,17 +2350,40 @@ type GridLayoutConfig = {
   lockedParam?: 'wrapperWidth' | 'entryWidth' | 'horizontalGap' | null;
 };
 
+type CustomGridBlock = {
+  // first column the block covers, from 0
+  column: number;
+  span: number;
+  // offset from the top of its repeat
+  top: number;
+  // height of the whole entry: its media fills what the text leaves
+  height: number;
+};
+
+// lengths are fractions of the layout width, like the article grid's
+type CustomGridLayout = {
+  columnsCount: number;
+  columnWidth: number;
+  gutterWidth: number;
+  maxWidth: number | null;
+  repeat: number;
+  repeatHeight: number;
+  blocks: CustomGridBlock[];
+};
+
 type GridSettings = {
   type: 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
-  gridLayout: GridLayoutConfig;
+  // one of the two places entries: Neptune's columns, or a layout drawn in the custom grid builder
+  gridLayout?: GridLayoutConfig;
+  customGrid?: CustomGridLayout;
   textBoxWidth: number;
-  verticalGap: number;
-  entriesCount: number;
+  verticalGap?: number;
+  entriesCount?: number;
   lightbox: 'on' | 'off';
-  imageDisplay: {
+  imageDisplay: 'fit' | 'cover' | {
     display: 'fit' | 'cover';
-    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
-    reversed: boolean;
+    ratioValue?: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed?: boolean;
   };
   imageCorners?: number;
   lightboxImageDisplay?: 'fit' | 'cover' | { display?: 'fit' | 'cover' };
@@ -2302,7 +2393,7 @@ type GridSettings = {
   transition: 'fade' | 'slide',
   showText: 'always' | 'on hover';
   hover?: 'none' | 'zoom-in' | 'greyscale' | 'scale-down';
-  alignEntries: 'on' | 'off';
+  alignEntries?: 'on' | 'off';
   align?: 'top' | 'center' | 'bottom';
   titleMarginTop: number;
   subtitleMarginTop: number;

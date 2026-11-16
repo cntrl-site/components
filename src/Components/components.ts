@@ -9,6 +9,7 @@ import { MarqueeTextComponent } from './MarqueeText/MarqueeTextComponent';
 import { TestimonialGridComponent } from './TestimonialGrid/TestimonialGridComponent';
 import { TestimonialSingleComponent } from './TestimonialSingle/TestimonialSingleComponent';
 import { GridComponent } from './Grid/GridComponent';
+import { CustomGridComponent } from './Grid/CustomGridComponent';
 import { HiveComponent } from './Hive/HiveComponent';
 import { ListComponent } from './List/ListComponent';
 import { FAQComponent } from './FAQ/FAQComponent';
@@ -37,6 +38,7 @@ export const components: Component[] = [
   TestimonialGridComponent,
   TestimonialSingleComponent,
   GridComponent,
+  CustomGridComponent,
   HiveComponent,
   ListComponent,
   FAQComponent,
