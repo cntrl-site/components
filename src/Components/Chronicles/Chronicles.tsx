@@ -9,8 +9,21 @@ import { useLightboxScrollLock } from '../utils/useLightboxScrollLock';
 export const CHRONICLES_EXTRA_TITLE_KEYS = ['title2', 'title3', 'title4'] as const;
 export const CHRONICLES_COLUMN_WIDTH_KEYS = ['column1Width', 'column2Width', 'column3Width', 'column4Width'] as const;
 export const CHRONICLES_COLUMN_STYLE_PREFIXES = ['column1', 'column2', 'column3', 'column4', 'column5'] as const;
+export const CHRONICLES_COLUMN_KEYS = ['group', 'title', ...CHRONICLES_EXTRA_TITLE_KEYS] as const;
+export const CHRONICLES_COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
 
-const TITLE_KEYS = ['title', ...CHRONICLES_EXTRA_TITLE_KEYS] as const;
+export type ChroniclesColumnKey = typeof CHRONICLES_COLUMN_KEYS[number];
+
+export const CHRONICLES_COLUMN_STYLE_PREFIX_BY_KEY = Object.fromEntries(
+  CHRONICLES_COLUMN_KEYS.map((key, index) => [key, CHRONICLES_COLUMN_STYLE_PREFIXES[index]]),
+) as Record<ChroniclesColumnKey, typeof CHRONICLES_COLUMN_STYLE_PREFIXES[number]>;
+
+export function getChroniclesColumnsOrder(order: unknown): ChroniclesColumnKey[] {
+  const saved = Array.isArray(order)
+    ? order.filter((key): key is ChroniclesColumnKey => (CHRONICLES_COLUMN_KEYS as readonly unknown[]).includes(key))
+    : [];
+  return [...new Set([...saved, ...CHRONICLES_COLUMN_KEYS])];
+}
 
 const PANEL_POSITION_OFFSETS = {
   center: { x: '50%', y: '50%' },
@@ -54,7 +67,7 @@ const COLOR_VAR_MAP = {
 
 const PADDING_CONTROLS = [
   { side: 'top', axis: 'y', variant: 'row-padding' },
-  { side: 'bottom', axis: 'y', variant: 'row-padding', reverse: true },
+  { side: 'bottom', axis: 'y', variant: 'row-padding',},
   { side: 'left', axis: 'x', variant: 'column-padding', opposite: 'right' },
   { side: 'right', axis: 'x', variant: 'column-padding', opposite: 'left', reverse: true },
 ] as const;
@@ -104,6 +117,7 @@ type PrefixedTextStyle<Prefix extends string> = {
 
 type ColumnLayoutSettings = Partial<Record<ColumnWidthKey, number>> & {
   columns: number;
+  columnsOrder?: string[];
   columnGap: number;
   panelWidth: number;
   panelPadding: Padding;
@@ -145,14 +159,33 @@ export function getChroniclesEqualColumnWidths(settings: ColumnLayoutSettings): 
   return Object.fromEntries(CHRONICLES_COLUMN_WIDTH_KEYS.slice(0, settings.columns - 1).map((key) => [key, width]));
 }
 
-export function applyChroniclesColumnCountChange(
+export function applyChroniclesLayoutSettingsChange(
   nextSettings: Record<string, any>,
   prevSettings: Record<string, any>,
 ): Record<string, any> {
-  if (typeof nextSettings.columns !== 'number' || nextSettings.columns === prevSettings.columns) {
+  const merged = { ...prevSettings, ...nextSettings } as ColumnLayoutSettings;
+  if (typeof nextSettings.columns === 'number' && nextSettings.columns !== prevSettings.columns) {
+    return { ...nextSettings, ...getChroniclesEqualColumnWidths(merged) };
+  }
+
+  const nextOrder = getChroniclesColumnsOrder(nextSettings.columnsOrder);
+  const prevOrder = getChroniclesColumnsOrder(prevSettings.columnsOrder);
+  if (typeof merged.columns !== 'number' || nextOrder.every((key, index) => key === prevOrder[index])) {
     return nextSettings;
   }
-  return { ...nextSettings, ...getChroniclesEqualColumnWidths({ ...prevSettings, ...nextSettings } as ColumnLayoutSettings) };
+
+  const prevWidths = resolveColumnWidths(merged);
+  const prevShown = prevOrder.slice(0, merged.columns);
+  const nextShown = nextOrder.slice(0, merged.columns);
+  const freedWidths = prevShown.flatMap((key, slot) => (nextShown.includes(key) ? [] : [prevWidths[slot]]));
+  const widths = nextShown.map((key) => {
+    const prevSlot = prevShown.indexOf(key);
+    return prevSlot >= 0 ? prevWidths[prevSlot] : freedWidths.shift() ?? 0;
+  });
+  return {
+    ...nextSettings,
+    ...Object.fromEntries(CHRONICLES_COLUMN_WIDTH_KEYS.slice(0, merged.columns - 1).map((key, slot) => [key, widths[slot]])),
+  };
 }
 
 function resolveColumnWidths(settings: ColumnLayoutSettings): number[] {
@@ -171,11 +204,11 @@ function getGridTemplateColumns(widths: number[]): string {
   return widths.map((width) => `minmax(0, ${total > 0 ? (width / total) * 100 : 1}fr)`).join(' ');
 }
 
-// A row with an empty group continues the group above it.
-function groupRows(items: ChroniclesItem[]): ChroniclesGroup[] {
+// The first column groups the rows: a row with it empty continues the group above it.
+function groupRows(items: ChroniclesItem[], groupKey: ChroniclesColumnKey): ChroniclesGroup[] {
   const groups: ChroniclesGroup[] = [];
   items.forEach((item, index) => {
-    const label = item.group?.trim() ?? '';
+    const label = item[groupKey]?.trim() ?? '';
     const current = groups[groups.length - 1];
     if (!current || (label !== '' && label !== current.label)) {
       groups.push({ label, rows: [{ item, index }] });
@@ -607,11 +640,13 @@ export function Chronicles({
   const scopedCss = useMemo(() => getCSS(P), [P]);
   const panelOffset = PANEL_POSITION_OFFSETS[panelPosition];
   const columnWidths = resolveColumnWidths(settings);
-  const titleKeys = TITLE_KEYS.slice(0, columns - 1);
+  const shownKeys = getChroniclesColumnsOrder(settings.columnsOrder).slice(0, columns);
   const hasGroupColumn = columns > 1;
+  const groupKey = shownKeys[0];
+  const rowKeys = hasGroupColumn ? shownKeys.slice(1) : shownKeys;
   const groups = useMemo<ChroniclesGroup[]>(() => (
-    hasGroupColumn ? groupRows(items) : [{ label: '', rows: items.map((item, index) => ({ item, index })) }]
-  ), [items, hasGroupColumn]);
+    hasGroupColumn ? groupRows(items, groupKey) : [{ label: '', rows: items.map((item, index) => ({ item, index })) }]
+  ), [items, hasGroupColumn, groupKey]);
 
   const activeMedia = activeIndex === null ? [] : getRowMedia(items[activeIndex]);
   const shownAsset = activeMedia[activeMediaIndex];
@@ -794,9 +829,11 @@ export function Chronicles({
   };
 
   const triggerTypographyCss = omitTextColors(textStylesToCss(resolveTextStyle(settings, 'trigger'), isEditor));
-  const columnTypographyCss = CHRONICLES_COLUMN_STYLE_PREFIXES.slice(0, columns).map((prefix) => (
-    omitTextColors(textStylesToCss(resolveTextStyle(settings, prefix), isEditor))
+  // one per shown column, in slot order
+  const columnTypographyCss = shownKeys.map((key) => (
+    omitTextColors(textStylesToCss(resolveTextStyle(settings, CHRONICLES_COLUMN_STYLE_PREFIX_BY_KEY[key]), isEditor))
   ));
+  const rowTypographyCss = hasGroupColumn ? columnTypographyCss.slice(1) : columnTypographyCss;
   const labelLineHeight = columnTypographyCss[0].lineHeight;
   const titleLineHeight = columnTypographyCss[1]?.lineHeight;
   const groupLabelOffset = labelLineHeight !== undefined && titleLineHeight !== undefined
@@ -875,7 +912,6 @@ export function Chronicles({
                 data-controls="groupGap"
                 data-controls-paired=""
                 data-controls-axis="y"
-                data-controls-reverse=""
                 data-controls-min="0"
                 className={`${P}-control-anchor`}
                 style={{ left: 0, width: '100%', height: scaled(Math.max(groupGap, MIN_HANDLE_SIZE)) }}
@@ -915,11 +951,8 @@ export function Chronicles({
                     {...linkProps}
                     {...hoverProps}
                   >
-                    {!hasGroupColumn && (
-                      <div className={`${P}-title`} style={columnTypographyCss[0]}>{item.group}</div>
-                    )}
-                    {titleKeys.map((key, titleIndex) => (
-                      <div key={key} className={`${P}-title`} style={columnTypographyCss[titleIndex + 1]}>{item[key]}</div>
+                    {rowKeys.map((key, cellIndex) => (
+                      <div key={key} className={`${P}-title`} style={rowTypographyCss[cellIndex]}>{item[key]}</div>
                     ))}
                   </RowElement>
                 );
