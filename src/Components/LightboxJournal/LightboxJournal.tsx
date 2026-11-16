@@ -7,6 +7,10 @@ import { getAspectRatio, isImageRatioCover, type ImageRatioFit } from '../utils/
 import { LightboxOverlay } from './LightboxOverlay';
 import { buildJournalSlides, findJournalUrlSlideNumber, getEntryImages, hasJournalUrlParam, removeJournalUrlParam, setJournalUrlParam, slideNumberToIndex } from './utils';
 
+const HOVER_ANIM_MS = 400;
+const HOVER_EASING = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+const HOVER_ZOOM = 1.1;
+
 function getCSS(P: string): string {
   return `
 .${P}-wrapper {
@@ -51,6 +55,38 @@ function getCSS(P: string): string {
   width: auto;
   height: auto;
   max-width: 100%;
+}
+
+@property --${P}-hover-zoom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+.${P}-hover-zoom-in .${P}-cover-image {
+  transform: scale(var(--${P}-hover-zoom));
+  clip-path: inset(calc(50% - 50% / var(--${P}-hover-zoom)));
+  transition: --${P}-hover-zoom ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+
+.${P}-hover-scale-down .${P}-cover-image {
+  transition: transform ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+
+.${P}-hover-greyscale .${P}-cover-image {
+  transition: filter ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+
+@media (hover: hover) {
+  .${P}-hover-zoom-in .${P}-cover:hover .${P}-cover-image {
+    --${P}-hover-zoom: ${HOVER_ZOOM};
+  }
+  .${P}-hover-scale-down .${P}-cover:hover .${P}-cover-image {
+    transform: scale(0.9);
+  }
+  .${P}-hover-greyscale .${P}-cover:hover .${P}-cover-image {
+    filter: grayscale(1);
+  }
 }
 
 .${P}-lightbox {
@@ -558,7 +594,8 @@ type LightboxJournalProps = {
 export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPreviewMode, portalId, metadata }: LightboxJournalProps) => {
   const { prefix: P } = useScopedStyles();
   const itemId = metadata?.itemId ?? null;
-  const { cover, coverFit, type } = settings;
+  const { cover, coverFit, type, hover = 'none' } = settings;
+  const hoverEffectClass = hover !== 'none' && (!isEditor || isPreviewMode) ? ` ${P}-hover-${hover}` : '';
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxInitialSlideIndex, setLightboxInitialSlideIndex] = useState(0);
@@ -651,7 +688,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
 
   return (
     <>
-      <div ref={wrapperRef} className={`${P}-wrapper`}>
+      <div ref={wrapperRef} className={`${P}-wrapper${hoverEffectClass}`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         {cover ? (
           <button
@@ -705,6 +742,7 @@ export const LightboxJournal = ({ settings, content, isEditor, isEditMode, isPre
 export type LightboxJournalSettings = {
   cover: string | null;
   coverFit: ImageRatioFit;
+  hover?: 'none' | 'zoom-in' | 'greyscale' | 'scale-down';
   type: 'A' | 'B';
   maxWidth: number;
   maxHeight: number;

@@ -207,6 +207,12 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      hover: {
+        type: 'string',
+        scope: 'common',
+        title: 'Hover',
+        display: { type: 'toggle-cycle', enum: ['none', 'zoom-in', 'greyscale', 'scale-down'] },
+      },
       type: {
         type: 'string',
         scope: 'layout',
@@ -384,6 +390,7 @@ const schema: ComponentSchemaV1 = {
         ratioValue: '1:1',
         reversed: false,
       },
+      hover: 'none',
       closeIcon: defaultCloseIconUrl,
       backgroundColor: 'rgb(255, 255, 255)',
       closeIconColor: '#000000',
@@ -513,6 +520,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', title: 'Text', items: ['textTransition'] },
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
         { type: 'row', title: 'Cover Image', items: ['cover', 'coverFit'] },
+        { type: 'row', items: ['hover'] },
       ],
     },
     {

@@ -205,6 +205,12 @@ const schema: ComponentSchemaV1 = {
           },
         },
       },
+      hover: {
+        type: 'string',
+        scope: 'common',
+        title: 'Hover',
+        display: { type: 'toggle-cycle', enum: ['none', 'zoom-in', 'greyscale', 'scale-down'] },
+      },
       thumbnailSize: {
         type: 'number',
         scope: 'layout',
@@ -404,6 +410,7 @@ const schema: ComponentSchemaV1 = {
         ratioValue: '1:1',
         reversed: false,
       },
+      hover: 'none',
       closeIcon: defaultCloseIconUrl,
       thumbnailObjectFit: {
         display: 'fit',
@@ -550,6 +557,7 @@ const schema: ComponentSchemaV1 = {
         { type: 'row', items: ['thumbnailTrigger', 'thumbnailActive']},
         { type: 'row', title: 'Close icon', items: ['closeIcon', 'closeIconMaxWidth'] },
         { type: 'row', title: 'Cover', items: ['cover', 'coverFit'] },
+        { type: 'row', items: ['hover'] },
       ],
     },
     {
