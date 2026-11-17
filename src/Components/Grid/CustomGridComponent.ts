@@ -3,15 +3,19 @@ import { GridComponent } from './GridComponent';
 import { ComponentSchemaV1, LayoutItem, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
 
 /**
- * Neptune whose entries sit where a layout drawn in the CMS custom grid builder puts them. The
- * builder opens before the component is added (on any `custom-grid-layout` setting) and again from
- * the settings panel; the rest of the settings are Neptune's.
+ * Neptune whose entries sit where a layout drawn in the CMS custom grid builder puts them: a group
+ * of blocks over the article grid, repeated for every entry. The builder opens before the component
+ * is added (on any `custom-grid-layout` setting) and again from the settings panel; the rest of the
+ * settings are Neptune's.
  */
 
 // Neptune settings that decide where entries go; the custom layout does that instead
 const placementKeys = new Set(['gridLayout', 'verticalGap', 'alignEntries', 'entriesCount']);
 
 const neptuneSettings = GridComponent.schema.settings;
+
+// the text is as wide as its block on every layout, where Neptune makes it wider than its entry
+const TEXT_BOX_WIDTH = 100;
 
 function withoutPlacement<T extends Record<string, unknown>>(values: T): T {
   return Object.fromEntries(Object.entries(values).filter(([key]) => !placementKeys.has(key))) as T;
@@ -34,54 +38,21 @@ const imageDisplay: SchemaProperty = {
   display: { type: 'toggle-cycle', enum: ['fit', 'cover'] },
 };
 
+// kept once for every layout: the preset it is linked to keeps the blocks of each layout
 const customGrid: SchemaProperty = {
   type: 'object',
-  scope: 'layout',
+  scope: 'common',
   title: '',
   display: { type: 'custom-grid-layout' },
 };
 
-// three blocks over each layout's default grid, each a 4:5 image with its text, repeated three times: Neptune's nine entries
-const layoutDefaultCustomGrids: Record<string, unknown> = {
-  d: {
-    columnsCount: 12,
-    columnWidth: 0.0634,
-    gutterWidth: 0.0167,
-    maxWidth: null,
-    repeat: 3,
-    repeatHeight: 0.4844,
-    blocks: [
-      { column: 0, span: 4, top: 0, height: 0.4404 },
-      { column: 4, span: 4, top: 0, height: 0.4404 },
-      { column: 8, span: 4, top: 0, height: 0.4404 },
-    ],
-  },
-  t: {
-    columnsCount: 6,
-    columnWidth: 0.1389,
-    gutterWidth: 0.0208,
-    maxWidth: null,
-    repeat: 3,
-    repeatHeight: 0.4763,
-    blocks: [
-      { column: 0, span: 2, top: 0, height: 0.433 },
-      { column: 2, span: 2, top: 0, height: 0.433 },
-      { column: 4, span: 2, top: 0, height: 0.433 },
-    ],
-  },
-  m: {
-    columnsCount: 4,
-    columnWidth: 0.2047,
-    gutterWidth: 0.032,
-    maxWidth: null,
-    repeat: 3,
-    repeatHeight: 2.1632,
-    blocks: [
-      { column: 0, span: 4, top: 0, height: 1.3265 },
-      { column: 0, span: 2, top: 1.4592, height: 0.64 },
-      { column: 2, span: 2, top: 1.4592, height: 0.64 },
-    ],
-  },
+// inside, a block is the whole entry and its media takes what the text leaves; outside, the media
+// fills the block and the text sits beyond it
+const textGrowth: SchemaProperty = {
+  type: 'string',
+  scope: 'common',
+  title: 'Text growth',
+  display: { type: 'toggle-cycle', enum: ['inside', 'outside'] },
 };
 
 const generalPanelLayout: LayoutItem[] = [
@@ -89,7 +60,7 @@ const generalPanelLayout: LayoutItem[] = [
   'type',
   { type: 'row', title: 'Grid', items: ['customGrid'] },
   { type: 'row', title: '', items: ['textBoxWidth', 'showText'] },
-  { type: 'row', title: '', items: ['align'] },
+  { type: 'row', title: '', items: ['textGrowth', 'align'] },
 ];
 
 const schema: ComponentSchemaV1 = {
@@ -99,16 +70,19 @@ const schema: ComponentSchemaV1 = {
     properties: {
       ...withoutPlacement(neptuneSettings.properties),
       customGrid,
+      textGrowth,
       imageDisplay,
     },
     defaults: {
       ...withoutPlacement(neptuneSettings.defaults),
       imageDisplay: 'cover',
+      customGrid: { preset: 0 },
+      textGrowth: 'inside',
     },
     layoutDefaults: Object.fromEntries(
       Object.entries(neptuneSettings.layoutDefaults ?? {}).map(([layoutKey, values]) => [
         layoutKey,
-        { ...withoutPlacement(values), customGrid: layoutDefaultCustomGrids[layoutKey] },
+        { ...withoutPlacement(values), textBoxWidth: TEXT_BOX_WIDTH },
       ]),
     ),
     displayRules: (neptuneSettings.displayRules ?? [])
@@ -119,6 +93,7 @@ const schema: ComponentSchemaV1 = {
     layout: [
       ...(neptuneSettings.layout ?? []).filter(item => typeof item !== 'string' || !placementKeys.has(item)),
       'customGrid',
+      'textGrowth',
     ],
   },
   panels: GridComponent.schema.panels?.map(panel => (

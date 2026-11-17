@@ -141,6 +141,9 @@ function getCSS(P: string): string {
   flex: 1 1 0%;
   min-height: 0;
 }
+.${P}-custom-layout.${P}-text-outside .${P}-item-image-link {
+  flex: none;
+}
 .${P}-item-text-link {
   display: flex;
   flex-direction: column;
@@ -1662,6 +1665,9 @@ function getCustomGridSpanWidth(layout: CustomGridLayout, span: number): number 
 }
 
 type CustomGridSlot = {
+  // first column the entry covers and how many, kept in the layout's columns
+  column: number;
+  span: number;
   width: number;
   top: number;
   height: number;
@@ -1669,18 +1675,71 @@ type CustomGridSlot = {
   gridRow: string;
 };
 
-// entries fill the layout's blocks in order, one repeat after another
+function getCustomGridBlocksBottom(layout: CustomGridLayout): number {
+  return layout.blocks.reduce((bottom, block) => Math.max(bottom, Math.max(0, block.top) + Math.max(0, block.height)), 0);
+}
+
+function getCustomGridVerticalGap(layout: CustomGridLayout): number {
+  if (typeof layout.verticalGap === 'number') return Math.max(0, layout.verticalGap);
+  return Math.max(0, (layout.repeatHeight ?? 0) - getCustomGridBlocksBottom(layout));
+}
+
+// entries fill the layout's blocks in order, one group after another
 function getCustomGridSlot(layout: CustomGridLayout, index: number): CustomGridSlot {
   const block = layout.blocks[index % layout.blocks.length];
   const span = Math.min(Math.max(1, Math.round(block.span)), layout.columnsCount);
   const column = Math.min(Math.max(0, Math.round(block.column)), layout.columnsCount - span);
   return {
+    column,
+    span,
     width: getCustomGridSpanWidth(layout, span),
     top: Math.max(0, block.top),
     height: Math.max(0, block.height),
     gridColumn: `${column + 1} / span ${span}`,
     gridRow: `${Math.floor(index / layout.blocks.length) + 1}`,
   };
+}
+
+// the first of the grid's beats at or under `value`, from the top of the group
+function snapDownToCustomGridBeat(layout: CustomGridLayout, value: number): number {
+  const beat = layout.beat ?? 0;
+  return beat > 0 ? Math.ceil(value / beat - 1e-6) * beat : value;
+}
+
+/**
+ * With the text outside the blocks, every entry's text takes room under its block: an entry of its
+ * group under it in the same columns keeps where it is drawn, moved along with the entry above,
+ * unless that text reaches it, and then goes onto the first beat under the text. The group grows to
+ * the first beat under its lowest text. Text heights, tops and group heights are in layout units,
+ * like the blocks'.
+ */
+function getCustomGridOutsideTextPlacement(layout: CustomGridLayout, textHeights: number[]) {
+  const slots = textHeights.map((_, index) => getCustomGridSlot(layout, index));
+  const tops = slots.map(slot => slot.top);
+  const groupHeights: number[] = [];
+  for (let groupStart = 0; groupStart < slots.length; groupStart += layout.blocks.length) {
+    const group = slots
+      .map((slot, index) => ({ slot, index }))
+      .slice(groupStart, groupStart + layout.blocks.length)
+      .sort((a, b) => a.slot.top - b.slot.top);
+    let bottom = getCustomGridBlocksBottom(layout);
+    for (const { slot, index } of group) {
+      let top = slot.top;
+      for (const { slot: above, index: aboveIndex } of group) {
+        const isAbove = above.top + above.height <= slot.top + 1e-6 && aboveIndex !== index;
+        const sharesColumns = above.column < slot.column + slot.span && slot.column < above.column + above.span;
+        if (isAbove && sharesColumns) {
+          const textBottom = tops[aboveIndex] + above.height + textHeights[aboveIndex];
+          const drawnTop = slot.top + tops[aboveIndex] - above.top;
+          top = Math.max(top, drawnTop >= textBottom - 1e-6 ? drawnTop : snapDownToCustomGridBeat(layout, textBottom));
+        }
+      }
+      tops[index] = top;
+      bottom = Math.max(bottom, tops[index] + slot.height + textHeights[index]);
+    }
+    groupHeights.push(snapDownToCustomGridBeat(layout, bottom));
+  }
+  return { tops, groupHeights };
 }
 
 export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId, portalId }: GridProps) {
@@ -1736,6 +1795,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     hover = 'none',
     alignEntries = 'off',
     align = 'top',
+    textGrowth = 'inside',
   } = settings;
 
   const resolvedTitleTextStyle: TextStyles = {
@@ -1825,11 +1885,16 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const hoverEffectClass = hover !== 'none' && (!isEditor || isPreviewMode) ? ` ${P}-hover-${hover}` : '';
   const wrapperStateClasses = `${stateClass}${showTextOnHover ? ` ${P}-show-text-hover` : ''}${hoverEffectClass}`.trim();
 
-  // a custom layout places entries itself, in place of the columns, gap and entries count
-  const customLayout = customGrid && customGrid.blocks.length > 0 ? customGrid : undefined;
-  const resEntriesCount = customLayout
-    ? customLayout.blocks.length * Math.max(1, customLayout.repeat)
-    : entriesCount === 0 ? Infinity : entriesCount;
+  // a custom layout places entries itself, in place of the columns, gap and entries count: its
+  // group of blocks repeats for as many entries as there are. Stored, it is only the preset it is
+  // linked to; the CMS and the site put the blocks in before it gets here
+  const customLayout = customGrid && Array.isArray(customGrid.blocks) && customGrid.blocks.length > 0 ? customGrid : undefined;
+  const resEntriesCount = customLayout || entriesCount === 0 ? Infinity : entriesCount;
+  // outside, the media fills the block and the text takes room of its own beyond it: below the
+  // media, or above it when the type puts the text first, moving the entries under it down
+  const isTextOutside = !!customLayout && textGrowth === 'outside';
+  const itemInnerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [customTextHeights, setCustomTextHeights] = useState<number[]>([]);
 
   const cropContent = (content ?? []).slice(0, resEntriesCount);
   const lightboxMediaToPreload = useMemo(
@@ -1864,9 +1929,12 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const getImageWrapperStyle = (entryWidth: string, slot?: CustomGridSlot): React.CSSProperties => ({
     width: entryWidth,
-    // in a custom block the media takes whatever the entry's text leaves of the block's height
+    // in a custom block the media takes whatever the entry's text leaves of the block's height,
+    // or the whole block when the text goes outside it
     ...(slot
-      ? { flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }
+      ? isTextOutside
+        ? { height: scalingValue(slot.height, isEditor), flexShrink: 0, overflow: 'hidden' }
+        : { flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }
       : isCover
         ? { aspectRatio, height: 'auto', overflow: 'hidden' }
         : { height: 'auto' }),
@@ -1899,16 +1967,51 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         ...imageRadiusStyle,
       };
 
+  // the text's height is only known once laid out: what an entry measures beyond its media, in
+  // layout units, the layout's whole width taken as the wrapper's
+  const customGridWidth = customLayout ? getCustomGridSpanWidth(customLayout, customLayout.columnsCount) : 0;
+  useLayoutEffect(() => {
+    if (!isTextOutside) {
+      setCustomTextHeights(prev => (prev.length > 0 ? [] : prev));
+      return;
+    }
+    const wrapper = containerRef.current;
+    const inners = itemInnerRefs.current.slice(0, cropContent.length);
+    const measure = () => {
+      const unit = wrapper && customGridWidth > 0 ? wrapper.offsetWidth / customGridWidth : 0;
+      const heights = inners.map((inner) => {
+        const media = inner?.querySelector<HTMLElement>(`.${P}-item-image-wrapper`);
+        return inner && media && unit > 0 ? Math.max(0, inner.offsetHeight - media.offsetHeight) / unit : 0;
+      });
+      setCustomTextHeights(prev => (
+        prev.length === heights.length && prev.every((height, index) => Math.abs(height - heights[index]) < 1e-5)
+          ? prev
+          : heights
+      ));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (wrapper) ro.observe(wrapper);
+    inners.forEach(inner => inner && ro.observe(inner));
+    return () => ro.disconnect();
+  }, [isTextOutside, cropContent.length, customGridWidth, P]);
+  const customOutsideText = customLayout && isTextOutside
+    ? getCustomGridOutsideTextPlacement(customLayout, cropContent.map((_: unknown, index: number) => customTextHeights[index] ?? 0))
+    : undefined;
+
   const customRowsCount = customLayout ? Math.ceil(cropContent.length / customLayout.blocks.length) : 0;
-  const customRepeatHeight = customLayout ? scalingValue(customLayout.repeatHeight, isEditor) : '';
+  const customGroupHeight = customLayout ? scalingValue(getCustomGridBlocksBottom(customLayout), isEditor) : '';
   const wrapperLayoutStyle: React.CSSProperties = customLayout
     ? {
         gridTemplateColumns: `repeat(${customLayout.columnsCount}, ${scalingValue(customLayout.columnWidth, isEditor)})`,
-        // every repeat keeps its height but the last, which ends where its entries do
+        // every group keeps the height of its blocks, or of the beats its text outside them takes,
+        // but the last, which ends where its entries do
         gridTemplateRows: customRowsCount > 1
-          ? `repeat(${customRowsCount - 1}, minmax(${customRepeatHeight}, auto)) auto`
+          ? customOutsideText
+            ? `${customOutsideText.groupHeights.slice(0, -1).map(height => `minmax(${scalingValue(height, isEditor)}, auto)`).join(' ')} auto`
+            : `repeat(${customRowsCount - 1}, minmax(${customGroupHeight}, auto)) auto`
           : 'auto',
-        rowGap: 0,
+        rowGap: scalingValue(getCustomGridVerticalGap(customLayout), isEditor),
         columnGap: scalingValue(customLayout.gutterWidth, isEditor),
         width: scalingValue(getCustomGridSpanWidth(customLayout, customLayout.columnsCount), isEditor),
       }
@@ -1991,7 +2094,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''}${customLayout ? ` ${P}-custom-layout` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
+          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''}${customLayout ? ` ${P}-custom-layout` : ''}${isTextOutside ? ` ${P}-text-outside` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
           style={wrapperLayoutStyle}>
           {cropContent.map((item: any, index: number) => {
             const hasTitle = hasText(item.title);
@@ -2013,7 +2116,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   gridColumn: customSlot.gridColumn,
                   gridRow: customSlot.gridRow,
                   alignSelf: 'start',
-                  marginTop: scalingValue(customSlot.top, isEditor),
+                  marginTop: scalingValue(customOutsideText?.tops[index] ?? customSlot.top, isEditor),
                 }
               : gridColumn && !shouldAlignEntries ? { gridColumn } : undefined;
 
@@ -2260,6 +2363,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               style={itemStyle}
             >
               <div
+                ref={(el) => { itemInnerRefs.current[index] = el; }}
                 className={`${isEditMode
                   ? `${P}-item-inner`
                   : `${P}-item-inner-hidden`}${shouldAlignEntries && isLastRow ? ` ${P}-item-inner-last-row` : ''}`.trim()}
@@ -2267,7 +2371,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   width: (textBoxWidth ?? 0) > 100
                     ? `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`
                     : itemWidthScaled,
-                  ...(customSlot ? { height: scalingValue(customSlot.height, isEditor) } : {}),
+                  ...(customSlot && !isTextOutside ? { height: scalingValue(customSlot.height, isEditor) } : {}),
                   ...(gridColumn && shouldAlignEntries ? { gridColumn } : {}),
                 }}
               >
@@ -2354,7 +2458,7 @@ type CustomGridBlock = {
   // first column the block covers, from 0
   column: number;
   span: number;
-  // offset from the top of its repeat
+  // offset from the top of its group
   top: number;
   // height of the whole entry: its media fills what the text leaves
   height: number;
@@ -2366,8 +2470,13 @@ type CustomGridLayout = {
   columnWidth: number;
   gutterWidth: number;
   maxWidth: number | null;
-  repeat: number;
-  repeatHeight: number;
+  // space between one group of blocks and the next
+  verticalGap?: number;
+  // the article grid's beat: entries the text outside the blocks pushes down land on it; 0, or
+  // missing from layouts resolved before it, when there is none
+  beat?: number;
+  // layouts saved before the vertical gap kept the height of a whole group instead
+  repeatHeight?: number;
   blocks: CustomGridBlock[];
 };
 
@@ -2395,6 +2504,8 @@ type GridSettings = {
   hover?: 'none' | 'zoom-in' | 'greyscale' | 'scale-down';
   alignEntries?: 'on' | 'off';
   align?: 'top' | 'center' | 'bottom';
+  // with a custom layout: whether a block holds the entry's text or only its media
+  textGrowth?: 'inside' | 'outside';
   titleMarginTop: number;
   subtitleMarginTop: number;
   titleColor: string;
