@@ -83,6 +83,8 @@ export type SchemaDisplayRule = {
 /** The post header fields a content field can be filled from when a collection is connected, and the post page's link. */
 export type ContentKey = 'title' | 'subtitle' | 'date' | 'gallery' | 'link';
 
+export type ContentFormat = 'year';
+
 /**
  * A link as a `link-input` content field holds it. In the editor `value` is a url, a page id or a
  * section id; a published site gets it with `value` already the url to follow.
@@ -110,6 +112,8 @@ export type ComponentContentProperty = {
   placeholder?: string;
   /** The post field this one is filled from when a collection is connected; none leaves it to the user. */
   contentKey?: ContentKey;
+  /** How a value filled from a post is shown: 'year' keeps only the year of a date. */
+  contentFormat?: ContentFormat;
   display?: SchemaDisplay;
   properties?: Record<string, ComponentContentProperty>;
   items?: ComponentContentProperty;

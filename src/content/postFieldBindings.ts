@@ -1,4 +1,4 @@
-import type { ComponentContentProperty, ComponentContentSchema, ContentKey } from '../types/SchemaV1';
+import type { ComponentContentProperty, ComponentContentSchema, ContentFormat, ContentKey } from '../types/SchemaV1';
 
 /** A value of a component's content as the content panel writes it and the component reads it: plain data. */
 export type ContentValue = string | number | boolean | ContentValue[] | { [key: string]: ContentValue };
@@ -49,6 +49,16 @@ function fromEntry(display: string | undefined, { text, images }: PostFieldEntry
   }
 }
 
+/**
+ * The post's text the way the field asks for it. A date arrives already formatted by its block, and
+ * every block format writes the year as its only four digits, so 'year' keeps those; text without
+ * a year is left as it is.
+ */
+function formatText(text: string, format: ContentFormat | undefined): string {
+  if (format === 'year') return text.match(/\d{4}/)?.[0] ?? text;
+  return text;
+}
+
 /** A link field links the post's page; a text field keeps the path it has always been given. */
 function toPage(display: string | undefined, { pageId, slug }: PostFieldPage): ContentValue {
   return display === 'link-input' ? { type: 'page', value: pageId, target: 'self' } : `/${slug}`;
@@ -62,7 +72,7 @@ export function getPostFieldBindings(schema: ComponentContentSchema | undefined)
     return {
       fieldKey,
       ...(property.contentKey !== undefined ? { contentKey: property.contentKey } : {}),
-      fromEntry: entry => fromEntry(display, entry),
+      fromEntry: entry => fromEntry(display, { ...entry, text: formatText(entry.text, property.contentFormat) }),
       toPage: page => toPage(display, page),
     };
   });

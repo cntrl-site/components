@@ -23,6 +23,10 @@ export type {
   StripTitleWidthKey,
 } from './utils';
 
+const HOVER_ANIM_MS = 400;
+const HOVER_EASING = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
+const HOVER_ZOOM = 1.1;
+
 function getCSS(P: string): string {
   return `
 .${P}-wrapper {
@@ -67,6 +71,38 @@ function getCSS(P: string): string {
   width: auto;
   height: auto;
   max-width: 100%;
+}
+
+@property --${P}-hover-zoom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+.${P}-hover-zoom-in .${P}-cover-image {
+  transform: scale(var(--${P}-hover-zoom));
+  clip-path: inset(calc(50% - 50% / var(--${P}-hover-zoom)));
+  transition: --${P}-hover-zoom ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+
+.${P}-hover-scale-down .${P}-cover-image {
+  transition: transform ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+
+.${P}-hover-greyscale .${P}-cover-image {
+  transition: filter ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+}
+
+@media (hover: hover) {
+  .${P}-hover-zoom-in .${P}-cover:hover .${P}-cover-image {
+    --${P}-hover-zoom: ${HOVER_ZOOM};
+  }
+  .${P}-hover-scale-down .${P}-cover:hover .${P}-cover-image {
+    transform: scale(0.9);
+  }
+  .${P}-hover-greyscale .${P}-cover:hover .${P}-cover-image {
+    filter: grayscale(1);
+  }
 }
 
 .${P}-lightbox {
@@ -426,6 +462,7 @@ export type LightboxStripItem = {
 export type LightboxStripSettings = {
   cover: string | null;
   coverFit: ImageRatioFit;
+  hover?: 'none' | 'zoom-in' | 'greyscale' | 'scale-down';
   backgroundColor: string;
   thumbnailVisibility: 'on' | 'off';
   thumbnailSize: number;
@@ -490,7 +527,8 @@ type LightboxStripProps = {
 
 export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPreviewMode, portalId }: LightboxStripProps) => {
   const { prefix: P } = useScopedStyles();
-  const { cover, coverFit } = settings;
+  const { cover, coverFit, hover = 'none' } = settings;
+  const hoverEffectClass = hover !== 'none' && (!isEditor || isPreviewMode) ? ` ${P}-hover-${hover}` : '';
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const items = content ?? [];
@@ -508,7 +546,7 @@ export const LightboxStrip = ({ settings, content, isEditor, isEditMode, isPrevi
 
   return (
     <>
-      <div ref={wrapperRef} className={`${P}-wrapper`}>
+      <div ref={wrapperRef} className={`${P}-wrapper${hoverEffectClass}`}>
         <style dangerouslySetInnerHTML={{ __html: getCSS(P) }} />
         {cover && (
           <div

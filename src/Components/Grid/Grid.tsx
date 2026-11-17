@@ -58,7 +58,6 @@ function getGridTextLeadingVars(
 const HOVER_ANIM_MS = 400;
 const HOVER_EASING = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 const HOVER_ZOOM = 1.1;
-const HOVER_ZOOM_INSET = `${(((1 - 1 / HOVER_ZOOM) / 2) * 100).toFixed(4)}%`;
 const MEDIA_RADIUS_VAR = '--grid-media-radius';
 
 function getCSS(P: string): string {
@@ -211,10 +210,16 @@ function getCSS(P: string): string {
 .${P}-show-text-hover .${P}-item-inner-hidden:hover .${P}-item-subtitle {
   opacity: 1;
 }
+@property --${P}-hover-zoom {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
 .${P}-hover-zoom-in .${P}-item-image,
 .${P}-hover-zoom-in .${P}-item-video {
-  clip-path: inset(0 round var(${MEDIA_RADIUS_VAR}, 0px));
-  transition: transform ${HOVER_ANIM_MS}ms ${HOVER_EASING}, clip-path ${HOVER_ANIM_MS}ms ${HOVER_EASING};
+  transform: scale(var(--${P}-hover-zoom));
+  clip-path: inset(calc(50% - 50% / var(--${P}-hover-zoom)) round calc(var(${MEDIA_RADIUS_VAR}, 0px) / var(--${P}-hover-zoom)));
+  transition: --${P}-hover-zoom ${HOVER_ANIM_MS}ms ${HOVER_EASING};
 }
 .${P}-hover-scale-down .${P}-item-image,
 .${P}-hover-scale-down .${P}-item-video {
@@ -225,8 +230,7 @@ function getCSS(P: string): string {
 }
 @media (hover: hover) {
   .${P}-hover-zoom-in .${P}-item-image-wrapper:has(.${P}-item-image:hover, .${P}-item-video:hover) :is(.${P}-item-image, .${P}-item-video) {
-    transform: scale(${HOVER_ZOOM});
-    clip-path: inset(${HOVER_ZOOM_INSET} round calc(var(${MEDIA_RADIUS_VAR}, 0px) / ${HOVER_ZOOM}));
+    --${P}-hover-zoom: ${HOVER_ZOOM};
   }
   .${P}-hover-scale-down .${P}-item-image-wrapper:hover .${P}-item-image,
   .${P}-hover-scale-down .${P}-item-image-wrapper:hover .${P}-item-video {

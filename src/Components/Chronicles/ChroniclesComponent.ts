@@ -6,8 +6,11 @@ import {
   SchemaProperty,
 } from '../../types/SchemaV1';
 import {
-  applyChroniclesColumnCountChange,
+  applyChroniclesLayoutSettingsChange,
   Chronicles,
+  CHRONICLES_COLUMN_KEYS,
+  CHRONICLES_COLUMN_LETTERS,
+  CHRONICLES_COLUMN_STYLE_PREFIX_BY_KEY,
   CHRONICLES_COLUMN_STYLE_PREFIXES,
   CHRONICLES_COLUMN_WIDTH_KEYS,
   CHRONICLES_EXTRA_TITLE_KEYS,
@@ -22,9 +25,6 @@ const MAX_COLUMNS = 5;
 const TEXT_STYLE_PREFIXES = ['trigger', ...CHRONICLES_COLUMN_STYLE_PREFIXES] as const;
 
 type TextStylePrefix = typeof TEXT_STYLE_PREFIXES[number];
-
-// Group and Title are the first two columns; the extra title keys fill the rest.
-const NAMED_COLUMNS = 2;
 
 // Column counts below the max, i.e. the ones that hide something.
 const PARTIAL_COLUMN_COUNTS = Array.from(
@@ -179,10 +179,15 @@ const textStyleProperties: Record<string, SchemaProperty> = Object.assign(
   ...TEXT_STYLE_PREFIXES.map(createTextStyleProperties),
 );
 
+// Named by letter, not position: the columns order can put any of them anywhere.
+const columnLabel = (key: typeof CHRONICLES_COLUMN_KEYS[number]) => (
+  `Column ${CHRONICLES_COLUMN_LETTERS[CHRONICLES_COLUMN_KEYS.indexOf(key)]}`
+);
+
 const extraTitleProperties: Record<string, ComponentContentProperty> = Object.fromEntries(
-  CHRONICLES_EXTRA_TITLE_KEYS.map((key, index) => [key, {
+  CHRONICLES_EXTRA_TITLE_KEYS.map((key) => [key, {
     type: 'string',
-    label: `Column ${index + NAMED_COLUMNS + 1}`,
+    label: columnLabel(key),
     placeholder: 'Add text...',
     ...(key === 'title2' ? { contentKey: 'subtitle' } : {}),
     display: { type: 'text-input' },
@@ -194,23 +199,36 @@ const columnWidthProperties: Record<string, SchemaProperty> = Object.fromEntries
   CHRONICLES_COLUMN_WIDTH_KEYS.map((key, index) => [key, createLayoutSizeProperty(`Column ${index + 1} Width`)]),
 );
 
-const contentDisplayRules: SchemaDisplayRule[] = [
-  { if: { name: 'columns', value: 1 }, then: { name: 'title', value: false } },
-  ...PARTIAL_COLUMN_COUNTS.flatMap((columns) => (
-    CHRONICLES_EXTRA_TITLE_KEYS.slice(Math.max(0, columns - NAMED_COLUMNS)).map((key) => ({
-      if: { name: 'columns', value: columns },
-      then: { name: key, value: false },
-    }))
-  )),
-];
+// A component saved before the columns could be reordered has no `columnsOrder`, and shows its columns in
+// the natural order. With one, the content panel orders and counts its columns through the display ref.
+const NO_COLUMNS_ORDER = { name: 'columnsOrder', value: undefined };
+const HAS_COLUMNS_ORDER = { ...NO_COLUMNS_ORDER, isNotEqual: true };
 
+const contentDisplayRules: SchemaDisplayRule[] = PARTIAL_COLUMN_COUNTS.flatMap((columns) => (
+  CHRONICLES_COLUMN_KEYS.slice(columns).map((key) => ({
+    if: [{ name: 'columns', value: columns }, NO_COLUMNS_ORDER],
+    then: { name: key, value: false },
+  }))
+));
+
+// A column's type style shows only while one of the first `columns` slots holds it.
 const columnTextStyleDisplayRules: SchemaDisplayRule[] = PARTIAL_COLUMN_COUNTS.flatMap((columns) => (
-  CHRONICLES_COLUMN_STYLE_PREFIXES.slice(columns).flatMap((prefix) => (
-    Object.keys(createTextStyleProperties(prefix)).map((name) => ({
-      if: { name: 'columns', value: columns },
-      then: { name: `properties.${name}.display.visible`, value: false },
-    }))
-  ))
+  CHRONICLES_COLUMN_KEYS.flatMap((key, naturalSlot) => {
+    const hide = (conditions: Extract<SchemaDisplayRule['if'], unknown[]>) => (
+      Object.keys(createTextStyleProperties(CHRONICLES_COLUMN_STYLE_PREFIX_BY_KEY[key])).map((name) => ({
+        if: conditions,
+        then: { name: `properties.${name}.display.visible`, value: false },
+      }))
+    );
+    return [
+      ...hide([
+        { name: 'columns', value: columns },
+        HAS_COLUMNS_ORDER,
+        ...Array.from({ length: columns }, (_, slot) => ({ name: `columnsOrder.${slot}`, value: key, isNotEqual: true })),
+      ]),
+      ...(naturalSlot >= columns ? hide([{ name: 'columns', value: columns }, NO_COLUMNS_ORDER]) : []),
+    ];
+  })
 ));
 
 const TYPE_B_ONLY_PROPERTIES = [
@@ -237,6 +255,10 @@ const schema = {
     },
     display: {
       type: 'array',
+      ref: {
+        columnsOrder: 'settings.properties.columnsOrder',
+        columnsCount: 'settings.properties.columns',
+      },
       rules: contentDisplayRules,
     },
     items: {
@@ -244,14 +266,16 @@ const schema = {
       properties: {
         group: {
           type: 'string',
-          label: 'Column 1',
+          label: columnLabel('group'),
           contentKey: 'date',
+          // the year alone, so a year's posts share one group
+          contentFormat: 'year',
           placeholder: 'Leave empty to continue the group above...',
           display: { type: 'text-input' },
         },
         title: {
           type: 'string',
-          label: 'Column 2',
+          label: columnLabel('title'),
           contentKey: 'title',
           placeholder: 'Add title...',
           display: { type: 'text-input' },
@@ -308,6 +332,18 @@ const schema = {
         display: { type: 'count-number' },
         min: MIN_COLUMNS,
         max: MAX_COLUMNS,
+      },
+      columnsOrder: {
+        type: 'array',
+        scope: 'layout',
+        title: 'Columns Order',
+        display: {
+          type: 'reorder-input',
+          options: CHRONICLES_COLUMN_KEYS.map((key, index) => ({ value: key, label: CHRONICLES_COLUMN_LETTERS[index] })),
+          // only the shown columns are reordered; the hidden ones keep their place after them
+          visibleCountKey: 'columns',
+        },
+        items: { type: 'string' },
       },
       columnGap: createLayoutSizeProperty('Column Gap'),
       ...columnWidthProperties,
@@ -373,9 +409,10 @@ const schema = {
     },
     layoutDefaults: {
       m: withEqualColumnWidths({
-        type: 'b',
+        type: 'a',
         panelPosition: 'center',
         columns: DEFAULT_COLUMNS,
+        columnsOrder: [...CHRONICLES_COLUMN_KEYS],
         columnGap: 0.052,
         panelWidth: 0.906,
         panelPadding: { top: 0.0427, right: 0.0427, bottom: 0.0427, left: 0.0427 },
@@ -386,9 +423,10 @@ const schema = {
         ...createColumnTextStyleDefaults({ FontSize: 0.0427, LineHeight: 0.058 }),
       }),
       t: withEqualColumnWidths({
-        type: 'b',
+        type: 'a',
         panelPosition: 'center',
         columns: DEFAULT_COLUMNS,
+        columnsOrder: [...CHRONICLES_COLUMN_KEYS],
         columnGap: 0.0234,
         panelWidth: 0.5469,
         panelPadding: { top: 0.0182, right: 0.0182, bottom: 0.0182, left: 0.0182 },
@@ -399,9 +437,10 @@ const schema = {
         ...createColumnTextStyleDefaults({ FontSize: 0.0208, LineHeight: 0.0275 }),
       }),
       d: withEqualColumnWidths({
-        type: 'b',
+        type: 'a',
         panelPosition: 'center',
         columns: DEFAULT_COLUMNS,
+        columnsOrder: [...CHRONICLES_COLUMN_KEYS],
         columnGap: 0.0139,
         panelWidth: 0.3194,
         panelPadding: { top: 0.00972, right: 0.00972, bottom: 0.00972, left: 0.00972 },
@@ -437,6 +476,13 @@ const schema = {
       ],
     },
     {
+      id: 'columnsOrder',
+      icon: 'layers',
+      title: 'Columns Order',
+      tooltip: 'Columns order',
+      layout: ['__componentName__', 'columnsOrder'],
+    },
+    {
       id: 'typeStyle',
       icon: 'text-icon',
       title: 'Type Style',
@@ -448,9 +494,9 @@ const schema = {
           id: 'chroniclesTextStyle',
           tabs: {
             Label: createTextStyleLayout('trigger'),
-            ...Object.fromEntries(CHRONICLES_COLUMN_STYLE_PREFIXES.map((prefix, index) => [
-              String(index + 1),
-              createTextStyleLayout(prefix),
+            ...Object.fromEntries(CHRONICLES_COLUMN_KEYS.map((key, index) => [
+              CHRONICLES_COLUMN_LETTERS[index],
+              createTextStyleLayout(CHRONICLES_COLUMN_STYLE_PREFIX_BY_KEY[key]),
             ])),
           },
         },
@@ -478,7 +524,7 @@ export const ChroniclesComponent = {
   id: 'chronicles',
   name: 'Chronicles',
   category: 'ui-elements',
-  normalizeLayoutSettingsUpdate: applyChroniclesColumnCountChange,
+  normalizeLayoutSettingsUpdate: applyChroniclesLayoutSettingsChange,
   preview: {
     type: 'image' as const,
     url: 'https://cdn.cntrl.site/component-assets/Chronicles.png',
