@@ -141,23 +141,33 @@ describe('Grid with a custom layout', () => {
     return { wrapper, items };
   };
 
-  it('puts every entry in the blocks, one group after another, the vertical gap between groups', () => {
+  const getTracks = (wrapper: HTMLElement) => wrapper.style.gridTemplateRows
+    .split(' ')
+    .map(track => (track === 'auto' ? track : Number.parseFloat(track)));
+
+  const expectTracks = (wrapper: HTMLElement, expected: (number | 'auto')[]) => {
+    const tracks = getTracks(wrapper);
+    expect(tracks).toHaveLength(expected.length);
+    expected.forEach((track, index) => (
+      track === 'auto' ? expect(tracks[index]).toBe('auto') : expect(tracks[index]).toBeCloseTo(track)
+    ));
+  };
+
+  it('puts every entry on the line of its block\'s top, one group after another, the vertical gap a track between them', () => {
     const { wrapper, items } = render(['a', 'b', 'c', 'd', 'e'].map(entry));
 
     expect(items).toHaveLength(5);
     expect(wrapper.style.gridTemplateColumns).toBe('repeat(4, 20vw)');
-    const [, rowsCount, groupHeight] = wrapper.style.gridTemplateRows.match(/^repeat\((\d+), minmax\(([\d.]+)vw, auto\)\) auto$/)!;
-    expect(rowsCount).toBe('2');
-    expect(Number(groupHeight)).toBeCloseTo(30);
-    expect(Number.parseFloat(wrapper.style.rowGap)).toBeCloseTo(5);
+    expectTracks(wrapper, [10, 'auto', 5, 10, 'auto', 5, 'auto']);
+    expect(Number.parseFloat(wrapper.style.rowGap)).toBe(0);
     expect(items.map(item => [item.style.gridColumn, item.style.gridRow])).toEqual([
-      ['1 / span 3', '1'],
-      ['4 / span 1', '1'],
-      ['1 / span 3', '2'],
-      ['4 / span 1', '2'],
-      ['1 / span 3', '3'],
+      ['1 / span 3', '1 / 3'],
+      ['4 / span 1', '2 / 3'],
+      ['1 / span 3', '4 / 6'],
+      ['4 / span 1', '5 / 6'],
+      ['1 / span 3', '7 / 8'],
     ]);
-    expect(items[1].style.marginTop).toBe('10vw');
+    expect(items.every(item => item.style.marginTop === '')).toBe(true);
   });
 
   it('takes the gap of a layout saved with the height of a whole group', () => {
@@ -166,7 +176,7 @@ describe('Grid with a custom layout', () => {
 
     expect(verticalGap).toBeDefined();
     expect(items).toHaveLength(3);
-    expect(Number.parseFloat(wrapper.style.rowGap)).toBeCloseTo(15);
+    expect(getTracks(wrapper)[2]).toBeCloseTo(15);
   });
 
   it('sizes each whole entry by its block, the media taking what the text leaves', () => {
@@ -197,68 +207,85 @@ describe('Grid with a custom layout', () => {
     expect(first.querySelector('[class*="-item-title"]')?.textContent).toBe('a');
   });
 
-  // the layout is 0.83 wide over 830px: 1000px a unit. Every entry measures 140px, 60 of them its
-  // media: 0.08 of text
-  const renderMeasured = (grid: Record<string, unknown>, count: number) => {
+  it('ends an entry on the top of the block under it in its columns, or with its group, the text inside or outside', () => {
+    const stacked = {
+      ...customGrid,
+      blocks: [
+        { column: 0, span: 2, top: 0, height: 0.3 },
+        { column: 3, span: 1, top: 0, height: 0.3 },
+        { column: 0, span: 1, top: 0.35, height: 0.2 },
+      ],
+    };
+    for (const textGrowth of ['inside', 'outside']) {
+      const { wrapper, items } = render(['a', 'b', 'c', 'd'].map(entry), stacked, { textGrowth });
+      expectTracks(wrapper, [35, 'auto', 'auto', 5, 'auto']);
+      expect(items.map(item => item.style.gridRow)).toEqual(['1 / 3', '1 / 4', '3 / 4', '5 / 6']);
+    }
+  });
+
+  it('draws no line where an entry ends in other columns only', () => {
+    const staggered = {
+      ...customGrid,
+      blocks: [
+        { column: 0, span: 1, top: 0, height: 0.3 },
+        { column: 1, span: 1, top: 0, height: 0.4 },
+        { column: 2, span: 1, top: 0, height: 0.5 },
+      ],
+    };
+    const { wrapper, items } = render(['a', 'b', 'c'].map(entry), staggered, { textGrowth: 'outside' });
+
+    expectTracks(wrapper, ['auto']);
+    expect(items.map(item => item.style.gridRow)).toEqual(['1 / 2', '1 / 2', '1 / 2']);
+  });
+
+  const renderMeasured = (grid: Record<string, unknown>, heights: Record<string, number>) => {
     const offsetWidth = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
       return this.className.includes('-custom-layout') ? 830 : 0;
     });
     const offsetHeight = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
-      if (this.className.includes('-item-image-wrapper')) return 60;
-      if (this.className.includes('-item-inner')) return 140;
-      return 0;
+      const title = this.querySelector('[class*="-item-title"]')?.textContent ?? '';
+      return this.className.includes('-item-inner') ? heights[title] ?? 0 : 0;
     });
-    const rendered = render(['a', 'b', 'c', 'd', 'e'].slice(0, count).map(entry), grid, { textGrowth: 'outside' });
+    const rendered = render(Object.keys(heights).map(entry), grid, { textGrowth: 'outside' });
     offsetWidth.mockRestore();
     offsetHeight.mockRestore();
-    return { ...rendered, tops: rendered.items.map(item => Number.parseFloat(item.style.marginTop)) };
+    return rendered;
   };
 
-  it('moves the entries an outside text reaches onto the first beat under it, in the same columns only', () => {
+  it('puts the end of every group on the beat under its tallest entry on a grid with beats', () => {
+    const staggered = {
+      ...customGrid,
+      beat: 0.05,
+      blocks: [
+        { column: 0, span: 1, top: 0, height: 0.3 },
+        { column: 1, span: 1, top: 0, height: 0.4 },
+        { column: 2, span: 1, top: 0, height: 0.5 },
+      ],
+    };
+    const { wrapper } = renderMeasured(staggered, { a: 380, b: 460, c: 560, d: 380 });
+
+    expectTracks(wrapper, [60, 5, 40]);
+  });
+
+  it('puts what an entry pushes down onto the beat under it', () => {
     const stacked = {
       ...customGrid,
       beat: 0.05,
       blocks: [
         { column: 0, span: 2, top: 0, height: 0.3 },
-        { column: 1, span: 1, top: 0.35, height: 0.2 },
-        { column: 3, span: 1, top: 0.35, height: 0.2 },
-        { column: 1, span: 1, top: 0.6, height: 0.1 },
+        { column: 3, span: 1, top: 0, height: 0.3 },
+        { column: 0, span: 1, top: 0.35, height: 0.2 },
       ],
     };
-    const { wrapper, tops } = renderMeasured(stacked, 5);
+    const { wrapper, items } = renderMeasured(stacked, { a: 380, b: 380, c: 280 });
 
-    // the first text ends at 0.38: the next block goes onto 0.4, the one in its own columns stays;
-    // the one under it, moved along to 0.65, is reached by its text at 0.68 and goes onto 0.7
-    [0, 40, 35, 70, 0].forEach((top, index) => expect(tops[index]).toBeCloseTo(top));
-    // the lowest text ends at 0.7 + 0.1 + 0.08, the group on the beat under it
-    const [, groupHeight] = wrapper.style.gridTemplateRows.match(/^minmax\(([\d.]+)vw, auto\) auto$/)!;
-    expect(Number(groupHeight)).toBeCloseTo(90);
+    expectTracks(wrapper, [35, 5, 30]);
+    expect(items.map(item => item.style.gridRow)).toEqual(['1 / 3', '1 / 4', '3 / 4']);
   });
 
-  it('leaves the entries a text does not reach where they are drawn', () => {
-    const spaced = {
-      ...customGrid,
-      beat: 0.05,
-      blocks: [
-        { column: 0, span: 2, top: 0, height: 0.3 },
-        { column: 0, span: 1, top: 0.4, height: 0.2 },
-      ],
-    };
-    const { tops } = renderMeasured(spaced, 2);
+  it('leaves the tracks content-sized on a grid without beats', () => {
+    const { wrapper } = renderMeasured(customGrid, { a: 380, b: 380 });
 
-    expect(tops[1]).toBeCloseTo(40);
-  });
-
-  it('puts the entries a text reaches right under it on a grid without beats', () => {
-    const stacked = {
-      ...customGrid,
-      blocks: [
-        { column: 0, span: 2, top: 0, height: 0.3 },
-        { column: 0, span: 1, top: 0.33, height: 0.2 },
-      ],
-    };
-    const { tops } = renderMeasured(stacked, 2);
-
-    expect(tops[1]).toBeCloseTo(38);
+    expectTracks(wrapper, [10, 'auto']);
   });
 });

@@ -2,26 +2,16 @@ import { Grid } from './Grid';
 import { GridComponent } from './GridComponent';
 import { ComponentSchemaV1, LayoutItem, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
 
-/**
- * Neptune whose entries sit where a layout drawn in the CMS custom grid builder puts them: a group
- * of blocks over the article grid, repeated for every entry. The builder opens before the component
- * is added (on any `custom-grid-layout` setting) and again from the settings panel; the rest of the
- * settings are Neptune's.
- */
-
-// Neptune settings that decide where entries go; the custom layout does that instead
 const placementKeys = new Set(['gridLayout', 'verticalGap', 'alignEntries', 'entriesCount']);
 
 const neptuneSettings = GridComponent.schema.settings;
 
-// the text is as wide as its block on every layout, where Neptune makes it wider than its entry
 const TEXT_BOX_WIDTH = 100;
 
 function withoutPlacement<T extends Record<string, unknown>>(values: T): T {
   return Object.fromEntries(Object.entries(values).filter(([key]) => !placementKeys.has(key))) as T;
 }
 
-// the settings a display rule reads and the one it changes: `if` names a setting path, `then` a schema path
 function getRuleSettingKeys(rule: SchemaDisplayRule): string[] {
   const conditions = Array.isArray(rule.if) ? rule.if : [rule.if];
   return [
@@ -30,7 +20,6 @@ function getRuleSettingKeys(rule: SchemaDisplayRule): string[] {
   ];
 }
 
-// blocks set the box each entry's media fills, so the image display is only fit or cover, without a ratio
 const imageDisplay: SchemaProperty = {
   type: 'string',
   scope: 'common',
@@ -38,7 +27,6 @@ const imageDisplay: SchemaProperty = {
   display: { type: 'toggle-cycle', enum: ['fit', 'cover'] },
 };
 
-// kept once for every layout: the preset it is linked to keeps the blocks of each layout
 const customGrid: SchemaProperty = {
   type: 'object',
   scope: 'common',
@@ -46,8 +34,6 @@ const customGrid: SchemaProperty = {
   display: { type: 'custom-grid-layout' },
 };
 
-// inside, a block is the whole entry and its media takes what the text leaves; outside, the media
-// fills the block and the text sits beyond it
 const textGrowth: SchemaProperty = {
   type: 'string',
   scope: 'common',
