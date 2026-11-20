@@ -27,11 +27,12 @@ type BurgerShowInValue = string | Record<string, string>;
 
 type BurgerLink = {
   link?: {
-    type?: 'url' | 'page' | 'anchor';
+    type?: 'url' | 'page' | 'anchor' | 'file';
     value?: string;
     target?: string;
     anchor?: string;
     url?: string;
+    download?: string;
   };
   mode?: 'page' | 'url';
   page?: string;
@@ -256,10 +257,11 @@ function isBlankTarget(target?: string): boolean {
 }
 
 function getBurgerDest(item: BurgerLink): {
-  type: 'url' | 'page' | 'anchor';
+  type: 'url' | 'page' | 'anchor' | 'file';
   value: string;
   target?: '_blank';
   anchor?: string;
+  download?: string;
 } {
   const dest = item.link;
   if (dest && typeof dest === 'object') {
@@ -273,8 +275,12 @@ function getBurgerDest(item: BurgerLink): {
     if (dest.type === 'page') {
       return { type: 'page', value: dest.value ?? '', target, anchor: dest.anchor };
     }
+    if (dest.type === 'file') {
+      return { type: 'file', value: dest.value ?? '' };
+    }
+    // a published file link comes as its file's url, with the name to download it under
     if (typeof dest.url === 'string') {
-      return { type: 'url', value: dest.url, target };
+      return { type: 'url', value: dest.url, target, download: typeof dest.download === 'string' ? dest.download : undefined };
     }
   }
   const target = isBlankTarget(item.openIn) ? '_blank' : undefined;
@@ -295,12 +301,17 @@ function resolveBurgerLink(item: BurgerLink, pages?: BurgerPageRef[]): {
   label: string;
   href: string;
   target?: '_blank';
+  download?: string;
 } {
   const label = item.label || 'Link';
   const dest = getBurgerDest(item);
 
   if (dest.type === 'url') {
-    return { label, href: dest.value, target: dest.target };
+    return { label, href: dest.value, target: dest.target, download: dest.download };
+  }
+  if (dest.type === 'file') {
+    // only the editor sees a file by its id, and downloads it through onLinkNavigate, right on the click
+    return { label, href: dest.value ? '#' : '', target: '_blank' };
   }
   if (dest.type === 'anchor') {
     const anchor = dest.value.replace(/^#/, '');
@@ -912,10 +923,11 @@ function renderTextPaddingControls(
 type ColorKeys = 'iconColor' | 'closeButtonColor' | 'linkColor' | 'openLinkColor' | 'compactIconColor' | 'compactLinkColor' | 'compactLogoColor' | 'compactBackgroundColor' | 'openLogoColor' | 'menuBackgroundColor' | 'overlayColor' | 'backgroundColor' | 'logoColor';
 
 export type BurgerLinkNavigateEvent = {
-  mode: 'page' | 'url';
+  mode: 'page' | 'url' | 'file';
   href: string;
   page?: string;
   url?: string;
+  file?: string;
   anchor?: string;
   target?: '_blank';
 };
@@ -1767,6 +1779,28 @@ function findAnchorTarget(hash: string): HTMLElement | null {
   return target instanceof HTMLElement ? target : null;
 }
 
+// the file is on the cdn, another origin, where the download attribute alone opens it instead
+function downloadFile(url: string, name: string) {
+  fetch(url)
+    .then((response) => {
+      if (!response.ok) throw new Error(`Could not download ${url}: ${response.status}`);
+      return response.blob();
+    })
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = name || decodeURIComponent(url.split('?')[0].split('/').pop() ?? '');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    })
+    .catch(() => {
+      window.location.assign(url);
+    });
+}
+
 function scrollToAnchor(hash: string): boolean {
   const target = findAnchorTarget(hash);
   if (!target) return false;
@@ -1800,10 +1834,11 @@ function handleLinkClick(
     const resolved = resolveBurgerLink(item, pages);
     const dest = getBurgerDest(item);
     const navigateEvent: BurgerLinkNavigateEvent = {
-      mode: dest.type === 'url' ? 'url' : 'page',
+      mode: dest.type === 'url' || dest.type === 'file' ? dest.type : 'page',
       href: resolved.href || href,
       page: dest.type === 'page' ? dest.value : undefined,
       url: dest.type === 'url' ? dest.value : undefined,
+      file: dest.type === 'file' ? dest.value : undefined,
       anchor: dest.type === 'anchor'
         ? dest.value.replace(/^#/, '')
         : (dest.anchor ?? '').replace(/^#/, ''),
@@ -1821,6 +1856,14 @@ function handleLinkClick(
   if (isEditor) {
     event.preventDefault();
     runAfterClose(() => scrollToAnchor(hash));
+    onClose();
+    return;
+  }
+
+  const download = item ? getBurgerDest(item).download : undefined;
+  if (download !== undefined && href && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+    event.preventDefault();
+    downloadFile(href, download);
     onClose();
     return;
   }
@@ -2430,12 +2473,13 @@ export function Burger({
   const showOpenNavControls = showControls && isOpen;
 
   const renderOpenNavItems = (linkClassName: string) => items.filter((item) => isVisibleInOpenNav(item, layoutId)).map((item, index) => {
-    const { label, href, target } = resolveBurgerLink(item, pages);
+    const { label, href, target, download } = resolveBurgerLink(item, pages);
     const linkNode = href ? (
       <a
         href={href}
         target={target}
         rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+        download={download}
         className={`${linkClassName} ${P}-has-href`}
         onClick={(event) => onNavLinkClick(event, item)}
       >
@@ -2547,7 +2591,7 @@ export function Burger({
   };
 
   const renderNavLink = (item: BurgerLink, index: number) => {
-    const { label, href, target } = resolveBurgerLink(item, pages);
+    const { label, href, target, download } = resolveBurgerLink(item, pages);
     const textContent = (
       <span className={navLinkTextClassName} style={navLinkTextStyle}>
         {renderMultilineText(label)}
@@ -2566,6 +2610,7 @@ export function Burger({
         href={href}
         target={target}
         rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+        download={download}
         className={`${P}-nav-link ${P}-has-href`}
         onClick={(event) => onNavLinkClick(event, item)}
       >
