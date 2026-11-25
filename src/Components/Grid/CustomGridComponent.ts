@@ -2,14 +2,15 @@ import { Grid } from './Grid';
 import { GridComponent } from './GridComponent';
 import { ComponentSchemaV1, LayoutItem, SchemaDisplayRule, SchemaProperty } from '../../types/SchemaV1';
 
-const placementKeys = new Set(['gridLayout', 'verticalGap', 'alignEntries', 'entriesCount']);
+// the settings that place Neptune entries, and the align of media a block sizes
+const droppedKeys = new Set(['gridLayout', 'verticalGap', 'alignEntries', 'entriesCount', 'align']);
 
 const neptuneSettings = GridComponent.schema.settings;
 
 const TEXT_BOX_WIDTH = 100;
 
-function withoutPlacement<T extends Record<string, unknown>>(values: T): T {
-  return Object.fromEntries(Object.entries(values).filter(([key]) => !placementKeys.has(key))) as T;
+function withoutDropped<T extends Record<string, unknown>>(values: T): T {
+  return Object.fromEntries(Object.entries(values).filter(([key]) => !droppedKeys.has(key))) as T;
 }
 
 function getRuleSettingKeys(rule: SchemaDisplayRule): string[] {
@@ -46,7 +47,7 @@ const generalPanelLayout: LayoutItem[] = [
   'type',
   { type: 'row', title: 'Grid', items: ['customGrid'] },
   { type: 'row', title: '', items: ['textBoxWidth', 'showText'] },
-  { type: 'row', title: '', items: ['textGrowth', 'align'] },
+  { type: 'row', title: '', items: ['textGrowth'] },
 ];
 
 const schema: ComponentSchemaV1 = {
@@ -54,13 +55,13 @@ const schema: ComponentSchemaV1 = {
   settings: {
     ...neptuneSettings,
     properties: {
-      ...withoutPlacement(neptuneSettings.properties),
+      ...withoutDropped(neptuneSettings.properties),
       customGrid,
       textGrowth,
       imageDisplay,
     },
     defaults: {
-      ...withoutPlacement(neptuneSettings.defaults),
+      ...withoutDropped(neptuneSettings.defaults),
       imageDisplay: 'cover',
       customGrid: { preset: 0 },
       textGrowth: 'inside',
@@ -68,16 +69,13 @@ const schema: ComponentSchemaV1 = {
     layoutDefaults: Object.fromEntries(
       Object.entries(neptuneSettings.layoutDefaults ?? {}).map(([layoutKey, values]) => [
         layoutKey,
-        { ...withoutPlacement(values), textBoxWidth: TEXT_BOX_WIDTH },
+        { ...withoutDropped(values), textBoxWidth: TEXT_BOX_WIDTH },
       ]),
     ),
     displayRules: (neptuneSettings.displayRules ?? [])
-      .filter(rule => !getRuleSettingKeys(rule).some(key => placementKeys.has(key)))
-      .map(rule => (!Array.isArray(rule.if) && rule.if.name === 'imageDisplay.display'
-        ? { ...rule, if: { ...rule.if, name: 'imageDisplay' } }
-        : rule)),
+      .filter(rule => !getRuleSettingKeys(rule).some(key => droppedKeys.has(key))),
     layout: [
-      ...(neptuneSettings.layout ?? []).filter(item => typeof item !== 'string' || !placementKeys.has(item)),
+      ...(neptuneSettings.layout ?? []).filter(item => typeof item !== 'string' || !droppedKeys.has(item)),
       'customGrid',
       'textGrowth',
     ],

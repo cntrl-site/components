@@ -135,8 +135,12 @@ function getCSS(P: string): string {
   flex: 1 1 0%;
   min-height: 0;
 }
-.${P}-custom-layout.${P}-text-outside .${P}-item-image-link {
+.${P}-custom-layout.${P}-text-outside .${P}-item-image-link,
+.${P}-custom-layout.${P}-auto-height .${P}-item-image-link {
   flex: none;
+}
+.${P}-auto-height .${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer :is(img, video) {
+  width: 100%;
 }
 .${P}-item-text-link {
   display: flex;
@@ -1874,6 +1878,47 @@ function getCustomGridRows(layout: CustomGridLayout, entriesCount: number, entry
   return { tracks, gridRows };
 }
 
+function getGridMediaAspect(media: GridMedia): number | undefined {
+  if (isEmbedMedia(media)) return getEmbedAspect(media);
+  return media.width && media.height && media.width > 0 && media.height > 0 ? media.width / media.height : undefined;
+}
+
+/**
+ * Where each entry stands, given the height it takes; the CMS grid builder places its blocks the same way.
+ * A block keeps its drawn distance to the blocks above it in its group; a block with none above it starts at
+ * its drawn top in the group, or, with masonry on, the vertical gap below whatever earlier group reaches
+ * lowest in its columns.
+ */
+function placeCustomGridEntries(layout: CustomGridLayout, slots: CustomGridSlot[], heights: number[]) {
+  const groupSize = layout.blocks.length;
+  const verticalGap = getCustomGridVerticalGap(layout);
+  const isMasonry = layout.masonry === 'on';
+  const tops: number[] = [];
+  const placed: { column: number; span: number; bottom: number; group: number }[] = [];
+  const getBottom = (items: typeof placed) => items.reduce((bottom, item) => Math.max(bottom, item.bottom), 0);
+  let groupStart = 0;
+  for (let start = 0; start < slots.length; start += groupSize) {
+    const group = start / groupSize;
+    const entries = Array.from({ length: Math.min(groupSize, slots.length - start) }, (_, index) => start + index)
+      .sort((a, b) => slots[a].top - slots[b].top || a - b);
+    for (const entry of entries) {
+      const slot = slots[entry];
+      const sharesColumns = (other: { column: number; span: number }) => other.column < slot.column + slot.span
+        && slot.column < other.column + other.span;
+      const above = entries.filter(other => other !== entry && tops[other] !== undefined && sharesColumns(slots[other])
+        && slots[other].top + slots[other].height <= slot.top + EDGE_TOLERANCE);
+      const earlier = isMasonry ? placed.filter(item => item.group < group && sharesColumns(item)) : [];
+      const candidates = above.map(other => tops[other] + heights[other] + slot.top - (slots[other].top + slots[other].height));
+      if (earlier.length > 0) candidates.push(getBottom(earlier) + verticalGap);
+      if (candidates.length === 0) candidates.push(groupStart + slot.top);
+      tops[entry] = Math.max(...candidates);
+      placed.push({ column: slot.column, span: slot.span, bottom: tops[entry] + heights[entry], group });
+    }
+    groupStart = getBottom(placed) + verticalGap;
+  }
+  return { tops, bottom: getBottom(placed) };
+}
+
 export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId, portalId }: GridProps) {
   const { prefix: P } = useScopedStyles();
   const {
@@ -2024,6 +2069,9 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const customLayout = customGrid && Array.isArray(customGrid.blocks) && customGrid.blocks.length > 0 ? customGrid : undefined;
   const resEntriesCount = customLayout || entriesCount === 0 ? Infinity : entriesCount;
   const isTextOutside = !!customLayout && textGrowth === 'outside';
+  const isAutoHeight = customLayout?.cellHeight === 'auto';
+  // entries stand where placeCustomGridEntries puts them rather than on grid rows
+  const isPlacedLayout = isAutoHeight || customLayout?.masonry === 'on';
   const itemInnerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [customEntryHeights, setCustomEntryHeights] = useState<number[]>([]);
 
@@ -2056,7 +2104,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const columnsCount = gridLayout?.columnsCount ?? 1;
   const entryWidthScaled = scalingValue(size ?? 0, isEditor);
-  const isFitSlider = !customLayout && !isCover && slider !== 'off';
+  const isFitSlider = slider !== 'off' && (customLayout ? isAutoHeight : !isCover);
 
   const itemsInLastRow = cropContent.length % columnsCount || columnsCount;
   const isPartialLastRow = !customLayout && itemsInLastRow < columnsCount && cropContent.length > 0;
@@ -2067,9 +2115,21 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const imageBorderRadius = imageCorners ? scalingValue(imageCorners, isEditor) : undefined;
 
-  const getImageWrapperStyle = (entryWidth: string, slot?: CustomGridSlot): React.CSSProperties => ({
+  const getImageWrapperStyle = (
+    entryWidth: string,
+    slot?: CustomGridSlot,
+    media?: { aspect?: number; isEmpty: boolean },
+  ): React.CSSProperties => ({
     width: entryWidth,
-    ...(slot
+    ...(slot && isAutoHeight
+      ? {
+          // an entry with no media keeps the drawn height, so it can still be seen and filled
+          height: media?.isEmpty ? scalingValue(slot.height, isEditor) : 'auto',
+          flexShrink: 0,
+          overflow: 'hidden',
+          ...(media?.aspect && !isFitSlider ? { aspectRatio: `${media.aspect}` } : {}),
+        }
+      : slot
       ? isTextOutside
         ? { height: scalingValue(slot.height, isEditor), flexShrink: 0, overflow: 'hidden' }
         : { flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }
@@ -2086,7 +2146,16 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
   const imageRadiusStyle = imageBorderRadius
     ? { borderRadius: imageBorderRadius, [MEDIA_RADIUS_VAR]: imageBorderRadius } as React.CSSProperties
     : {};
-  const imageStyle: React.CSSProperties = isCover
+  const imageStyle: React.CSSProperties = isAutoHeight
+    ? {
+        objectFit: isFitSlider && !isCover ? 'contain' : 'cover',
+        pointerEvents: 'auto',
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+        ...imageRadiusStyle,
+      }
+    : isCover
     ? {
         objectFit: 'cover',
         pointerEvents: 'auto',
@@ -2105,7 +2174,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         ...imageRadiusStyle,
       };
 
-  const shouldMeasureEntries = (customLayout?.beat ?? 0) > 0;
+  const shouldMeasureEntries = (customLayout?.beat ?? 0) > 0 || isPlacedLayout;
   const customGridWidth = customLayout ? getCustomGridSpanWidth(customLayout, customLayout.columnsCount) : 0;
   useLayoutEffect(() => {
     if (!shouldMeasureEntries) {
@@ -2147,6 +2216,26 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     () => (customLayout ? cropContent.map((_, index) => getCustomGridSlot(customLayout, index)) : undefined),
     [customLayout, cropContent.length],
   );
+  // the aspect a single media keeps when the cell takes its height
+  const entryMediaAspects = useMemo(
+    () => entriesMedia.map(({ displayItems }) => (
+      isAutoHeight && displayItems.length > 0 ? getGridMediaAspect(displayItems[0].displayMedia) : undefined
+    )),
+    [entriesMedia, isAutoHeight],
+  );
+  const customPlacement = useMemo(() => {
+    if (!customLayout || !customSlots || !isPlacedLayout) return undefined;
+    const beat = customLayout.beat ?? 0;
+    const heights = customSlots.map((slot, index) => {
+      // until the entries are measured, a media that tells its size gives the height it will take
+      const aspects = entriesMedia[index].displayItems.map(({ displayMedia }) => getGridMediaAspect(displayMedia));
+      const known = aspects.filter((aspect): aspect is number => aspect !== undefined);
+      const estimate = isAutoHeight && known.length > 0 ? Math.max(...known.map(aspect => slot.width / aspect)) : slot.height;
+      const height = measuredEntryHeights?.[index] ?? estimate;
+      return beat > 0 ? Math.ceil(height / beat - 1e-3) * beat : height;
+    });
+    return placeCustomGridEntries(customLayout, customSlots, heights);
+  }, [customLayout, customSlots, isPlacedLayout, isAutoHeight, entriesMedia, measuredEntryHeights]);
   const wrapperLayoutStyle: React.CSSProperties = customLayout
     ? {
         gridTemplateColumns: `repeat(${customLayout.columnsCount}, ${scalingValue(customLayout.columnWidth, isEditor)})`,
@@ -2154,6 +2243,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         rowGap: 0,
         columnGap: scalingValue(customLayout.gutterWidth, isEditor),
         width: scalingValue(getCustomGridSpanWidth(customLayout, customLayout.columnsCount), isEditor),
+        ...(customPlacement ? { position: 'relative', height: scalingValue(customPlacement.bottom, isEditor) } : {}),
       }
     : {
         gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
@@ -2215,7 +2305,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''}${customLayout ? ` ${P}-custom-layout` : ''}${isTextOutside ? ` ${P}-text-outside` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
+          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''}${customLayout ? ` ${P}-custom-layout` : ''}${isTextOutside ? ` ${P}-text-outside` : ''}${isAutoHeight ? ` ${P}-auto-height` : ''} ${P}-image-align-${customLayout ? 'top' : align} ${wrapperStateClasses}`.trim()}
           style={wrapperLayoutStyle}>
           {cropContent.map((item: any, index: number) => {
             const hasTitle = hasText(item.title);
@@ -2231,8 +2321,24 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             const itemWidthScaled = scalingValue(itemSize, isEditor);
             const textBoxWidthStyle = `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`;
             const controlWidthStyle = scalingValue(itemSize * textBoxWidth / 100, isEditor);
-            const imageWrapperStyle = getImageWrapperStyle(itemWidthScaled, customSlot);
-            const itemStyle: React.CSSProperties | undefined = customSlot
+            const { displayItems, lightboxItemsForEntry, lightboxIndexes } = entriesMedia[index];
+            const mediaAspect = slider === 'off' ? entryMediaAspects[index] : undefined;
+            const imageWrapperStyle = getImageWrapperStyle(
+              itemWidthScaled,
+              customSlot,
+              { aspect: mediaAspect, isEmpty: displayItems.length === 0 },
+            );
+            const entryImageStyle = isAutoHeight && slider === 'off' && !mediaAspect
+              ? { ...imageStyle, height: 'auto' }
+              : imageStyle;
+            const itemStyle: React.CSSProperties | undefined = customSlot && customLayout && customPlacement
+              ? {
+                  position: 'absolute',
+                  left: scalingValue(customSlot.column * (customLayout.columnWidth + customLayout.gutterWidth), isEditor),
+                  top: scalingValue(customPlacement.tops[index], isEditor),
+                  width: itemWidthScaled,
+                }
+              : customSlot
               ? {
                   gridColumn: customSlot.gridColumn,
                   gridRow: customRows?.gridRows[index],
@@ -2342,8 +2448,6 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </LinkWrapper>
             );
 
-            const { displayItems, lightboxItemsForEntry, lightboxIndexes } = entriesMedia[index];
-
             const imageContent = (
               <GridItemMediaWrapper className={imageWrapperClassName} style={imageWrapperStyle}>
                 {displayItems.length === 0
@@ -2357,7 +2461,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                         <GridMediaItem
                           media={displayMedia}
                           className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
-                          style={imageStyle}
+                          style={entryImageStyle}
                           hasLightbox={lightbox === 'on'}
                           onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                             ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
@@ -2464,7 +2568,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   width: (textBoxWidth ?? 0) > 100
                     ? `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`
                     : itemWidthScaled,
-                  ...(customSlot && !isTextOutside ? { height: scalingValue(customSlot.height, isEditor) } : {}),
+                  ...(customSlot && !isTextOutside && !isAutoHeight ? { height: scalingValue(customSlot.height, isEditor) } : {}),
                   ...(gridColumn && shouldAlignEntries ? { gridColumn } : {}),
                 }}
               >
@@ -2563,6 +2667,8 @@ type CustomGridLayout = {
   beat?: number;
   repeatHeight?: number;
   blocks: CustomGridBlock[];
+  cellHeight?: 'manual' | 'auto';
+  masonry?: 'off' | 'on';
 };
 
 type GridSettings = {

@@ -8,7 +8,7 @@ import type { LayoutItem } from '../../types/SchemaV1';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const placementKeys = ['gridLayout', 'verticalGap', 'alignEntries', 'entriesCount'];
+const droppedKeys = ['gridLayout', 'verticalGap', 'alignEntries', 'entriesCount', 'align'];
 
 function collectLayoutKeys(items: LayoutItem[]): string[] {
   return items.flatMap((item) => {
@@ -23,8 +23,8 @@ function collectLayoutKeys(items: LayoutItem[]): string[] {
 describe('CustomGridComponent schema', () => {
   const { settings, panels } = CustomGridComponent.schema;
 
-  it('drops the settings that place Neptune entries', () => {
-    for (const key of placementKeys) {
+  it('drops the settings that place Neptune entries, and the align', () => {
+    for (const key of droppedKeys) {
       expect(settings.properties).not.toHaveProperty(key);
       expect(settings.defaults).not.toHaveProperty(key);
       for (const values of Object.values(settings.layoutDefaults ?? {})) {
@@ -68,9 +68,8 @@ describe('CustomGridComponent schema', () => {
     expect(collectLayoutKeys(general?.layout ?? [])).toContain('textGrowth');
   });
 
-  it('keeps the align rule on the plain image display', () => {
-    const alignRule = settings.displayRules?.find(rule => rule.then.name === 'properties.align.display.enabled');
-    expect(alignRule?.if).toEqual({ name: 'imageDisplay', value: 'cover' });
+  it('has no rule left on the align', () => {
+    expect(settings.displayRules?.some(rule => rule.then.name.includes('align'))).toBe(false);
   });
 
   it('renders with Neptune\'s element', () => {
@@ -287,5 +286,50 @@ describe('Grid with a custom layout', () => {
     const { wrapper } = renderMeasured(customGrid, { a: 380, b: 380 });
 
     expectTracks(wrapper, [10, 'auto']);
+  });
+
+  const sized = (title: string, width?: number, height?: number) => ({
+    title,
+    subtitle: '',
+    gallery: [{ media: [{ assetId: `${title}.jpg`, name: '', type: 'image', width, height }] }],
+  });
+  const getTops = (items: HTMLElement[]) => items.map(item => Number.parseFloat(item.style.top));
+  const expectNumbers = (values: number[], expected: number[]) => {
+    expect(values).toHaveLength(expected.length);
+    expected.forEach((value, index) => expect(values[index]).toBeCloseTo(value));
+  };
+
+  it('with masonry on, starts each repeated entry the vertical gap under its columns', () => {
+    const { wrapper, items } = render(['a', 'b', 'c', 'd', 'e'].map(entry), { ...customGrid, masonry: 'on' });
+
+    expect(items.every(item => item.style.position === 'absolute')).toBe(true);
+    expectNumbers(items.map(item => Number.parseFloat(item.style.left)), [0, 63, 0, 63, 0]);
+    expectNumbers(getTops(items), [0, 10, 35, 35, 70]);
+    expect(Number.parseFloat(wrapper.style.height)).toBeCloseTo(100);
+    expect((items[0].firstElementChild as HTMLElement).style.height).toBe('30vw');
+  });
+
+  it('with the cell height auto, fills the width of each block with the media at its own ratio', () => {
+    const { wrapper, items } = render(
+      [sized('a', 1000, 500), sized('b', 1000, 500), sized('c'), { title: 'd', subtitle: '', gallery: [] }],
+      { ...customGrid, cellHeight: 'auto' },
+    );
+    const [first, , third, fourth] = items.map(item => item.firstElementChild as HTMLElement);
+    const media = (inner: HTMLElement) => inner.querySelector<HTMLElement>('[class*="-item-image-wrapper"]')!;
+
+    expect(wrapper.className).toContain('-auto-height');
+    expect(first.style.height).toBe('');
+    expect(media(first).style.aspectRatio).toBe('2');
+    expect(media(first).style.height).toBe('auto');
+    expect(first.querySelector<HTMLElement>('img')!.style.width).toBe('100%');
+    expect(third.querySelector<HTMLElement>('img')!.style.height).toBe('auto');
+    expect(media(fourth).style.height).toBe('20vw');
+    expectNumbers(getTops(items), [0, 10, 36, 46]);
+  });
+
+  it('places entries by the heights they are measured at', () => {
+    const { items } = renderMeasured({ ...customGrid, cellHeight: 'auto', masonry: 'on' }, { a: 400, b: 100, c: 300, d: 300 });
+
+    expectNumbers(getTops(items), [0, 10, 45, 25]);
   });
 });
