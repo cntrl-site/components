@@ -1,6 +1,7 @@
 import { BurgerComponent } from './Components/Burger/BurgerComponent';
 import { ChroniclesComponent } from './Components/Chronicles/ChroniclesComponent';
 import { ClickGallerieComponent } from './Components/ClickGallerie/ClickGallerieComponent';
+import { CustomGridComponent } from './Components/Grid/CustomGridComponent';
 import { FAQComponent } from './Components/FAQ/FAQComponent';
 import { FormComponent } from './Components/Form/FormComponent';
 import { GridComponent } from './Components/Grid/GridComponent';
@@ -47,6 +48,7 @@ export const componentSources: Partial<Record<string, string>> = {
   [BurgerComponent.id]: burgerSource,
   [ChroniclesComponent.id]: chroniclesSource,
   [ClickGallerieComponent.id]: clickGallerieSource,
+  [CustomGridComponent.id]: gridSource,
   [FAQComponent.id]: faqSource,
   [FormComponent.id]: formSource,
   [GridComponent.id]: gridSource,

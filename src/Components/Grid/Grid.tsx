@@ -1,5 +1,3 @@
-import { Splide, SplideSlide } from '@splidejs/react-splide';
-import '@splidejs/react-splide/css/core';
 import { CommonComponentProps } from '../props';
 import { EmbedMediaFrame, getEmbedAspect, getEmbedPlayback, isEmbedMedia } from '../utils/index';
 import {
@@ -10,7 +8,7 @@ import {
   useLazyVideos,
   useScopedStyles,
 } from '../utils/index';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { omitTextColors, TextStyles, textStylesToCss } from '../utils/textStylesToCss';
 import { SvgImage } from '../helpers/SvgImage/SvgImage';
@@ -127,14 +125,22 @@ function getCSS(P: string): string {
   width: 100%;
   overflow: hidden;
 }
-.${P}-item-slider .splide__track {
-  overflow: hidden;
-}
 .${P}-item-image-link {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.${P}-custom-layout .${P}-item-image-link {
+  flex: 1 1 0%;
+  min-height: 0;
+}
+.${P}-custom-layout.${P}-text-outside .${P}-item-image-link,
+.${P}-custom-layout.${P}-auto-height .${P}-item-image-link {
+  flex: none;
+}
+.${P}-auto-height .${P}-item-image-wrapper-fit-slider > .${P}-item-image-wrapper-sizer :is(img, video) {
+  width: 100%;
 }
 .${P}-item-text-link {
   display: flex;
@@ -156,17 +162,46 @@ function getCSS(P: string): string {
   display: block;
   max-width: 100%;
 }
-.${P}-item-slider,
-.${P}-item-slider .splide__track,
-.${P}-item-slider .splide__list,
-.${P}-item-slider .splide__slide {
+.${P}-item-slider {
+  position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
-.${P}-item-slider .splide__slide {
+.${P}-item-slider-list {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+.${P}-item-slider-list-vertical {
+  flex-direction: column;
+}
+.${P}-item-slider-list-fade {
+  display: block;
+  will-change: auto;
+}
+.${P}-item-slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.${P}-item-slider-list-fade .${P}-item-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transition: opacity ${SLIDER_TRANSITION_MS}ms ${SLIDER_EASING};
+}
+.${P}-item-slider-list-fade .${P}-item-slide-active {
+  opacity: 1;
+  z-index: 1;
 }
 .${P}-item-title {
   white-space: normal;
@@ -314,13 +349,13 @@ function getCSS(P: string): string {
 .${P}-image-align-bottom .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
   align-items: flex-end;
 }
-.${P}-image-align-top .${P}-item-slider .splide__slide {
+.${P}-image-align-top .${P}-item-slider .${P}-item-slide {
   align-items: flex-start;
 }
-.${P}-image-align-center .${P}-item-slider .splide__slide {
+.${P}-image-align-center .${P}-item-slider .${P}-item-slide {
   align-items: center;
 }
-.${P}-image-align-bottom .${P}-item-slider .splide__slide {
+.${P}-image-align-bottom .${P}-item-slider .${P}-item-slide {
   align-items: flex-end;
 }
 .${P}-align-entries .${P}-item {
@@ -401,13 +436,13 @@ function getCSS(P: string): string {
 .${P}-image-align-bottom.${P}-align-entries .${P}-item-image-wrapper:not(.${P}-item-image-wrapper-fit-slider) {
   align-items: flex-end;
 }
-.${P}-image-align-top.${P}-align-entries .${P}-item-slider .splide__slide {
+.${P}-image-align-top.${P}-align-entries .${P}-item-slider .${P}-item-slide {
   align-items: flex-start;
 }
-.${P}-image-align-center.${P}-align-entries .${P}-item-slider .splide__slide {
+.${P}-image-align-center.${P}-align-entries .${P}-item-slider .${P}-item-slide {
   align-items: center;
 }
-.${P}-image-align-bottom.${P}-align-entries .${P}-item-slider .splide__slide {
+.${P}-image-align-bottom.${P}-align-entries .${P}-item-slider .${P}-item-slide {
   align-items: flex-end;
 }
 .${P}-image-align-top.${P}-align-entries .${P}-item-image-link {
@@ -475,27 +510,9 @@ function pickRandomSlideDirection(): 'ltr' | 'ttb' {
   return Math.random() < 0.5 ? 'ltr' : 'ttb';
 }
 
-function resumeSplideAutoplay(splide: { Components: { Autoplay?: { pause: (stop?: boolean) => void; play: () => void } } }) {
-  const autoplay = splide.Components.Autoplay;
-  if (!autoplay) return;
-  autoplay.pause(false);
-  autoplay.play();
-}
-
-function handleRandomSlideMoved(splide: {
-  options: { direction?: string };
-  Components: { Autoplay?: { pause: (stop?: boolean) => void; play: () => void } };
-}) {
-  const next = pickRandomSlideDirection();
-  if (splide.options.direction !== next) {
-    splide.options = { ...splide.options, direction: next };
-  }
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      resumeSplideAutoplay(splide);
-    });
-  });
+function wrapSlideIndex(index: number, count: number): number {
+  if (count <= 0) return 0;
+  return ((index % count) + count) % count;
 }
 
 type GridProps = {
@@ -535,6 +552,8 @@ type LightboxProps = {
 
 const LIGHTBOX_ANIM_MS = 500;
 const SLIDER_TRANSITION_MS = 750;
+const SLIDER_EASING = 'cubic-bezier(0.25, 1, 0.5, 1)';
+const SLIDER_DEFAULT_INTERVAL_MS = 5000;
 const LIGHTBOX_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const SWIPE_CLOSE_THRESHOLD = 72;
 const SWIPE_NAV_THRESHOLD = 50;
@@ -624,7 +643,7 @@ function collectGridLightboxMedia(content: any[]): GridMedia[] {
   return result;
 }
 
-function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
+const LightboxMediaPreloadPool = memo(function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
   const [pool, setPool] = useState<HTMLDivElement | null>(null);
   useLazyVideos(pool, { preload: 'metadata' });
   // an embed's player is only ever framed where it shows
@@ -663,7 +682,7 @@ function LightboxMediaPreloadPool({ mediaList }: { mediaList: GridMedia[] }) {
       ))}
     </div>
   );
-}
+});
 
 function unloadVideoElement(video: HTMLVideoElement) {
   video.pause();
@@ -671,15 +690,121 @@ function unloadVideoElement(video: HTMLVideoElement) {
   video.load();
 }
 
-const SPLIDE_SLIDE_VIDEOS = '.splide__slide video';
+const GRID_SLIDE_CLASS = 'cntrl-grid-slide';
+const GRID_SLIDE_PLAYING_CLASS = 'cntrl-grid-slide-playing';
+const GRID_SLIDE_VIDEOS = `.${GRID_SLIDE_CLASS} video`;
 
 function shouldPlaySlideVideo(video: HTMLVideoElement): boolean {
-  if (video.closest('.splide--fade, .splide__slide.is-active:not(.splide__slide--clone), .splide__slide.is-next')) return true;
-  const slide = video.closest<HTMLElement>('.splide__slide');
-  if (!slide || slide.classList.contains('splide__slide--clone')) return false;
-  const slideIndex = slide.dataset.slideIndex;
-  const upcomingSlide = slide.parentElement?.querySelector<HTMLElement>('.splide__slide.is-next');
-  return slideIndex !== undefined && upcomingSlide?.dataset.slideIndex === slideIndex;
+  return video.closest(`.${GRID_SLIDE_PLAYING_CLASS}`) !== null;
+}
+
+type GridEntrySliderProps = {
+  prefix: string;
+  slides: React.ReactNode[];
+  isFade: boolean;
+  direction: GridSettings['direction'];
+  intervalMs: number;
+};
+
+function GridEntrySlider({ prefix: P, slides, isFade, direction, intervalMs }: GridEntrySliderProps) {
+  const count = slides.length;
+  const hasClones = !isFade && count > 1;
+  const isRandom = !isFade && direction === 'random';
+  const delayMs = Number.isFinite(intervalMs) && intervalMs > 0 ? intervalMs : SLIDER_DEFAULT_INTERVAL_MS;
+  const [position, setPosition] = useState(hasClones ? 1 : 0);
+  const [axis, setAxis] = useState<'ltr' | 'ttb'>(!isFade && direction === 'vertical' ? 'ttb' : 'ltr');
+  const [isMoving, setIsMoving] = useState(false);
+  const [skipTransition, setSkipTransition] = useState(false);
+  const [cycle, setCycle] = useState(0);
+  const isMovingRef = useRef(false);
+
+  useEffect(() => {
+    if (count < 2) return;
+    const timeoutId = window.setTimeout(() => {
+      if (isMovingRef.current) {
+        setCycle(prev => prev + 1);
+        return;
+      }
+      isMovingRef.current = true;
+      setIsMoving(true);
+      setSkipTransition(false);
+      setPosition(prev => (hasClones ? prev + 1 : wrapSlideIndex(prev + 1, count)));
+      if (!isRandom) setCycle(prev => prev + 1);
+    }, delayMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [count, cycle, delayMs, hasClones, isRandom]);
+
+  useEffect(() => {
+    if (!isMoving) return;
+    const timeoutId = window.setTimeout(() => {
+      const isOnClone = hasClones && position === count + 1;
+      const nextAxis = isRandom ? pickRandomSlideDirection() : axis;
+      if (isOnClone || nextAxis !== axis) {
+        setSkipTransition(true);
+        if (isOnClone) setPosition(1);
+        setAxis(nextAxis);
+      }
+      isMovingRef.current = false;
+      setIsMoving(false);
+      if (isRandom) setCycle(prev => prev + 1);
+    }, SLIDER_TRANSITION_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [axis, count, hasClones, isMoving, isRandom, position]);
+
+  useEffect(() => {
+    if (!skipTransition) return;
+    let innerId = 0;
+    const outerId = requestAnimationFrame(() => {
+      innerId = requestAnimationFrame(() => setSkipTransition(false));
+    });
+    return () => {
+      cancelAnimationFrame(outerId);
+      cancelAnimationFrame(innerId);
+    };
+  }, [skipTransition]);
+
+  const slotsCount = hasClones ? count + 2 : count;
+  const getItemIndex = (slot: number) => (hasClones ? wrapSlideIndex(slot - 1, count) : slot);
+  const isCloneSlot = (slot: number) => hasClones && (slot === 0 || slot === count + 1);
+  const activeIndex = getItemIndex(position);
+  const nextSlot = position + 1 < slotsCount ? position + 1 : -1;
+  const isPlayingSlot = (slot: number) => isFade
+    || (slot === position && !isCloneSlot(slot))
+    || slot === nextSlot
+    || (nextSlot >= 0 && !isCloneSlot(slot) && getItemIndex(slot) === getItemIndex(nextSlot));
+  const isVertical = !isFade && axis === 'ttb';
+  const listStyle: React.CSSProperties | undefined = isFade
+    ? undefined
+    : {
+        transform: isVertical
+          ? `translate3d(0, ${-position * 100}%, 0)`
+          : `translate3d(${-position * 100}%, 0, 0)`,
+        transition: skipTransition ? 'none' : `transform ${SLIDER_TRANSITION_MS}ms ${SLIDER_EASING}`,
+      };
+
+  return (
+    <div className={`${P}-item-slider`}>
+      <div
+        className={`${P}-item-slider-list${isFade ? ` ${P}-item-slider-list-fade` : ''}${isVertical ? ` ${P}-item-slider-list-vertical` : ''}`}
+        style={listStyle}
+      >
+        {Array.from({ length: slotsCount }, (_, slot) => {
+          const itemIndex = getItemIndex(slot);
+          const isClone = isCloneSlot(slot);
+          const isShown = isFade ? itemIndex === activeIndex : slot === position;
+          return (
+            <div
+              key={isClone ? `clone-${slot === 0 ? 'start' : 'end'}` : `slide-${itemIndex}`}
+              className={`${P}-item-slide ${GRID_SLIDE_CLASS}${isFade && isShown ? ` ${P}-item-slide-active` : ''}${isPlayingSlot(slot) ? ` ${GRID_SLIDE_PLAYING_CLASS}` : ''}`}
+              aria-hidden={isShown ? undefined : true}
+            >
+              {slides[itemIndex]}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function GridMediaItem({
@@ -687,7 +812,7 @@ function GridMediaItem({
   className,
   style,
   hasLightbox,
-  isSplideSlide = false,
+  isSliderSlide = false,
   onMediaClick,
 }: {
   media: GridMedia;
@@ -695,7 +820,7 @@ function GridMediaItem({
   style: React.CSSProperties;
   /** An embed then plays here as a silent loop, and as it was set to in the lightbox. */
   hasLightbox: boolean;
-  isSplideSlide?: boolean;
+  isSliderSlide?: boolean;
   onMediaClick?: (e: React.MouseEvent<HTMLElement>) => void;
 }) {
   if (isEmbedMedia(media)) {
@@ -727,7 +852,7 @@ function GridMediaItem({
       playsInline: true,
       onClick: onMediaClick,
     };
-    return isSplideSlide
+    return isSliderSlide
       ? <video {...videoProps} preload='none' />
       : <LazyVideo {...videoProps} autoPlay />;
   }
@@ -756,7 +881,7 @@ function GridItemMediaWrapper({
   children: React.ReactNode;
 }) {
   const [wrapper, setWrapper] = useState<HTMLDivElement | null>(null);
-  useLazyVideos(wrapper, { autoPlay: true, selector: SPLIDE_SLIDE_VIDEOS, shouldPlay: shouldPlaySlideVideo });
+  useLazyVideos(wrapper, { autoPlay: true, selector: GRID_SLIDE_VIDEOS, shouldPlay: shouldPlaySlideVideo });
 
   return (
     <div ref={setWrapper} className={className} style={style}>
@@ -1657,11 +1782,149 @@ function resolveLightboxImageDisplay(
   return value?.display === 'cover' ? 'cover' : 'fit';
 }
 
+function getCustomGridSpanWidth(layout: CustomGridLayout, span: number): number {
+  return layout.columnWidth * span + layout.gutterWidth * Math.max(0, span - 1);
+}
+
+type CustomGridSlot = {
+  column: number;
+  span: number;
+  width: number;
+  top: number;
+  height: number;
+  gridColumn: string;
+};
+
+function getCustomGridBlocksBottom(layout: CustomGridLayout): number {
+  return layout.blocks.reduce((bottom, block) => Math.max(bottom, Math.max(0, block.top) + Math.max(0, block.height)), 0);
+}
+
+function getCustomGridVerticalGap(layout: CustomGridLayout): number {
+  if (typeof layout.verticalGap === 'number') return Math.max(0, layout.verticalGap);
+  return Math.max(0, (layout.repeatHeight ?? 0) - getCustomGridBlocksBottom(layout));
+}
+
+function getCustomGridSlot(layout: CustomGridLayout, index: number): CustomGridSlot {
+  const block = layout.blocks[index % layout.blocks.length];
+  const span = Math.min(Math.max(1, Math.round(block.span)), layout.columnsCount);
+  const column = Math.min(Math.max(0, Math.round(block.column)), layout.columnsCount - span);
+  return {
+    column,
+    span,
+    width: getCustomGridSpanWidth(layout, span),
+    top: Math.max(0, block.top),
+    height: Math.max(0, block.height),
+    gridColumn: `${column + 1} / span ${span}`,
+  };
+}
+
+const EDGE_TOLERANCE = 1e-6;
+
+function getCustomGridRows(layout: CustomGridLayout, entriesCount: number, entryHeights?: number[]) {
+  const beat = layout.beat ?? 0;
+  const onBeats = beat > 0 && !!entryHeights;
+  const snapUp = (value: number) => Math.ceil(value / beat - 1e-3) * beat;
+  const tracks: (number | 'auto')[] = [];
+  const gridRows: string[] = [];
+  const verticalGap = getCustomGridVerticalGap(layout);
+  for (let groupStart = 0; groupStart < entriesCount; groupStart += layout.blocks.length) {
+    if (groupStart > 0 && verticalGap > 0) tracks.push(verticalGap);
+    const slots = Array.from(
+      { length: Math.min(layout.blocks.length, entriesCount - groupStart) },
+      (_, index) => getCustomGridSlot(layout, groupStart + index),
+    );
+    const ends = slots.map((slot) => {
+      const under = slots.filter(other => other.column < slot.column + slot.span
+        && slot.column < other.column + other.span
+        && other.top >= slot.top + slot.height - EDGE_TOLERANCE);
+      return under.length > 0 ? Math.min(...under.map(other => other.top)) : undefined;
+    });
+    const tops = [0, ...slots.map(slot => slot.top)]
+      .sort((a, b) => a - b)
+      .filter((top, index, sorted) => index === 0 || top - sorted[index - 1] > EDGE_TOLERANCE);
+    const isSame = (a: number, b: number) => Math.abs(a - b) <= EDGE_TOLERANCE;
+    const getTop = (value: number) => tops.findIndex(top => isSame(top, value));
+    const positions: number[] = [];
+    let position = 0;
+    const pushContentTrack = (isEnding: (end: number | undefined) => boolean) => {
+      const ending = slots.flatMap((slot, index) => (isEnding(ends[index]) ? [{ slot, entry: groupStart + index }] : []));
+      if (ending.length === 0) return;
+      if (!onBeats) {
+        tracks.push('auto');
+        return;
+      }
+      const needed = Math.max(...ending.map(({ slot, entry }) => positions[getTop(slot.top)] + (entryHeights[entry] ?? 0)));
+      const track = Math.max(0, snapUp(needed) - position);
+      tracks.push(track);
+      position += track;
+    };
+    const lines = tops.map((top, index) => {
+      if (index > 0) {
+        tracks.push(top - tops[index - 1]);
+        position += top - tops[index - 1];
+      }
+      pushContentTrack(end => end !== undefined && isSame(end, top));
+      positions.push(position);
+      return tracks.length + 1;
+    });
+    pushContentTrack(end => end === undefined);
+    const groupEnd = tracks.length + 1;
+    const getLine = (value: number) => lines[getTop(value)];
+    slots.forEach((slot, index) => {
+      const end = ends[index];
+      gridRows.push(`${getLine(slot.top)} / ${end === undefined ? groupEnd : getLine(end)}`);
+    });
+  }
+  return { tracks, gridRows };
+}
+
+function getGridMediaAspect(media: GridMedia): number | undefined {
+  if (isEmbedMedia(media)) return getEmbedAspect(media);
+  return media.width && media.height && media.width > 0 && media.height > 0 ? media.width / media.height : undefined;
+}
+
+/**
+ * Where each entry stands, given the height it takes; the CMS grid builder places its blocks the same way.
+ * A block keeps its drawn distance to the blocks above it in its group; a block with none above it starts at
+ * its drawn top in the group, or, with masonry on, the vertical gap below whatever earlier group reaches
+ * lowest in its columns.
+ */
+function placeCustomGridEntries(layout: CustomGridLayout, slots: CustomGridSlot[], heights: number[]) {
+  const groupSize = layout.blocks.length;
+  const verticalGap = getCustomGridVerticalGap(layout);
+  const isMasonry = layout.masonry === 'on';
+  const tops: number[] = [];
+  const placed: { column: number; span: number; bottom: number; group: number }[] = [];
+  const getBottom = (items: typeof placed) => items.reduce((bottom, item) => Math.max(bottom, item.bottom), 0);
+  let groupStart = 0;
+  for (let start = 0; start < slots.length; start += groupSize) {
+    const group = start / groupSize;
+    const entries = Array.from({ length: Math.min(groupSize, slots.length - start) }, (_, index) => start + index)
+      .sort((a, b) => slots[a].top - slots[b].top || a - b);
+    for (const entry of entries) {
+      const slot = slots[entry];
+      const sharesColumns = (other: { column: number; span: number }) => other.column < slot.column + slot.span
+        && slot.column < other.column + other.span;
+      const above = entries.filter(other => other !== entry && tops[other] !== undefined && sharesColumns(slots[other])
+        && slots[other].top + slots[other].height <= slot.top + EDGE_TOLERANCE);
+      const earlier = isMasonry ? placed.filter(item => item.group < group && sharesColumns(item)) : [];
+      const candidates = above.map(other => tops[other] + heights[other] + slot.top - (slots[other].top + slots[other].height));
+      if (earlier.length > 0) candidates.push(getBottom(earlier) + verticalGap);
+      if (candidates.length === 0) candidates.push(groupStart + slot.top);
+      tops[entry] = Math.max(...candidates);
+      placed.push({ column: slot.column, span: slot.span, bottom: tops[entry] + heights[entry], group });
+    }
+    groupStart = getBottom(placed) + verticalGap;
+  }
+  return { tops, bottom: getBottom(placed) };
+}
+
 export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, metadata, activeEvent, layoutId, portalId }: GridProps) {
   const { prefix: P } = useScopedStyles();
   const {
     type = 'a',
     gridLayout,
+    customGrid,
     textBoxWidth = 100,
     verticalGap,
     entriesCount,
@@ -1709,62 +1972,69 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     hover = 'none',
     alignEntries = 'off',
     align = 'top',
+    textGrowth = 'inside',
   } = settings;
 
-  const resolvedTitleTextStyle: TextStyles = {
-    fontSettings: {
-      fontFamily: titleFontFamily,
-      fontWeight: titleFontSettings?.fontWeight ?? 400,
-      fontStyle: titleFontSettings?.fontStyle ?? 'normal',
-    },
-    fontSize: titleFontSize ?? 0.01,
-    lineHeight: titleLineHeight,
-    letterSpacing: titleLetterSpacing ?? 0,
-    wordSpacing: titleWordSpacing ?? 0,
-    textAppearance: titleTextAppearance,
-    color: titleColor,
-  };
-  const titleTypographyCss = omitTextColors(textStylesToCss(resolvedTitleTextStyle, isEditor));
-  const titleFieldCss = {
-    ...titleTypographyCss,
-  } as React.CSSProperties;
+  const titleTextStyle = useMemo(() => ({
+    ...omitTextColors(textStylesToCss({
+      fontSettings: {
+        fontFamily: titleFontFamily,
+        fontWeight: titleFontSettings?.fontWeight ?? 400,
+        fontStyle: titleFontSettings?.fontStyle ?? 'normal',
+      },
+      fontSize: titleFontSize ?? 0.01,
+      lineHeight: titleLineHeight,
+      letterSpacing: titleLetterSpacing ?? 0,
+      wordSpacing: titleWordSpacing ?? 0,
+      textAppearance: titleTextAppearance,
+      color: titleColor,
+    }, isEditor)),
+    ...getGridTextLeadingVars(titleFontSize, titleLineHeight, P, isEditor),
+  } as React.CSSProperties), [
+    titleFontFamily, titleFontSettings, titleFontSize, titleLineHeight, titleLetterSpacing,
+    titleWordSpacing, titleTextAppearance, titleColor, isEditor, P,
+  ]);
 
-  const resolvedSubtitleTextStyle: TextStyles = {
-    fontSettings: {
-      fontFamily: subtitleFontFamily,
-      fontWeight: subtitleFontSettings?.fontWeight ?? 400,
-      fontStyle: subtitleFontSettings?.fontStyle ?? 'normal',
-    },
-    fontSize: subtitleFontSize ?? 0.01,
-    lineHeight: subtitleLineHeight,
-    letterSpacing: subtitleLetterSpacing ?? 0,
-    wordSpacing: subtitleWordSpacing ?? 0,
-    textAppearance: subtitleTextAppearance,
-    color: subtitleColor,
-  };
-  const subtitleTypographyCss = omitTextColors(textStylesToCss(resolvedSubtitleTextStyle, isEditor));
-  const subtitleFieldCss = {
-    ...subtitleTypographyCss,
-  } as React.CSSProperties;
+  const subtitleTextStyle = useMemo(() => ({
+    ...omitTextColors(textStylesToCss({
+      fontSettings: {
+        fontFamily: subtitleFontFamily,
+        fontWeight: subtitleFontSettings?.fontWeight ?? 400,
+        fontStyle: subtitleFontSettings?.fontStyle ?? 'normal',
+      },
+      fontSize: subtitleFontSize ?? 0.01,
+      lineHeight: subtitleLineHeight,
+      letterSpacing: subtitleLetterSpacing ?? 0,
+      wordSpacing: subtitleWordSpacing ?? 0,
+      textAppearance: subtitleTextAppearance,
+      color: subtitleColor,
+    }, isEditor)),
+    ...getGridTextLeadingVars(subtitleFontSize, subtitleLineHeight, P, isEditor),
+  } as React.CSSProperties), [
+    subtitleFontFamily, subtitleFontSettings, subtitleFontSize, subtitleLineHeight, subtitleLetterSpacing,
+    subtitleWordSpacing, subtitleTextAppearance, subtitleColor, isEditor, P,
+  ]);
 
-  const resolvedLightboxCounterTextStyle: TextStyles = {
-    fontSettings: {
-      fontFamily: lightboxCounterFontFamily,
-      fontWeight: lightboxCounterFontSettings?.fontWeight ?? 400,
-      fontStyle: lightboxCounterFontSettings?.fontStyle ?? 'normal',
-    },
-    fontSize: lightboxCounterFontSize ?? 0.01,
-    lineHeight: lightboxCounterLineHeight,
-    letterSpacing: lightboxCounterLetterSpacing ?? 0,
-    wordSpacing: lightboxCounterWordSpacing ?? 0,
-    textAppearance: lightboxCounterTextAppearance,
-    color: lightboxCounterColor,
-  };
-  const lightboxCounterTypographyCss = omitTextColors(textStylesToCss(resolvedLightboxCounterTextStyle, isEditor));
-  const lightboxCounterFieldCss = {
-    ...lightboxCounterTypographyCss,
+  const lightboxCounterFieldCss = useMemo(() => ({
+    ...omitTextColors(textStylesToCss({
+      fontSettings: {
+        fontFamily: lightboxCounterFontFamily,
+        fontWeight: lightboxCounterFontSettings?.fontWeight ?? 400,
+        fontStyle: lightboxCounterFontSettings?.fontStyle ?? 'normal',
+      },
+      fontSize: lightboxCounterFontSize ?? 0.01,
+      lineHeight: lightboxCounterLineHeight,
+      letterSpacing: lightboxCounterLetterSpacing ?? 0,
+      wordSpacing: lightboxCounterWordSpacing ?? 0,
+      textAppearance: lightboxCounterTextAppearance,
+      color: lightboxCounterColor,
+    }, isEditor)),
     ...getGridTextLeadingVars(lightboxCounterFontSize, lightboxCounterLineHeight, P, isEditor),
-  } as React.CSSProperties;
+  } as React.CSSProperties), [
+    lightboxCounterFontFamily, lightboxCounterFontSettings, lightboxCounterFontSize, lightboxCounterLineHeight,
+    lightboxCounterLetterSpacing, lightboxCounterWordSpacing, lightboxCounterTextAppearance, lightboxCounterColor,
+    isEditor, P,
+  ]);
 
   const titleTextClassName = getGridTextClassName(
     titleFontSize,
@@ -1778,8 +2048,6 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     `${P}-item-subtitle`,
     `${P}-text-tight-leading`,
   );
-  const titleTextLeadingVars = getGridTextLeadingVars(titleFontSize, titleLineHeight, P, isEditor);
-  const subtitleTextLeadingVars = getGridTextLeadingVars(subtitleFontSize, subtitleLineHeight, P, isEditor);
   const lightboxCounterClassName = getGridTextClassName(
     lightboxCounterFontSize,
     lightboxCounterLineHeight,
@@ -1787,42 +2055,59 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
     `${P}-text-tight-leading`,
   );
 
-  const colorVars = buildColorVars(P, {
+  const colorVars = useMemo(() => buildColorVars(P, {
     titleColor,
     subtitleColor,
     lightboxCounterColor,
-  }, COLOR_VAR_MAP, STATE_KEYS);
+  }, COLOR_VAR_MAP, STATE_KEYS), [P, titleColor, subtitleColor, lightboxCounterColor]);
 
   const stateClass = activeEvent && activeEvent !== 'default' ? `${P}-state-${activeEvent}` : '';
   const showTextOnHover = showText === 'on hover' && (!isEditor || isPreviewMode);
   const hoverEffectClass = hover !== 'none' && (!isEditor || isPreviewMode) ? ` ${P}-hover-${hover}` : '';
   const wrapperStateClasses = `${stateClass}${showTextOnHover ? ` ${P}-show-text-hover` : ''}${hoverEffectClass}`.trim();
 
-  const resEntriesCount = entriesCount === 0 ? Infinity : entriesCount;
+  const customLayout = customGrid && Array.isArray(customGrid.blocks) && customGrid.blocks.length > 0 ? customGrid : undefined;
+  const resEntriesCount = customLayout || entriesCount === 0 ? Infinity : entriesCount;
+  const isTextOutside = !!customLayout && textGrowth === 'outside';
+  const isAutoHeight = customLayout?.cellHeight === 'auto';
+  // entries stand where placeCustomGridEntries puts them rather than on grid rows
+  const isPlacedLayout = isAutoHeight || customLayout?.masonry === 'on';
+  const itemInnerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [customEntryHeights, setCustomEntryHeights] = useState<number[]>([]);
 
-  const cropContent = (content ?? []).slice(0, resEntriesCount);
+  const cropContent = useMemo<any[]>(() => (content ?? []).slice(0, resEntriesCount), [content, resEntriesCount]);
   const lightboxMediaToPreload = useMemo(
     () => (lightbox === 'on' ? collectGridLightboxMedia(cropContent) : []),
     [cropContent, lightbox],
   );
+  const entriesMedia = useMemo(() => cropContent.map((item: any) => {
+    const displayItems = getGridDisplayItems(item.gallery);
+    const lightboxItemsForEntry = displayItems
+      .filter(entry => entry.lightboxMedia)
+      .map(entry => entry.lightboxMedia!);
+    const lightboxIndexes = displayItems.map(({ lightboxMedia }) => (lightboxMedia
+      ? lightboxItemsForEntry.findIndex(media => media.assetId === lightboxMedia.assetId)
+      : -1));
+    return { displayItems, lightboxItemsForEntry, lightboxIndexes };
+  }), [cropContent]);
 
-  const size = gridLayout.entryWidth ?? 0.2;
+  const size = gridLayout?.entryWidth ?? 0.2;
 
-  const isCover = imageDisplay?.display === 'cover';
-  const ratioValue = imageDisplay?.ratioValue ?? '1:1';
-  const ratioReversed = imageDisplay?.reversed ?? false;
+  const imageDisplaySettings = typeof imageDisplay === 'string' ? { display: imageDisplay } : imageDisplay;
+  const isCover = imageDisplaySettings?.display === 'cover';
+  const ratioValue = imageDisplaySettings?.ratioValue ?? '1:1';
+  const ratioReversed = imageDisplaySettings?.reversed ?? false;
   const [rW, rH] = ratioValue.split(':').map(Number);
   const effW = ratioReversed ? rH : rW;
   const effH = ratioReversed ? rW : rH;
   const aspectRatio = `${effW} / ${effH}`;
 
-  const columnsCount = gridLayout.columnsCount;
+  const columnsCount = gridLayout?.columnsCount ?? 1;
   const entryWidthScaled = scalingValue(size ?? 0, isEditor);
-  const imageWrapperWidth = entryWidthScaled;
-  const isFitSlider = !isCover && slider !== 'off';
+  const isFitSlider = slider !== 'off' && (customLayout ? isAutoHeight : !isCover);
 
   const itemsInLastRow = cropContent.length % columnsCount || columnsCount;
-  const isPartialLastRow = itemsInLastRow < columnsCount && cropContent.length > 0;
+  const isPartialLastRow = !customLayout && itemsInLastRow < columnsCount && cropContent.length > 0;
   const lastRowStartIndex = cropContent.length - itemsInLastRow;
   const lastRowStartColumn = isPartialLastRow
     ? Math.floor((columnsCount - itemsInLastRow) / 2) + 1
@@ -1830,24 +2115,47 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
 
   const imageBorderRadius = imageCorners ? scalingValue(imageCorners, isEditor) : undefined;
 
-  const imageWrapperStyle: React.CSSProperties = {
-    width: imageWrapperWidth,
-    ...(isCover
-      ? { aspectRatio, height: 'auto', overflow: 'hidden' }
-      : { height: 'auto' }),
+  const getImageWrapperStyle = (
+    entryWidth: string,
+    slot?: CustomGridSlot,
+    media?: { aspect?: number; isEmpty: boolean },
+  ): React.CSSProperties => ({
+    width: entryWidth,
+    ...(slot && isAutoHeight
+      ? {
+          // an entry with no media keeps the drawn height, so it can still be seen and filled
+          height: media?.isEmpty ? scalingValue(slot.height, isEditor) : 'auto',
+          flexShrink: 0,
+          overflow: 'hidden',
+          ...(media?.aspect && !isFitSlider ? { aspectRatio: `${media.aspect}` } : {}),
+        }
+      : slot
+      ? isTextOutside
+        ? { height: scalingValue(slot.height, isEditor), flexShrink: 0, overflow: 'hidden' }
+        : { flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }
+      : isCover
+        ? { aspectRatio, height: 'auto', overflow: 'hidden' }
+        : { height: 'auto' }),
     ...(imageBorderRadius ? { borderRadius: imageBorderRadius, overflow: 'hidden' } : {}),
-  };
+  });
 
   const imageWrapperClassName = `${P}-item-image-wrapper${isFitSlider ? ` ${P}-item-image-wrapper-fit-slider` : ''}`.trim();
   const isTextBeforeImage = type === 'd' || type === 'e' || type === 'f';
-  const shouldAlignEntries = alignEntries === 'on';
-  const textBoxWidthStyle = `calc(${scalingValue(size ?? 0, isEditor)} * (${textBoxWidth} / 100))`;
-  const controlWidthStyle = scalingValue(size * textBoxWidth / 100, isEditor);
+  const shouldAlignEntries = !customLayout && alignEntries === 'on';
 
   const imageRadiusStyle = imageBorderRadius
     ? { borderRadius: imageBorderRadius, [MEDIA_RADIUS_VAR]: imageBorderRadius } as React.CSSProperties
     : {};
-  const imageStyle: React.CSSProperties = isCover
+  const imageStyle: React.CSSProperties = isAutoHeight
+    ? {
+        objectFit: isFitSlider && !isCover ? 'contain' : 'cover',
+        pointerEvents: 'auto',
+        width: '100%',
+        height: '100%',
+        maxWidth: '100%',
+        ...imageRadiusStyle,
+      }
+    : isCover
     ? {
         objectFit: 'cover',
         pointerEvents: 'auto',
@@ -1862,31 +2170,94 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
         width: 'auto',
         height: 'auto',
         maxWidth: '100%',
+        ...(customLayout ? { maxHeight: '100%' } : {}),
         ...imageRadiusStyle,
       };
 
-  const [containerWidth, setContainerWidth] = useState(0);
+  const shouldMeasureEntries = (customLayout?.beat ?? 0) > 0 || isPlacedLayout;
+  const customGridWidth = customLayout ? getCustomGridSpanWidth(customLayout, customLayout.columnsCount) : 0;
+  useLayoutEffect(() => {
+    if (!shouldMeasureEntries) {
+      setCustomEntryHeights(prev => (prev.length > 0 ? [] : prev));
+      return;
+    }
+    const wrapper = containerRef.current;
+    const inners = itemInnerRefs.current.slice(0, cropContent.length);
+    const measure = () => {
+      const unit = wrapper && customGridWidth > 0 ? wrapper.offsetWidth / customGridWidth : 0;
+      if (unit <= 0) return;
+      const heights = inners.map(inner => (inner ? inner.offsetHeight / unit : 0));
+      setCustomEntryHeights(prev => (
+        prev.length === heights.length && prev.every((height, index) => Math.abs(height - heights[index]) < 1e-5)
+          ? prev
+          : heights
+      ));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (wrapper) ro.observe(wrapper);
+    inners.forEach(inner => inner && ro.observe(inner));
+    return () => ro.disconnect();
+  }, [shouldMeasureEntries, cropContent.length, customGridWidth, P]);
+  const measuredEntryHeights = shouldMeasureEntries && customEntryHeights.length === cropContent.length
+    ? customEntryHeights
+    : undefined;
+  const customRows = useMemo(() => {
+    if (!customLayout) return undefined;
+    const rows = getCustomGridRows(customLayout, cropContent.length, measuredEntryHeights);
+    return {
+      gridRows: rows.gridRows,
+      gridTemplateRows: rows.tracks.length
+        ? rows.tracks.map(track => (track === 'auto' ? 'auto' : scalingValue(track, isEditor))).join(' ')
+        : 'auto',
+    };
+  }, [customLayout, cropContent.length, measuredEntryHeights, isEditor]);
+  const customSlots = useMemo(
+    () => (customLayout ? cropContent.map((_, index) => getCustomGridSlot(customLayout, index)) : undefined),
+    [customLayout, cropContent.length],
+  );
+  // the aspect a single media keeps when the cell takes its height
+  const entryMediaAspects = useMemo(
+    () => entriesMedia.map(({ displayItems }) => (
+      isAutoHeight && displayItems.length > 0 ? getGridMediaAspect(displayItems[0].displayMedia) : undefined
+    )),
+    [entriesMedia, isAutoHeight],
+  );
+  const customPlacement = useMemo(() => {
+    if (!customLayout || !customSlots || !isPlacedLayout) return undefined;
+    const beat = customLayout.beat ?? 0;
+    const heights = customSlots.map((slot, index) => {
+      // until the entries are measured, a media that tells its size gives the height it will take
+      const aspects = entriesMedia[index].displayItems.map(({ displayMedia }) => getGridMediaAspect(displayMedia));
+      const known = aspects.filter((aspect): aspect is number => aspect !== undefined);
+      const estimate = isAutoHeight && known.length > 0 ? Math.max(...known.map(aspect => slot.width / aspect)) : slot.height;
+      const height = measuredEntryHeights?.[index] ?? estimate;
+      return beat > 0 ? Math.ceil(height / beat - 1e-3) * beat : height;
+    });
+    return placeCustomGridEntries(customLayout, customSlots, heights);
+  }, [customLayout, customSlots, isPlacedLayout, isAutoHeight, entriesMedia, measuredEntryHeights]);
+  const wrapperLayoutStyle: React.CSSProperties = customLayout
+    ? {
+        gridTemplateColumns: `repeat(${customLayout.columnsCount}, ${scalingValue(customLayout.columnWidth, isEditor)})`,
+        gridTemplateRows: customRows?.gridTemplateRows ?? 'auto',
+        rowGap: 0,
+        columnGap: scalingValue(customLayout.gutterWidth, isEditor),
+        width: scalingValue(getCustomGridSpanWidth(customLayout, customLayout.columnsCount), isEditor),
+        ...(customPlacement ? { position: 'relative', height: scalingValue(customPlacement.bottom, isEditor) } : {}),
+      }
+    : {
+        gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
+        rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
+        columnGap: scalingValue(gridLayout?.horizontalGap ?? 0, isEditor),
+        width: scalingValue(gridLayout?.wrapperWidth ?? 0, isEditor),
+        ...(shouldAlignEntries
+          ? { [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor) }
+          : {}),
+      };
+
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const resolvedSplideDirection = transition === 'fade'
-    ? 'ltr'
-    : direction === 'horizontal'
-      ? 'ltr'
-      : direction === 'vertical'
-        ? 'ttb'
-        : 'ltr';
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      setContainerWidth(Math.round(entries[0].contentRect.width));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const lightboxPortalStyle = (() => {
+  const getLightboxPortalStyle = (): React.CSSProperties => {
     const style: Record<string, string> = { ...(colorVars as Record<string, string>) };
     const articleWidth = containerRef.current
       ? getComputedStyle(containerRef.current).getPropertyValue('--cntrl-article-width').trim()
@@ -1895,7 +2266,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       style['--cntrl-article-width'] = articleWidth;
     }
     return style as React.CSSProperties;
-  })();
+  };
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxItems, setLightboxItems] = useState<GridMedia[]>([]);
@@ -1934,16 +2305,8 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       <div style={colorVars}>
         <div
           ref={containerRef}
-          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''} ${P}-image-align-${align} ${wrapperStateClasses}`.trim()}
-          style={{
-            gridTemplateColumns: `repeat(${columnsCount}, ${entryWidthScaled})`,
-            rowGap: shouldAlignEntries ? 0 : scalingValue(verticalGap ?? 0, isEditor),
-            columnGap: scalingValue(gridLayout.horizontalGap ?? 0, isEditor),
-            width: scalingValue(gridLayout.wrapperWidth ?? 0, isEditor),
-            ...(shouldAlignEntries
-              ? { [`--${P}-align-entries-row-gap`]: scalingValue(verticalGap ?? 0, isEditor) }
-              : {}),
-          }}>
+          className={`${P}-wrapper ${P}-type-${type}${shouldAlignEntries ? ` ${P}-align-entries` : ''}${customLayout ? ` ${P}-custom-layout` : ''}${isTextOutside ? ` ${P}-text-outside` : ''}${isAutoHeight ? ` ${P}-auto-height` : ''} ${P}-image-align-${customLayout ? 'top' : align} ${wrapperStateClasses}`.trim()}
+          style={wrapperLayoutStyle}>
           {cropContent.map((item: any, index: number) => {
             const hasTitle = hasText(item.title);
             const hasSubtitle = hasText(item.subtitle);
@@ -1953,11 +2316,40 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             const gridColumn = isPartialLastRow && index >= lastRowStartIndex
               ? `${lastRowStartColumn + (index - lastRowStartIndex)}`
               : undefined;
+            const customSlot = customSlots?.[index];
+            const itemSize = customSlot?.width ?? size;
+            const itemWidthScaled = scalingValue(itemSize, isEditor);
+            const textBoxWidthStyle = `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`;
+            const controlWidthStyle = scalingValue(itemSize * textBoxWidth / 100, isEditor);
+            const { displayItems, lightboxItemsForEntry, lightboxIndexes } = entriesMedia[index];
+            const mediaAspect = slider === 'off' ? entryMediaAspects[index] : undefined;
+            const imageWrapperStyle = getImageWrapperStyle(
+              itemWidthScaled,
+              customSlot,
+              { aspect: mediaAspect, isEmpty: displayItems.length === 0 },
+            );
+            const entryImageStyle = isAutoHeight && slider === 'off' && !mediaAspect
+              ? { ...imageStyle, height: 'auto' }
+              : imageStyle;
+            const itemStyle: React.CSSProperties | undefined = customSlot && customLayout && customPlacement
+              ? {
+                  position: 'absolute',
+                  left: scalingValue(customSlot.column * (customLayout.columnWidth + customLayout.gutterWidth), isEditor),
+                  top: scalingValue(customPlacement.tops[index], isEditor),
+                  width: itemWidthScaled,
+                }
+              : customSlot
+              ? {
+                  gridColumn: customSlot.gridColumn,
+                  gridRow: customRows?.gridRows[index],
+                  alignSelf: 'start',
+                }
+              : gridColumn && !shouldAlignEntries ? { gridColumn } : undefined;
 
             const typeCTextBlock = isTextBeforeImage ? (
               <div className={`${P}-item-text-block`}>
                 {hasTitle && (
-                  <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
+                  <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleTextStyle }}>
                     {item.title}
                   </p>
                 )}
@@ -1972,7 +2364,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   />
                 )}
                 {hasSubtitle && (
-                  <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}>
+                  <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleTextStyle }}>
                     {item.subtitle}
                   </p>
                 )}
@@ -2002,7 +2394,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   />
                 )}
                 {hasTitle && (
-                  <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}>
+                  <p className={titleTextClassName} style={{ width: textBoxWidthStyle, ...titleTextStyle }}>
                     {item.title}
                   </p>
                 )}
@@ -2032,7 +2424,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   />
                 )}
                 {hasSubtitle && (
-                  <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}>
+                  <p className={subtitleTextClassName} style={{ width: textBoxWidthStyle, ...subtitleTextStyle }}>
                     {item.subtitle}
                   </p>
                 )}
@@ -2056,11 +2448,6 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
               </LinkWrapper>
             );
 
-            const displayItems = getGridDisplayItems(item.gallery);
-            const lightboxItemsForEntry = displayItems
-              .filter(entry => entry.lightboxMedia)
-              .map(entry => entry.lightboxMedia!);
-
             const imageContent = (
               <GridItemMediaWrapper className={imageWrapperClassName} style={imageWrapperStyle}>
                 {displayItems.length === 0
@@ -2068,15 +2455,13 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                   : slider === 'off'
                     ?
                     (() => {
-                      const { displayMedia, lightboxMedia } = displayItems[0];
-                      const lightboxIndex = lightboxMedia
-                        ? lightboxItemsForEntry.findIndex(item => item.assetId === lightboxMedia.assetId)
-                        : -1;
+                      const { displayMedia } = displayItems[0];
+                      const lightboxIndex = lightboxIndexes[0];
                       return (
                         <GridMediaItem
                           media={displayMedia}
                           className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
-                          style={imageStyle}
+                          style={entryImageStyle}
                           hasLightbox={lightbox === 'on'}
                           onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
                             ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
@@ -2099,50 +2484,28 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                         ))}
                       </div>
                     )}
-                    <Splide
-                      key={`${transition}-${size}-${direction}-${sliderTiming}-${containerWidth}-${layoutId}`}
-                      className={`${P}-item-slider`}
-                      options={{
-                        arrows: false,
-                        pagination: false,
-                        drag: false,
-                        perPage: 1,
-                        autoplay: true,
-                        interval: sliderTiming * 1000,
-                        width: '100%',
-                        height: '100%',
-                        speed: SLIDER_TRANSITION_MS,
-                        type: transition === 'fade' ? 'fade' : 'loop',
-                        rewind: transition === 'fade',
-                        pauseOnHover: false,
-                        pauseOnFocus: false,
-                        direction: resolvedSplideDirection,
-                      }}
-                      onMoved={(splide) => {
-                        if (direction !== 'random' || transition === 'fade') return;
-                        handleRandomSlideMoved(splide);
-                      }}
-                    >
-                      {displayItems.map(({ displayMedia, lightboxMedia }, imgIndex) => {
-                        const lightboxIndex = lightboxMedia
-                          ? lightboxItemsForEntry.findIndex(item => item.assetId === lightboxMedia.assetId)
-                          : -1;
+                    <GridEntrySlider
+                      key={`${transition}-${itemSize}-${direction}-${sliderTiming}-${layoutId}-${displayItems.length}`}
+                      prefix={P}
+                      isFade={transition === 'fade'}
+                      direction={direction}
+                      intervalMs={sliderTiming * 1000}
+                      slides={displayItems.map(({ displayMedia }, imgIndex) => {
+                        const lightboxIndex = lightboxIndexes[imgIndex];
                         return (
-                          <SplideSlide key={imgIndex} data-slide-index={imgIndex}>
-                            <GridMediaItem
-                              media={displayMedia}
-                              className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
-                              style={imageStyle}
-                              hasLightbox={lightbox === 'on'}
-                              isSplideSlide
-                              onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
-                                ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
-                                : undefined}
-                            />
-                          </SplideSlide>
+                          <GridMediaItem
+                            media={displayMedia}
+                            className={`${P}-item-${isVideoMedia(displayMedia) ? 'video' : 'image'}`.trim()}
+                            style={imageStyle}
+                            hasLightbox={lightbox === 'on'}
+                            isSliderSlide
+                            onMediaClick={canOpenLightboxMedia && lightboxIndex >= 0
+                              ? () => openLightbox(lightboxItemsForEntry, lightboxIndex)
+                              : undefined}
+                          />
                         );
                       })}
-                    </Splide>
+                    />
                     </>
                 }
               </GridItemMediaWrapper>
@@ -2160,7 +2523,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                 />
                 <p
                   className={titleTextClassName}
-                  style={{ width: textBoxWidthStyle, ...titleFieldCss, ...titleTextLeadingVars }}
+                  style={{ width: textBoxWidthStyle, ...titleTextStyle }}
                 >
                   {item.title}
                 </p>
@@ -2174,7 +2537,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
                 />
                 <p
                   className={subtitleTextClassName}
-                  style={{ width: textBoxWidthStyle, ...subtitleFieldCss, ...subtitleTextLeadingVars }}
+                  style={{ width: textBoxWidthStyle, ...subtitleTextStyle }}
                 >
                   {item.subtitle}
                 </p>
@@ -2194,16 +2557,18 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
             <div
               key={index}
               className={`${P}-item`.trim()}
-              style={gridColumn && !shouldAlignEntries ? { gridColumn } : undefined}
+              style={itemStyle}
             >
               <div
-                className={`${isEditMode 
-                  ? `${P}-item-inner` 
+                ref={(el) => { itemInnerRefs.current[index] = el; }}
+                className={`${isEditMode
+                  ? `${P}-item-inner`
                   : `${P}-item-inner-hidden`}${shouldAlignEntries && isLastRow ? ` ${P}-item-inner-last-row` : ''}`.trim()}
                 style={{
                   width: (textBoxWidth ?? 0) > 100
-                    ? `calc(${entryWidthScaled} * (${textBoxWidth} / 100))`
-                    : entryWidthScaled,
+                    ? `calc(${itemWidthScaled} * (${textBoxWidth} / 100))`
+                    : itemWidthScaled,
+                  ...(customSlot && !isTextOutside && !isAutoHeight ? { height: scalingValue(customSlot.height, isEditor) } : {}),
                   ...(gridColumn && shouldAlignEntries ? { gridColumn } : {}),
                 }}
               >
@@ -2249,7 +2614,7 @@ export function Grid({ settings, content, isEditor, isPreviewMode, isEditMode, m
       {(!isEditor || isPreviewMode) && lightboxOpen && typeof document !== 'undefined' && lightbox === 'on' && (() => {
         const portalTarget = (portalId ? document.getElementById(portalId) : null) ?? document.body;
         return createPortal(
-          <div style={lightboxPortalStyle} data-selection="none">
+          <div style={getLightboxPortalStyle()} data-selection="none">
             <Lightbox
               prefix={P}
               items={lightboxItems}
@@ -2286,17 +2651,38 @@ type GridLayoutConfig = {
   lockedParam?: 'wrapperWidth' | 'entryWidth' | 'horizontalGap' | null;
 };
 
+type CustomGridBlock = {
+  column: number;
+  span: number;
+  top: number;
+  height: number;
+};
+
+type CustomGridLayout = {
+  columnsCount: number;
+  columnWidth: number;
+  gutterWidth: number;
+  maxWidth: number | null;
+  verticalGap?: number;
+  beat?: number;
+  repeatHeight?: number;
+  blocks: CustomGridBlock[];
+  cellHeight?: 'manual' | 'auto';
+  masonry?: 'off' | 'on';
+};
+
 type GridSettings = {
   type: 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
-  gridLayout: GridLayoutConfig;
+  gridLayout?: GridLayoutConfig;
+  customGrid?: CustomGridLayout;
   textBoxWidth: number;
-  verticalGap: number;
-  entriesCount: number;
+  verticalGap?: number;
+  entriesCount?: number;
   lightbox: 'on' | 'off';
-  imageDisplay: {
+  imageDisplay: 'fit' | 'cover' | {
     display: 'fit' | 'cover';
-    ratioValue: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
-    reversed: boolean;
+    ratioValue?: '1:1' | '2:3' | '3:4' | '4:5' | '16:9';
+    reversed?: boolean;
   };
   imageCorners?: number;
   lightboxImageDisplay?: 'fit' | 'cover' | { display?: 'fit' | 'cover' };
@@ -2306,8 +2692,9 @@ type GridSettings = {
   transition: 'fade' | 'slide',
   showText: 'always' | 'on hover';
   hover?: 'none' | 'zoom-in' | 'greyscale' | 'scale-down';
-  alignEntries: 'on' | 'off';
+  alignEntries?: 'on' | 'off';
   align?: 'top' | 'center' | 'bottom';
+  textGrowth?: 'inside' | 'outside';
   titleMarginTop: number;
   subtitleMarginTop: number;
   titleColor: string;

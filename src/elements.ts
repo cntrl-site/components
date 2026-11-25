@@ -7,6 +7,7 @@ const loaders: Record<string, () => Promise<ComponentElement>> = {
   'chronicles': () => import('./Components/Chronicles/Chronicles').then(m => m.Chronicles),
   'click-gallerie': () => import('./Components/ClickGallerie/ClickGallerie').then(m => m.ClickGallerie),
   'control-slider': () => import('./Components/ControlSlider/ControlSlider').then(m => m.ControlSlider),
+  'custom-grid': () => import('./Components/Grid/Grid').then(m => m.Grid),
   'faq': () => import('./Components/FAQ/FAQ').then(m => m.FAQ),
   'form': () => import('./Components/Form/Form').then(m => m.Form),
   'grid': () => import('./Components/Grid/Grid').then(m => m.Grid),
