@@ -87,6 +87,8 @@ const COLOR_VAR_MAP: Record<ColorKeys, string> = {
 
 const STATE_KEYS = ['hover', 'active'] as const;
 
+const isGradient = (value?: string) => !!value && value.includes('gradient(');
+
 const ALIGNMENT_MAP = {
   left: 'flex-start',
   center: 'center',
@@ -139,7 +141,7 @@ function getCSS(P: string): string {
   box-sizing: border-box;
   border-style: solid;
   border-color: var(--${P}-border-color);
-  background-color: var(--${P}-background-color);
+  background: var(--${P}-background-color);
   color: var(--${P}-text-color);
   -webkit-backdrop-filter: var(--${P}-backdrop-blur, none);
   backdrop-filter: var(--${P}-backdrop-blur, none);
@@ -183,7 +185,7 @@ ${effectFocus('lift')},
   content: '';
   position: absolute;
   inset: 0;
-  background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
+  background: var(--${P}-hover-background-color, var(--${P}-background-color));
   pointer-events: none;
   z-index: 0;
   transform: scaleY(0);
@@ -210,7 +212,7 @@ a:focus-visible .${P}-hover-effect-reveal.${P}-reveal-from-bottom::before,
   content: '';
   position: absolute;
   inset: 0;
-  background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
+  background: var(--${P}-hover-background-color, var(--${P}-background-color));
   pointer-events: none;
   z-index: 0;
   transform: translateX(-100%);
@@ -226,7 +228,7 @@ ${effectFocus('reveal')},
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-reveal,
 ${effectFocus('swipe')},
 .${P}-wrapper.${P}-state-hover .${P}-hover-effect-swipe {
-  background-color: var(--${P}-background-color);
+  background: var(--${P}-background-color);
 }
 .${P}-hover-effect-content-roll {
   position: relative;
@@ -288,15 +290,17 @@ a:focus-visible .${P}-hover-effect-content-roll .${P}-content-roll-layer-hover,
   opacity: 1;
 }
 ${buttonHoverOrFocus} {
-  background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
+  background: var(--${P}-hover-background-color, var(--${P}-background-color));
   color: var(--${P}-hover-text-color, var(--${P}-text-color));
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
+  --${P}-border-fill: var(--${P}-hover-border-color, var(--${P}-border-color));
   box-shadow: ${hoverBoxShadow};
 }
 .${P}-wrapper.${P}-state-hover .${P}-button {
-  background-color: var(--${P}-hover-background-color, var(--${P}-background-color));
+  background: var(--${P}-hover-background-color, var(--${P}-background-color));
   color: var(--${P}-hover-text-color, var(--${P}-text-color));
   border-color: var(--${P}-hover-border-color, var(--${P}-border-color));
+  --${P}-border-fill: var(--${P}-hover-border-color, var(--${P}-border-color));
   box-shadow: ${hoverBoxShadow};
 }
 .${P}-button:focus,
@@ -307,16 +311,35 @@ a:focus-visible:has(.${P}-button) {
 }
 .${P}-button:active,
 a:active .${P}-button {
-  background-color: var(--${P}-active-background-color, var(--${P}-background-color));
+  background: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
+  --${P}-border-fill: var(--${P}-active-border-color, var(--${P}-border-color));
   box-shadow: ${activeBoxShadow};
 }
 .${P}-wrapper.${P}-state-active .${P}-button {
-  background-color: var(--${P}-active-background-color, var(--${P}-background-color));
+  background: var(--${P}-active-background-color, var(--${P}-background-color));
   color: var(--${P}-active-text-color, var(--${P}-text-color));
   border-color: var(--${P}-active-border-color, var(--${P}-border-color));
+  --${P}-border-fill: var(--${P}-active-border-color, var(--${P}-border-color));
   box-shadow: ${activeBoxShadow};
+}
+/* Gradient border: CSS borders can't take gradients with radius, so the stroke is drawn as a masked ring inside the padding box. */
+.${P}-border-gradient {
+  position: relative;
+}
+.${P}-border-gradient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: var(--${P}-stroke);
+  border-radius: inherit;
+  background: var(--${P}-border-fill, var(--${P}-border-color));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+  z-index: 2;
 }
 .${P}-text {
   display: block;
@@ -496,6 +519,13 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
   const useContentRoll = hoverEffect === 'content-roll';
   const revealHoverActive = hoverEffect === 'reveal' && (!isEditor || isPreviewMode);
 
+  const hasBorderGradient = stroke > 0 && [borderColor, ...Object.values(stateOverrides ?? {}).map((o) => o?.borderColor)].some(isGradient);
+  const borderGradientClass = hasBorderGradient ? `${P}-border-gradient` : '';
+  const strokeValue = scalingValue(stroke, isEditor);
+  const paddingValue = (value: number) => hasBorderGradient
+    ? `calc(${scalingValue(value, isEditor)} + ${strokeValue})`
+    : scalingValue(value, isEditor);
+
   const isFixedDimensions = dimensions === true;
   const resolvedAlignment = type === 'a' ? (alignA ?? alignment) : alignment;
   const effectiveAlignment = resolvedAlignment;
@@ -532,12 +562,13 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
     [`--${P}-inner-box-shadow-blur`]: scalingValue(innerBoxShadow.right, isEditor),
     [`--${P}-inner-box-shadow-spread`]: scalingValue(innerBoxShadow.bottom, isEditor),
     [`--${P}-backdrop-blur`]: blur > 0 ? `blur(${scalingValue(blur, isEditor)})` : undefined,
-    paddingTop: scalingValue(padding.top, isEditor),
-    paddingRight: scalingValue(padding.right, isEditor),
-    paddingBottom: scalingValue(padding.bottom, isEditor),
-    paddingLeft: scalingValue(padding.left, isEditor),
+    [`--${P}-stroke`]: strokeValue,
+    paddingTop: paddingValue(padding.top),
+    paddingRight: paddingValue(padding.right),
+    paddingBottom: paddingValue(padding.bottom),
+    paddingLeft: paddingValue(padding.left),
     borderRadius: scalingValue(cornerRadius, isEditor),
-    borderWidth: scalingValue(stroke, isEditor),
+    borderWidth: hasBorderGradient ? 0 : strokeValue,
     ...(!isIconTextType ? {
       justifyContent: ALIGNMENT_MAP[effectiveAlignment],
       textAlign: effectiveAlignment,
@@ -615,7 +646,7 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
       <div className={`${P}-root`} style={colorVars}>
         <div className={`${P}-wrapper ${stateClass} ${editingClass}`.trim()}>
           <div
-            className={`${P}-button ${hoverEffectClass}`.trim()}
+            className={`${P}-button ${hoverEffectClass} ${borderGradientClass}`.trim()}
             style={buttonStyle}
             onMouseEnter={handleRevealMouseEnter}
             onMouseLeave={handleRevealMouseLeave}

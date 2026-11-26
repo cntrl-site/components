@@ -206,7 +206,7 @@ const schema = {
           hover: 'BG Hover',
           active: 'BG Active',
         },
-        display: { type: 'palette-color-picker' },
+        display: { type: 'palette-color-picker', gradient: true },
       },
       textColor: {
         type: 'string',
@@ -228,7 +228,7 @@ const schema = {
           hover: 'Border Hover',
           active: 'Border Active',
         },
-        display: { type: 'palette-color-picker' },
+        display: { type: 'palette-color-picker', gradient: true },
       },
       iconColor: {
         type: 'string',
