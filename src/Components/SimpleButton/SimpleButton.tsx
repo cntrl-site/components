@@ -324,14 +324,14 @@ a:active .${P}-button {
   --${P}-border-fill: var(--${P}-active-border-color, var(--${P}-border-color));
   box-shadow: ${activeBoxShadow};
 }
-/* Gradient border: CSS borders can't take gradients with radius, so the stroke is drawn as a masked ring inside the padding box. */
+/* Gradient border: CSS borders can't take gradients with radius, so the transparent border is covered by a masked ring. */
 .${P}-border-gradient {
   position: relative;
 }
 .${P}-border-gradient::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: calc(var(--${P}-stroke) * -1);
   padding: var(--${P}-stroke);
   border-radius: inherit;
   background: var(--${P}-border-fill, var(--${P}-border-color));
@@ -340,6 +340,31 @@ a:active .${P}-button {
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   pointer-events: none;
   z-index: 2;
+}
+/* overflow would clip the ring, so these effects clip their moving parts instead */
+.${P}-border-gradient.${P}-hover-effect-reveal,
+.${P}-border-gradient.${P}-hover-effect-swipe,
+.${P}-border-gradient.${P}-hover-effect-content-roll {
+  overflow: visible;
+}
+.${P}-border-gradient.${P}-hover-effect-reveal::before,
+.${P}-border-gradient.${P}-hover-effect-swipe::before {
+  border-radius: max(0px, calc(var(--${P}-radius) - var(--${P}-stroke)));
+}
+.${P}-border-gradient.${P}-hover-effect-swipe::before {
+  transform: none;
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 250ms;
+}
+.${P}-border-gradient.${P}-hover-effect-swipe:hover::before,
+.${P}-border-gradient.${P}-hover-effect-swipe:focus-visible::before,
+a:focus-visible .${P}-border-gradient.${P}-hover-effect-swipe::before,
+.${P}-wrapper.${P}-state-hover .${P}-border-gradient.${P}-hover-effect-swipe::before {
+  clip-path: inset(0);
+}
+/* clip the roll at the padding edge, where the button itself would have clipped it */
+.${P}-border-gradient .${P}-content-roll-viewport {
+  clip-path: var(--${P}-roll-clip);
 }
 .${P}-text {
   display: block;
@@ -522,9 +547,8 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
   const hasBorderGradient = stroke > 0 && [borderColor, ...Object.values(stateOverrides ?? {}).map((o) => o?.borderColor)].some(isGradient);
   const borderGradientClass = hasBorderGradient ? `${P}-border-gradient` : '';
   const strokeValue = scalingValue(stroke, isEditor);
-  const paddingValue = (value: number) => hasBorderGradient
-    ? `calc(${scalingValue(value, isEditor)} + ${strokeValue})`
-    : scalingValue(value, isEditor);
+  // Browsers draw a border at whole pixels, so the ring uses the same rounded width to line up with it on every side
+  const ringStrokeValue = `max(1px, round(down, ${strokeValue}, 1px))`;
 
   const isFixedDimensions = dimensions === true;
   const resolvedAlignment = type === 'a' ? (alignA ?? alignment) : alignment;
@@ -562,13 +586,23 @@ export function SimpleButton({ settings, isEditor, isPreviewMode, activeEvent, h
     [`--${P}-inner-box-shadow-blur`]: scalingValue(innerBoxShadow.right, isEditor),
     [`--${P}-inner-box-shadow-spread`]: scalingValue(innerBoxShadow.bottom, isEditor),
     [`--${P}-backdrop-blur`]: blur > 0 ? `blur(${scalingValue(blur, isEditor)})` : undefined,
-    [`--${P}-stroke`]: strokeValue,
-    paddingTop: paddingValue(padding.top),
-    paddingRight: paddingValue(padding.right),
-    paddingBottom: paddingValue(padding.bottom),
-    paddingLeft: paddingValue(padding.left),
+    paddingTop: scalingValue(padding.top, isEditor),
+    paddingRight: scalingValue(padding.right, isEditor),
+    paddingBottom: scalingValue(padding.bottom, isEditor),
+    paddingLeft: scalingValue(padding.left, isEditor),
     borderRadius: scalingValue(cornerRadius, isEditor),
-    borderWidth: hasBorderGradient ? 0 : strokeValue,
+    borderWidth: hasBorderGradient ? ringStrokeValue : strokeValue,
+    // Like a CSS border: the background stops at it, and the ring paints over it
+    ...(hasBorderGradient ? {
+      [`--${P}-stroke`]: ringStrokeValue,
+      [`--${P}-radius`]: scalingValue(cornerRadius, isEditor),
+      [`--${P}-roll-clip`]: `inset(${[padding.top, padding.right, padding.bottom, padding.left].map((value) => `calc(${scalingValue(value, isEditor)} * -1)`).join(' ')})`,
+      borderColor: 'transparent',
+      backgroundClip: 'padding-box',
+    } : {
+      // A gradient background spans the border box, so it doesn't repeat under a see-through border
+      backgroundOrigin: 'border-box',
+    }),
     ...(!isIconTextType ? {
       justifyContent: ALIGNMENT_MAP[effectiveAlignment],
       textAlign: effectiveAlignment,
